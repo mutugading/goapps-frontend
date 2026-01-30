@@ -1,0 +1,30 @@
+{
+  "stats": {
+    "totalRevenue": 245789,
+    "activeUsers": 1234,
+    "pendingOrders": 45,
+    "completionRate": 92.5
+  },
+  "monthlyData": [
+    { "month": "Jan", "revenue": 18500, "expenses": 12000, "profit": 6500 },
+    { "month": "Feb", "revenue": 22000, "expenses": 14500, "profit": 7500 },
+    { "month": "Mar", "revenue": 28000, "expenses": 16000, "profit": 12000 },
+    { "month": "Apr", "revenue": 25000, "expenses": 15000, "profit": 10000 },
+    { "month": "May", "revenue": 32000, "expenses": 18000, "profit": 14000 },
+    { "month": "Jun", "revenue": 35000, "expenses": 19000, "profit": 16000 }
+  ],
+  "moduleStats": [
+    { "name": "Finance", "value": 35, "color": "#22c55e" },
+    { "name": "IT", "value": 25, "color": "#3b82f6" },
+    { "name": "HR", "value": 20, "color": "#a855f7" },
+    { "name": "Exsim", "value": 12, "color": "#f97316" },
+    { "name": "CI", "value": 8, "color": "#06b6d4" }
+  ],
+  "recentActivities": [
+    { "id": 1, "action": "Created new UOM", "module": "Finance", "user": "Admin", "time": "2 minutes ago" },
+    { "id": 2, "action": "Updated parameter", "module": "Finance", "user": "John", "time": "15 minutes ago" },
+    { "id": 3, "action": "New employee added", "module": "HR", "user": "Sarah", "time": "1 hour ago" },
+    { "id": 4, "action": "Export completed", "module": "Exsim", "user": "Mike", "time": "2 hours ago" },
+    { "id": 5, "action": "Ticket resolved", "module": "IT", "user": "Admin", "time": "3 hours ago" }
+  ]
+}

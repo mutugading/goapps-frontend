@@ -1,0 +1,115 @@
+{
+    "uoms": [
+        {
+            "id": "1",
+            "code": "KG",
+            "name": "Kilogram",
+            "description": "Unit of mass",
+            "category": "Weight",
+            "status": "active"
+        },
+        {
+            "id": "2",
+            "code": "LB",
+            "name": "Pound",
+            "description": "Unit of mass (imperial)",
+            "category": "Weight",
+            "status": "active"
+        },
+        {
+            "id": "3",
+            "code": "M",
+            "name": "Meter",
+            "description": "Unit of length",
+            "category": "Length",
+            "status": "active"
+        },
+        {
+            "id": "4",
+            "code": "FT",
+            "name": "Feet",
+            "description": "Unit of length (imperial)",
+            "category": "Length",
+            "status": "active"
+        },
+        {
+            "id": "5",
+            "code": "L",
+            "name": "Liter",
+            "description": "Unit of volume",
+            "category": "Volume",
+            "status": "active"
+        },
+        {
+            "id": "6",
+            "code": "GAL",
+            "name": "Gallon",
+            "description": "Unit of volume (imperial)",
+            "category": "Volume",
+            "status": "active"
+        },
+        {
+            "id": "7",
+            "code": "PCS",
+            "name": "Pieces",
+            "description": "Count unit",
+            "category": "Quantity",
+            "status": "active"
+        },
+        {
+            "id": "8",
+            "code": "BOX",
+            "name": "Box",
+            "description": "Packaging unit",
+            "category": "Quantity",
+            "status": "active"
+        }
+    ],
+    "parameters": [
+        {
+            "id": "1",
+            "code": "CONV_KG_LB",
+            "name": "KG to LB Conversion",
+            "value": "2.20462",
+            "dataType": "decimal",
+            "category": "Conversion",
+            "status": "active"
+        },
+        {
+            "id": "2",
+            "code": "CONV_M_FT",
+            "name": "Meter to Feet Conversion",
+            "value": "3.28084",
+            "dataType": "decimal",
+            "category": "Conversion",
+            "status": "active"
+        },
+        {
+            "id": "3",
+            "code": "TAX_RATE",
+            "name": "Default Tax Rate",
+            "value": "0.10",
+            "dataType": "decimal",
+            "category": "Finance",
+            "status": "active"
+        },
+        {
+            "id": "4",
+            "code": "CURRENCY",
+            "name": "Base Currency",
+            "value": "USD",
+            "dataType": "string",
+            "category": "Finance",
+            "status": "active"
+        },
+        {
+            "id": "5",
+            "code": "MAX_ORDERS",
+            "name": "Max Orders Per Day",
+            "value": "1000",
+            "dataType": "integer",
+            "category": "Limits",
+            "status": "active"
+        }
+    ]
+}

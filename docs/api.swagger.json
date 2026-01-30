@@ -1,0 +1,930 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "costing/v1/common.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "HealthService"
+    },
+    {
+      "name": "ParameterService"
+    },
+    {
+      "name": "UOMService"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/health/live": {
+      "get": {
+        "summary": "Liveness Check",
+        "description": "Check if the service is alive and running",
+        "operationId": "HealthService_Liveness",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1LivenessResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "Health"
+        ]
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "summary": "Readiness Check",
+        "description": "Check if the service is ready to receive traffic",
+        "operationId": "HealthService_Readiness",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ReadinessResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "Health"
+        ]
+      }
+    },
+    "/v1/parameters": {
+      "get": {
+        "summary": "ListParameters retrieves a paginated list of Parameters",
+        "operationId": "ParameterService_ListParameters",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListParametersResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "category",
+            "description": " - PARAMETER_CATEGORY_MACHINE: Machine-related parameters\n - PARAMETER_CATEGORY_MATERIAL: Material-related parameters\n - PARAMETER_CATEGORY_QUALITY: Quality-related parameters\n - PARAMETER_CATEGORY_OUTPUT: Output/production parameters\n - PARAMETER_CATEGORY_PROCESS: Process-related parameters",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "PARAMETER_CATEGORY_UNSPECIFIED",
+              "PARAMETER_CATEGORY_MACHINE",
+              "PARAMETER_CATEGORY_MATERIAL",
+              "PARAMETER_CATEGORY_QUALITY",
+              "PARAMETER_CATEGORY_OUTPUT",
+              "PARAMETER_CATEGORY_PROCESS"
+            ],
+            "default": "PARAMETER_CATEGORY_UNSPECIFIED"
+          },
+          {
+            "name": "isActive",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "tags": [
+          "ParameterService"
+        ]
+      },
+      "post": {
+        "summary": "CreateParameter creates a new Parameter",
+        "operationId": "ParameterService_CreateParameter",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1CreateParameterResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1CreateParameterRequest"
+            }
+          }
+        ],
+        "tags": [
+          "ParameterService"
+        ]
+      }
+    },
+    "/v1/parameters/{parameterCode}": {
+      "get": {
+        "summary": "GetParameter retrieves a Parameter by code",
+        "operationId": "ParameterService_GetParameter",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GetParameterResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "parameterCode",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "ParameterService"
+        ]
+      },
+      "delete": {
+        "summary": "DeleteParameter deletes a Parameter by code",
+        "operationId": "ParameterService_DeleteParameter",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1DeleteParameterResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "parameterCode",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "ParameterService"
+        ]
+      },
+      "put": {
+        "summary": "UpdateParameter updates an existing Parameter",
+        "operationId": "ParameterService_UpdateParameter",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1UpdateParameterResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "parameterCode",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ParameterServiceUpdateParameterBody"
+            }
+          }
+        ],
+        "tags": [
+          "ParameterService"
+        ]
+      }
+    },
+    "/v1/uoms": {
+      "get": {
+        "summary": "ListUOMs retrieves a paginated list of Units of Measure",
+        "operationId": "UOMService_ListUOMs",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListUOMsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "category",
+            "description": " - UOM_CATEGORY_WEIGHT: KG, G, TON\n - UOM_CATEGORY_VOLUME: L, ML, M3\n - UOM_CATEGORY_QUANTITY: PCS, BOX, ROLL\n - UOM_CATEGORY_LENGTH: M, CM, MM",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "UOM_CATEGORY_UNSPECIFIED",
+              "UOM_CATEGORY_WEIGHT",
+              "UOM_CATEGORY_VOLUME",
+              "UOM_CATEGORY_QUANTITY",
+              "UOM_CATEGORY_LENGTH"
+            ],
+            "default": "UOM_CATEGORY_UNSPECIFIED"
+          }
+        ],
+        "tags": [
+          "UOMService"
+        ]
+      },
+      "post": {
+        "summary": "CreateUOM creates a new Unit of Measure",
+        "operationId": "UOMService_CreateUOM",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1CreateUOMResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1CreateUOMRequest"
+            }
+          }
+        ],
+        "tags": [
+          "UOMService"
+        ]
+      }
+    },
+    "/v1/uoms/{uomCode}": {
+      "get": {
+        "summary": "GetUOM retrieves a Unit of Measure by code",
+        "operationId": "UOMService_GetUOM",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GetUOMResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "uomCode",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "UOMService"
+        ]
+      },
+      "delete": {
+        "summary": "DeleteUOM deletes a Unit of Measure by code",
+        "operationId": "UOMService_DeleteUOM",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1DeleteUOMResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "uomCode",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "UOMService"
+        ]
+      },
+      "put": {
+        "summary": "UpdateUOM updates an existing Unit of Measure",
+        "operationId": "UOMService_UpdateUOM",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1UpdateUOMResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "uomCode",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/UOMServiceUpdateUOMBody"
+            }
+          }
+        ],
+        "tags": [
+          "UOMService"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "ParameterServiceUpdateParameterBody": {
+      "type": "object",
+      "properties": {
+        "parameterName": {
+          "type": "string"
+        },
+        "parameterCategory": {
+          "$ref": "#/definitions/v1ParameterCategory"
+        },
+        "dataType": {
+          "$ref": "#/definitions/v1ParameterDataType"
+        },
+        "uom": {
+          "type": "string"
+        },
+        "minValue": {
+          "type": "number",
+          "format": "double"
+        },
+        "maxValue": {
+          "type": "number",
+          "format": "double"
+        },
+        "allowedValues": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "isMandatory": {
+          "type": "boolean"
+        },
+        "description": {
+          "type": "string"
+        },
+        "isActive": {
+          "type": "boolean"
+        }
+      },
+      "title": "UpdateParameter"
+    },
+    "UOMServiceUpdateUOMBody": {
+      "type": "object",
+      "properties": {
+        "uomName": {
+          "type": "string"
+        },
+        "uomCategory": {
+          "$ref": "#/definitions/v1UOMCategory"
+        },
+        "isBaseUom": {
+          "type": "boolean"
+        }
+      },
+      "title": "UpdateUOM"
+    },
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "v1AuditInfo": {
+      "type": "object",
+      "properties": {
+        "createdAt": {
+          "type": "string"
+        },
+        "createdBy": {
+          "type": "string"
+        },
+        "updatedAt": {
+          "type": "string"
+        },
+        "updatedBy": {
+          "type": "string"
+        }
+      },
+      "title": "Timestamp fields for audit"
+    },
+    "v1BaseResponse": {
+      "type": "object",
+      "properties": {
+        "validationErrors": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1ValidationError"
+          }
+        },
+        "statusCode": {
+          "type": "string"
+        },
+        "isSuccess": {
+          "type": "boolean"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "title": "BaseResponse is included in all API responses for consistent structure"
+    },
+    "v1ComponentHealth": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "title": "\"UP\" or \"DOWN\""
+        },
+        "message": {
+          "type": "string",
+          "title": "Error message if DOWN"
+        }
+      }
+    },
+    "v1CreateParameterRequest": {
+      "type": "object",
+      "properties": {
+        "parameterCode": {
+          "type": "string"
+        },
+        "parameterName": {
+          "type": "string"
+        },
+        "parameterCategory": {
+          "$ref": "#/definitions/v1ParameterCategory"
+        },
+        "dataType": {
+          "$ref": "#/definitions/v1ParameterDataType"
+        },
+        "uom": {
+          "type": "string"
+        },
+        "minValue": {
+          "type": "number",
+          "format": "double"
+        },
+        "maxValue": {
+          "type": "number",
+          "format": "double"
+        },
+        "allowedValues": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "isMandatory": {
+          "type": "boolean"
+        },
+        "description": {
+          "type": "string"
+        },
+        "isActive": {
+          "type": "boolean"
+        }
+      },
+      "title": "CreateParameter"
+    },
+    "v1CreateParameterResponse": {
+      "type": "object",
+      "properties": {
+        "base": {
+          "$ref": "#/definitions/v1BaseResponse"
+        },
+        "data": {
+          "$ref": "#/definitions/v1Parameter"
+        }
+      }
+    },
+    "v1CreateUOMRequest": {
+      "type": "object",
+      "properties": {
+        "uomCode": {
+          "type": "string"
+        },
+        "uomName": {
+          "type": "string"
+        },
+        "uomCategory": {
+          "$ref": "#/definitions/v1UOMCategory"
+        },
+        "isBaseUom": {
+          "type": "boolean"
+        }
+      },
+      "title": "CreateUOM"
+    },
+    "v1CreateUOMResponse": {
+      "type": "object",
+      "properties": {
+        "base": {
+          "$ref": "#/definitions/v1BaseResponse"
+        },
+        "data": {
+          "$ref": "#/definitions/v1UOM"
+        }
+      }
+    },
+    "v1DeleteParameterResponse": {
+      "type": "object",
+      "properties": {
+        "base": {
+          "$ref": "#/definitions/v1BaseResponse"
+        }
+      }
+    },
+    "v1DeleteUOMResponse": {
+      "type": "object",
+      "properties": {
+        "base": {
+          "$ref": "#/definitions/v1BaseResponse"
+        }
+      }
+    },
+    "v1GetParameterResponse": {
+      "type": "object",
+      "properties": {
+        "base": {
+          "$ref": "#/definitions/v1BaseResponse"
+        },
+        "data": {
+          "$ref": "#/definitions/v1Parameter"
+        }
+      }
+    },
+    "v1GetUOMResponse": {
+      "type": "object",
+      "properties": {
+        "base": {
+          "$ref": "#/definitions/v1BaseResponse"
+        },
+        "data": {
+          "$ref": "#/definitions/v1UOM"
+        }
+      }
+    },
+    "v1ListParametersResponse": {
+      "type": "object",
+      "properties": {
+        "base": {
+          "$ref": "#/definitions/v1BaseResponse"
+        },
+        "data": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1Parameter"
+          }
+        },
+        "pagination": {
+          "$ref": "#/definitions/v1PaginationMeta"
+        }
+      }
+    },
+    "v1ListUOMsResponse": {
+      "type": "object",
+      "properties": {
+        "base": {
+          "$ref": "#/definitions/v1BaseResponse"
+        },
+        "data": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1UOM"
+          }
+        },
+        "pagination": {
+          "$ref": "#/definitions/v1PaginationMeta"
+        }
+      }
+    },
+    "v1LivenessResponse": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "title": "\"OK\" or \"FAIL\""
+        }
+      }
+    },
+    "v1PaginationMeta": {
+      "type": "object",
+      "properties": {
+        "currentPage": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "pageSize": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "totalItems": {
+          "type": "string",
+          "format": "int64"
+        },
+        "totalPages": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "title": "PaginationMeta contains pagination information for list responses"
+    },
+    "v1Parameter": {
+      "type": "object",
+      "properties": {
+        "parameterCode": {
+          "type": "string"
+        },
+        "parameterName": {
+          "type": "string"
+        },
+        "parameterCategory": {
+          "$ref": "#/definitions/v1ParameterCategory"
+        },
+        "dataType": {
+          "$ref": "#/definitions/v1ParameterDataType"
+        },
+        "uom": {
+          "type": "string"
+        },
+        "minValue": {
+          "type": "number",
+          "format": "double"
+        },
+        "maxValue": {
+          "type": "number",
+          "format": "double"
+        },
+        "allowedValues": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "For DROPDOWN type"
+        },
+        "isMandatory": {
+          "type": "boolean"
+        },
+        "description": {
+          "type": "string"
+        },
+        "isActive": {
+          "type": "boolean"
+        },
+        "audit": {
+          "$ref": "#/definitions/v1AuditInfo"
+        }
+      },
+      "title": "Parameter represents a configuration parameter entity"
+    },
+    "v1ParameterCategory": {
+      "type": "string",
+      "enum": [
+        "PARAMETER_CATEGORY_UNSPECIFIED",
+        "PARAMETER_CATEGORY_MACHINE",
+        "PARAMETER_CATEGORY_MATERIAL",
+        "PARAMETER_CATEGORY_QUALITY",
+        "PARAMETER_CATEGORY_OUTPUT",
+        "PARAMETER_CATEGORY_PROCESS"
+      ],
+      "default": "PARAMETER_CATEGORY_UNSPECIFIED",
+      "description": "- PARAMETER_CATEGORY_MACHINE: Machine-related parameters\n - PARAMETER_CATEGORY_MATERIAL: Material-related parameters\n - PARAMETER_CATEGORY_QUALITY: Quality-related parameters\n - PARAMETER_CATEGORY_OUTPUT: Output/production parameters\n - PARAMETER_CATEGORY_PROCESS: Process-related parameters",
+      "title": "ParameterCategory represents the type of parameter"
+    },
+    "v1ParameterDataType": {
+      "type": "string",
+      "enum": [
+        "PARAMETER_DATA_TYPE_UNSPECIFIED",
+        "PARAMETER_DATA_TYPE_NUMERIC",
+        "PARAMETER_DATA_TYPE_TEXT",
+        "PARAMETER_DATA_TYPE_BOOLEAN",
+        "PARAMETER_DATA_TYPE_DROPDOWN"
+      ],
+      "default": "PARAMETER_DATA_TYPE_UNSPECIFIED",
+      "title": "ParameterDataType represents the data type of parameter value"
+    },
+    "v1ReadinessResponse": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "title": "\"READY\" or \"NOT_READY\""
+        },
+        "components": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/v1ComponentHealth"
+          }
+        }
+      }
+    },
+    "v1UOM": {
+      "type": "object",
+      "properties": {
+        "uomCode": {
+          "type": "string"
+        },
+        "uomName": {
+          "type": "string"
+        },
+        "uomCategory": {
+          "$ref": "#/definitions/v1UOMCategory"
+        },
+        "isBaseUom": {
+          "type": "boolean"
+        },
+        "audit": {
+          "$ref": "#/definitions/v1AuditInfo"
+        }
+      },
+      "title": "UOM represents a Unit of Measure entity"
+    },
+    "v1UOMCategory": {
+      "type": "string",
+      "enum": [
+        "UOM_CATEGORY_UNSPECIFIED",
+        "UOM_CATEGORY_WEIGHT",
+        "UOM_CATEGORY_VOLUME",
+        "UOM_CATEGORY_QUANTITY",
+        "UOM_CATEGORY_LENGTH"
+      ],
+      "default": "UOM_CATEGORY_UNSPECIFIED",
+      "description": "- UOM_CATEGORY_WEIGHT: KG, G, TON\n - UOM_CATEGORY_VOLUME: L, ML, M3\n - UOM_CATEGORY_QUANTITY: PCS, BOX, ROLL\n - UOM_CATEGORY_LENGTH: M, CM, MM",
+      "title": "UOMCategory represents the type/category of UOM"
+    },
+    "v1UpdateParameterResponse": {
+      "type": "object",
+      "properties": {
+        "base": {
+          "$ref": "#/definitions/v1BaseResponse"
+        },
+        "data": {
+          "$ref": "#/definitions/v1Parameter"
+        }
+      }
+    },
+    "v1UpdateUOMResponse": {
+      "type": "object",
+      "properties": {
+        "base": {
+          "$ref": "#/definitions/v1BaseResponse"
+        },
+        "data": {
+          "$ref": "#/definitions/v1UOM"
+        }
+      }
+    },
+    "v1ValidationError": {
+      "type": "object",
+      "properties": {
+        "field": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "title": "ValidationError represents a single field validation error"
+    }
+  }
+}
