@@ -3,7 +3,7 @@
 import * as React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { ChevronRight, type LucideIcon } from "lucide-react"
+import { ChevronRight } from "lucide-react"
 
 import {
     Sidebar,
@@ -26,7 +26,7 @@ import {
     CollapsibleContent,
     CollapsibleTrigger,
 } from "@/components/ui/collapsible"
-import { navigation, type NavItem, type NavGroup } from "@/config/navigation"
+import { navigation, type NavItem } from "@/config/navigation"
 import { siteConfig } from "@/config/site"
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
