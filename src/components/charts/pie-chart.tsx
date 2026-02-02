@@ -1,6 +1,6 @@
 "use client"
 
-import { Pie, PieChart as RechartsPieChart, Cell, ResponsiveContainer, Legend } from "recharts"
+import { Pie, PieChart as RechartsPieChart, Cell, Legend } from "recharts"
 import {
     ChartContainer,
     ChartTooltip,

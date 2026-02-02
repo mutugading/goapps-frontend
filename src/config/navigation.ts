@@ -6,8 +6,6 @@ import {
     Users,
     Ship,
     TrendingUp,
-    Ruler,
-    Calculator,
     type LucideIcon,
 } from "lucide-react"
 
