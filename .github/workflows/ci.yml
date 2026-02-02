@@ -92,3 +92,17 @@ jobs:
         run: |
           echo "Frontend staging deployment triggered"
           echo "Image: ghcr.io/mutugading/goapps-frontend:${{ github.sha }}"
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: [self-hosted, production, goapps-runner]
+    needs: deploy-staging
+    environment:
+      name: production
+      url: https://goapps.mutugading.com
+    steps:
+      - name: Deploy via ArgoCD
+        run: |
+          echo "Frontend production deployment triggered"
+          echo "Image: ghcr.io/mutugading/goapps-frontend:${{ github.sha }}"
+
