@@ -1,0 +1,6 @@
+# Mark generated proto files as generated
+# This makes GitHub collapse diffs and prevents accidental edits review
+src/types/generated/** linguist-generated=true
+
+# Treat as binary to discourage editing in git diff
+src/types/generated/**/*.ts -diff

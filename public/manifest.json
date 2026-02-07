@@ -1,0 +1,16 @@
+{
+  "name": "Go Apps - Enterprise Dashboard",
+  "short_name": "Go Apps",
+  "description": "Enterprise Dashboard for Go Microservices",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#000000",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "150x150",
+      "type": "image/png"
+    }
+  ]
+}

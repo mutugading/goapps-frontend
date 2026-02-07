@@ -1,0 +1,16 @@
+{
+  // Mark generated proto files as read-only in VS Code
+  "files.readonlyInclude": {
+    "src/types/generated/**": true
+  },
+  // Exclude from search to avoid noise
+  "search.exclude": {
+    "src/types/generated/**": true
+  },
+  // Show in different color in explorer
+  "workbench.colorCustomizations": {
+    "[*]": {
+      "gitDecoration.ignoredResourceForeground": "#888888"
+    }
+  }
+}

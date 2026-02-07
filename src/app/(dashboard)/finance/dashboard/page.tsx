@@ -1,4 +1,7 @@
+import { generateMetadata as genMeta } from "@/config/site"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+
+export const metadata = genMeta("Finance Dashboard")
 import { Button } from "@/components/ui/button"
 import { PageHeader } from "@/components/common/page-header"
 import { BarChart } from "@/components/charts/bar-chart"
@@ -28,7 +31,7 @@ export default function FinanceDashboardPage() {
                 subtitle="Overview of finance module metrics and costing data"
             >
                 <Button asChild>
-                    <Link href="/finance/costing/uom">
+                    <Link href="/finance/master/uom">
                         <Plus className="mr-2 h-4 w-4" />
                         New UOM
                     </Link>
@@ -67,7 +70,7 @@ export default function FinanceDashboardPage() {
                     <CardContent>
                         <div className="text-2xl font-bold">45</div>
                         <Button variant="link" className="px-0 h-auto" asChild>
-                            <Link href="/finance/costing/uom">View all →</Link>
+                            <Link href="/finance/master/uom">View all →</Link>
                         </Button>
                     </CardContent>
                 </Card>
@@ -80,7 +83,7 @@ export default function FinanceDashboardPage() {
                     <CardContent>
                         <div className="text-2xl font-bold">128</div>
                         <Button variant="link" className="px-0 h-auto" asChild>
-                            <Link href="/finance/costing/parameters">View all →</Link>
+                            <Link href="/finance/master/parameters">View all →</Link>
                         </Button>
                     </CardContent>
                 </Card>
@@ -114,10 +117,10 @@ export default function FinanceDashboardPage() {
                     </CardHeader>
                     <CardContent className="flex gap-2 flex-wrap">
                         <Button variant="outline" asChild>
-                            <Link href="/finance/costing/uom">Manage UOMs</Link>
+                            <Link href="/finance/master/uom">Manage UOMs</Link>
                         </Button>
                         <Button variant="outline" asChild>
-                            <Link href="/finance/costing/parameters">Manage Parameters</Link>
+                            <Link href="/finance/master/parameters">Manage Parameters</Link>
                         </Button>
                         <Button variant="outline">Generate Report</Button>
                     </CardContent>

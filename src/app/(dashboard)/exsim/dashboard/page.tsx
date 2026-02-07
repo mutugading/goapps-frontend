@@ -1,6 +1,9 @@
+import { generateMetadata as genMeta } from "@/config/site"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { PageHeader } from "@/components/common/page-header"
 import { Construction } from "lucide-react"
+
+export const metadata = genMeta("Export Import")
 
 export default function ExsimDashboardPage() {
     return (
