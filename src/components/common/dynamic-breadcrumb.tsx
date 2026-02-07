@@ -7,9 +7,9 @@ import {
     Breadcrumb,
     BreadcrumbEllipsis,
     BreadcrumbItem,
-    BreadcrumbLink,
     BreadcrumbList,
     BreadcrumbPage,
+    BreadcrumbLink,
     BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import { Button } from "@/components/ui/button"
@@ -20,6 +20,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { buildBreadcrumbTrail, breadcrumbConfig } from "@/config/navigation"
 
 export interface BreadcrumbItemType {
     label: string
@@ -31,49 +32,68 @@ interface DynamicBreadcrumbProps {
     maxVisibleItems?: number
 }
 
-// Generate breadcrumbs from URL path
+/**
+ * Generate breadcrumbs from URL path using breadcrumbConfig as fallback
+ */
 function generateBreadcrumbsFromPath(pathname: string): BreadcrumbItemType[] {
-    const segments = pathname.split("/").filter(Boolean)
-
-    if (segments.length === 0) {
-        return [{ label: "Home", href: "/" }]
+    // Try navigation-aware trail first
+    const navTrail = buildBreadcrumbTrail(pathname)
+    if (navTrail) {
+        return navTrail
     }
 
-    const breadcrumbs: BreadcrumbItemType[] = [{ label: "Home", href: "/" }]
+    // Fallback: build from URL segments using breadcrumbConfig
+    const segments = pathname.split("/").filter(Boolean)
+
+    if (segments.length === 0 || pathname === "/dashboard") {
+        return [{ label: "Home" }]
+    }
+
+    const breadcrumbs: BreadcrumbItemType[] = []
     let currentPath = ""
 
-    for (const segment of segments) {
-        currentPath += `/${segment}`
-        const label = segment
-            .split("-")
-            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-            .join(" ")
+    breadcrumbs.push({ label: "Home", href: "/dashboard" })
 
-        breadcrumbs.push({
-            label,
-            href: currentPath,
-        })
+    for (let i = 0; i < segments.length; i++) {
+        const segment = segments[i]
+        currentPath += `/${segment}`
+        const isLast = i === segments.length - 1
+
+        const config = breadcrumbConfig[currentPath]
+
+        if (config) {
+            breadcrumbs.push({
+                label: config.title,
+                href: isLast ? undefined : config.href,
+            })
+        } else {
+            const label = segment
+                .split("-")
+                .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(" ")
+
+            breadcrumbs.push({
+                label,
+                href: isLast ? undefined : currentPath,
+            })
+        }
     }
 
     return breadcrumbs
 }
 
-export function DynamicBreadcrumb({ items, maxVisibleItems = 3 }: DynamicBreadcrumbProps) {
+export function DynamicBreadcrumb({ items, maxVisibleItems = 4 }: DynamicBreadcrumbProps) {
     const pathname = usePathname()
 
-    // Use provided items or generate from path
     const breadcrumbs = items ?? generateBreadcrumbsFromPath(pathname)
 
     if (breadcrumbs.length === 0) {
         return null
     }
 
-    // If we have more items than maxVisibleItems, collapse the middle ones
-    // Pattern: First item > ... (dropdown) > Second-to-last > Last
     const shouldCollapse = breadcrumbs.length > maxVisibleItems
 
     if (!shouldCollapse) {
-        // Render all items normally
         return (
             <Breadcrumb>
                 <BreadcrumbList>
@@ -84,10 +104,12 @@ export function DynamicBreadcrumb({ items, maxVisibleItems = 3 }: DynamicBreadcr
                                 <BreadcrumbItem className={!isLast ? "hidden md:block" : undefined}>
                                     {isLast ? (
                                         <BreadcrumbPage>{item.label}</BreadcrumbPage>
-                                    ) : (
+                                    ) : item.href ? (
                                         <BreadcrumbLink asChild>
-                                            <Link href={item.href ?? "#"}>{item.label}</Link>
+                                            <Link href={item.href}>{item.label}</Link>
                                         </BreadcrumbLink>
+                                    ) : (
+                                        <span className="text-muted-foreground">{item.label}</span>
                                     )}
                                 </BreadcrumbItem>
                                 {!isLast && <BreadcrumbSeparator className="hidden md:block" />}
@@ -101,17 +123,21 @@ export function DynamicBreadcrumb({ items, maxVisibleItems = 3 }: DynamicBreadcr
 
     // Collapsed version: First > ... > Second-to-last > Last
     const firstItem = breadcrumbs[0]
-    const lastItems = breadcrumbs.slice(-2) // Last 2 items
-    const collapsedItems = breadcrumbs.slice(1, -2) // Middle items for dropdown
+    const lastItems = breadcrumbs.slice(-2)
+    const collapsedItems = breadcrumbs.slice(1, -2)
 
     return (
         <Breadcrumb>
             <BreadcrumbList>
                 {/* First item */}
                 <BreadcrumbItem>
-                    <BreadcrumbLink asChild>
-                        <Link href={firstItem.href ?? "#"}>{firstItem.label}</Link>
-                    </BreadcrumbLink>
+                    {firstItem.href ? (
+                        <BreadcrumbLink asChild>
+                            <Link href={firstItem.href}>{firstItem.label}</Link>
+                        </BreadcrumbLink>
+                    ) : (
+                        <span className="text-muted-foreground">{firstItem.label}</span>
+                    )}
                 </BreadcrumbItem>
                 <BreadcrumbSeparator />
 
@@ -127,8 +153,12 @@ export function DynamicBreadcrumb({ items, maxVisibleItems = 3 }: DynamicBreadcr
                         <DropdownMenuContent align="start">
                             <DropdownMenuGroup>
                                 {collapsedItems.map((item) => (
-                                    <DropdownMenuItem key={item.label} asChild>
-                                        <Link href={item.href ?? "#"}>{item.label}</Link>
+                                    <DropdownMenuItem key={item.label} asChild={!!item.href}>
+                                        {item.href ? (
+                                            <Link href={item.href}>{item.label}</Link>
+                                        ) : (
+                                            <span>{item.label}</span>
+                                        )}
                                     </DropdownMenuItem>
                                 ))}
                             </DropdownMenuGroup>
@@ -145,10 +175,12 @@ export function DynamicBreadcrumb({ items, maxVisibleItems = 3 }: DynamicBreadcr
                             <BreadcrumbItem>
                                 {isLast ? (
                                     <BreadcrumbPage>{item.label}</BreadcrumbPage>
-                                ) : (
+                                ) : item.href ? (
                                     <BreadcrumbLink asChild>
-                                        <Link href={item.href ?? "#"}>{item.label}</Link>
+                                        <Link href={item.href}>{item.label}</Link>
                                     </BreadcrumbLink>
+                                ) : (
+                                    <span className="text-muted-foreground">{item.label}</span>
                                 )}
                             </BreadcrumbItem>
                             {!isLast && <BreadcrumbSeparator />}

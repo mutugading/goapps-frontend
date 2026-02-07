@@ -10,16 +10,23 @@ import {
     SidebarHeader,
     SidebarRail,
 } from "@/components/ui/sidebar"
-import { navigation, userData } from "@/config/navigation"
+import { getVisibleNavigation, userData } from "@/config/navigation"
+import { usePermission } from "@/lib/hooks"
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+    const { permissions } = usePermission()
+    const visibleNavigation = React.useMemo(
+        () => getVisibleNavigation(permissions),
+        [permissions]
+    )
+
     return (
         <Sidebar collapsible="icon" {...props}>
             <SidebarHeader>
                 <SiteHeader />
             </SidebarHeader>
             <SidebarContent>
-                {navigation.map((group) => (
+                {visibleNavigation.map((group) => (
                     <NavMain
                         key={group.title}
                         items={group.items}

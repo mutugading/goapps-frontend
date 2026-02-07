@@ -1,4 +1,7 @@
+import { generateMetadata as genMeta } from "@/config/site"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+
+export const metadata = genMeta("Dashboard", true)
 import { Badge } from "@/components/ui/badge"
 import { PageHeader } from "@/components/common/page-header"
 import { AreaChart } from "@/components/charts/area-chart"
