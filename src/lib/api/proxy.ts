@@ -48,19 +48,27 @@ function getBackendUrl(config: ServiceConfig): string {
 
 /**
  * Forward authentication and cookie headers from the request
+ * Reads access token from cookies and forwards as Authorization header
  */
 function getForwardHeaders(request: NextRequest, contentType: string = "application/json"): HeadersInit {
   const headers: HeadersInit = {
     "Content-Type": contentType,
   }
 
-  // Forward authorization header
+  // First check if Authorization header already exists
   const authHeader = request.headers.get("authorization")
   if (authHeader) {
     headers["Authorization"] = authHeader
+  } else {
+    // Read access token from cookies and forward as Authorization header
+    // Cookie name must match AUTH_COOKIES.ACCESS_TOKEN from lib/auth/config.ts
+    const accessToken = request.cookies.get("goapps_access_token")?.value
+    if (accessToken) {
+      headers["Authorization"] = `Bearer ${accessToken}`
+    }
   }
 
-  // Forward cookies
+  // Forward cookies (for services that need session info)
   const cookies = request.headers.get("cookie")
   if (cookies) {
     headers["Cookie"] = cookies

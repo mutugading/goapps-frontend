@@ -3,6 +3,7 @@
 import { Toaster } from "sonner"
 import { ThemeProvider } from "./theme-provider"
 import { QueryProvider } from "./query-provider"
+import { AuthProvider } from "./auth-provider"
 import { PermissionProvider } from "./permission-provider"
 
 interface ProvidersProps {
@@ -18,11 +19,14 @@ export function Providers({ children }: ProvidersProps) {
                 enableSystem
                 disableTransitionOnChange
             >
-                <PermissionProvider>
-                    {children}
-                </PermissionProvider>
+                <AuthProvider>
+                    <PermissionProvider>
+                        {children}
+                    </PermissionProvider>
+                </AuthProvider>
                 <Toaster richColors position="top-right" />
             </ThemeProvider>
         </QueryProvider>
     )
 }
+
