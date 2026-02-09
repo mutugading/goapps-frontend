@@ -1,9 +1,15 @@
 "use client"
 
 import { createContext, useContext, useMemo } from "react"
+import { useAuth } from "./auth-provider"
 
-// Hardcoded permissions — will be replaced by IAM API later
-const DEFAULT_PERMISSIONS = new Set([
+// Default permissions for unauthenticated users (public pages only)
+const PUBLIC_PERMISSIONS = new Set([
+    "dashboard.view",
+])
+
+// Full permissions for development/fallback when IAM is unavailable
+const DEV_PERMISSIONS = new Set([
     "dashboard.view",
     "finance.view",
     "finance.dashboard.view",
@@ -25,8 +31,11 @@ const DEFAULT_PERMISSIONS = new Set([
 
 export interface PermissionContextValue {
     permissions: Set<string>
+    roles: string[]
     hasPermission: (code: string) => boolean
     hasAnyPermission: (...codes: string[]) => boolean
+    hasRole: (role: string) => boolean
+    hasAnyRole: (...roles: string[]) => boolean
 }
 
 const PermissionContext = createContext<PermissionContextValue | null>(null)
@@ -40,16 +49,47 @@ export function PermissionProvider({
     children,
     permissions: externalPermissions,
 }: PermissionProviderProps) {
-    const permissions = externalPermissions ?? DEFAULT_PERMISSIONS
+    const { user, isAuthenticated } = useAuth()
+
+    // Determine permissions from:
+    // 1. External prop (override)
+    // 2. User's permissions from IAM (authenticated)
+    // 3. Dev fallback permissions (authenticated but no IAM permissions)
+    // 4. Public permissions (unauthenticated)
+    const permissions = useMemo(() => {
+        if (externalPermissions) {
+            return externalPermissions
+        }
+
+        if (isAuthenticated && user) {
+            // Use permissions from IAM
+            if (user.permissions && user.permissions.length > 0) {
+                return new Set(user.permissions)
+            }
+            // Fallback to dev permissions if authenticated but no permissions from IAM
+            // This helps during development when IAM might not return permissions
+            return DEV_PERMISSIONS
+        }
+
+        return PUBLIC_PERMISSIONS
+    }, [externalPermissions, isAuthenticated, user])
+
+    const roles = useMemo(() => {
+        return user?.roles || []
+    }, [user])
 
     const value = useMemo<PermissionContextValue>(
         () => ({
             permissions,
+            roles,
             hasPermission: (code: string) => permissions.has(code),
             hasAnyPermission: (...codes: string[]) =>
                 codes.some((code) => permissions.has(code)),
+            hasRole: (role: string) => roles.includes(role),
+            hasAnyRole: (...roleList: string[]) =>
+                roleList.some((role) => roles.includes(role)),
         }),
-        [permissions]
+        [permissions, roles]
     )
 
     return (
@@ -68,3 +108,4 @@ export function usePermissionContext() {
     }
     return context
 }
+
