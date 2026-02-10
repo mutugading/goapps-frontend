@@ -1,11 +1,13 @@
-// Next.js Middleware for route protection
+// Next.js Proxy for route protection (Next.js 16+)
 // Protects authenticated routes and redirects accordingly
+// Note: In Next.js 16, middleware.ts was replaced with proxy.ts
 
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 import { AUTH_COOKIES, AUTH_ROUTES, PUBLIC_ROUTES } from "@/lib/auth/config"
 
-export function middleware(request: NextRequest) {
+// Default export is required for Next.js 16 proxy
+export default function proxy(request: NextRequest) {
     const { pathname } = request.nextUrl
 
     // Check if the request is for a public route
@@ -19,7 +21,7 @@ export function middleware(request: NextRequest) {
     const hasRefreshToken = request.cookies.has(AUTH_COOKIES.REFRESH_TOKEN)
     const isAuthenticated = hasAccessToken || hasRefreshToken
 
-    // Static files and API routes - skip middleware
+    // Static files and API routes - skip proxy
     if (
         pathname.startsWith("/_next/") ||
         pathname.startsWith("/static/") ||
@@ -53,15 +55,17 @@ export function middleware(request: NextRequest) {
     return NextResponse.next()
 }
 
+// Routes Proxy should not run on
 export const config = {
     matcher: [
         /*
          * Match all request paths except for:
+         * - api routes (handled separately)
          * - _next/static (static files)
          * - _next/image (image optimization files)
          * - favicon.ico (favicon file)
-         * - public files (public folder)
+         * - public files (.png, etc)
          */
-        "/((?!_next/static|_next/image|favicon.ico|public).*)",
+        "/((?!api|_next/static|_next/image|favicon.ico|.*\\.png$).*)",
     ],
 }

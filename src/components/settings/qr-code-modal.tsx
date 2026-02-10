@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
 import { Loader2, Copy, Check } from "lucide-react"
-import Image from "next/image"
+import { QRCodeSVG } from "qrcode.react"
 
 interface QRCodeModalProps {
     open: boolean
@@ -77,16 +77,15 @@ export function QRCodeModal({
                 </DialogHeader>
 
                 <div className="space-y-6 py-4">
-                    {/* QR Code */}
+                    {/* QR Code - Generated from otpauth:// URL */}
                     <div className="flex justify-center">
                         <div className="p-4 bg-white rounded-lg">
                             {qrCodeUrl ? (
-                                <Image
-                                    src={qrCodeUrl}
-                                    alt="2FA QR Code"
-                                    width={200}
-                                    height={200}
-                                    className="mx-auto"
+                                <QRCodeSVG
+                                    value={qrCodeUrl}
+                                    size={200}
+                                    level="M"
+                                    includeMargin={false}
                                 />
                             ) : (
                                 <div className="w-[200px] h-[200px] flex items-center justify-center bg-muted">

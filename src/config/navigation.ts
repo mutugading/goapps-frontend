@@ -76,14 +76,9 @@ export interface NavItem {
 }
 
 // =============================================================================
-// User Data (will be replaced by IAM service data)
+// User Data - Now fetched dynamically via useCurrentUser hook
+// See: src/hooks/iam/use-current-user.ts
 // =============================================================================
-
-export const userData = {
-  name: "John Doe",
-  email: "john.doe@company.com",
-  // avatar: undefined - uses initials fallback
-}
 
 // =============================================================================
 // Breadcrumb Configuration
@@ -134,6 +129,10 @@ export const breadcrumbConfig: Record<string, BreadcrumbConfig> = {
 
   // Settings
   "/settings": { title: "Settings", href: "/settings" },
+  "/settings/activity": { title: "Activity Log" },
+
+  // Profile
+  "/profile": { title: "Profile" },
 }
 
 // =============================================================================

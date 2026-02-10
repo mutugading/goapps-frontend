@@ -178,16 +178,46 @@ export function AuthProvider({ children, initialUser = null }: AuthProviderProps
         // Check if user is authenticated on mount
         const checkAuth = async () => {
             const user = await fetchCurrentUser()
+            if (user) {
+                setState({
+                    user,
+                    isAuthenticated: true,
+                    isLoading: false,
+                    error: null,
+                })
+                return
+            }
+
+            // Access token expired/invalid — try refreshing
+            const refreshed = await refreshSession()
+            if (refreshed) {
+                // Refresh succeeded, fetch user again
+                const refreshedUser = await fetchCurrentUser()
+                setState({
+                    user: refreshedUser,
+                    isAuthenticated: !!refreshedUser,
+                    isLoading: false,
+                    error: null,
+                })
+                if (!refreshedUser) {
+                    // Still can't get user after refresh — redirect to login
+                    router.push(AUTH_ROUTES.LOGIN)
+                }
+                return
+            }
+
+            // Both access token and refresh token are invalid/expired
             setState({
-                user,
-                isAuthenticated: !!user,
+                user: null,
+                isAuthenticated: false,
                 isLoading: false,
                 error: null,
             })
+            router.push(AUTH_ROUTES.LOGIN)
         }
 
         checkAuth()
-    }, [initialUser, fetchCurrentUser])
+    }, [initialUser, fetchCurrentUser, refreshSession, router])
 
     // Set up silent token refresh
     useEffect(() => {

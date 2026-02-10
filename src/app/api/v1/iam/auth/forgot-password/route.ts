@@ -1,48 +1,21 @@
 // POST /api/v1/iam/auth/forgot-password - Initiate password reset
-// Sends OTP to user's email
 
 import { NextRequest, NextResponse } from "next/server"
-import { SERVICES, getBackendUrl } from "@/lib/api/proxy"
-
-// Backend response type (snake_case from gRPC-gateway)
-interface BackendForgotPasswordResponse {
-    base: {
-        validation_errors: Array<{ field: string; message: string }>
-        status_code: string
-        is_success: boolean
-        message: string
-    }
-    message?: string
-    expires_in?: number
-}
+import { getAuthClient, isGrpcError, handleGrpcError } from "@/lib/grpc"
 
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json()
-        const backendUrl = getBackendUrl(SERVICES.IAM)
+        const client = getAuthClient()
+        const response = await client.forgotPassword({ email: body.email })
 
-        const response = await fetch(`${backendUrl}/api/v1/iam/auth/forgot-password`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify(body),
-        })
-
-        const data: BackendForgotPasswordResponse = await response.json()
-
-        // Convert snake_case to camelCase for frontend
         return NextResponse.json({
-            base: {
-                isSuccess: data.base?.is_success ?? false,
-                statusCode: data.base?.status_code || String(response.status),
-                message: data.base?.message || "",
-                validationErrors: data.base?.validation_errors || [],
-            },
-            message: data.message,
-            expiresIn: data.expires_in,
-        }, { status: response.status })
+            base: response.base,
+            message: response.message,
+            expiresIn: response.expiresIn,
+        })
     } catch (error) {
+        if (isGrpcError(error)) return handleGrpcError(error)
         console.error("Forgot password error:", error)
         return NextResponse.json(
             {
@@ -57,4 +30,3 @@ export async function POST(request: NextRequest) {
         )
     }
 }
-

@@ -4,11 +4,13 @@ import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { AlertCircle, ArrowLeft } from "lucide-react"
-import Link from "next/link"
+import { AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { PageHeader } from "@/components/common/page-header"
 import { AuditLogTable } from "@/components/audit/audit-log-table"
 import { AuditFilters, type AuditFilterValues } from "@/components/audit/audit-filters"
+import { useRouter } from "next/navigation"
+import { ArrowLeft } from "lucide-react"
 
 interface AuditLog {
     logId: string
@@ -46,6 +48,7 @@ export default function ActivityPage() {
         dateFrom: "",
         dateTo: "",
     })
+    const router = useRouter()
 
     const fetchLogs = async (newFilters: AuditFilterValues) => {
         try {
@@ -89,23 +92,18 @@ export default function ActivityPage() {
     }
 
     return (
-        <div className="container mx-auto py-8 px-4 max-w-6xl">
-            <div className="space-y-6">
-                {/* Header */}
-                <div className="flex items-center gap-4">
-                    <Link href="/settings">
-                        <Button variant="ghost" size="icon">
-                            <ArrowLeft className="h-4 w-4" />
-                        </Button>
-                    </Link>
-                    <div>
-                        <h1 className="text-3xl font-bold tracking-tight">Activity Log</h1>
-                        <p className="text-muted-foreground">
-                            View your recent account activity and login history
-                        </p>
-                    </div>
-                </div>
+        <div>
+            <PageHeader
+                title="Activity Log"
+                subtitle="View your recent account activity and login history"
+            >
+                <Button variant="outline" onClick={() => router.back()}>
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Back to Settings
+                </Button>
+            </PageHeader>
 
+            <div className="space-y-6">
                 {/* Filters */}
                 <Card>
                     <CardHeader>

@@ -1,7 +1,6 @@
 "use client"
 
-// Forgot Password page
-// Email input to initiate password reset
+// Forgot Password page with split-layout AuthCard
 
 import { useState } from "react"
 import Link from "next/link"
@@ -12,14 +11,7 @@ import { Mail, ArrowLeft, Loader2, CheckCircle2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardFooter,
-    CardHeader,
-    CardTitle,
-} from "@/components/ui/card"
+import { AuthCard, AuthHeader, AuthFooter } from "@/components/auth/auth-card"
 import { AUTH_API, AUTH_ROUTES } from "@/lib/auth/config"
 import { cn } from "@/lib/utils"
 
@@ -37,9 +29,7 @@ export default function ForgotPasswordPage() {
 
     const form = useForm<ForgotPasswordValues>({
         resolver: zodResolver(forgotPasswordSchema),
-        defaultValues: {
-            email: "",
-        },
+        defaultValues: { email: "" },
     })
 
     const handleSubmit = async (data: ForgotPasswordValues) => {
@@ -49,9 +39,7 @@ export default function ForgotPasswordPage() {
         try {
             const response = await fetch(AUTH_API.FORGOT_PASSWORD, {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(data),
             })
 
@@ -75,115 +63,81 @@ export default function ForgotPasswordPage() {
     // Success state
     if (isSuccess) {
         return (
-            <Card className="border-0 shadow-2xl shadow-primary/5">
-                <CardHeader className="space-y-1 text-center pb-8">
-                    <div className="mx-auto mb-4 h-14 w-14 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                        <CheckCircle2 className="h-7 w-7 text-green-600 dark:text-green-400" />
-                    </div>
-                    <CardTitle className="text-2xl font-bold tracking-tight">
-                        Check your email
-                    </CardTitle>
-                    <CardDescription className="text-base">
-                        We&apos;ve sent a verification code to
-                    </CardDescription>
-                    <p className="font-medium text-foreground">{email}</p>
-                </CardHeader>
+            <AuthCard>
+                <AuthHeader
+                    icon={<CheckCircle2 className="h-7 w-7 text-green-400" />}
+                    title="Check your email"
+                    description={`We've sent a verification code to ${email}`}
+                />
 
-                <CardContent className="text-center">
-                    <Link href={`${AUTH_ROUTES.VERIFY_OTP}?email=${encodeURIComponent(email)}`}>
-                        <Button className="w-full h-11">
-                            Enter Verification Code
-                        </Button>
-                    </Link>
-                </CardContent>
+                <Link href={`${AUTH_ROUTES.VERIFY_OTP}?email=${encodeURIComponent(email)}`}>
+                    <Button className="w-full h-11">Enter Verification Code</Button>
+                </Link>
 
-                <CardFooter className="flex justify-center pt-6">
+                <AuthFooter>
                     <button
                         type="button"
-                        onClick={() => {
-                            setIsSuccess(false)
-                            setEmail("")
-                        }}
-                        className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                        onClick={() => { setIsSuccess(false); setEmail("") }}
+                        className="text-muted-foreground hover:text-primary transition-colors"
                     >
                         Didn&apos;t receive the email? Try again
                     </button>
-                </CardFooter>
-            </Card>
+                </AuthFooter>
+            </AuthCard>
         )
     }
 
     return (
-        <Card className="border-0 shadow-2xl shadow-primary/5">
-            <CardHeader className="space-y-1 text-center pb-8">
-                <div className="mx-auto mb-4 h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center">
-                    <Mail className="h-7 w-7 text-primary" />
-                </div>
-                <CardTitle className="text-2xl font-bold tracking-tight">
-                    Forgot password?
-                </CardTitle>
-                <CardDescription className="text-base">
-                    Enter your email and we&apos;ll send you a verification code
-                </CardDescription>
-            </CardHeader>
+        <AuthCard>
+            <AuthHeader
+                icon={<Mail className="h-7 w-7 text-primary-foreground" />}
+                title="Forgot password?"
+                description="Enter your email and we'll send you a verification code"
+            />
 
-            <CardContent>
-                <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-5">
-                    <div className="space-y-2">
-                        <Label htmlFor="email" className="text-sm font-medium">
-                            Email Address
-                        </Label>
-                        <Input
-                            id="email"
-                            type="email"
-                            placeholder="Enter your email"
-                            autoComplete="email"
-                            disabled={isLoading}
-                            {...form.register("email")}
-                            className={cn(
-                                "h-11 transition-all duration-200",
-                                form.formState.errors.email && "border-destructive focus-visible:ring-destructive"
-                            )}
-                        />
-                        {form.formState.errors.email && (
-                            <p className="text-sm text-destructive animate-in fade-in-0 slide-in-from-top-1">
-                                {form.formState.errors.email.message}
-                            </p>
-                        )}
-                    </div>
-
-                    {error && (
-                        <div className="p-3 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg animate-in fade-in-0 slide-in-from-top-1">
-                            {error}
-                        </div>
-                    )}
-
-                    <Button
-                        type="submit"
+            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-5">
+                <div className="space-y-2">
+                    <Label htmlFor="email">Email Address</Label>
+                    <Input
+                        id="email"
+                        type="email"
+                        placeholder="Enter your email"
+                        autoComplete="email"
                         disabled={isLoading}
-                        className="w-full h-11 font-medium gap-2"
-                    >
-                        {isLoading ? (
-                            <>
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                                Sending...
-                            </>
-                        ) : (
-                            "Send Verification Code"
+                        {...form.register("email")}
+                        className={cn(
+                            "h-11",
+                            form.formState.errors.email && "border-destructive focus-visible:ring-destructive"
                         )}
-                    </Button>
-                </form>
-            </CardContent>
+                    />
+                    {form.formState.errors.email && (
+                        <p className="text-sm text-destructive">{form.formState.errors.email.message}</p>
+                    )}
+                </div>
 
-            <CardFooter className="flex justify-center pt-6">
+                {error && (
+                    <div className="p-3 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg">
+                        {error}
+                    </div>
+                )}
+
+                <Button type="submit" disabled={isLoading} className="w-full h-11 gap-2">
+                    {isLoading ? (
+                        <><Loader2 className="h-4 w-4 animate-spin" />Sending...</>
+                    ) : (
+                        "Send Verification Code"
+                    )}
+                </Button>
+            </form>
+
+            <AuthFooter>
                 <Link
                     href={AUTH_ROUTES.LOGIN}
-                    className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
+                    className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors"
                 >
-                    <ArrowLeft className="h-4 w-4" />
-                    Back to login
+                    <ArrowLeft className="h-4 w-4" />Back to login
                 </Link>
-            </CardFooter>
-        </Card>
+            </AuthFooter>
+        </AuthCard>
     )
 }

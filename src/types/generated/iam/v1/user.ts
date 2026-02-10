@@ -558,6 +558,27 @@ export interface Permission {
   actionType: string;
 }
 
+/** UploadProfilePictureRequest is the request for uploading a profile picture. */
+export interface UploadProfilePictureRequest {
+  /** User ID whose profile picture is being uploaded. */
+  userId: string;
+  /** Raw file data (binary). */
+  fileData: Uint8Array;
+  /** Original file name (e.g., "avatar.jpg"). */
+  fileName: string;
+  /** MIME content type (image/jpeg, image/png, image/webp). */
+  contentType: string;
+}
+
+/** UploadProfilePictureResponse is the response for profile picture upload. */
+export interface UploadProfilePictureResponse {
+  base:
+    | BaseResponse
+    | undefined;
+  /** The public URL of the uploaded profile picture. */
+  profilePictureUrl: string;
+}
+
 function createBaseUser(): User {
   return {
     userId: "",
@@ -5070,6 +5091,212 @@ export const Permission: MessageFns<Permission> = {
   },
 };
 
+function createBaseUploadProfilePictureRequest(): UploadProfilePictureRequest {
+  return { userId: "", fileData: new Uint8Array(0), fileName: "", contentType: "" };
+}
+
+export const UploadProfilePictureRequest: MessageFns<UploadProfilePictureRequest> = {
+  encode(message: UploadProfilePictureRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.userId !== "") {
+      writer.uint32(10).string(message.userId);
+    }
+    if (message.fileData.length !== 0) {
+      writer.uint32(18).bytes(message.fileData);
+    }
+    if (message.fileName !== "") {
+      writer.uint32(26).string(message.fileName);
+    }
+    if (message.contentType !== "") {
+      writer.uint32(34).string(message.contentType);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): UploadProfilePictureRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUploadProfilePictureRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.userId = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.fileData = reader.bytes();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.fileName = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.contentType = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UploadProfilePictureRequest {
+    return {
+      userId: isSet(object.userId)
+        ? globalThis.String(object.userId)
+        : isSet(object.user_id)
+        ? globalThis.String(object.user_id)
+        : "",
+      fileData: isSet(object.fileData)
+        ? bytesFromBase64(object.fileData)
+        : isSet(object.file_data)
+        ? bytesFromBase64(object.file_data)
+        : new Uint8Array(0),
+      fileName: isSet(object.fileName)
+        ? globalThis.String(object.fileName)
+        : isSet(object.file_name)
+        ? globalThis.String(object.file_name)
+        : "",
+      contentType: isSet(object.contentType)
+        ? globalThis.String(object.contentType)
+        : isSet(object.content_type)
+        ? globalThis.String(object.content_type)
+        : "",
+    };
+  },
+
+  toJSON(message: UploadProfilePictureRequest): unknown {
+    const obj: any = {};
+    if (message.userId !== "") {
+      obj.userId = message.userId;
+    }
+    if (message.fileData.length !== 0) {
+      obj.fileData = base64FromBytes(message.fileData);
+    }
+    if (message.fileName !== "") {
+      obj.fileName = message.fileName;
+    }
+    if (message.contentType !== "") {
+      obj.contentType = message.contentType;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<UploadProfilePictureRequest>): UploadProfilePictureRequest {
+    return UploadProfilePictureRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<UploadProfilePictureRequest>): UploadProfilePictureRequest {
+    const message = createBaseUploadProfilePictureRequest();
+    message.userId = object.userId ?? "";
+    message.fileData = object.fileData ?? new Uint8Array(0);
+    message.fileName = object.fileName ?? "";
+    message.contentType = object.contentType ?? "";
+    return message;
+  },
+};
+
+function createBaseUploadProfilePictureResponse(): UploadProfilePictureResponse {
+  return { base: undefined, profilePictureUrl: "" };
+}
+
+export const UploadProfilePictureResponse: MessageFns<UploadProfilePictureResponse> = {
+  encode(message: UploadProfilePictureResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    if (message.profilePictureUrl !== "") {
+      writer.uint32(18).string(message.profilePictureUrl);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): UploadProfilePictureResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUploadProfilePictureResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.profilePictureUrl = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UploadProfilePictureResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      profilePictureUrl: isSet(object.profilePictureUrl)
+        ? globalThis.String(object.profilePictureUrl)
+        : isSet(object.profile_picture_url)
+        ? globalThis.String(object.profile_picture_url)
+        : "",
+    };
+  },
+
+  toJSON(message: UploadProfilePictureResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.profilePictureUrl !== "") {
+      obj.profilePictureUrl = message.profilePictureUrl;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<UploadProfilePictureResponse>): UploadProfilePictureResponse {
+    return UploadProfilePictureResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<UploadProfilePictureResponse>): UploadProfilePictureResponse {
+    const message = createBaseUploadProfilePictureResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.profilePictureUrl = object.profilePictureUrl ?? "";
+    return message;
+  },
+};
+
 /** UserService provides CRUD operations for user/employee management. */
 export type UserServiceDefinition = typeof UserServiceDefinition;
 export const UserServiceDefinition = {
@@ -5808,6 +6035,65 @@ export const UserServiceDefinition = {
               101,
               115,
               115,
+            ]),
+          ],
+        },
+      },
+    },
+    /**
+     * UploadProfilePicture uploads or replaces a user's profile picture.
+     * Old picture is automatically deleted when a new one is uploaded.
+     */
+    uploadProfilePicture: {
+      name: "UploadProfilePicture",
+      requestType: UploadProfilePictureRequest,
+      requestStream: false,
+      responseType: UploadProfilePictureResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              39,
+              58,
+              1,
+              42,
+              34,
+              34,
+              47,
+              97,
+              112,
+              105,
+              47,
+              118,
+              49,
+              47,
+              105,
+              97,
+              109,
+              47,
+              117,
+              115,
+              101,
+              114,
+              115,
+              47,
+              123,
+              117,
+              115,
+              101,
+              114,
+              95,
+              105,
+              100,
+              125,
+              47,
+              97,
+              118,
+              97,
+              116,
+              97,
+              114,
             ]),
           ],
         },

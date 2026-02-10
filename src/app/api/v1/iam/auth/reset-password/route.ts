@@ -1,51 +1,21 @@
 // POST /api/v1/iam/auth/reset-password - Set new password
-// Uses reset token from OTP verification
 
 import { NextRequest, NextResponse } from "next/server"
-import { SERVICES, getBackendUrl } from "@/lib/api/proxy"
-
-// Backend response type (snake_case from gRPC-gateway)
-interface BackendResetPasswordResponse {
-    base: {
-        validation_errors: Array<{ field: string; message: string }>
-        status_code: string
-        is_success: boolean
-        message: string
-    }
-}
+import { getAuthClient, isGrpcError, handleGrpcError } from "@/lib/grpc"
 
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json()
-        const backendUrl = getBackendUrl(SERVICES.IAM)
-
-        // Convert frontend camelCase to backend snake_case
-        const backendBody = {
-            reset_token: body.resetToken,
-            new_password: body.newPassword,
-            confirm_password: body.confirmPassword,
-        }
-
-        const response = await fetch(`${backendUrl}/api/v1/iam/auth/reset-password`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify(backendBody),
+        const client = getAuthClient()
+        const response = await client.resetPassword({
+            resetToken: body.resetToken,
+            newPassword: body.newPassword,
+            confirmPassword: body.confirmPassword,
         })
 
-        const data: BackendResetPasswordResponse = await response.json()
-
-        // Convert snake_case to camelCase for frontend
-        return NextResponse.json({
-            base: {
-                isSuccess: data.base?.is_success ?? false,
-                statusCode: data.base?.status_code || String(response.status),
-                message: data.base?.message || "",
-                validationErrors: data.base?.validation_errors || [],
-            },
-        }, { status: response.status })
+        return NextResponse.json({ base: response.base })
     } catch (error) {
+        if (isGrpcError(error)) return handleGrpcError(error)
         console.error("Reset password error:", error)
         return NextResponse.json(
             {
@@ -60,4 +30,3 @@ export async function POST(request: NextRequest) {
         )
     }
 }
-

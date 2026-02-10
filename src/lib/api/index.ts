@@ -11,15 +11,3 @@ export {
   readFileAsBase64,
   readFileAsBytes,
 } from "./utils"
-
-// API Proxy exports (for Next.js API routes)
-export {
-  createProxyHandlers,
-  SERVICES,
-  getForwardHeaders,
-  createErrorResponse,
-  getBackendUrl,
-  type ServiceConfig,
-  type ProxyConfig,
-  type RouteContext,
-} from "./proxy"

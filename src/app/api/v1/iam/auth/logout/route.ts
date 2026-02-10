@@ -3,21 +3,19 @@
 
 import { NextRequest, NextResponse } from "next/server"
 import { clearAuthCookies, getRefreshToken } from "@/lib/auth/cookies"
-import { SERVICES, getBackendUrl, getForwardHeaders } from "@/lib/api/proxy"
+import { getAuthClient, createAuthMetadata } from "@/lib/grpc"
 
 export async function POST(request: NextRequest) {
     try {
-        const backendUrl = getBackendUrl(SERVICES.IAM)
         const refreshToken = await getRefreshToken()
 
         // Call backend logout to invalidate session
         if (refreshToken) {
             try {
-                await fetch(`${backendUrl}/api/v1/iam/auth/logout`, {
-                    method: "POST",
-                    headers: getForwardHeaders(request),
-                    body: JSON.stringify({ refreshToken }),
-                })
+                const accessToken = request.cookies.get("goapps_access_token")?.value
+                const metadata = accessToken ? createAuthMetadata(accessToken) : undefined
+                const client = getAuthClient()
+                await client.logout({ refreshToken }, metadata)
             } catch {
                 // Continue with cookie cleanup even if backend call fails
                 console.warn("Backend logout failed, continuing with cookie cleanup")

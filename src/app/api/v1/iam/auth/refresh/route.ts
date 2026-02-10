@@ -1,27 +1,11 @@
 // POST /api/v1/iam/auth/refresh - Token refresh endpoint
 // Refreshes tokens using refresh token from httpOnly cookie
 
-import { NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 import { setAuthCookies, getRefreshToken, clearAuthCookies } from "@/lib/auth/cookies"
-import { SERVICES, getBackendUrl } from "@/lib/api/proxy"
+import { getAuthClient, isGrpcError, handleGrpcError } from "@/lib/grpc"
 
-// Backend response type (snake_case from gRPC-gateway)
-interface BackendRefreshResponse {
-    base: {
-        validation_errors: Array<{ field: string; message: string }>
-        status_code: string
-        is_success: boolean
-        message: string
-    }
-    data?: {
-        access_token: string
-        refresh_token: string
-        expires_in: string | number
-        token_type: string
-    }
-}
-
-export async function POST(request: NextRequest) {
+export async function POST() {
     try {
         const refreshToken = await getRefreshToken()
 
@@ -39,54 +23,22 @@ export async function POST(request: NextRequest) {
             )
         }
 
-        const backendUrl = getBackendUrl(SERVICES.IAM)
-
-        // Call backend to refresh tokens (use snake_case)
-        const response = await fetch(`${backendUrl}/api/v1/iam/auth/refresh`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ refresh_token: refreshToken }),
-        })
-
-        const data: BackendRefreshResponse = await response.json()
-
-        // If refresh failed, clear cookies and return error
-        if (!response.ok || !data.base?.is_success) {
-            await clearAuthCookies()
-            return NextResponse.json({
-                base: {
-                    isSuccess: false,
-                    statusCode: data.base?.status_code || String(response.status),
-                    message: data.base?.message || "Token refresh failed",
-                    validationErrors: data.base?.validation_errors || [],
-                },
-            }, { status: response.status })
-        }
+        const client = getAuthClient()
+        const response = await client.refreshToken({ refreshToken })
 
         // Set new tokens in cookies
-        if (data.data?.access_token && data.data?.refresh_token) {
-            const expiresIn = typeof data.data.expires_in === "string"
-                ? parseInt(data.data.expires_in, 10)
-                : data.data.expires_in
-
+        if (response.data?.accessToken && response.data?.refreshToken) {
             await setAuthCookies({
-                accessToken: data.data.access_token,
-                refreshToken: data.data.refresh_token,
-                expiresIn,
+                accessToken: response.data.accessToken,
+                refreshToken: response.data.refreshToken,
+                expiresIn: response.data.expiresIn,
             })
         }
 
         return NextResponse.json({
-            base: {
-                isSuccess: true,
-                statusCode: "200",
-                message: data.base.message,
-                validationErrors: [],
-            },
+            base: response.base,
             data: {
-                expiresIn: data.data?.expires_in,
+                expiresIn: response.data?.expiresIn,
             },
         })
     } catch (error) {
@@ -98,6 +50,7 @@ export async function POST(request: NextRequest) {
             // Ignore cleanup errors
         }
 
+        if (isGrpcError(error)) return handleGrpcError(error)
         return NextResponse.json(
             {
                 base: {
@@ -111,4 +64,3 @@ export async function POST(request: NextRequest) {
         )
     }
 }
-
