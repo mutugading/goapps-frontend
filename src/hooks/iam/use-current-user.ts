@@ -5,7 +5,7 @@
 
 import { useQuery } from "@tanstack/react-query"
 import { apiClient } from "@/lib/api"
-import { AuthUser, GetCurrentUserResponse } from "@/types/generated/iam/v1/auth"
+import { AuthUser } from "@/types/generated/iam/v1/auth"
 import { useUserProfile } from "./use-user-profile"
 
 // Query keys for current user

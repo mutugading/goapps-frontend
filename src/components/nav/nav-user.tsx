@@ -45,13 +45,14 @@ export interface NavUserProps {
 
 export function NavUser({ user }: NavUserProps) {
     const { isMobile } = useSidebar()
-    const { setTheme, theme, resolvedTheme } = useTheme()
+    const { setTheme, resolvedTheme } = useTheme()
     const { logout } = useAuth()
     const router = useRouter()
     const [mounted, setMounted] = useState(false)
 
     // Prevent hydration mismatch by only rendering theme-dependent UI after mount
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: prevent hydration mismatch for theme-dependent UI
         setMounted(true)
     }, [])
 

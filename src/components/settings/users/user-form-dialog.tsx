@@ -124,8 +124,6 @@ export function UserFormDialog({
         },
     })
 
-    const form = isEditing ? editForm : createForm
-
     useEffect(() => {
         if (open) {
             if (user) {

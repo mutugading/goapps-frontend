@@ -79,7 +79,7 @@ export function createServiceClient<T extends ServiceDef>(
       return new Promise((resolve, reject) => {
         const meta = metadata || new grpc.Metadata()
         const opts = options || {}
-        const method = rawClient[methodKey] as Function
+        const method = rawClient[methodKey] as (...args: unknown[]) => void
         method.call(rawClient, request, meta, opts, (error: grpc.ServiceError | null, response: unknown) => {
           if (error) {
             reject(error)
