@@ -11,7 +11,10 @@ export default function proxy(request: NextRequest) {
     const { pathname } = request.nextUrl
 
     // Check if the request is for a public route
-    const isPublicRoute = PUBLIC_ROUTES.some((route) => pathname.startsWith(route))
+    // Use exact match for "/" to avoid matching all paths
+    const isPublicRoute = PUBLIC_ROUTES.some((route) =>
+        route === "/" ? pathname === "/" : pathname.startsWith(route)
+    )
 
     // Check if the request is for an API route (except auth-related)
     const isApiRoute = pathname.startsWith("/api/")
@@ -35,7 +38,7 @@ export default function proxy(request: NextRequest) {
         return NextResponse.next()
     }
 
-    // Public routes (login, forgot password, etc.)
+    // Public routes (landing, login, forgot password, etc.)
     if (isPublicRoute) {
         // If already authenticated and trying to access login, redirect to dashboard
         if (isAuthenticated && pathname === AUTH_ROUTES.LOGIN) {
@@ -46,10 +49,8 @@ export default function proxy(request: NextRequest) {
 
     // Protected routes - require authentication
     if (!isAuthenticated) {
-        // Store the original URL to redirect back after login
-        const loginUrl = new URL(AUTH_ROUTES.LOGIN, request.url)
-        loginUrl.searchParams.set("callbackUrl", pathname)
-        return NextResponse.redirect(loginUrl)
+        // Redirect to landing page
+        return NextResponse.redirect(new URL("/", request.url))
     }
 
     return NextResponse.next()

@@ -50,8 +50,10 @@ export interface DataTableProps<TData> {
   data: TData[]
   /** Column definitions */
   columns: ColumnDef<TData>[]
-  /** Unique key field in data */
-  keyField: keyof TData
+  /** Unique key field in data (use getRowKey for nested data) */
+  keyField?: keyof TData
+  /** Custom function to extract a unique key from a row (for nested data structures) */
+  getRowKey?: (row: TData, index: number) => string
   /** Row actions */
   actions?: RowAction<TData>[]
   /** Loading state */

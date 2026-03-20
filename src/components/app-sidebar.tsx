@@ -10,20 +10,32 @@ import {
     SidebarHeader,
     SidebarRail,
 } from "@/components/ui/sidebar"
-import { getVisibleNavigation } from "@/config/navigation"
-import { usePermission } from "@/lib/hooks"
 import { useUserDisplay } from "@/hooks/iam/use-current-user"
+import { useMenuTree } from "@/hooks/iam/use-menu"
+import { menuTreeToNavGroups, preloadMenuIcons } from "@/types/iam/menu"
 import { Skeleton } from "@/components/ui/skeleton"
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-    const { permissions } = usePermission()
-    const { user, isLoading } = useUserDisplay()
-    const visibleNavigation = React.useMemo(
-        () => getVisibleNavigation(permissions),
-        [permissions]
+    const { user, isLoading: isUserLoading } = useUserDisplay()
+    const { data: menuTree, isLoading: isMenuLoading } = useMenuTree()
+    const [iconsReady, setIconsReady] = React.useState(false)
+
+    // Preload icons once the tree arrives, then flip state to trigger re-render
+    React.useEffect(() => {
+        if (menuTree && menuTree.length > 0) {
+            setIconsReady(false)
+            preloadMenuIcons(menuTree)
+                .then(() => setIconsReady(true))
+                .catch(() => setIconsReady(true))
+        }
+    }, [menuTree])
+
+    // Recompute nav groups after icons are loaded (iconsReady in deps triggers re-run)
+    const navGroups = React.useMemo(
+        () => (menuTree ? menuTreeToNavGroups(menuTree) : []),
+        [menuTree, iconsReady] // eslint-disable-line react-hooks/exhaustive-deps
     )
 
-    // Default fallback user for loading state
     const displayUser = user ?? { name: "Loading...", email: "" }
 
     return (
@@ -32,16 +44,24 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <SiteHeader />
             </SidebarHeader>
             <SidebarContent>
-                {visibleNavigation.map((group) => (
-                    <NavMain
-                        key={group.title}
-                        items={group.items}
-                        label={group.title}
-                    />
-                ))}
+                {isMenuLoading ? (
+                    <div className="space-y-2 p-4">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                            <Skeleton key={i} className="h-8 w-full rounded-md" />
+                        ))}
+                    </div>
+                ) : (
+                    navGroups.map((group) => (
+                        <NavMain
+                            key={group.title}
+                            items={group.items}
+                            label={group.title}
+                        />
+                    ))
+                )}
             </SidebarContent>
             <SidebarFooter>
-                {isLoading ? (
+                {isUserLoading ? (
                     <div className="flex items-center gap-2 p-2">
                         <Skeleton className="h-8 w-8 rounded-lg" />
                         <div className="flex-1 space-y-1">
@@ -57,4 +77,3 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </Sidebar>
     )
 }
-

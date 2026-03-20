@@ -1,0 +1,6 @@
+export { RoleTable } from "./role-table"
+export { RoleFilters } from "./role-filters"
+export { RoleFormDialog } from "./role-form-dialog"
+export { RoleDeleteDialog } from "./role-delete-dialog"
+export { RolePagination } from "./role-pagination"
+export {default as RolePermissionsDialog} from "./role-permissions-dialog"
