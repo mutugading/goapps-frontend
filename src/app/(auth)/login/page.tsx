@@ -9,7 +9,7 @@ import Link from "next/link"
 import { LoginForm } from "@/components/auth/login-form"
 import { AuthCard, AuthHeader, AuthFooter } from "@/components/auth/auth-card"
 import { useAuth } from "@/providers/auth-provider"
-import { AUTH_API, AUTH_ROUTES } from "@/lib/auth/config"
+import { AUTH_ROUTES } from "@/lib/auth/config"
 
 interface LoginData {
     username: string

@@ -140,9 +140,7 @@ export function useDebouncedState<T>(
   useEffect(() => {
     if (externalValue !== lastEmittedValue.current) {
       lastEmittedValue.current = externalValue
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: sync external state
-      setLocalValue(externalValue)
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: trigger reset
+      setLocalValue(externalValue) // eslint-disable-line react-hooks/set-state-in-effect -- intentional: sync external state
       setResetKey((k) => k + 1)
     }
   }, [externalValue])

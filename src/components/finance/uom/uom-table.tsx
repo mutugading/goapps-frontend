@@ -5,7 +5,7 @@ import { Pencil, Trash2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { DataTable, type ColumnDef, type RowAction } from "@/components/shared"
 
-import { type UOM, UOM_CATEGORY_LABELS, UOMCategory } from "@/types/finance/uom"
+import { type UOM, UOM_CATEGORY_LABELS } from "@/types/finance/uom"
 
 interface UOMTableProps {
   data: UOM[]

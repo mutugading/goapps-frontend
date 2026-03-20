@@ -35,6 +35,7 @@ export function useIdleTimeout({
 }: UseIdleTimeoutOptions): UseIdleTimeoutReturn {
     const [isWarning, setIsWarning] = useState(false)
     const [remainingSeconds, setRemainingSeconds] = useState(0)
+    // eslint-disable-next-line react-hooks/purity -- Date.now() in ref init is safe; ref doesn't affect render output
     const lastActivityRef = useRef(Date.now())
     const onTimeoutRef = useRef(onTimeout)
 
