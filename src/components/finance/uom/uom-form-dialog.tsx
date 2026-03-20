@@ -37,6 +37,7 @@ import { Switch } from "@/components/ui/switch"
 
 import {
   type UOM,
+  UOMCategory,
   UOM_CATEGORY_FORM_OPTIONS,
 } from "@/types/finance/uom"
 import { useCreateUOM, useUpdateUOM } from "@/hooks/finance/use-uom"

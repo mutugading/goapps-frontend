@@ -230,7 +230,7 @@ export const DEFAULT_${Pascal.toUpperCase()}_FORM_VALUES: ${Pascal}FormData = {
 
 // Generate hooks file
 function generateHooks(config: ReturnType<typeof parseArgs>): string {
-  const { service, entity, name } = config
+  const { service, entity, name, idField } = config
   const Pascal = toPascalCase(entity)
   const Camel = toCamelCase(entity)
 
