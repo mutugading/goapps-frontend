@@ -58,6 +58,21 @@ export const TOKEN_CONFIG = {
 } as const
 
 /**
+ * Idle timeout configuration (in milliseconds)
+ * Must match backend security.session_idle_timeout (default: 2h)
+ */
+export const IDLE_CONFIG = {
+    // Total idle timeout — must match backend session_idle_timeout
+    TIMEOUT: 2 * 60 * 60 * 1000, // 2 hours
+    // Show warning dialog this many ms before timeout
+    WARNING_BEFORE: 5 * 60 * 1000, // 5 minutes before timeout
+    // How often to check idle status (ms)
+    CHECK_INTERVAL: 60 * 1000, // every 1 minute
+    // User activity events to track
+    ACTIVITY_EVENTS: ["mousedown", "keydown", "scroll", "touchstart"] as const,
+} as const
+
+/**
  * Auth routes configuration
  */
 export const AUTH_ROUTES = {
@@ -73,6 +88,7 @@ export const AUTH_ROUTES = {
  * Public routes that don't require authentication
  */
 export const PUBLIC_ROUTES = [
+    "/",
     AUTH_ROUTES.LOGIN,
     AUTH_ROUTES.FORGOT_PASSWORD,
     AUTH_ROUTES.VERIFY_OTP,

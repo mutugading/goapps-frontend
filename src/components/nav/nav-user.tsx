@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import {
     BadgeCheck,
     Bell,
@@ -44,9 +45,15 @@ export interface NavUserProps {
 
 export function NavUser({ user }: NavUserProps) {
     const { isMobile } = useSidebar()
-    const { setTheme, theme } = useTheme()
+    const { setTheme, theme, resolvedTheme } = useTheme()
     const { logout } = useAuth()
     const router = useRouter()
+    const [mounted, setMounted] = useState(false)
+
+    // Prevent hydration mismatch by only rendering theme-dependent UI after mount
+    useEffect(() => {
+        setMounted(true)
+    }, [])
 
     const handleLogout = async () => {
         await logout()
@@ -116,9 +123,9 @@ export function NavUser({ user }: NavUserProps) {
                         </DropdownMenuGroup>
                         <DropdownMenuSeparator />
                         <DropdownMenuGroup>
-                            <DropdownMenuItem onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
-                                {theme === "dark" ? <Sun /> : <Moon />}
-                                {theme === "dark" ? "Light Mode" : "Dark Mode"}
+                            <DropdownMenuItem onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}>
+                                {mounted && resolvedTheme === "dark" ? <Sun /> : <Moon />}
+                                {mounted && resolvedTheme === "dark" ? "Light Mode" : "Dark Mode"}
                             </DropdownMenuItem>
                         </DropdownMenuGroup>
                         <DropdownMenuSeparator />

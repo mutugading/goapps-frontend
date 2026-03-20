@@ -8,6 +8,7 @@ import {
   TrendingUp,
   Database,
   Receipt,
+  Shield,
   type LucideIcon,
 } from "lucide-react"
 
@@ -76,14 +77,9 @@ export interface NavItem {
 }
 
 // =============================================================================
-// User Data (will be replaced by IAM service data)
+// User Data - Now fetched dynamically via useCurrentUser hook
+// See: src/hooks/iam/use-current-user.ts
 // =============================================================================
-
-export const userData = {
-  name: "John Doe",
-  email: "john.doe@company.com",
-  // avatar: undefined - uses initials fallback
-}
 
 // =============================================================================
 // Breadcrumb Configuration
@@ -132,8 +128,16 @@ export const breadcrumbConfig: Record<string, BreadcrumbConfig> = {
   "/exsim": { title: "Export Import", href: "/exsim/dashboard" },
   "/exsim/dashboard": { title: "Export Import", href: "/exsim/dashboard" },
 
-  // Settings
-  "/settings": { title: "Settings", href: "/settings" },
+  // Administrator (IAM management) — parent has no href (non-clickable in breadcrumb)
+  "/administrator": { title: "Administrator" },
+  "/administrator/users": { title: "User Management" },
+  "/administrator/roles": { title: "Roles & Permissions" },
+  "/administrator/permissions": { title: "Permission Management" },
+  "/administrator/menus": { title: "Menu Management" },
+  "/administrator/activity": { title: "Activity Log" },
+
+  // Profile
+  "/profile": { title: "Profile" },
 }
 
 // =============================================================================
@@ -313,41 +317,48 @@ export const navigation: NavGroup[] = [
     ],
   },
   {
-    title: "Settings",
+    title: "Administrator",
     items: [
       {
-        id: "settings",
-        title: "Settings",
-        url: "/settings",
+        id: "administrator",
+        title: "Administrator",
+        // No url — this is a parent-only container. Breadcrumb will render
+        // "Administrator" as non-clickable plain text.
         icon: Settings,
         iconName: "Settings",
-        permission: "settings.view",
+        permission: "iam.user.account.view",
         order: 1,
         isVisible: true,
         children: [
           {
-            id: "settings-users",
-            title: "Users",
-            url: "/settings/users",
-            permission: "settings.users.view",
+            id: "administrator-users",
+            title: "User Management",
+            url: "/administrator/users",
+            icon: Users,
+            iconName: "Users",
+            permission: "iam.user.account.view",
             order: 1,
-            isVisible: false, // Hidden until page is created
+            isVisible: true,
           },
           {
-            id: "settings-roles",
-            title: "Roles",
-            url: "/settings/roles",
-            permission: "settings.roles.view",
+            id: "administrator-roles",
+            title: "Roles & Permissions",
+            url: "/administrator/roles",
+            icon: Shield,
+            iconName: "Shield",
+            permission: "iam.rbac.role.view",
             order: 2,
-            isVisible: false, // Hidden until page is created
+            isVisible: true,
           },
           {
-            id: "settings-menus",
-            title: "Menus",
-            url: "/settings/menus",
-            permission: "settings.menus.view",
+            id: "administrator-menus",
+            title: "Menu Management",
+            url: "/administrator/menus",
+            icon: Settings,
+            iconName: "Settings",
+            permission: "iam.menu.menu.view",
             order: 3,
-            isVisible: false, // Hidden until page is created
+            isVisible: true,
           },
         ],
       },

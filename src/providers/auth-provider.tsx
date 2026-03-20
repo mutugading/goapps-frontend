@@ -1,7 +1,7 @@
 "use client"
 
 // AuthProvider - Global authentication context
-// Manages user session, token refresh, and auth state
+// Manages user session, token refresh, idle timeout, and auth state
 
 import {
     createContext,
@@ -13,7 +13,9 @@ import {
 } from "react"
 import { useRouter } from "next/navigation"
 import type { AuthUser } from "@/types/generated/iam/v1/auth"
-import { AUTH_API, AUTH_ROUTES, TOKEN_CONFIG } from "@/lib/auth/config"
+import { AUTH_API, TOKEN_CONFIG } from "@/lib/auth/config"
+import { useIdleTimeout } from "@/lib/hooks/use-idle-timeout"
+import { IdleTimeoutDialog } from "@/components/common/idle-timeout-dialog"
 import type { AuthContextValue, AuthState, LoginFormValues, LoginResult } from "@/lib/auth/types"
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -158,36 +160,75 @@ export function AuthProvider({ children, initialUser = null }: AuthProviderProps
                 isLoading: false,
                 error: null,
             })
-            router.push(AUTH_ROUTES.LOGIN)
+            router.push("/")
             router.refresh()
         }
     }, [router])
+
+    // Clear stale httpOnly cookies via API when both tokens are invalid
+    const clearStaleTokens = useCallback(async () => {
+        try {
+            await fetch(AUTH_API.LOGOUT, {
+                method: "POST",
+                credentials: "include",
+            })
+        } catch {
+            // Ignore errors — best effort cleanup
+        }
+    }, [])
 
     // Clear error
     const clearError = useCallback(() => {
         setState((prev) => ({ ...prev, error: null }))
     }, [])
 
-    // Initial auth check
+    // Initial auth check — only manages state, never navigates
     useEffect(() => {
         if (initialUser) {
-            // Already have user from server
             return
         }
 
-        // Check if user is authenticated on mount
         const checkAuth = async () => {
+            // Try fetching current user with existing access token
             const user = await fetchCurrentUser()
+            if (user) {
+                setState({
+                    user,
+                    isAuthenticated: true,
+                    isLoading: false,
+                    error: null,
+                })
+                return
+            }
+
+            // Access token expired/invalid — try refreshing
+            const refreshed = await refreshSession()
+            if (refreshed) {
+                const refreshedUser = await fetchCurrentUser()
+                if (refreshedUser) {
+                    setState({
+                        user: refreshedUser,
+                        isAuthenticated: true,
+                        isLoading: false,
+                        error: null,
+                    })
+                    return
+                }
+            }
+
+            // Not authenticated — clear stale cookies and update state
+            // Navigation is handled by proxy.ts (server) and dashboard layout (client)
+            await clearStaleTokens()
             setState({
-                user,
-                isAuthenticated: !!user,
+                user: null,
+                isAuthenticated: false,
                 isLoading: false,
                 error: null,
             })
         }
 
         checkAuth()
-    }, [initialUser, fetchCurrentUser])
+    }, [initialUser, fetchCurrentUser, refreshSession, clearStaleTokens])
 
     // Set up silent token refresh
     useEffect(() => {
@@ -195,21 +236,38 @@ export function AuthProvider({ children, initialUser = null }: AuthProviderProps
             return
         }
 
-        // Refresh token periodically
         const refreshInterval = setInterval(
             async () => {
                 const success = await refreshSession()
                 if (!success) {
-                    // Refresh failed, clear interval and redirect to login
+                    // Refresh failed — update state, let dashboard guard handle redirect
                     clearInterval(refreshInterval)
-                    router.push(AUTH_ROUTES.LOGIN)
+                    await clearStaleTokens()
+                    setState({
+                        user: null,
+                        isAuthenticated: false,
+                        isLoading: false,
+                        error: null,
+                    })
                 }
             },
             TOKEN_CONFIG.REFRESH_CHECK_INTERVAL * 10 // Check every 10 minutes
         )
 
         return () => clearInterval(refreshInterval)
-    }, [state.isAuthenticated, refreshSession, router])
+    }, [state.isAuthenticated, refreshSession, clearStaleTokens])
+
+    // Idle timeout — auto-logout after prolonged inactivity
+    const { isWarning, remainingSeconds, resetTimer } = useIdleTimeout({
+        onTimeout: logout,
+        enabled: state.isAuthenticated,
+    })
+
+    const handleStayLoggedIn = useCallback(async () => {
+        resetTimer()
+        // Proactively refresh the token to reset backend session activity
+        await refreshSession()
+    }, [resetTimer, refreshSession])
 
     const value = useMemo<AuthContextValue>(
         () => ({
@@ -222,7 +280,16 @@ export function AuthProvider({ children, initialUser = null }: AuthProviderProps
         [state, login, logout, refreshSession, clearError]
     )
 
-    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+    return (
+        <AuthContext.Provider value={value}>
+            {children}
+            <IdleTimeoutDialog
+                open={isWarning}
+                remainingSeconds={remainingSeconds}
+                onStayLoggedIn={handleStayLoggedIn}
+            />
+        </AuthContext.Provider>
+    )
 }
 
 /**

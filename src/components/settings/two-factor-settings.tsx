@@ -18,19 +18,40 @@ import { toast } from "sonner"
 import { Loader2, Shield, ShieldCheck, ShieldOff, Smartphone } from "lucide-react"
 import { AUTH_API } from "@/lib/auth/config"
 import { QRCodeModal } from "./qr-code-modal"
+import { useQueryClient } from "@tanstack/react-query"
+import { currentUserKeys } from "@/hooks/iam/use-current-user"
 
-export function TwoFactorSettings() {
-    const [is2FAEnabled, setIs2FAEnabled] = useState(false)
-    const [loading, setLoading] = useState(true)
+interface TwoFactorSettingsProps {
+    /** Called when 2FA status changes */
+    onStatusChange?: (enabled: boolean) => void
+    /** Initial 2FA status from parent */
+    initialEnabled?: boolean
+}
+
+export function TwoFactorSettings({ onStatusChange, initialEnabled }: TwoFactorSettingsProps) {
+    const queryClient = useQueryClient()
+    const [is2FAEnabled, setIs2FAEnabled] = useState(initialEnabled ?? false)
+    const [loading, setLoading] = useState(initialEnabled === undefined)
     const [enabling, setEnabling] = useState(false)
     const [disabling, setDisabling] = useState(false)
     const [showQRModal, setShowQRModal] = useState(false)
     const [showDisableDialog, setShowDisableDialog] = useState(false)
     const [qrData, setQRData] = useState<{ qrCodeUrl: string; secret: string } | null>(null)
     const [disableCode, setDisableCode] = useState("")
+    const [disablePassword, setDisablePassword] = useState("")
 
-    // Fetch current 2FA status
+    // Sync with initialEnabled prop
     useEffect(() => {
+        if (initialEnabled !== undefined) {
+            setIs2FAEnabled(initialEnabled)
+            setLoading(false)
+        }
+    }, [initialEnabled])
+
+    // Fetch current 2FA status only if not provided by parent
+    useEffect(() => {
+        if (initialEnabled !== undefined) return
+
         const fetchStatus = async () => {
             try {
                 const response = await fetch("/api/v1/iam/users/me")
@@ -45,7 +66,7 @@ export function TwoFactorSettings() {
             }
         }
         fetchStatus()
-    }, [])
+    }, [initialEnabled])
 
     const handleEnable2FA = async () => {
         try {
@@ -89,6 +110,9 @@ export function TwoFactorSettings() {
                 setIs2FAEnabled(true)
                 setShowQRModal(false)
                 setQRData(null)
+                // Invalidate user query to refresh 2FA status
+                queryClient.invalidateQueries({ queryKey: currentUserKeys.all })
+                onStatusChange?.(true)
                 toast.success("Two-factor authentication enabled successfully")
             } else {
                 toast.error(data.base?.message || "Invalid verification code")
@@ -104,13 +128,20 @@ export function TwoFactorSettings() {
             toast.error("Please enter a valid 6-digit code")
             return
         }
+        if (!disablePassword) {
+            toast.error("Please enter your current password")
+            return
+        }
 
         try {
             setDisabling(true)
             const response = await fetch(AUTH_API.DISABLE_2FA, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ totpCode: disableCode }),
+                body: JSON.stringify({
+                    password: disablePassword,
+                    verificationCode: disableCode
+                }),
             })
 
             const data = await response.json()
@@ -119,6 +150,10 @@ export function TwoFactorSettings() {
                 setIs2FAEnabled(false)
                 setShowDisableDialog(false)
                 setDisableCode("")
+                setDisablePassword("")
+                // Invalidate user query to refresh 2FA status
+                queryClient.invalidateQueries({ queryKey: currentUserKeys.all })
+                onStatusChange?.(false)
                 toast.success("Two-factor authentication disabled")
             } else {
                 toast.error(data.base?.message || "Failed to disable 2FA")
@@ -217,37 +252,54 @@ export function TwoFactorSettings() {
             )}
 
             {/* Disable 2FA Dialog */}
-            <AlertDialog open={showDisableDialog} onOpenChange={setShowDisableDialog}>
+            <AlertDialog open={showDisableDialog} onOpenChange={(open) => {
+                setShowDisableDialog(open)
+                if (!open) {
+                    setDisableCode("")
+                    setDisablePassword("")
+                }
+            }}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Disable Two-Factor Authentication</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Enter your current 2FA code to disable two-factor authentication.
+                            Enter your password and current 2FA code to disable two-factor authentication.
                             Your account will be less secure after disabling 2FA.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
-                    <div className="py-4">
-                        <Label htmlFor="disable-code">Verification Code</Label>
-                        <Input
-                            id="disable-code"
-                            type="text"
-                            inputMode="numeric"
-                            pattern="[0-9]*"
-                            maxLength={6}
-                            placeholder="Enter 6-digit code"
-                            value={disableCode}
-                            onChange={(e) => setDisableCode(e.target.value.replace(/\D/g, ""))}
-                            className="mt-2"
-                        />
+                    <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="disable-password">Current Password</Label>
+                            <Input
+                                id="disable-password"
+                                type="password"
+                                placeholder="Enter your password"
+                                value={disablePassword}
+                                onChange={(e) => setDisablePassword(e.target.value)}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="disable-code">Verification Code</Label>
+                            <Input
+                                id="disable-code"
+                                type="text"
+                                inputMode="numeric"
+                                pattern="[0-9]*"
+                                maxLength={6}
+                                placeholder="Enter 6-digit code"
+                                value={disableCode}
+                                onChange={(e) => setDisableCode(e.target.value.replace(/\D/g, ""))}
+                            />
+                        </div>
                     </div>
                     <AlertDialogFooter>
-                        <AlertDialogCancel onClick={() => setDisableCode("")}>
+                        <AlertDialogCancel>
                             Cancel
                         </AlertDialogCancel>
                         <AlertDialogAction
                             onClick={handleDisable2FA}
                             className="bg-destructive hover:bg-destructive/90"
-                            disabled={disabling || disableCode.length !== 6}
+                            disabled={disabling || disableCode.length !== 6 || !disablePassword}
                         >
                             {disabling ? (
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

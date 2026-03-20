@@ -29,12 +29,23 @@ export function DataTable<TData>({
   data,
   columns,
   keyField,
+  getRowKey,
   actions,
   isLoading,
   emptyMessage = "No data found",
   emptyDescription = "Try adjusting your search or filter criteria",
   skeletonRowCount = 5,
 }: DataTableProps<TData>) {
+  // Resolve row key: prefer getRowKey function, then keyField, then index
+  const resolveKey = (row: TData, index: number): string => {
+    if (getRowKey) return getRowKey(row, index)
+    if (keyField) {
+      const val = row[keyField]
+      const str = typeof val === 'string' ? val : String(val)
+      return str && str !== '[object Object]' ? str : `row-${index}`
+    }
+    return `row-${index}`
+  }
   // Loading state
   if (isLoading) {
     return (
@@ -83,7 +94,7 @@ export function DataTable<TData>({
       </TableHeader>
       <TableBody>
         {data.map((row, rowIndex) => {
-          const key = String(row[keyField]) || `row-${rowIndex}`
+          const key = resolveKey(row, rowIndex)
           return (
             <TableRow key={key}>
               {columns.map((column) => (
@@ -97,8 +108,8 @@ export function DataTable<TData>({
                   {column.cell
                     ? column.cell(row, rowIndex)
                     : column.accessorKey
-                    ? String(row[column.accessorKey] ?? "-")
-                    : "-"}
+                      ? String(row[column.accessorKey] ?? "-")
+                      : "-"}
                 </TableCell>
               ))}
               {hasActions && (

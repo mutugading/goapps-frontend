@@ -1,60 +1,38 @@
 // GET /api/v1/iam/audit-logs - List audit logs with filters
 
 import { NextRequest, NextResponse } from "next/server"
-import { SERVICES, getBackendUrl, getForwardHeaders } from "@/lib/api/proxy"
+import { getAuditClient, createMetadataFromRequest, isGrpcError, handleGrpcError } from "@/lib/grpc"
 
 export async function GET(request: NextRequest) {
     try {
         const { searchParams } = new URL(request.url)
-        const queryString = searchParams.toString()
 
-        const backendUrl = getBackendUrl(SERVICES.IAM)
-        const url = `${backendUrl}/api/v1/iam/audit-logs${queryString ? `?${queryString}` : ""}`
-
-        const response = await fetch(url, {
-            method: "GET",
-            headers: getForwardHeaders(request),
-        })
-
-        const data = await response.json()
-
-        // Convert snake_case to camelCase for frontend
-        return NextResponse.json(
+        const metadata = createMetadataFromRequest(request)
+        const client = getAuditClient()
+        const response = await client.listAuditLogs(
             {
-                base: {
-                    isSuccess: data.base?.is_success ?? false,
-                    statusCode: data.base?.status_code || String(response.status),
-                    message: data.base?.message || "",
-                    validationErrors: data.base?.validation_errors || [],
-                },
-                data: (data.data || []).map((log: Record<string, unknown>) => ({
-                    logId: log.log_id,
-                    eventType: log.event_type,
-                    tableName: log.table_name,
-                    recordId: log.record_id,
-                    userId: log.user_id,
-                    username: log.username,
-                    fullName: log.full_name,
-                    ipAddress: log.ip_address,
-                    userAgent: log.user_agent,
-                    serviceName: log.service_name,
-                    oldData: log.old_data,
-                    newData: log.new_data,
-                    changes: log.changes,
-                    performedAt: log.performed_at,
-                })),
-                pagination: data.pagination
-                    ? {
-                        currentPage: data.pagination.current_page || 1,
-                        pageSize: data.pagination.page_size || 10,
-                        totalItems: data.pagination.total_items || 0,
-                        totalPages: data.pagination.total_pages || 0,
-                    }
-                    : null,
+                page: Number(searchParams.get("page")) || 1,
+                pageSize: Number(searchParams.get("pageSize") || searchParams.get("page_size")) || 10,
+                search: searchParams.get("search") || "",
+                eventType: Number(searchParams.get("eventType") || searchParams.get("event_type")) || 0,
+                userId: searchParams.get("userId") || searchParams.get("user_id") || undefined,
+                tableName: searchParams.get("tableName") || searchParams.get("table_name") || "",
+                serviceName: searchParams.get("serviceName") || searchParams.get("service_name") || "",
+                dateFrom: searchParams.get("dateFrom") || searchParams.get("date_from") || searchParams.get("startDate") || "",
+                dateTo: searchParams.get("dateTo") || searchParams.get("date_to") || searchParams.get("endDate") || "",
+                sortBy: searchParams.get("sortBy") || searchParams.get("sort_by") || "",
+                sortOrder: searchParams.get("sortOrder") || searchParams.get("sort_order") || "",
             },
-            { status: response.status }
+            metadata
         )
+
+        return NextResponse.json({
+            base: response.base,
+            data: response.data,
+            pagination: response.pagination,
+        })
     } catch (error) {
+        if (isGrpcError(error)) return handleGrpcError(error)
         console.error("Error fetching audit logs:", error)
         return NextResponse.json(
             {

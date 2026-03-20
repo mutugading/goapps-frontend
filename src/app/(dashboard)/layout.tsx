@@ -1,20 +1,75 @@
 "use client"
 
+import { useAuth } from "@/providers/auth-provider"
+import { useRouter } from "next/navigation"
+import { useEffect } from "react"
 import { AppSidebar } from "@/components/app-sidebar"
 import { DynamicBreadcrumb } from "@/components/common/dynamic-breadcrumb"
 import { Footer } from "@/components/common/footer"
 import { Separator } from "@/components/ui/separator"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
     SidebarInset,
     SidebarProvider,
     SidebarTrigger,
 } from "@/components/ui/sidebar"
 
+function DashboardSkeleton() {
+    return (
+        <div className="flex h-svh w-full">
+            {/* Sidebar skeleton */}
+            <div className="hidden md:flex w-64 flex-col border-r bg-background p-4 gap-4">
+                <Skeleton className="h-8 w-32" />
+                <div className="space-y-2 mt-4">
+                    {Array.from({ length: 6 }).map((_, i) => (
+                        <Skeleton key={i} className="h-8 w-full" />
+                    ))}
+                </div>
+            </div>
+            {/* Main content skeleton */}
+            <div className="flex-1 flex flex-col">
+                <div className="h-16 border-b flex items-center px-4 gap-2">
+                    <Skeleton className="h-6 w-6" />
+                    <Skeleton className="h-4 w-48" />
+                </div>
+                <div className="flex-1 p-4 space-y-4">
+                    <Skeleton className="h-8 w-64" />
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                        {Array.from({ length: 4 }).map((_, i) => (
+                            <Skeleton key={i} className="h-32 w-full rounded-lg" />
+                        ))}
+                    </div>
+                    <Skeleton className="h-64 w-full rounded-lg" />
+                </div>
+            </div>
+        </div>
+    )
+}
+
 export default function DashboardLayout({
     children,
 }: {
     children: React.ReactNode
 }) {
+    const { isAuthenticated, isLoading } = useAuth()
+    const router = useRouter()
+
+    useEffect(() => {
+        if (!isLoading && !isAuthenticated) {
+            router.push("/")
+        }
+    }, [isLoading, isAuthenticated, router])
+
+    // Show skeleton while checking auth
+    if (isLoading) {
+        return <DashboardSkeleton />
+    }
+
+    // Don't render dashboard content for unauthenticated users
+    if (!isAuthenticated) {
+        return <DashboardSkeleton />
+    }
+
     return (
         <SidebarProvider>
             <AppSidebar />

@@ -41,8 +41,12 @@ src/
 │   ├── common/             # Shared components (PageHeader, etc.)
 │   ├── shared/             # Reusable feature components (DataTable, etc.)
 │   ├── finance/            # Finance module components
+│   ├── iam/                # IAM module components (users, roles, permissions, menus, etc.)
+│   ├── settings/           # Settings/Administrator components (roles, permissions)
 │   └── loading/            # Skeleton components
 ├── hooks/                  # Custom hooks (use-*.ts)
+│   ├── finance/use-uom.ts # UOM CRUD hooks
+│   └── iam/               # IAM hooks (use-menu, use-permissions, use-roles, etc.)
 ├── services/               # API service functions
 ├── types/                  # TypeScript types + normalizers
 ├── providers/              # React context providers
@@ -54,6 +58,13 @@ src/
 - **Client state**: Zustand for UI state (sidebar, modals)
 - **Form state**: React Hook Form + Zod validation
 - **URL state**: Custom `useUrlState` hook (`src/lib/hooks/use-url-state.ts`) for search/filter/pagination
+
+### Provider Stack
+```
+QueryProvider → ThemeProvider → AuthProvider → PermissionProvider → {children}
+```
+- **AuthProvider**: user state, login/logout, auto token refresh (every 10min)
+- **PermissionProvider**: RBAC permission checking (`hasPermission()`)
 
 ### URL State + Debounced Search Pattern
 For search inputs that sync to URL state, use `DebouncedSearchInput`:
@@ -90,6 +101,16 @@ function normalizeUOM(uom: RawUOM): NormalizedUOM {
 }
 ```
 
+### Dynamic Sidebar System
+
+The sidebar is driven by database menu data (not hardcoded):
+- `useMenuTree()` hook fetches menu tree from `/api/v1/iam/menus/tree`
+- `menuTreeToNavGroups()` converts API response to sidebar navigation format
+- Icons are lazy-loaded via `preloadMenuIcons()` + `resolveIcon()` in `types/iam/menu.ts`
+- Key files: `hooks/iam/use-menu.ts`, `types/iam/menu.ts`, `components/app-sidebar.tsx`
+
+**Menu permissions**: Menus with NO entries in `menu_permissions` table → visible to ALL users. Menus WITH entries → require user to have at least one matching permission.
+
 ## Critical Rules
 
 1. **Never modify `components/ui/`** - shadcn/ui managed files. Create wrappers in `components/common/` instead
@@ -117,8 +138,14 @@ npx shadcn@latest add [component-name]
 ## Environment Variables
 
 ```bash
-COSTING_SERVICE_HOST=localhost    # gRPC service host
-COSTING_SERVICE_PORT=50051        # gRPC service port
+# gRPC endpoints (server-side only, NOT browser-exposed)
+FINANCE_GRPC_HOST=localhost       # Finance service gRPC host
+FINANCE_GRPC_PORT=50051           # Finance service gRPC port
+IAM_GRPC_HOST=localhost           # IAM service gRPC host
+IAM_GRPC_PORT=50052               # IAM service gRPC port
+
+# Public variables (exposed to browser)
+NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
 ## Key Libraries
