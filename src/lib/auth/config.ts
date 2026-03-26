@@ -89,6 +89,8 @@ export const AUTH_ROUTES = {
  */
 export const PUBLIC_ROUTES = [
     "/",
+    "/privacy",
+    "/terms",
     AUTH_ROUTES.LOGIN,
     AUTH_ROUTES.FORGOT_PASSWORD,
     AUTH_ROUTES.VERIFY_OTP,

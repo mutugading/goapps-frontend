@@ -4,18 +4,18 @@
  */
 export const siteConfig = {
   name: "Go Apps",
-  tagline: "Enterprise Dashboard",
-  description: "Enterprise Dashboard for Go Microservices",
+  tagline: "Enterprise Platform",
+  description: "A unified semi-ERP platform for modern manufacturing — Finance, HR, IT, and Operations.",
   version: "0.1.0",
   url: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
 
   // Default metadata
   metadata: {
     title: {
-      default: "Go Apps - Enterprise Dashboard",
+      default: "Go Apps - Enterprise Platform",
       template: "%s | Go Apps", // For other pages: "Page Name | Go Apps"
     },
-    description: "Enterprise Dashboard for Go Microservices",
+    description: "A unified semi-ERP platform for modern manufacturing.",
     keywords: ["enterprise", "dashboard", "microservices", "go", "golang"],
   },
 

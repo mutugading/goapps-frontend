@@ -18,6 +18,7 @@ import {
   OrganizationServiceDefinition,
 } from "@/types/generated/iam/v1/organization"
 import { UOMServiceDefinition } from "@/types/generated/finance/v1/uom"
+import { RMCategoryServiceDefinition } from "@/types/generated/finance/v1/rm_category"
 
 const CHANNEL_OPTIONS = {
   "grpc.keepalive_time_ms": 10000,
@@ -129,5 +130,11 @@ export function getOrganizationClient() {
 export function getUomClient() {
   return getOrCreate("uom", () =>
     createServiceClient(UOMServiceDefinition, SERVICE_ADDRESSES.finance, insecure, CHANNEL_OPTIONS)
+  )
+}
+
+export function getRmCategoryClient() {
+  return getOrCreate("rmCategory", () =>
+    createServiceClient(RMCategoryServiceDefinition, SERVICE_ADDRESSES.finance, insecure, CHANNEL_OPTIONS)
   )
 }

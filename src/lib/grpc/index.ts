@@ -15,4 +15,5 @@ export {
   getSectionClient,
   getOrganizationClient,
   getUomClient,
+  getRmCategoryClient,
 } from "./clients"
