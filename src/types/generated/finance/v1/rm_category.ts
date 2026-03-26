@@ -6,7 +6,7 @@
 
 /* eslint-disable */
 import {BinaryReader, BinaryWriter} from "@bufbuild/protobuf/wire";
-import {AuditInfo, BaseResponse, PaginationResponse} from "@/types";
+import { AuditInfo, BaseResponse, PaginationResponse } from "../../common/v1/common";
 import {ActiveFilter, activeFilterFromJSON, activeFilterToJSON, ImportError} from "./uom";
 
 export const protobufPackage = "finance.v1";
