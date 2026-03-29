@@ -19,6 +19,11 @@ import {
 } from "@/types/generated/iam/v1/organization"
 import { UOMServiceDefinition } from "@/types/generated/finance/v1/uom"
 import { RMCategoryServiceDefinition } from "@/types/generated/finance/v1/rm_category"
+import {
+  CMSPageServiceDefinition,
+  CMSSectionServiceDefinition,
+  CMSSettingServiceDefinition,
+} from "@/types/generated/iam/v1/cms"
 
 const CHANNEL_OPTIONS = {
   "grpc.keepalive_time_ms": 10000,
@@ -136,5 +141,24 @@ export function getUomClient() {
 export function getRmCategoryClient() {
   return getOrCreate("rmCategory", () =>
     createServiceClient(RMCategoryServiceDefinition, SERVICE_ADDRESSES.finance, insecure, CHANNEL_OPTIONS)
+  )
+}
+
+// CMS service clients (IAM service)
+export function getCmsPageClient() {
+  return getOrCreate("cmsPage", () =>
+    createServiceClient(CMSPageServiceDefinition, SERVICE_ADDRESSES.iam, insecure, CHANNEL_OPTIONS)
+  )
+}
+
+export function getCmsSectionClient() {
+  return getOrCreate("cmsSection", () =>
+    createServiceClient(CMSSectionServiceDefinition, SERVICE_ADDRESSES.iam, insecure, CHANNEL_OPTIONS)
+  )
+}
+
+export function getCmsSettingClient() {
+  return getOrCreate("cmsSetting", () =>
+    createServiceClient(CMSSettingServiceDefinition, SERVICE_ADDRESSES.iam, insecure, CHANNEL_OPTIONS)
   )
 }

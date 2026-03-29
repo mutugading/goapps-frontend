@@ -16,4 +16,7 @@ export {
   getOrganizationClient,
   getUomClient,
   getRmCategoryClient,
+  getCmsPageClient,
+  getCmsSectionClient,
+  getCmsSettingClient,
 } from "./clients"
