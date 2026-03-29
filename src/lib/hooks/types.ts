@@ -127,6 +127,8 @@ export interface CrudHookOptions<
   getEntityId: (entity: TEntity) => string
   /** Function to build query string from list params */
   buildQueryString?: (params: TListParams) => string
+  /** Additional query keys to invalidate on create/update/delete mutations */
+  additionalInvalidateKeys?: string[][]
 }
 
 /**

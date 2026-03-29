@@ -5,9 +5,9 @@
 // source: finance/v1/rm_category.proto
 
 /* eslint-disable */
-import {BinaryReader, BinaryWriter} from "@bufbuild/protobuf/wire";
+import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
 import { AuditInfo, BaseResponse, PaginationResponse } from "../../common/v1/common";
-import {ActiveFilter, activeFilterFromJSON, activeFilterToJSON, ImportError} from "./uom";
+import { ActiveFilter, activeFilterFromJSON, activeFilterToJSON, ImportError } from "./uom";
 
 export const protobufPackage = "finance.v1";
 
@@ -232,7 +232,7 @@ export const RMCategory: MessageFns<RMCategory> = {
     if (message.description !== "") {
       writer.uint32(34).string(message.description);
     }
-    if (message.isActive) {
+    if (message.isActive !== false) {
       writer.uint32(40).bool(message.isActive);
     }
     if (message.audit !== undefined) {
@@ -346,11 +346,10 @@ export const RMCategory: MessageFns<RMCategory> = {
     if (message.description !== "") {
       obj.description = message.description;
     }
-    if (message.isActive) {
+    if (message.isActive !== false) {
       obj.isActive = message.isActive;
     }
     if (message.audit !== undefined) {
-      // @ts-ignore
       obj.audit = AuditInfo.toJSON(message.audit);
     }
     return obj;
@@ -1733,14 +1732,16 @@ export const DownloadRMCategoryTemplateRequest: MessageFns<DownloadRMCategoryTem
   },
 
   toJSON(_: DownloadRMCategoryTemplateRequest): unknown {
-    return {};
+    const obj: any = {};
+    return obj;
   },
 
   create(base?: DeepPartial<DownloadRMCategoryTemplateRequest>): DownloadRMCategoryTemplateRequest {
     return DownloadRMCategoryTemplateRequest.fromPartial(base ?? {});
   },
   fromPartial(_: DeepPartial<DownloadRMCategoryTemplateRequest>): DownloadRMCategoryTemplateRequest {
-    return createBaseDownloadRMCategoryTemplateRequest();
+    const message = createBaseDownloadRMCategoryTemplateRequest();
+    return message;
   },
 };
 

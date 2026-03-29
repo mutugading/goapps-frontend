@@ -94,6 +94,7 @@ export function createCrudHooks<
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     getEntityId,
     buildQueryString = defaultBuildQueryString,
+    additionalInvalidateKeys = [],
   } = options
 
   // Default messages
@@ -194,6 +195,9 @@ export function createCrudHooks<
       },
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: queryKeys.lists() })
+        for (const key of additionalInvalidateKeys) {
+          queryClient.invalidateQueries({ queryKey: key })
+        }
         toast.success(msgs.createSuccess)
       },
       onError: (error: Error) => {
@@ -230,6 +234,9 @@ export function createCrudHooks<
       onSuccess: (_, variables) => {
         queryClient.invalidateQueries({ queryKey: queryKeys.detail(variables.id) })
         queryClient.invalidateQueries({ queryKey: queryKeys.lists() })
+        for (const key of additionalInvalidateKeys) {
+          queryClient.invalidateQueries({ queryKey: key })
+        }
         toast.success(msgs.updateSuccess)
       },
       onError: (error: Error) => {
@@ -258,6 +265,9 @@ export function createCrudHooks<
       onSuccess: (_, id) => {
         queryClient.removeQueries({ queryKey: queryKeys.detail(id) })
         queryClient.invalidateQueries({ queryKey: queryKeys.lists() })
+        for (const key of additionalInvalidateKeys) {
+          queryClient.invalidateQueries({ queryKey: key })
+        }
         toast.success(msgs.deleteSuccess)
       },
       onError: (error: Error) => {
