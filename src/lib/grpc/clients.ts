@@ -19,6 +19,7 @@ import {
 } from "@/types/generated/iam/v1/organization"
 import { UOMServiceDefinition } from "@/types/generated/finance/v1/uom"
 import { RMCategoryServiceDefinition } from "@/types/generated/finance/v1/rm_category"
+import { ParameterServiceDefinition } from "@/types/generated/finance/v1/parameter"
 import {
   CMSPageServiceDefinition,
   CMSSectionServiceDefinition,
@@ -141,6 +142,12 @@ export function getUomClient() {
 export function getRmCategoryClient() {
   return getOrCreate("rmCategory", () =>
     createServiceClient(RMCategoryServiceDefinition, SERVICE_ADDRESSES.finance, insecure, CHANNEL_OPTIONS)
+  )
+}
+
+export function getParameterClient() {
+  return getOrCreate("parameter", () =>
+    createServiceClient(ParameterServiceDefinition, SERVICE_ADDRESSES.finance, insecure, CHANNEL_OPTIONS)
   )
 }
 
