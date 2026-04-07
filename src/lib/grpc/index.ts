@@ -16,6 +16,7 @@ export {
   getOrganizationClient,
   getUomClient,
   getRmCategoryClient,
+  getParameterClient,
   getCmsPageClient,
   getCmsSectionClient,
   getCmsSettingClient,
