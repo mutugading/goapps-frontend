@@ -42,6 +42,8 @@ import {
   PARAM_CATEGORY_FORM_OPTIONS,
 } from "@/types/finance/parameter"
 import { useCreateParameter, useUpdateParameter } from "@/hooks/finance/use-parameter"
+import { useUOMs } from "@/hooks/finance/use-uom"
+import { ActiveFilter } from "@/types/finance/uom"
 
 interface ParameterFormValues {
   paramCode: string
@@ -101,6 +103,15 @@ export function ParameterFormDialog({
   const isEditing = !!parameter
   const createMutation = useCreateParameter()
   const updateMutation = useUpdateParameter()
+
+  // Fetch active UOMs for the dropdown
+  const { data: uomData } = useUOMs({
+    page: 1,
+    pageSize: 100,
+    activeFilter: ActiveFilter.ACTIVE_FILTER_ACTIVE,
+    sortBy: "code",
+    sortOrder: "asc",
+  })
 
   const form = useForm<ParameterFormValues>({
     resolver: zodResolver(parameterFormSchema) as never,
@@ -336,14 +347,25 @@ export function ParameterFormDialog({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>UOM (Optional)</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="UOM ID (UUID, leave empty if not applicable)"
-                      {...field}
-                      value={field.value || ""}
-                      disabled={isPending}
-                    />
-                  </FormControl>
+                  <Select
+                    onValueChange={(val) => field.onChange(val === "__none__" ? "" : val)}
+                    value={field.value || "__none__"}
+                    disabled={isPending}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select UOM (optional)" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="__none__">None</SelectItem>
+                      {(uomData?.data || []).map((uom) => (
+                        <SelectItem key={uom.uomId} value={uom.uomId}>
+                          {uom.uomCode} — {uom.uomName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormDescription>
                     Reference to a Unit of Measure (optional)
                   </FormDescription>
