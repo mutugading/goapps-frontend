@@ -55,8 +55,6 @@ export {
   activeFilterToJSON,
 } from "@/types/generated/finance/v1/uom"
 
-export type { ImportError } from "@/types/generated/finance/v1/uom"
-
 // Re-export common types from proto
 export type {
   BaseResponse,
@@ -97,16 +95,6 @@ export const PARAM_CATEGORY_LABELS: Record<ParamCategory, string> = {
 }
 
 /**
- * Active filter display labels for UI
- */
-export const ACTIVE_FILTER_LABELS: Record<ActiveFilter, string> = {
-  [ActiveFilter.ACTIVE_FILTER_UNSPECIFIED]: "All Status",
-  [ActiveFilter.ACTIVE_FILTER_ACTIVE]: "Active",
-  [ActiveFilter.ACTIVE_FILTER_INACTIVE]: "Inactive",
-  [ActiveFilter.UNRECOGNIZED]: "Unknown",
-}
-
-/**
  * Data type options for filter select inputs
  */
 export const DATA_TYPE_OPTIONS = [
@@ -140,15 +128,6 @@ export const PARAM_CATEGORY_FORM_OPTIONS = PARAM_CATEGORY_OPTIONS.filter(
   (opt) => opt.value !== ParamCategory.PARAM_CATEGORY_UNSPECIFIED
 )
 
-/**
- * Active filter options for select inputs
- */
-export const ACTIVE_FILTER_OPTIONS = [
-  { value: ActiveFilter.ACTIVE_FILTER_UNSPECIFIED, label: "All Status" },
-  { value: ActiveFilter.ACTIVE_FILTER_ACTIVE, label: "Active" },
-  { value: ActiveFilter.ACTIVE_FILTER_INACTIVE, label: "Inactive" },
-]
-
 // ============================================================================
 // Simplified Params Types for Hooks
 // ============================================================================
@@ -176,10 +155,6 @@ export interface ExportParametersParams {
   activeFilter?: ActiveFilter
 }
 
-/**
- * Duplicate action for imports
- */
-export type DuplicateAction = "skip" | "update" | "error"
 
 // ============================================================================
 // Form Types

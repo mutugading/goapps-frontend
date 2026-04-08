@@ -20,6 +20,7 @@ import {
 import { UOMServiceDefinition } from "@/types/generated/finance/v1/uom"
 import { RMCategoryServiceDefinition } from "@/types/generated/finance/v1/rm_category"
 import { ParameterServiceDefinition } from "@/types/generated/finance/v1/parameter"
+import { FormulaServiceDefinition } from "@/types/generated/finance/v1/formula"
 import {
   CMSPageServiceDefinition,
   CMSSectionServiceDefinition,
@@ -148,6 +149,12 @@ export function getRmCategoryClient() {
 export function getParameterClient() {
   return getOrCreate("parameter", () =>
     createServiceClient(ParameterServiceDefinition, SERVICE_ADDRESSES.finance, insecure, CHANNEL_OPTIONS)
+  )
+}
+
+export function getFormulaClient() {
+  return getOrCreate("formula", () =>
+    createServiceClient(FormulaServiceDefinition, SERVICE_ADDRESSES.finance, insecure, CHANNEL_OPTIONS)
   )
 }
 
