@@ -94,6 +94,17 @@ const formulaFormSchema = z.object({
   inputParamIds: z.array(z.string()),
   description: z.string().max(1000, "Description must be at most 1000 characters"),
   isActive: z.boolean(),
+}).superRefine((data, ctx) => {
+  if (
+    data.formulaType === FormulaType.FORMULA_TYPE_CALCULATION &&
+    data.inputParamIds.length === 0
+  ) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "At least one input parameter is required for CALCULATION type",
+      path: ["inputParamIds"],
+    })
+  }
 })
 
 interface FormulaFormDialogProps {

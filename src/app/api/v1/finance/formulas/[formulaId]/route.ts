@@ -41,7 +41,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
         const body = await request.json()
         const metadata = createMetadataFromRequest(request)
         const client = getFormulaClient()
-        const response = await client.updateFormula({ formulaId, ...body }, metadata)
+        const response = await client.updateFormula({ ...body, formulaId }, metadata)
 
         return NextResponse.json({
             base: response.base,

@@ -176,7 +176,7 @@ export interface UpdateFormulaRequest {
     | undefined;
   /** New input parameter IDs (optional, replaces all existing). */
   inputParamIds: string[];
-  /** New description (optional). */
+  /** New description (optional, max 1000 chars). */
   description?:
     | string
     | undefined;
