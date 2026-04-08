@@ -22,7 +22,7 @@ import {
 import { Label } from "@/components/ui/label"
 import { ScrollArea } from "@/components/ui/scroll-area"
 
-import type { DuplicateAction, ImportError } from "@/types/finance/parameter"
+import type { DuplicateAction, ImportError } from "@/types/finance/uom"
 import { useImportParameters, useDownloadParameterTemplate } from "@/hooks/finance/use-parameter"
 import { readFileAsBytes } from "@/lib/api"
 

@@ -22,11 +22,11 @@ import {
 import { Label } from "@/components/ui/label"
 import { ScrollArea } from "@/components/ui/scroll-area"
 
-import type { DuplicateAction, ImportError } from "@/types/finance/uom"
-import { useImportRMCategories, useDownloadRMCategoryTemplate } from "@/hooks/finance/use-rm-category"
+import type { FormulaDuplicateAction, ImportError } from "@/types/finance/formula"
+import { useImportFormulas, useDownloadFormulaTemplate } from "@/hooks/finance/use-formula"
 import { readFileAsBytes } from "@/lib/api"
 
-interface RMCategoryImportDialogProps {
+interface FormulaImportDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onSuccess?: () => void
@@ -40,18 +40,18 @@ interface ImportResult {
   errors: ImportError[]
 }
 
-export function RMCategoryImportDialog({
+export function FormulaImportDialog({
   open,
   onOpenChange,
   onSuccess,
-}: RMCategoryImportDialogProps) {
+}: FormulaImportDialogProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
-  const [duplicateAction, setDuplicateAction] = useState<DuplicateAction>("skip")
+  const [duplicateAction, setDuplicateAction] = useState<FormulaDuplicateAction>("skip")
   const [importResult, setImportResult] = useState<ImportResult | null>(null)
 
-  const importMutation = useImportRMCategories()
-  const templateMutation = useDownloadRMCategoryTemplate()
+  const importMutation = useImportFormulas()
+  const templateMutation = useDownloadFormulaTemplate()
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -117,9 +117,9 @@ export function RMCategoryImportDialog({
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[550px]">
         <DialogHeader>
-          <DialogTitle>Import Raw Material Categories</DialogTitle>
+          <DialogTitle>Import Formulas</DialogTitle>
           <DialogDescription>
-            Import RM Categories from an Excel file. Download the template first to
+            Import formulas from an Excel file. Download the template first to
             ensure proper formatting.
           </DialogDescription>
         </DialogHeader>
@@ -192,7 +192,7 @@ export function RMCategoryImportDialog({
             <Label>Duplicate Handling</Label>
             <Select
               value={duplicateAction}
-              onValueChange={(value: DuplicateAction) =>
+              onValueChange={(value: FormulaDuplicateAction) =>
                 setDuplicateAction(value)
               }
               disabled={isProcessing}

@@ -13,21 +13,34 @@ import {
 } from "@/components/ui/select"
 import { DebouncedSearchInput } from "@/components/common"
 
-import { ActiveFilter, ACTIVE_FILTER_OPTIONS } from "@/types/finance/uom"
-import { type ListRMCategoriesParams } from "@/types/finance/rm-category"
+import {
+  FormulaType,
+  FORMULA_TYPE_OPTIONS,
+  FORMULA_ACTIVE_FILTER_OPTIONS,
+  type ListFormulasParams,
+} from "@/types/finance/formula"
+import { ActiveFilter } from "@/types/finance/uom"
 
-interface RMCategoryFiltersProps {
-  filters: ListRMCategoriesParams
-  onFiltersChange: (filters: ListRMCategoriesParams) => void
+interface FormulaFiltersProps {
+  filters: ListFormulasParams
+  onFiltersChange: (filters: ListFormulasParams) => void
 }
 
-export function RMCategoryFilters({ filters, onFiltersChange }: RMCategoryFiltersProps) {
+export function FormulaFilters({ filters, onFiltersChange }: FormulaFiltersProps) {
   const handleSearchChange = useCallback(
     (value: string) => {
       onFiltersChange({ ...filters, search: value, page: 1 })
     },
     [filters, onFiltersChange]
   )
+
+  const handleTypeChange = (value: string) => {
+    onFiltersChange({
+      ...filters,
+      formulaType: Number(value) as FormulaType,
+      page: 1,
+    })
+  }
 
   const handleActiveFilterChange = (value: string) => {
     onFiltersChange({
@@ -47,6 +60,7 @@ export function RMCategoryFilters({ filters, onFiltersChange }: RMCategoryFilter
       page: 1,
       pageSize: filters.pageSize,
       search: "",
+      formulaType: FormulaType.FORMULA_TYPE_UNSPECIFIED,
       activeFilter: ActiveFilter.ACTIVE_FILTER_UNSPECIFIED,
       sortBy: "code",
       sortOrder: "asc",
@@ -55,23 +69,39 @@ export function RMCategoryFilters({ filters, onFiltersChange }: RMCategoryFilter
 
   const hasActiveFilters =
     filters.search ||
+    (filters.formulaType !== undefined && filters.formulaType !== FormulaType.FORMULA_TYPE_UNSPECIFIED) ||
     (filters.activeFilter !== undefined && filters.activeFilter !== ActiveFilter.ACTIVE_FILTER_UNSPECIFIED)
 
   const currentSort = `${filters.sortBy || "code"}-${filters.sortOrder || "asc"}`
 
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-      {/* Search with debounce */}
       <DebouncedSearchInput
         value={filters.search || ""}
         onValueChange={handleSearchChange}
-        placeholder="Search code, name, description..."
+        placeholder="Search code, name, expression..."
         debounceMs={300}
         containerClassName="flex-1 sm:max-w-sm"
       />
 
-      {/* Filters */}
       <div className="flex flex-wrap items-center gap-2">
+        {/* Type Filter */}
+        <Select
+          value={String(filters.formulaType ?? FormulaType.FORMULA_TYPE_UNSPECIFIED)}
+          onValueChange={handleTypeChange}
+        >
+          <SelectTrigger className="w-[140px]">
+            <SelectValue placeholder="Type" />
+          </SelectTrigger>
+          <SelectContent>
+            {FORMULA_TYPE_OPTIONS.map((option) => (
+              <SelectItem key={option.value} value={String(option.value)}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
         {/* Status Filter */}
         <Select
           value={String(filters.activeFilter ?? ActiveFilter.ACTIVE_FILTER_UNSPECIFIED)}
@@ -81,7 +111,7 @@ export function RMCategoryFilters({ filters, onFiltersChange }: RMCategoryFilter
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
-            {ACTIVE_FILTER_OPTIONS.map((option) => (
+            {FORMULA_ACTIVE_FILTER_OPTIONS.map((option) => (
               <SelectItem key={option.value} value={String(option.value)}>
                 {option.label}
               </SelectItem>
@@ -104,7 +134,6 @@ export function RMCategoryFilters({ filters, onFiltersChange }: RMCategoryFilter
           </SelectContent>
         </Select>
 
-        {/* Clear Filters */}
         {hasActiveFilters && (
           <Button
             variant="ghost"

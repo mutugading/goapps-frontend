@@ -17,11 +17,11 @@ import {
   ActiveFilter,
   DataType,
   ParamCategory,
-  ACTIVE_FILTER_OPTIONS,
   DATA_TYPE_OPTIONS,
   PARAM_CATEGORY_OPTIONS,
   type ListParametersParams,
 } from "@/types/finance/parameter"
+import { ACTIVE_FILTER_OPTIONS } from "@/types/finance/uom"
 
 interface ParameterFiltersProps {
   filters: ListParametersParams

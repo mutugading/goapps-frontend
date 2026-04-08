@@ -17,6 +17,7 @@ export {
   getUomClient,
   getRmCategoryClient,
   getParameterClient,
+  getFormulaClient,
   getCmsPageClient,
   getCmsSectionClient,
   getCmsSettingClient,
