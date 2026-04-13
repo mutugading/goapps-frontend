@@ -15,6 +15,7 @@ export {
   getSectionClient,
   getOrganizationClient,
   getUomClient,
+  getUomCategoryClient,
   getRmCategoryClient,
   getParameterClient,
   getFormulaClient,

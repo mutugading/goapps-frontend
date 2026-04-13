@@ -13,45 +13,21 @@ import {
 } from "@/components/ui/select"
 import { DebouncedSearchInput } from "@/components/common"
 
-import {
-  ActiveFilter,
-  ACTIVE_FILTER_OPTIONS,
-  type ListUOMsParams,
-} from "@/types/finance/uom"
-import { useUOMCategories } from "@/hooks/finance/use-uom-category"
+import { ActiveFilter, ACTIVE_FILTER_OPTIONS } from "@/types/finance/uom"
+import { type ListUOMCategoriesParams } from "@/types/finance/uom-category"
 
-interface UOMFiltersProps {
-  filters: ListUOMsParams
-  onFiltersChange: (filters: ListUOMsParams) => void
+interface UOMCategoryFiltersProps {
+  filters: ListUOMCategoriesParams
+  onFiltersChange: (filters: ListUOMCategoriesParams) => void
 }
 
-export function UOMFilters({ filters, onFiltersChange }: UOMFiltersProps) {
-  // Fetch active categories for the filter dropdown
-  const { data: categoriesData } = useUOMCategories({
-    page: 1,
-    pageSize: 100,
-    activeFilter: ActiveFilter.ACTIVE_FILTER_ACTIVE,
-    sortBy: "name",
-    sortOrder: "asc",
-  })
-
-  const categoryOptions = categoriesData?.data || []
-
-  // Memoize search change handler to prevent unnecessary re-renders
+export function UOMCategoryFilters({ filters, onFiltersChange }: UOMCategoryFiltersProps) {
   const handleSearchChange = useCallback(
     (value: string) => {
       onFiltersChange({ ...filters, search: value, page: 1 })
     },
     [filters, onFiltersChange]
   )
-
-  const handleCategoryChange = (value: string) => {
-    onFiltersChange({
-      ...filters,
-      uomCategoryId: value === "all" ? undefined : value,
-      page: 1,
-    })
-  }
 
   const handleActiveFilterChange = (value: string) => {
     onFiltersChange({
@@ -71,7 +47,6 @@ export function UOMFilters({ filters, onFiltersChange }: UOMFiltersProps) {
       page: 1,
       pageSize: filters.pageSize,
       search: "",
-      uomCategoryId: undefined,
       activeFilter: ActiveFilter.ACTIVE_FILTER_UNSPECIFIED,
       sortBy: "code",
       sortOrder: "asc",
@@ -80,7 +55,6 @@ export function UOMFilters({ filters, onFiltersChange }: UOMFiltersProps) {
 
   const hasActiveFilters =
     filters.search ||
-    filters.uomCategoryId ||
     (filters.activeFilter !== undefined && filters.activeFilter !== ActiveFilter.ACTIVE_FILTER_UNSPECIFIED)
 
   const currentSort = `${filters.sortBy || "code"}-${filters.sortOrder || "asc"}`
@@ -98,24 +72,6 @@ export function UOMFilters({ filters, onFiltersChange }: UOMFiltersProps) {
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-2">
-        {/* Category Filter */}
-        <Select
-          value={filters.uomCategoryId || "all"}
-          onValueChange={handleCategoryChange}
-        >
-          <SelectTrigger className="w-[160px]">
-            <SelectValue placeholder="Category" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Categories</SelectItem>
-            {categoryOptions.map((cat) => (
-              <SelectItem key={cat.uomCategoryId} value={cat.uomCategoryId}>
-                {cat.categoryName}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
         {/* Status Filter */}
         <Select
           value={String(filters.activeFilter ?? ActiveFilter.ACTIVE_FILTER_UNSPECIFIED)}

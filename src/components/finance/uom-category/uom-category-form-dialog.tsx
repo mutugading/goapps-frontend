@@ -26,32 +26,20 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 
-import type { UOM } from "@/types/finance/uom"
-import { ActiveFilter } from "@/types/finance/uom"
-import { useCreateUOM, useUpdateUOM } from "@/hooks/finance/use-uom"
-import { useUOMCategories } from "@/hooks/finance/use-uom-category"
+import type { UOMCategory } from "@/types/finance/uom-category"
+import { useCreateUOMCategory, useUpdateUOMCategory } from "@/hooks/finance/use-uom-category"
 
-// Form values interface
-interface UOMFormValues {
-  uomCode: string
-  uomName: string
-  uomCategoryId: string
+interface UOMCategoryFormValues {
+  categoryCode: string
+  categoryName: string
   description: string
   isActive: boolean
 }
 
-// Form validation schema
-const uomFormSchema = z.object({
-  uomCode: z
+const uomCategoryFormSchema = z.object({
+  categoryCode: z
     .string()
     .min(1, "Code is required")
     .max(20, "Code must be at most 20 characters")
@@ -59,105 +47,84 @@ const uomFormSchema = z.object({
       /^[A-Z][A-Z0-9_]*$/,
       "Code must start with uppercase letter and contain only uppercase letters, numbers, and underscores"
     ),
-  uomName: z
+  categoryName: z
     .string()
     .min(1, "Name is required")
     .max(100, "Name must be at most 100 characters"),
-  uomCategoryId: z
-    .string()
-    .min(1, "Please select a category"),
   description: z.string().max(500, "Description must be at most 500 characters"),
   isActive: z.boolean(),
 })
 
-interface UOMFormDialogProps {
+interface UOMCategoryFormDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  uom?: UOM | null
+  uomCategory?: UOMCategory | null
   onSuccess?: () => void
 }
 
-export function UOMFormDialog({
+export function UOMCategoryFormDialog({
   open,
   onOpenChange,
-  uom,
+  uomCategory,
   onSuccess,
-}: UOMFormDialogProps) {
-  const isEditing = !!uom
-  const createMutation = useCreateUOM()
-  const updateMutation = useUpdateUOM()
+}: UOMCategoryFormDialogProps) {
+  const isEditing = !!uomCategory
+  const createMutation = useCreateUOMCategory()
+  const updateMutation = useUpdateUOMCategory()
 
-  // Fetch active categories for create mode, but include inactive categories in edit mode
-  // so an existing UOM can still display and retain its currently selected category.
-  const { data: categoriesData } = useUOMCategories({
-    page: 1,
-    pageSize: 100,
-    ...(!isEditing ? { activeFilter: ActiveFilter.ACTIVE_FILTER_ACTIVE } : {}),
-    sortBy: "name",
-    sortOrder: "asc",
-  })
-
-  const categoryOptions = categoriesData?.data || []
-
-  const form = useForm<UOMFormValues>({
-    resolver: zodResolver(uomFormSchema) as never,
+  const form = useForm<UOMCategoryFormValues>({
+    resolver: zodResolver(uomCategoryFormSchema) as never,
     defaultValues: {
-      uomCode: "",
-      uomName: "",
-      uomCategoryId: "",
+      categoryCode: "",
+      categoryName: "",
       description: "",
       isActive: true,
     },
   })
 
-  // Reset form when dialog opens/closes or uom changes
   useEffect(() => {
     if (open) {
-      if (uom) {
+      if (uomCategory) {
         form.reset({
-          uomCode: uom.uomCode || "",
-          uomName: uom.uomName || "",
-          uomCategoryId: uom.uomCategoryId || "",
-          description: uom.description || "",
-          isActive: uom.isActive ?? true,
+          categoryCode: uomCategory.categoryCode || "",
+          categoryName: uomCategory.categoryName || "",
+          description: uomCategory.description || "",
+          isActive: uomCategory.isActive ?? true,
         })
       } else {
         form.reset({
-          uomCode: "",
-          uomName: "",
-          uomCategoryId: "",
+          categoryCode: "",
+          categoryName: "",
           description: "",
           isActive: true,
         })
       }
     }
-  }, [open, uom, form])
+  }, [open, uomCategory, form])
 
-  const onSubmit = async (values: UOMFormValues) => {
+  const onSubmit = async (values: UOMCategoryFormValues) => {
     try {
-      if (isEditing && uom) {
+      if (isEditing && uomCategory) {
         await updateMutation.mutateAsync({
-          id: uom.uomId,
+          id: uomCategory.uomCategoryId,
           data: {
-            uomId: uom.uomId,
-            uomName: values.uomName,
-            uomCategoryId: values.uomCategoryId,
+            uomCategoryId: uomCategory.uomCategoryId,
+            categoryName: values.categoryName,
             description: values.description || "",
             isActive: values.isActive,
           },
         })
       } else {
         await createMutation.mutateAsync({
-          uomCode: values.uomCode,
-          uomName: values.uomName,
-          uomCategoryId: values.uomCategoryId,
+          categoryCode: values.categoryCode,
+          categoryName: values.categoryName,
           description: values.description || "",
         })
       }
       onOpenChange(false)
       onSuccess?.()
     } catch (error) {
-      console.error("Failed to save UOM:", error)
+      console.error("Failed to save UOM Category:", error)
     }
   }
 
@@ -167,11 +134,11 @@ export function UOMFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>{isEditing ? "Edit UOM" : "Add New UOM"}</DialogTitle>
+          <DialogTitle>{isEditing ? "Edit UOM Category" : "Add New UOM Category"}</DialogTitle>
           <DialogDescription>
             {isEditing
-              ? "Update the unit of measure details. Code cannot be changed."
-              : "Create a new unit of measure for costing calculations."}
+              ? "Update the UOM category details. Code cannot be changed."
+              : "Create a new unit of measure category."}
           </DialogDescription>
         </DialogHeader>
 
@@ -179,13 +146,13 @@ export function UOMFormDialog({
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               control={form.control}
-              name="uomCode"
+              name="categoryCode"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Code</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="e.g., KG, MTR, PCS"
+                      placeholder="e.g., WEIGHT, LENGTH, VOLUME"
                       {...field}
                       value={field.value || ""}
                       disabled={isEditing || isPending}
@@ -205,48 +172,19 @@ export function UOMFormDialog({
 
             <FormField
               control={form.control}
-              name="uomName"
+              name="categoryName"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Name</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="e.g., Kilogram, Meter, Pieces"
+                      placeholder="e.g., Weight, Length, Volume"
                       {...field}
                       value={field.value || ""}
                       disabled={isPending}
                     />
                   </FormControl>
                   <FormDescription>Display name (1-100 chars)</FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="uomCategoryId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Category</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    value={field.value}
-                    disabled={isPending}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a category" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {categoryOptions.map((cat) => (
-                        <SelectItem key={cat.uomCategoryId} value={cat.uomCategoryId}>
-                          {cat.categoryName} ({cat.categoryCode})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
@@ -284,7 +222,7 @@ export function UOMFormDialog({
                     <div className="space-y-0.5">
                       <FormLabel className="text-base">Active Status</FormLabel>
                       <FormDescription>
-                        Inactive UOMs will not be available for selection
+                        Inactive categories will not be available for selection
                       </FormDescription>
                     </div>
                     <FormControl>

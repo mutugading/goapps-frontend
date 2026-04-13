@@ -1,21 +1,20 @@
-// Finance UOM routes - List and Create
+// Finance UOM Category routes - List and Create
 
 import { NextRequest, NextResponse } from "next/server"
-import { getUomClient, createMetadataFromRequest, isGrpcError, handleGrpcError } from "@/lib/grpc"
+import { getUomCategoryClient, createMetadataFromRequest, isGrpcError, handleGrpcError } from "@/lib/grpc"
 
-// GET /api/v1/finance/uoms - List UOMs with filters
+// GET /api/v1/finance/uom-categories - List UOM Categories with filters
 export async function GET(request: NextRequest) {
     try {
         const { searchParams } = new URL(request.url)
         const metadata = createMetadataFromRequest(request)
-        const client = getUomClient()
+        const client = getUomCategoryClient()
 
-        const response = await client.listUOMs(
+        const response = await client.listUOMCategories(
             {
                 page: Number(searchParams.get("page")) || 1,
                 pageSize: Number(searchParams.get("pageSize") || searchParams.get("page_size")) || 10,
                 search: searchParams.get("search") || "",
-                uomCategoryId: searchParams.get("uomCategoryId") || searchParams.get("uom_category_id") || "",
                 activeFilter: Number(searchParams.get("activeFilter") || searchParams.get("active_filter")) || 0,
                 sortBy: searchParams.get("sortBy") || searchParams.get("sort_by") || "",
                 sortOrder: searchParams.get("sortOrder") || searchParams.get("sort_order") || "",
@@ -30,13 +29,13 @@ export async function GET(request: NextRequest) {
         })
     } catch (error) {
         if (isGrpcError(error)) return handleGrpcError(error)
-        console.error("Error fetching UOMs:", error)
+        console.error("Error fetching UOM Categories:", error)
         return NextResponse.json(
             {
                 base: {
                     isSuccess: false,
                     statusCode: "500",
-                    message: "Failed to fetch unit of measures",
+                    message: "Failed to fetch UOM categories",
                     validationErrors: [],
                 },
                 data: [],
@@ -47,14 +46,14 @@ export async function GET(request: NextRequest) {
     }
 }
 
-// POST /api/v1/finance/uoms - Create UOM
+// POST /api/v1/finance/uom-categories - Create UOM Category
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json()
         const metadata = createMetadataFromRequest(request)
-        const client = getUomClient()
+        const client = getUomCategoryClient()
 
-        const response = await client.createUOM(body, metadata)
+        const response = await client.createUOMCategory(body, metadata)
 
         return NextResponse.json({
             base: response.base,
@@ -62,13 +61,13 @@ export async function POST(request: NextRequest) {
         })
     } catch (error) {
         if (isGrpcError(error)) return handleGrpcError(error)
-        console.error("Error creating UOM:", error)
+        console.error("Error creating UOM Category:", error)
         return NextResponse.json(
             {
                 base: {
                     isSuccess: false,
                     statusCode: "500",
-                    message: "Failed to create unit of measure",
+                    message: "Failed to create UOM category",
                     validationErrors: [],
                 },
             },
