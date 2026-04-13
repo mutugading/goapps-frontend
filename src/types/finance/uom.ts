@@ -6,10 +6,7 @@
 
 // Enums
 export {
-  UOMCategory,
   ActiveFilter,
-  uOMCategoryFromJSON,
-  uOMCategoryToJSON,
   activeFilterFromJSON,
   activeFilterToJSON,
 } from "@/types/generated/finance/v1/uom"
@@ -78,53 +75,12 @@ export {
 // ============================================================================
 
 import {
-  UOMCategory,
   ActiveFilter,
 } from "@/types/generated/finance/v1/uom"
 
 // ============================================================================
 // UI Display Labels
 // ============================================================================
-
-/**
- * Category display labels for UI
- */
-export const UOM_CATEGORY_LABELS: Record<UOMCategory, string> = {
-  [UOMCategory.UOM_CATEGORY_UNSPECIFIED]: "All Categories",
-  [UOMCategory.UOM_CATEGORY_WEIGHT]: "Weight",
-  [UOMCategory.UOM_CATEGORY_LENGTH]: "Length",
-  [UOMCategory.UOM_CATEGORY_VOLUME]: "Volume",
-  [UOMCategory.UOM_CATEGORY_QUANTITY]: "Quantity",
-  [UOMCategory.UNRECOGNIZED]: "Unknown",
-}
-
-/**
- * Active filter display labels for UI
- */
-export const ACTIVE_FILTER_LABELS: Record<ActiveFilter, string> = {
-  [ActiveFilter.ACTIVE_FILTER_UNSPECIFIED]: "All Status",
-  [ActiveFilter.ACTIVE_FILTER_ACTIVE]: "Active",
-  [ActiveFilter.ACTIVE_FILTER_INACTIVE]: "Inactive",
-  [ActiveFilter.UNRECOGNIZED]: "Unknown",
-}
-
-/**
- * Category options for select inputs
- */
-export const UOM_CATEGORY_OPTIONS = [
-  { value: UOMCategory.UOM_CATEGORY_UNSPECIFIED, label: "All Categories" },
-  { value: UOMCategory.UOM_CATEGORY_WEIGHT, label: "Weight" },
-  { value: UOMCategory.UOM_CATEGORY_LENGTH, label: "Length" },
-  { value: UOMCategory.UOM_CATEGORY_VOLUME, label: "Volume" },
-  { value: UOMCategory.UOM_CATEGORY_QUANTITY, label: "Quantity" },
-]
-
-/**
- * Category options for create/edit forms (excludes UNSPECIFIED)
- */
-export const UOM_CATEGORY_FORM_OPTIONS = UOM_CATEGORY_OPTIONS.filter(
-  (opt) => opt.value !== UOMCategory.UOM_CATEGORY_UNSPECIFIED
-)
 
 /**
  * Active filter options for select inputs
@@ -146,7 +102,7 @@ export interface ListUOMsParams {
   page?: number
   pageSize?: number
   search?: string
-  category?: UOMCategory
+  uomCategoryId?: string
   activeFilter?: ActiveFilter
   sortBy?: string
   sortOrder?: string
@@ -156,7 +112,7 @@ export interface ListUOMsParams {
  * Simplified export params for hooks
  */
 export interface ExportUOMsParams {
-  category?: UOMCategory
+  uomCategoryId?: string
   activeFilter?: ActiveFilter
 }
 
@@ -175,7 +131,7 @@ export type DuplicateAction = "skip" | "update" | "error"
 export interface UOMFormData {
   uomCode: string
   uomName: string
-  uomCategory: UOMCategory
+  uomCategoryId: string
   description: string
   isActive: boolean
 }
@@ -186,7 +142,7 @@ export interface UOMFormData {
 export const DEFAULT_UOM_FORM_VALUES: UOMFormData = {
   uomCode: "",
   uomName: "",
-  uomCategory: UOMCategory.UOM_CATEGORY_WEIGHT,
+  uomCategoryId: "",
   description: "",
   isActive: true,
 }

@@ -2,7 +2,7 @@
 import { describe, it, expect, vi } from "vitest"
 import { render, screen, fireEvent } from "../utils"
 import { UOMFilters } from "@/components/finance/uom/uom-filters"
-import { UOMCategory, ActiveFilter } from "@/types/finance/uom"
+import { ActiveFilter } from "@/types/finance/uom"
 
 // Mock the UOM hooks
 vi.mock("@/hooks/finance/use-uom", () => ({
@@ -12,12 +12,23 @@ vi.mock("@/hooks/finance/use-uom", () => ({
   }),
 }))
 
+// Mock the UOM Category hooks
+vi.mock("@/hooks/finance/use-uom-category", () => ({
+  useUOMCategories: () => ({
+    data: {
+      data: [
+        { uomCategoryId: "cat-1", categoryCode: "WEIGHT", categoryName: "Weight" },
+        { uomCategoryId: "cat-2", categoryCode: "LENGTH", categoryName: "Length" },
+      ],
+    },
+  }),
+}))
+
 describe("UOMFilters Component", () => {
   const defaultFilters = {
     page: 1,
     pageSize: 10,
     search: "",
-    category: UOMCategory.UOM_CATEGORY_UNSPECIFIED,
     activeFilter: ActiveFilter.ACTIVE_FILTER_UNSPECIFIED,
     sortBy: "code",
     sortOrder: "asc" as const,
@@ -35,12 +46,16 @@ describe("UOMFilters Component", () => {
     expect(searchInput).toBeInTheDocument()
   })
 
-  it("should call onFiltersChange when typing in search", () => {
+  it("should call onFiltersChange when typing in search", async () => {
+    vi.useFakeTimers()
     const onFiltersChange = vi.fn()
     render(<UOMFilters {...defaultProps} onFiltersChange={onFiltersChange} />)
 
     const searchInput = screen.getByPlaceholderText(/search/i)
     fireEvent.change(searchInput, { target: { value: "KG" } })
+
+    // Advance past debounce timer (300ms)
+    vi.advanceTimersByTime(350)
 
     expect(onFiltersChange).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -48,6 +63,7 @@ describe("UOMFilters Component", () => {
         page: 1,
       })
     )
+    vi.useRealTimers()
   })
 
   it("should display current search value", () => {

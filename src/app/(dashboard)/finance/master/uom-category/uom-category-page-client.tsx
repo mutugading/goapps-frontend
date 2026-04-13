@@ -20,24 +20,23 @@ import {
 } from "@/components/ui/dropdown-menu"
 
 import {
-  UOMFormDialog,
-  UOMDeleteDialog,
-  UOMImportDialog,
-  UOMFilters,
-  UOMTable,
-  UOMPagination,
-} from "@/components/finance/uom"
+  UOMCategoryFormDialog,
+  UOMCategoryDeleteDialog,
+  UOMCategoryImportDialog,
+  UOMCategoryFilters,
+  UOMCategoryTable,
+  UOMCategoryPagination,
+} from "@/components/finance/uom-category"
 
-import { useUOMs, useExportUOMs } from "@/hooks/finance/use-uom"
+import { useUOMCategories, useExportUOMCategories } from "@/hooks/finance/use-uom-category"
 import { useUrlState } from "@/lib/hooks"
 import {
-  type UOM,
-  type ListUOMsParams,
+  type UOMCategory,
+  type ListUOMCategoriesParams,
   ActiveFilter,
-} from "@/types/finance/uom"
+} from "@/types/finance/uom-category"
 
-// Default filter values
-const defaultFilters: ListUOMsParams = {
+const defaultFilters: ListUOMCategoriesParams = {
   page: 1,
   pageSize: 10,
   search: "",
@@ -46,41 +45,36 @@ const defaultFilters: ListUOMsParams = {
   sortOrder: "asc",
 }
 
-function UOMPageContent() {
-  // Filter state synced with URL
-  const [filters, setFilters] = useUrlState<ListUOMsParams>({
+function UOMCategoryPageContent() {
+  const [filters, setFilters] = useUrlState<ListUOMCategoriesParams>({
     defaultValues: defaultFilters,
   })
 
-  // Dialog states
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
   const [isImportOpen, setIsImportOpen] = useState(false)
-  const [selectedUOM, setSelectedUOM] = useState<UOM | null>(null)
+  const [selectedUOMCategory, setSelectedUOMCategory] = useState<UOMCategory | null>(null)
 
-  // Queries and mutations
-  const { data, isLoading, isError, error } = useUOMs(filters)
-  const exportMutation = useExportUOMs()
+  const { data, isLoading, isError, error } = useUOMCategories(filters)
+  const exportMutation = useExportUOMCategories()
 
-  // Handlers
   const handleAddNew = () => {
-    setSelectedUOM(null)
+    setSelectedUOMCategory(null)
     setIsFormOpen(true)
   }
 
-  const handleEdit = (uom: UOM) => {
-    setSelectedUOM(uom)
+  const handleEdit = (uomCategory: UOMCategory) => {
+    setSelectedUOMCategory(uomCategory)
     setIsFormOpen(true)
   }
 
-  const handleDelete = (uom: UOM) => {
-    setSelectedUOM(uom)
+  const handleDelete = (uomCategory: UOMCategory) => {
+    setSelectedUOMCategory(uomCategory)
     setIsDeleteOpen(true)
   }
 
   const handleExport = async () => {
     await exportMutation.mutateAsync({
-      uomCategoryId: filters.uomCategoryId,
       activeFilter: filters.activeFilter,
     })
   }
@@ -93,17 +87,15 @@ function UOMPageContent() {
     setFilters((prev) => ({ ...prev, pageSize, page: 1 }))
   }
 
-  // Calculate total items for display
   const totalItems = data?.pagination?.totalItems ?? 0
 
   return (
     <div>
       <PageHeader
-        title="Units of Measure"
-        subtitle="Manage units of measure for costing calculations"
+        title="UOM Categories"
+        subtitle="Manage unit of measure categories"
       >
         <div className="flex items-center gap-2">
-          {/* Export/Import Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline">
@@ -130,46 +122,41 @@ function UOMPageContent() {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Add Button */}
           <Button onClick={handleAddNew}>
             <Plus className="mr-2 h-4 w-4" />
-            Add UOM
+            Add UOM Category
           </Button>
         </div>
       </PageHeader>
 
       <Card>
         <CardHeader>
-          <CardTitle>UOM List</CardTitle>
+          <CardTitle>UOM Category List</CardTitle>
           <CardDescription>
             {isLoading
               ? "Loading..."
-              : `${totalItems} total units of measure`}
+              : `${totalItems} total UOM categories`}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Filters */}
-          <UOMFilters filters={filters} onFiltersChange={setFilters} />
+          <UOMCategoryFilters filters={filters} onFiltersChange={setFilters} />
 
-          {/* Error State */}
           {isError && (
             <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-center text-destructive">
               {error instanceof Error
                 ? error.message
-                : "Failed to load units of measure"}
+                : "Failed to load UOM categories"}
             </div>
           )}
 
-          {/* Table */}
-          <UOMTable
+          <UOMCategoryTable
             data={data?.data || []}
             isLoading={isLoading}
             onEdit={handleEdit}
             onDelete={handleDelete}
           />
 
-          {/* Pagination */}
-          <UOMPagination
+          <UOMCategoryPagination
             pagination={data?.pagination}
             onPageChange={handlePageChange}
             onPageSizeChange={handlePageSizeChange}
@@ -177,33 +164,29 @@ function UOMPageContent() {
         </CardContent>
       </Card>
 
-      {/* Form Dialog */}
-      <UOMFormDialog
+      <UOMCategoryFormDialog
         open={isFormOpen}
         onOpenChange={setIsFormOpen}
-        uom={selectedUOM}
+        uomCategory={selectedUOMCategory}
       />
 
-      {/* Delete Dialog */}
-      <UOMDeleteDialog
+      <UOMCategoryDeleteDialog
         open={isDeleteOpen}
         onOpenChange={setIsDeleteOpen}
-        uom={selectedUOM}
+        uomCategory={selectedUOMCategory}
       />
 
-      {/* Import Dialog */}
-      <UOMImportDialog open={isImportOpen} onOpenChange={setIsImportOpen} />
+      <UOMCategoryImportDialog open={isImportOpen} onOpenChange={setIsImportOpen} />
     </div>
   )
 }
 
-// Loading fallback for Suspense
-function UOMPageSkeleton() {
+function UOMCategoryPageSkeleton() {
   return (
     <div>
       <PageHeader
-        title="Units of Measure"
-        subtitle="Manage units of measure for costing calculations"
+        title="UOM Categories"
+        subtitle="Manage unit of measure categories"
       >
         <div className="flex items-center gap-2">
           <Button variant="outline" disabled>
@@ -212,13 +195,13 @@ function UOMPageSkeleton() {
           </Button>
           <Button disabled>
             <Plus className="mr-2 h-4 w-4" />
-            Add UOM
+            Add UOM Category
           </Button>
         </div>
       </PageHeader>
       <Card>
         <CardHeader>
-          <CardTitle>UOM List</CardTitle>
+          <CardTitle>UOM Category List</CardTitle>
           <CardDescription>Loading...</CardDescription>
         </CardHeader>
         <CardContent>
@@ -231,11 +214,10 @@ function UOMPageSkeleton() {
   )
 }
 
-// Default export with Suspense boundary (required for useSearchParams)
-export default function UomPageClient() {
+export default function UOMCategoryPageClient() {
   return (
-    <Suspense fallback={<UOMPageSkeleton />}>
-      <UOMPageContent />
+    <Suspense fallback={<UOMCategoryPageSkeleton />}>
+      <UOMCategoryPageContent />
     </Suspense>
   )
 }

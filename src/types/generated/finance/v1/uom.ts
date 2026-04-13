@@ -10,63 +10,6 @@ import { AuditInfo, BaseResponse, PaginationResponse } from "../../common/v1/com
 
 export const protobufPackage = "finance.v1";
 
-/** UOMCategory represents the category of a unit of measure. */
-export enum UOMCategory {
-  /** UOM_CATEGORY_UNSPECIFIED - Default unspecified value - used as "no filter" in list/export requests. */
-  UOM_CATEGORY_UNSPECIFIED = 0,
-  /** UOM_CATEGORY_WEIGHT - Weight-based units (e.g., KG, GR, TON). */
-  UOM_CATEGORY_WEIGHT = 1,
-  /** UOM_CATEGORY_LENGTH - Length-based units (e.g., MTR, CM, YARD). */
-  UOM_CATEGORY_LENGTH = 2,
-  /** UOM_CATEGORY_VOLUME - Volume-based units (e.g., LTR, ML). */
-  UOM_CATEGORY_VOLUME = 3,
-  /** UOM_CATEGORY_QUANTITY - Quantity-based units (e.g., PCS, BOX, SET). */
-  UOM_CATEGORY_QUANTITY = 4,
-  UNRECOGNIZED = -1,
-}
-
-export function uOMCategoryFromJSON(object: any): UOMCategory {
-  switch (object) {
-    case 0:
-    case "UOM_CATEGORY_UNSPECIFIED":
-      return UOMCategory.UOM_CATEGORY_UNSPECIFIED;
-    case 1:
-    case "UOM_CATEGORY_WEIGHT":
-      return UOMCategory.UOM_CATEGORY_WEIGHT;
-    case 2:
-    case "UOM_CATEGORY_LENGTH":
-      return UOMCategory.UOM_CATEGORY_LENGTH;
-    case 3:
-    case "UOM_CATEGORY_VOLUME":
-      return UOMCategory.UOM_CATEGORY_VOLUME;
-    case 4:
-    case "UOM_CATEGORY_QUANTITY":
-      return UOMCategory.UOM_CATEGORY_QUANTITY;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return UOMCategory.UNRECOGNIZED;
-  }
-}
-
-export function uOMCategoryToJSON(object: UOMCategory): string {
-  switch (object) {
-    case UOMCategory.UOM_CATEGORY_UNSPECIFIED:
-      return "UOM_CATEGORY_UNSPECIFIED";
-    case UOMCategory.UOM_CATEGORY_WEIGHT:
-      return "UOM_CATEGORY_WEIGHT";
-    case UOMCategory.UOM_CATEGORY_LENGTH:
-      return "UOM_CATEGORY_LENGTH";
-    case UOMCategory.UOM_CATEGORY_VOLUME:
-      return "UOM_CATEGORY_VOLUME";
-    case UOMCategory.UOM_CATEGORY_QUANTITY:
-      return "UOM_CATEGORY_QUANTITY";
-    case UOMCategory.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
-}
-
 /** ActiveFilter represents filter options for is_active field. */
 export enum ActiveFilter {
   /** ACTIVE_FILTER_UNSPECIFIED - Show all records regardless of active status (default). */
@@ -118,14 +61,20 @@ export interface UOM {
   uomCode: string;
   /** Display name (e.g., "Kilogram", "Meter", "Pieces"). */
   uomName: string;
-  /** Category of the UOM. */
-  uomCategory: UOMCategory;
   /** Optional description. */
   description: string;
   /** Whether the UOM is active. */
   isActive: boolean;
   /** Audit information. */
-  audit: AuditInfo | undefined;
+  audit:
+    | AuditInfo
+    | undefined;
+  /** Category ID (FK to mst_uom_category). */
+  uomCategoryId: string;
+  /** Category code (denormalized for display, e.g., "WEIGHT"). */
+  uomCategoryCode: string;
+  /** Category name (denormalized for display, e.g., "Weight"). */
+  uomCategoryName: string;
 }
 
 /** CreateUOMRequest is the request for creating a new UOM. */
@@ -137,10 +86,10 @@ export interface CreateUOMRequest {
   uomCode: string;
   /** Display name (1-100 chars). */
   uomName: string;
-  /** Category (required, cannot be UNSPECIFIED). */
-  uomCategory: UOMCategory;
   /** Optional description (max 500 chars). */
   description: string;
+  /** Category ID (UUID, required - FK to mst_uom_category). */
+  uomCategoryId: string;
 }
 
 /** CreateUOMResponse is the response for creating a UOM. */
@@ -183,19 +132,16 @@ export interface UpdateUOMRequest {
   uomName?:
     | string
     | undefined;
-  /**
-   * New category (optional, cannot be UNSPECIFIED if provided).
-   * Use has_uom_category to check if this field is set.
-   */
-  uomCategory?:
-    | UOMCategory
-    | undefined;
   /** New description (optional, max 500 chars). */
   description?:
     | string
     | undefined;
   /** New active status (optional). */
-  isActive?: boolean | undefined;
+  isActive?:
+    | boolean
+    | undefined;
+  /** New category ID (optional, UUID format). */
+  uomCategoryId?: string | undefined;
 }
 
 /** UpdateUOMResponse is the response for updating a UOM. */
@@ -229,20 +175,17 @@ export interface ListUOMsRequest {
   /** Search query (searches in code, name, description). */
   search: string;
   /**
-   * Filter by category.
-   * UOM_CATEGORY_UNSPECIFIED (0) means "show all categories" (no filter).
-   */
-  category: UOMCategory;
-  /**
    * Filter by active status.
    * ACTIVE_FILTER_UNSPECIFIED (0) = show all, ACTIVE_FILTER_ACTIVE (1) = only active,
    * ACTIVE_FILTER_INACTIVE (2) = only inactive.
    */
   activeFilter: ActiveFilter;
-  /** Sort field: "code", "name", "created_at" (default: "code"). */
+  /** Sort field: "code", "name", "category", "created_at" (default: "code"). */
   sortBy: string;
   /** Sort order: "asc", "desc" (default: "asc"). */
   sortOrder: string;
+  /** Filter by category ID (empty = no filter). */
+  uomCategoryId: string;
 }
 
 /** ListUOMsResponse is the response for listing UOMs. */
@@ -260,16 +203,13 @@ export interface ListUOMsResponse {
 /** ExportUOMsRequest is the request for exporting UOMs to Excel. */
 export interface ExportUOMsRequest {
   /**
-   * Filter by category.
-   * UOM_CATEGORY_UNSPECIFIED (0) means "export all categories".
-   */
-  category: UOMCategory;
-  /**
    * Filter by active status.
    * ACTIVE_FILTER_UNSPECIFIED (0) = export all, ACTIVE_FILTER_ACTIVE (1) = only active,
    * ACTIVE_FILTER_INACTIVE (2) = only inactive.
    */
   activeFilter: ActiveFilter;
+  /** Filter by category ID (empty = export all categories). */
+  uomCategoryId: string;
 }
 
 /** ExportUOMsResponse is the response containing the Excel file. */
@@ -342,7 +282,17 @@ export interface DownloadTemplateResponse {
 }
 
 function createBaseUOM(): UOM {
-  return { uomId: "", uomCode: "", uomName: "", uomCategory: 0, description: "", isActive: false, audit: undefined };
+  return {
+    uomId: "",
+    uomCode: "",
+    uomName: "",
+    description: "",
+    isActive: false,
+    audit: undefined,
+    uomCategoryId: "",
+    uomCategoryCode: "",
+    uomCategoryName: "",
+  };
 }
 
 export const UOM: MessageFns<UOM> = {
@@ -356,9 +306,6 @@ export const UOM: MessageFns<UOM> = {
     if (message.uomName !== "") {
       writer.uint32(26).string(message.uomName);
     }
-    if (message.uomCategory !== 0) {
-      writer.uint32(32).int32(message.uomCategory);
-    }
     if (message.description !== "") {
       writer.uint32(42).string(message.description);
     }
@@ -367,6 +314,15 @@ export const UOM: MessageFns<UOM> = {
     }
     if (message.audit !== undefined) {
       AuditInfo.encode(message.audit, writer.uint32(58).fork()).join();
+    }
+    if (message.uomCategoryId !== "") {
+      writer.uint32(66).string(message.uomCategoryId);
+    }
+    if (message.uomCategoryCode !== "") {
+      writer.uint32(74).string(message.uomCategoryCode);
+    }
+    if (message.uomCategoryName !== "") {
+      writer.uint32(82).string(message.uomCategoryName);
     }
     return writer;
   },
@@ -402,14 +358,6 @@ export const UOM: MessageFns<UOM> = {
           message.uomName = reader.string();
           continue;
         }
-        case 4: {
-          if (tag !== 32) {
-            break;
-          }
-
-          message.uomCategory = reader.int32() as any;
-          continue;
-        }
         case 5: {
           if (tag !== 42) {
             break;
@@ -432,6 +380,30 @@ export const UOM: MessageFns<UOM> = {
           }
 
           message.audit = AuditInfo.decode(reader, reader.uint32());
+          continue;
+        }
+        case 8: {
+          if (tag !== 66) {
+            break;
+          }
+
+          message.uomCategoryId = reader.string();
+          continue;
+        }
+        case 9: {
+          if (tag !== 74) {
+            break;
+          }
+
+          message.uomCategoryCode = reader.string();
+          continue;
+        }
+        case 10: {
+          if (tag !== 82) {
+            break;
+          }
+
+          message.uomCategoryName = reader.string();
           continue;
         }
       }
@@ -460,11 +432,6 @@ export const UOM: MessageFns<UOM> = {
         : isSet(object.uom_name)
         ? globalThis.String(object.uom_name)
         : "",
-      uomCategory: isSet(object.uomCategory)
-        ? uOMCategoryFromJSON(object.uomCategory)
-        : isSet(object.uom_category)
-        ? uOMCategoryFromJSON(object.uom_category)
-        : 0,
       description: isSet(object.description) ? globalThis.String(object.description) : "",
       isActive: isSet(object.isActive)
         ? globalThis.Boolean(object.isActive)
@@ -472,6 +439,21 @@ export const UOM: MessageFns<UOM> = {
         ? globalThis.Boolean(object.is_active)
         : false,
       audit: isSet(object.audit) ? AuditInfo.fromJSON(object.audit) : undefined,
+      uomCategoryId: isSet(object.uomCategoryId)
+        ? globalThis.String(object.uomCategoryId)
+        : isSet(object.uom_category_id)
+        ? globalThis.String(object.uom_category_id)
+        : "",
+      uomCategoryCode: isSet(object.uomCategoryCode)
+        ? globalThis.String(object.uomCategoryCode)
+        : isSet(object.uom_category_code)
+        ? globalThis.String(object.uom_category_code)
+        : "",
+      uomCategoryName: isSet(object.uomCategoryName)
+        ? globalThis.String(object.uomCategoryName)
+        : isSet(object.uom_category_name)
+        ? globalThis.String(object.uom_category_name)
+        : "",
     };
   },
 
@@ -486,9 +468,6 @@ export const UOM: MessageFns<UOM> = {
     if (message.uomName !== "") {
       obj.uomName = message.uomName;
     }
-    if (message.uomCategory !== 0) {
-      obj.uomCategory = uOMCategoryToJSON(message.uomCategory);
-    }
     if (message.description !== "") {
       obj.description = message.description;
     }
@@ -497,6 +476,15 @@ export const UOM: MessageFns<UOM> = {
     }
     if (message.audit !== undefined) {
       obj.audit = AuditInfo.toJSON(message.audit);
+    }
+    if (message.uomCategoryId !== "") {
+      obj.uomCategoryId = message.uomCategoryId;
+    }
+    if (message.uomCategoryCode !== "") {
+      obj.uomCategoryCode = message.uomCategoryCode;
+    }
+    if (message.uomCategoryName !== "") {
+      obj.uomCategoryName = message.uomCategoryName;
     }
     return obj;
   },
@@ -509,18 +497,20 @@ export const UOM: MessageFns<UOM> = {
     message.uomId = object.uomId ?? "";
     message.uomCode = object.uomCode ?? "";
     message.uomName = object.uomName ?? "";
-    message.uomCategory = object.uomCategory ?? 0;
     message.description = object.description ?? "";
     message.isActive = object.isActive ?? false;
     message.audit = (object.audit !== undefined && object.audit !== null)
       ? AuditInfo.fromPartial(object.audit)
       : undefined;
+    message.uomCategoryId = object.uomCategoryId ?? "";
+    message.uomCategoryCode = object.uomCategoryCode ?? "";
+    message.uomCategoryName = object.uomCategoryName ?? "";
     return message;
   },
 };
 
 function createBaseCreateUOMRequest(): CreateUOMRequest {
-  return { uomCode: "", uomName: "", uomCategory: 0, description: "" };
+  return { uomCode: "", uomName: "", description: "", uomCategoryId: "" };
 }
 
 export const CreateUOMRequest: MessageFns<CreateUOMRequest> = {
@@ -531,11 +521,11 @@ export const CreateUOMRequest: MessageFns<CreateUOMRequest> = {
     if (message.uomName !== "") {
       writer.uint32(18).string(message.uomName);
     }
-    if (message.uomCategory !== 0) {
-      writer.uint32(24).int32(message.uomCategory);
-    }
     if (message.description !== "") {
       writer.uint32(34).string(message.description);
+    }
+    if (message.uomCategoryId !== "") {
+      writer.uint32(42).string(message.uomCategoryId);
     }
     return writer;
   },
@@ -563,20 +553,20 @@ export const CreateUOMRequest: MessageFns<CreateUOMRequest> = {
           message.uomName = reader.string();
           continue;
         }
-        case 3: {
-          if (tag !== 24) {
-            break;
-          }
-
-          message.uomCategory = reader.int32() as any;
-          continue;
-        }
         case 4: {
           if (tag !== 34) {
             break;
           }
 
           message.description = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.uomCategoryId = reader.string();
           continue;
         }
       }
@@ -600,12 +590,12 @@ export const CreateUOMRequest: MessageFns<CreateUOMRequest> = {
         : isSet(object.uom_name)
         ? globalThis.String(object.uom_name)
         : "",
-      uomCategory: isSet(object.uomCategory)
-        ? uOMCategoryFromJSON(object.uomCategory)
-        : isSet(object.uom_category)
-        ? uOMCategoryFromJSON(object.uom_category)
-        : 0,
       description: isSet(object.description) ? globalThis.String(object.description) : "",
+      uomCategoryId: isSet(object.uomCategoryId)
+        ? globalThis.String(object.uomCategoryId)
+        : isSet(object.uom_category_id)
+        ? globalThis.String(object.uom_category_id)
+        : "",
     };
   },
 
@@ -617,11 +607,11 @@ export const CreateUOMRequest: MessageFns<CreateUOMRequest> = {
     if (message.uomName !== "") {
       obj.uomName = message.uomName;
     }
-    if (message.uomCategory !== 0) {
-      obj.uomCategory = uOMCategoryToJSON(message.uomCategory);
-    }
     if (message.description !== "") {
       obj.description = message.description;
+    }
+    if (message.uomCategoryId !== "") {
+      obj.uomCategoryId = message.uomCategoryId;
     }
     return obj;
   },
@@ -633,8 +623,8 @@ export const CreateUOMRequest: MessageFns<CreateUOMRequest> = {
     const message = createBaseCreateUOMRequest();
     message.uomCode = object.uomCode ?? "";
     message.uomName = object.uomName ?? "";
-    message.uomCategory = object.uomCategory ?? 0;
     message.description = object.description ?? "";
+    message.uomCategoryId = object.uomCategoryId ?? "";
     return message;
   },
 };
@@ -860,7 +850,7 @@ export const GetUOMResponse: MessageFns<GetUOMResponse> = {
 };
 
 function createBaseUpdateUOMRequest(): UpdateUOMRequest {
-  return { uomId: "", uomName: undefined, uomCategory: undefined, description: undefined, isActive: undefined };
+  return { uomId: "", uomName: undefined, description: undefined, isActive: undefined, uomCategoryId: undefined };
 }
 
 export const UpdateUOMRequest: MessageFns<UpdateUOMRequest> = {
@@ -871,14 +861,14 @@ export const UpdateUOMRequest: MessageFns<UpdateUOMRequest> = {
     if (message.uomName !== undefined) {
       writer.uint32(18).string(message.uomName);
     }
-    if (message.uomCategory !== undefined) {
-      writer.uint32(24).int32(message.uomCategory);
-    }
     if (message.description !== undefined) {
       writer.uint32(34).string(message.description);
     }
     if (message.isActive !== undefined) {
       writer.uint32(40).bool(message.isActive);
+    }
+    if (message.uomCategoryId !== undefined) {
+      writer.uint32(50).string(message.uomCategoryId);
     }
     return writer;
   },
@@ -906,14 +896,6 @@ export const UpdateUOMRequest: MessageFns<UpdateUOMRequest> = {
           message.uomName = reader.string();
           continue;
         }
-        case 3: {
-          if (tag !== 24) {
-            break;
-          }
-
-          message.uomCategory = reader.int32() as any;
-          continue;
-        }
         case 4: {
           if (tag !== 34) {
             break;
@@ -928,6 +910,14 @@ export const UpdateUOMRequest: MessageFns<UpdateUOMRequest> = {
           }
 
           message.isActive = reader.bool();
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.uomCategoryId = reader.string();
           continue;
         }
       }
@@ -951,16 +941,16 @@ export const UpdateUOMRequest: MessageFns<UpdateUOMRequest> = {
         : isSet(object.uom_name)
         ? globalThis.String(object.uom_name)
         : undefined,
-      uomCategory: isSet(object.uomCategory)
-        ? uOMCategoryFromJSON(object.uomCategory)
-        : isSet(object.uom_category)
-        ? uOMCategoryFromJSON(object.uom_category)
-        : undefined,
       description: isSet(object.description) ? globalThis.String(object.description) : undefined,
       isActive: isSet(object.isActive)
         ? globalThis.Boolean(object.isActive)
         : isSet(object.is_active)
         ? globalThis.Boolean(object.is_active)
+        : undefined,
+      uomCategoryId: isSet(object.uomCategoryId)
+        ? globalThis.String(object.uomCategoryId)
+        : isSet(object.uom_category_id)
+        ? globalThis.String(object.uom_category_id)
         : undefined,
     };
   },
@@ -973,14 +963,14 @@ export const UpdateUOMRequest: MessageFns<UpdateUOMRequest> = {
     if (message.uomName !== undefined) {
       obj.uomName = message.uomName;
     }
-    if (message.uomCategory !== undefined) {
-      obj.uomCategory = uOMCategoryToJSON(message.uomCategory);
-    }
     if (message.description !== undefined) {
       obj.description = message.description;
     }
     if (message.isActive !== undefined) {
       obj.isActive = message.isActive;
+    }
+    if (message.uomCategoryId !== undefined) {
+      obj.uomCategoryId = message.uomCategoryId;
     }
     return obj;
   },
@@ -992,9 +982,9 @@ export const UpdateUOMRequest: MessageFns<UpdateUOMRequest> = {
     const message = createBaseUpdateUOMRequest();
     message.uomId = object.uomId ?? "";
     message.uomName = object.uomName ?? undefined;
-    message.uomCategory = object.uomCategory ?? undefined;
     message.description = object.description ?? undefined;
     message.isActive = object.isActive ?? undefined;
+    message.uomCategoryId = object.uomCategoryId ?? undefined;
     return message;
   },
 };
@@ -1202,7 +1192,7 @@ export const DeleteUOMResponse: MessageFns<DeleteUOMResponse> = {
 };
 
 function createBaseListUOMsRequest(): ListUOMsRequest {
-  return { page: 0, pageSize: 0, search: "", category: 0, activeFilter: 0, sortBy: "", sortOrder: "" };
+  return { page: 0, pageSize: 0, search: "", activeFilter: 0, sortBy: "", sortOrder: "", uomCategoryId: "" };
 }
 
 export const ListUOMsRequest: MessageFns<ListUOMsRequest> = {
@@ -1216,9 +1206,6 @@ export const ListUOMsRequest: MessageFns<ListUOMsRequest> = {
     if (message.search !== "") {
       writer.uint32(26).string(message.search);
     }
-    if (message.category !== 0) {
-      writer.uint32(32).int32(message.category);
-    }
     if (message.activeFilter !== 0) {
       writer.uint32(40).int32(message.activeFilter);
     }
@@ -1227,6 +1214,9 @@ export const ListUOMsRequest: MessageFns<ListUOMsRequest> = {
     }
     if (message.sortOrder !== "") {
       writer.uint32(58).string(message.sortOrder);
+    }
+    if (message.uomCategoryId !== "") {
+      writer.uint32(66).string(message.uomCategoryId);
     }
     return writer;
   },
@@ -1262,14 +1252,6 @@ export const ListUOMsRequest: MessageFns<ListUOMsRequest> = {
           message.search = reader.string();
           continue;
         }
-        case 4: {
-          if (tag !== 32) {
-            break;
-          }
-
-          message.category = reader.int32() as any;
-          continue;
-        }
         case 5: {
           if (tag !== 40) {
             break;
@@ -1294,6 +1276,14 @@ export const ListUOMsRequest: MessageFns<ListUOMsRequest> = {
           message.sortOrder = reader.string();
           continue;
         }
+        case 8: {
+          if (tag !== 66) {
+            break;
+          }
+
+          message.uomCategoryId = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1312,7 +1302,6 @@ export const ListUOMsRequest: MessageFns<ListUOMsRequest> = {
         ? globalThis.Number(object.page_size)
         : 0,
       search: isSet(object.search) ? globalThis.String(object.search) : "",
-      category: isSet(object.category) ? uOMCategoryFromJSON(object.category) : 0,
       activeFilter: isSet(object.activeFilter)
         ? activeFilterFromJSON(object.activeFilter)
         : isSet(object.active_filter)
@@ -1328,6 +1317,11 @@ export const ListUOMsRequest: MessageFns<ListUOMsRequest> = {
         : isSet(object.sort_order)
         ? globalThis.String(object.sort_order)
         : "",
+      uomCategoryId: isSet(object.uomCategoryId)
+        ? globalThis.String(object.uomCategoryId)
+        : isSet(object.uom_category_id)
+        ? globalThis.String(object.uom_category_id)
+        : "",
     };
   },
 
@@ -1342,9 +1336,6 @@ export const ListUOMsRequest: MessageFns<ListUOMsRequest> = {
     if (message.search !== "") {
       obj.search = message.search;
     }
-    if (message.category !== 0) {
-      obj.category = uOMCategoryToJSON(message.category);
-    }
     if (message.activeFilter !== 0) {
       obj.activeFilter = activeFilterToJSON(message.activeFilter);
     }
@@ -1353,6 +1344,9 @@ export const ListUOMsRequest: MessageFns<ListUOMsRequest> = {
     }
     if (message.sortOrder !== "") {
       obj.sortOrder = message.sortOrder;
+    }
+    if (message.uomCategoryId !== "") {
+      obj.uomCategoryId = message.uomCategoryId;
     }
     return obj;
   },
@@ -1365,10 +1359,10 @@ export const ListUOMsRequest: MessageFns<ListUOMsRequest> = {
     message.page = object.page ?? 0;
     message.pageSize = object.pageSize ?? 0;
     message.search = object.search ?? "";
-    message.category = object.category ?? 0;
     message.activeFilter = object.activeFilter ?? 0;
     message.sortBy = object.sortBy ?? "";
     message.sortOrder = object.sortOrder ?? "";
+    message.uomCategoryId = object.uomCategoryId ?? "";
     return message;
   },
 };
@@ -1470,16 +1464,16 @@ export const ListUOMsResponse: MessageFns<ListUOMsResponse> = {
 };
 
 function createBaseExportUOMsRequest(): ExportUOMsRequest {
-  return { category: 0, activeFilter: 0 };
+  return { activeFilter: 0, uomCategoryId: "" };
 }
 
 export const ExportUOMsRequest: MessageFns<ExportUOMsRequest> = {
   encode(message: ExportUOMsRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.category !== 0) {
-      writer.uint32(8).int32(message.category);
-    }
     if (message.activeFilter !== 0) {
       writer.uint32(16).int32(message.activeFilter);
+    }
+    if (message.uomCategoryId !== "") {
+      writer.uint32(26).string(message.uomCategoryId);
     }
     return writer;
   },
@@ -1491,20 +1485,20 @@ export const ExportUOMsRequest: MessageFns<ExportUOMsRequest> = {
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 8) {
-            break;
-          }
-
-          message.category = reader.int32() as any;
-          continue;
-        }
         case 2: {
           if (tag !== 16) {
             break;
           }
 
           message.activeFilter = reader.int32() as any;
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.uomCategoryId = reader.string();
           continue;
         }
       }
@@ -1518,22 +1512,26 @@ export const ExportUOMsRequest: MessageFns<ExportUOMsRequest> = {
 
   fromJSON(object: any): ExportUOMsRequest {
     return {
-      category: isSet(object.category) ? uOMCategoryFromJSON(object.category) : 0,
       activeFilter: isSet(object.activeFilter)
         ? activeFilterFromJSON(object.activeFilter)
         : isSet(object.active_filter)
         ? activeFilterFromJSON(object.active_filter)
         : 0,
+      uomCategoryId: isSet(object.uomCategoryId)
+        ? globalThis.String(object.uomCategoryId)
+        : isSet(object.uom_category_id)
+        ? globalThis.String(object.uom_category_id)
+        : "",
     };
   },
 
   toJSON(message: ExportUOMsRequest): unknown {
     const obj: any = {};
-    if (message.category !== 0) {
-      obj.category = uOMCategoryToJSON(message.category);
-    }
     if (message.activeFilter !== 0) {
       obj.activeFilter = activeFilterToJSON(message.activeFilter);
+    }
+    if (message.uomCategoryId !== "") {
+      obj.uomCategoryId = message.uomCategoryId;
     }
     return obj;
   },
@@ -1543,8 +1541,8 @@ export const ExportUOMsRequest: MessageFns<ExportUOMsRequest> = {
   },
   fromPartial(object: DeepPartial<ExportUOMsRequest>): ExportUOMsRequest {
     const message = createBaseExportUOMsRequest();
-    message.category = object.category ?? 0;
     message.activeFilter = object.activeFilter ?? 0;
+    message.uomCategoryId = object.uomCategoryId ?? "";
     return message;
   },
 };

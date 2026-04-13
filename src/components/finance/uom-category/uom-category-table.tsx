@@ -5,29 +5,29 @@ import { Pencil, Trash2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { DataTable, type ColumnDef, type RowAction } from "@/components/shared"
 
-import type { UOM } from "@/types/finance/uom"
+import type { UOMCategory } from "@/types/finance/uom-category"
 
-interface UOMTableProps {
-  data: UOM[]
+interface UOMCategoryTableProps {
+  data: UOMCategory[]
   isLoading?: boolean
-  onEdit: (uom: UOM) => void
-  onDelete: (uom: UOM) => void
+  onEdit: (uomCategory: UOMCategory) => void
+  onDelete: (uomCategory: UOMCategory) => void
 }
 
-export function UOMTable({ data, isLoading, onEdit, onDelete }: UOMTableProps) {
-  const columns: ColumnDef<UOM>[] = [
+export function UOMCategoryTable({ data, isLoading, onEdit, onDelete }: UOMCategoryTableProps) {
+  const columns: ColumnDef<UOMCategory>[] = [
     {
-      id: "uomCode",
+      id: "categoryCode",
       header: "Code",
-      width: "w-[100px]",
+      width: "w-[120px]",
       cell: (row) => (
-        <span className="font-medium font-mono">{row.uomCode || "-"}</span>
+        <span className="font-medium font-mono">{row.categoryCode || "-"}</span>
       ),
     },
     {
-      id: "uomName",
+      id: "categoryName",
       header: "Name",
-      accessorKey: "uomName",
+      accessorKey: "categoryName",
     },
     {
       id: "description",
@@ -35,15 +35,6 @@ export function UOMTable({ data, isLoading, onEdit, onDelete }: UOMTableProps) {
       hideOnMobile: true,
       cellClassName: "max-w-[200px] truncate text-muted-foreground",
       cell: (row) => row.description || "-",
-    },
-    {
-      id: "uomCategoryName",
-      header: "Category",
-      cell: (row) => (
-        <Badge variant="outline">
-          {row.uomCategoryName || row.uomCategoryCode || "-"}
-        </Badge>
-      ),
     },
     {
       id: "isActive",
@@ -56,7 +47,7 @@ export function UOMTable({ data, isLoading, onEdit, onDelete }: UOMTableProps) {
     },
   ]
 
-  const actions: RowAction<UOM>[] = [
+  const actions: RowAction<UOMCategory>[] = [
     {
       id: "edit",
       label: "Edit",
@@ -76,10 +67,10 @@ export function UOMTable({ data, isLoading, onEdit, onDelete }: UOMTableProps) {
     <DataTable
       data={data}
       columns={columns}
-      keyField="uomId"
+      keyField="uomCategoryId"
       actions={actions}
       isLoading={isLoading}
-      emptyMessage="No units of measure found"
+      emptyMessage="No UOM categories found"
       emptyDescription="Try adjusting your search or filter criteria"
     />
   )

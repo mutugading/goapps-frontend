@@ -18,6 +18,7 @@ import {
   OrganizationServiceDefinition,
 } from "@/types/generated/iam/v1/organization"
 import { UOMServiceDefinition } from "@/types/generated/finance/v1/uom"
+import { UOMCategoryServiceDefinition } from "@/types/generated/finance/v1/uom_category"
 import { RMCategoryServiceDefinition } from "@/types/generated/finance/v1/rm_category"
 import { ParameterServiceDefinition } from "@/types/generated/finance/v1/parameter"
 import { FormulaServiceDefinition } from "@/types/generated/finance/v1/formula"
@@ -137,6 +138,12 @@ export function getOrganizationClient() {
 export function getUomClient() {
   return getOrCreate("uom", () =>
     createServiceClient(UOMServiceDefinition, SERVICE_ADDRESSES.finance, insecure, CHANNEL_OPTIONS)
+  )
+}
+
+export function getUomCategoryClient() {
+  return getOrCreate("uomCategory", () =>
+    createServiceClient(UOMCategoryServiceDefinition, SERVICE_ADDRESSES.finance, insecure, CHANNEL_OPTIONS)
   )
 }
 

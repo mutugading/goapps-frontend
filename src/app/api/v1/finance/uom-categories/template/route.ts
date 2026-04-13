@@ -1,24 +1,15 @@
-// GET /api/v1/finance/uoms/export - Export UOMs to Excel
+// GET /api/v1/finance/uom-categories/template - Download import template
 
 import { NextRequest, NextResponse } from "next/server"
-import { getUomClient, createMetadataFromRequest, isGrpcError, handleGrpcError } from "@/lib/grpc"
+import { getUomCategoryClient, createMetadataFromRequest, isGrpcError, handleGrpcError } from "@/lib/grpc"
 
 export async function GET(request: NextRequest) {
     try {
-        const { searchParams } = new URL(request.url)
         const metadata = createMetadataFromRequest(request)
-        const client = getUomClient()
-
-        const response = await client.exportUOMs(
-            {
-                uomCategoryId: searchParams.get("uomCategoryId") || searchParams.get("uom_category_id") || "",
-                activeFilter: Number(searchParams.get("activeFilter") || searchParams.get("active_filter")) || 0,
-            },
-            metadata
-        )
+        const client = getUomCategoryClient()
+        const response = await client.downloadUOMCategoryTemplate({}, metadata)
 
         // Convert Uint8Array to base64 string for JSON serialization
-        // Proto parser (bytesFromBase64) expects base64 string, not Uint8Array object
         const fileContentBase64 = Buffer.from(response.fileContent).toString('base64')
 
         return NextResponse.json({
@@ -28,13 +19,13 @@ export async function GET(request: NextRequest) {
         })
     } catch (error) {
         if (isGrpcError(error)) return handleGrpcError(error)
-        console.error("Error exporting UOMs:", error)
+        console.error("Error downloading UOM Category template:", error)
         return NextResponse.json(
             {
                 base: {
                     isSuccess: false,
                     statusCode: "500",
-                    message: "Failed to export unit of measures",
+                    message: "Failed to download template",
                     validationErrors: [],
                 },
             },
