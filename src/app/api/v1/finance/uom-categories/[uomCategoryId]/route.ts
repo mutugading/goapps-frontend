@@ -41,7 +41,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
         const body = await request.json()
         const metadata = createMetadataFromRequest(request)
         const client = getUomCategoryClient()
-        const response = await client.updateUOMCategory({ uomCategoryId, ...body }, metadata)
+        const response = await client.updateUOMCategory({ ...body, uomCategoryId }, metadata)
 
         return NextResponse.json({
             base: response.base,
