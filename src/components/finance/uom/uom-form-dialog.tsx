@@ -87,11 +87,12 @@ export function UOMFormDialog({
   const createMutation = useCreateUOM()
   const updateMutation = useUpdateUOM()
 
-  // Fetch active UOM categories for the dropdown
+  // Fetch active categories for create mode, but include inactive categories in edit mode
+  // so an existing UOM can still display and retain its currently selected category.
   const { data: categoriesData } = useUOMCategories({
     page: 1,
     pageSize: 100,
-    activeFilter: ActiveFilter.ACTIVE_FILTER_ACTIVE,
+    ...(!isEditing ? { activeFilter: ActiveFilter.ACTIVE_FILTER_ACTIVE } : {}),
     sortBy: "name",
     sortOrder: "asc",
   })
