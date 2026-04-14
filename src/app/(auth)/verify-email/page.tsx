@@ -5,17 +5,18 @@
 
 import { useState, useRef, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
-import Link from "next/link"
 import { Mail, ArrowLeft, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { AuthCard, AuthHeader, AuthFooter } from "@/components/auth/auth-card"
 import { AUTH_API, AUTH_ROUTES } from "@/lib/auth/config"
+import { useAuth } from "@/providers/auth-provider"
 
 const RESEND_COOLDOWN_SECONDS = 60
 
 export default function VerifyEmailPage() {
     const router = useRouter()
+    const { logout } = useAuth()
 
     const [otp, setOtp] = useState<string[]>(["", "", "", "", "", ""])
     const [isLoading, setIsLoading] = useState(false)
@@ -204,12 +205,13 @@ export default function VerifyEmailPage() {
                         "Resend verification code"
                     )}
                 </button>
-                <Link
-                    href={AUTH_ROUTES.LOGIN}
+                <button
+                    type="button"
+                    onClick={() => logout()}
                     className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors"
                 >
                     <ArrowLeft className="h-4 w-4" />Back to login
-                </Link>
+                </button>
             </AuthFooter>
         </AuthCard>
     )

@@ -51,7 +51,7 @@ export default function DashboardLayout({
 }: {
     children: React.ReactNode
 }) {
-    const { isAuthenticated, isLoading } = useAuth()
+    const { isAuthenticated, isLoading, user } = useAuth()
     const router = useRouter()
 
     useEffect(() => {
@@ -59,6 +59,13 @@ export default function DashboardLayout({
             router.push("/")
         }
     }, [isLoading, isAuthenticated, router])
+
+    // Redirect to email verification if authenticated but email not verified
+    useEffect(() => {
+        if (!isLoading && isAuthenticated && user && user.emailVerified === false) {
+            router.push("/verify-email")
+        }
+    }, [isLoading, isAuthenticated, user, router])
 
     // Show skeleton while checking auth
     if (isLoading) {
