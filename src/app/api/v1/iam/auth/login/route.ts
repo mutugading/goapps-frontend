@@ -48,6 +48,7 @@ export async function POST(request: NextRequest) {
             data: {
                 user: response.data?.user ?? null,
                 requires2fa: response.data?.requires2fa || false,
+                requiresEmailVerification: response.data?.requiresEmailVerification || false,
                 expiresIn: response.data?.expiresIn,
             },
         })

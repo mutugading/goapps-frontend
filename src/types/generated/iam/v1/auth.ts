@@ -51,6 +51,11 @@ export interface LoginData {
     | undefined;
   /** Whether 2FA is required (return true if 2FA enabled but totp_code not provided). */
   requires2fa: boolean;
+  /**
+   * Whether email verification is required before full access (email_verified_at IS NULL).
+   * Frontend should redirect to /verify-email and show banner on dashboard.
+   */
+  requiresEmailVerification: boolean;
 }
 
 /** AuthUser contains basic user info for authentication context. */
@@ -71,6 +76,8 @@ export interface AuthUser {
   permissions: string[];
   /** Whether 2FA is enabled. */
   twoFactorEnabled: boolean;
+  /** Whether the user has verified their email address (true if email_verified_at IS NOT NULL). */
+  emailVerified: boolean;
 }
 
 /** LogoutRequest is the request for logout. */
@@ -245,6 +252,53 @@ export interface GetCurrentUserResponse {
     | undefined;
   /** User info. */
   data: AuthUser | undefined;
+}
+
+/** SendEmailVerificationRequest is empty (uses JWT context to resolve user + email). */
+export interface SendEmailVerificationRequest {
+}
+
+/** SendEmailVerificationResponse confirms the verification code was sent. */
+export interface SendEmailVerificationResponse {
+  /** Standard response metadata. */
+  base:
+    | BaseResponse
+    | undefined;
+  /** Human-readable message (e.g., "Verification code sent to j***@example.com"). */
+  message: string;
+  /** Code expiry in seconds (e.g., 900 = 15 minutes). */
+  expiresIn: number;
+}
+
+/** VerifyEmailRequest validates the 6-digit verification code. */
+export interface VerifyEmailRequest {
+  /** 6-digit verification code sent to the user's email. */
+  code: string;
+}
+
+/** VerifyEmailResponse confirms the email is verified. */
+export interface VerifyEmailResponse {
+  /** Standard response metadata. */
+  base: BaseResponse | undefined;
+}
+
+/**
+ * ResendEmailVerificationRequest re-sends the verification code.
+ * Rate-limited to 1 per 60 seconds per user.
+ */
+export interface ResendEmailVerificationRequest {
+}
+
+/** ResendEmailVerificationResponse confirms re-send. */
+export interface ResendEmailVerificationResponse {
+  /** Standard response metadata. */
+  base:
+    | BaseResponse
+    | undefined;
+  /** Human-readable message. */
+  message: string;
+  /** Code expiry in seconds. */
+  expiresIn: number;
 }
 
 function createBaseLoginRequest(): LoginRequest {
@@ -442,7 +496,15 @@ export const LoginResponse: MessageFns<LoginResponse> = {
 };
 
 function createBaseLoginData(): LoginData {
-  return { accessToken: "", refreshToken: "", expiresIn: 0, tokenType: "", user: undefined, requires2fa: false };
+  return {
+    accessToken: "",
+    refreshToken: "",
+    expiresIn: 0,
+    tokenType: "",
+    user: undefined,
+    requires2fa: false,
+    requiresEmailVerification: false,
+  };
 }
 
 export const LoginData: MessageFns<LoginData> = {
@@ -464,6 +526,9 @@ export const LoginData: MessageFns<LoginData> = {
     }
     if (message.requires2fa !== false) {
       writer.uint32(48).bool(message.requires2fa);
+    }
+    if (message.requiresEmailVerification !== false) {
+      writer.uint32(56).bool(message.requiresEmailVerification);
     }
     return writer;
   },
@@ -523,6 +588,14 @@ export const LoginData: MessageFns<LoginData> = {
           message.requires2fa = reader.bool();
           continue;
         }
+        case 7: {
+          if (tag !== 56) {
+            break;
+          }
+
+          message.requiresEmailVerification = reader.bool();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -560,6 +633,11 @@ export const LoginData: MessageFns<LoginData> = {
         : isSet(object.requires_2fa)
         ? globalThis.Boolean(object.requires_2fa)
         : false,
+      requiresEmailVerification: isSet(object.requiresEmailVerification)
+        ? globalThis.Boolean(object.requiresEmailVerification)
+        : isSet(object.requires_email_verification)
+        ? globalThis.Boolean(object.requires_email_verification)
+        : false,
     };
   },
 
@@ -583,6 +661,9 @@ export const LoginData: MessageFns<LoginData> = {
     if (message.requires2fa !== false) {
       obj.requires2fa = message.requires2fa;
     }
+    if (message.requiresEmailVerification !== false) {
+      obj.requiresEmailVerification = message.requiresEmailVerification;
+    }
     return obj;
   },
 
@@ -597,6 +678,7 @@ export const LoginData: MessageFns<LoginData> = {
     message.tokenType = object.tokenType ?? "";
     message.user = (object.user !== undefined && object.user !== null) ? AuthUser.fromPartial(object.user) : undefined;
     message.requires2fa = object.requires2fa ?? false;
+    message.requiresEmailVerification = object.requiresEmailVerification ?? false;
     return message;
   },
 };
@@ -611,6 +693,7 @@ function createBaseAuthUser(): AuthUser {
     roles: [],
     permissions: [],
     twoFactorEnabled: false,
+    emailVerified: false,
   };
 }
 
@@ -639,6 +722,9 @@ export const AuthUser: MessageFns<AuthUser> = {
     }
     if (message.twoFactorEnabled !== false) {
       writer.uint32(64).bool(message.twoFactorEnabled);
+    }
+    if (message.emailVerified !== false) {
+      writer.uint32(72).bool(message.emailVerified);
     }
     return writer;
   },
@@ -714,6 +800,14 @@ export const AuthUser: MessageFns<AuthUser> = {
           message.twoFactorEnabled = reader.bool();
           continue;
         }
+        case 9: {
+          if (tag !== 72) {
+            break;
+          }
+
+          message.emailVerified = reader.bool();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -753,6 +847,11 @@ export const AuthUser: MessageFns<AuthUser> = {
         : isSet(object.two_factor_enabled)
         ? globalThis.Boolean(object.two_factor_enabled)
         : false,
+      emailVerified: isSet(object.emailVerified)
+        ? globalThis.Boolean(object.emailVerified)
+        : isSet(object.email_verified)
+        ? globalThis.Boolean(object.email_verified)
+        : false,
     };
   },
 
@@ -782,6 +881,9 @@ export const AuthUser: MessageFns<AuthUser> = {
     if (message.twoFactorEnabled !== false) {
       obj.twoFactorEnabled = message.twoFactorEnabled;
     }
+    if (message.emailVerified !== false) {
+      obj.emailVerified = message.emailVerified;
+    }
     return obj;
   },
 
@@ -798,6 +900,7 @@ export const AuthUser: MessageFns<AuthUser> = {
     message.roles = object.roles?.map((e) => e) || [];
     message.permissions = object.permissions?.map((e) => e) || [];
     message.twoFactorEnabled = object.twoFactorEnabled ?? false;
+    message.emailVerified = object.emailVerified ?? false;
     return message;
   },
 };
@@ -2461,6 +2564,406 @@ export const GetCurrentUserResponse: MessageFns<GetCurrentUserResponse> = {
   },
 };
 
+function createBaseSendEmailVerificationRequest(): SendEmailVerificationRequest {
+  return {};
+}
+
+export const SendEmailVerificationRequest: MessageFns<SendEmailVerificationRequest> = {
+  encode(_: SendEmailVerificationRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SendEmailVerificationRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSendEmailVerificationRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): SendEmailVerificationRequest {
+    return {};
+  },
+
+  toJSON(_: SendEmailVerificationRequest): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create(base?: DeepPartial<SendEmailVerificationRequest>): SendEmailVerificationRequest {
+    return SendEmailVerificationRequest.fromPartial(base ?? {});
+  },
+  fromPartial(_: DeepPartial<SendEmailVerificationRequest>): SendEmailVerificationRequest {
+    const message = createBaseSendEmailVerificationRequest();
+    return message;
+  },
+};
+
+function createBaseSendEmailVerificationResponse(): SendEmailVerificationResponse {
+  return { base: undefined, message: "", expiresIn: 0 };
+}
+
+export const SendEmailVerificationResponse: MessageFns<SendEmailVerificationResponse> = {
+  encode(message: SendEmailVerificationResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    if (message.message !== "") {
+      writer.uint32(18).string(message.message);
+    }
+    if (message.expiresIn !== 0) {
+      writer.uint32(24).int32(message.expiresIn);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SendEmailVerificationResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSendEmailVerificationResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.message = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.expiresIn = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SendEmailVerificationResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      message: isSet(object.message) ? globalThis.String(object.message) : "",
+      expiresIn: isSet(object.expiresIn)
+        ? globalThis.Number(object.expiresIn)
+        : isSet(object.expires_in)
+        ? globalThis.Number(object.expires_in)
+        : 0,
+    };
+  },
+
+  toJSON(message: SendEmailVerificationResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.message !== "") {
+      obj.message = message.message;
+    }
+    if (message.expiresIn !== 0) {
+      obj.expiresIn = Math.round(message.expiresIn);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<SendEmailVerificationResponse>): SendEmailVerificationResponse {
+    return SendEmailVerificationResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<SendEmailVerificationResponse>): SendEmailVerificationResponse {
+    const message = createBaseSendEmailVerificationResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.message = object.message ?? "";
+    message.expiresIn = object.expiresIn ?? 0;
+    return message;
+  },
+};
+
+function createBaseVerifyEmailRequest(): VerifyEmailRequest {
+  return { code: "" };
+}
+
+export const VerifyEmailRequest: MessageFns<VerifyEmailRequest> = {
+  encode(message: VerifyEmailRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.code !== "") {
+      writer.uint32(10).string(message.code);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): VerifyEmailRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseVerifyEmailRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.code = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): VerifyEmailRequest {
+    return { code: isSet(object.code) ? globalThis.String(object.code) : "" };
+  },
+
+  toJSON(message: VerifyEmailRequest): unknown {
+    const obj: any = {};
+    if (message.code !== "") {
+      obj.code = message.code;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<VerifyEmailRequest>): VerifyEmailRequest {
+    return VerifyEmailRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<VerifyEmailRequest>): VerifyEmailRequest {
+    const message = createBaseVerifyEmailRequest();
+    message.code = object.code ?? "";
+    return message;
+  },
+};
+
+function createBaseVerifyEmailResponse(): VerifyEmailResponse {
+  return { base: undefined };
+}
+
+export const VerifyEmailResponse: MessageFns<VerifyEmailResponse> = {
+  encode(message: VerifyEmailResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): VerifyEmailResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseVerifyEmailResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): VerifyEmailResponse {
+    return { base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined };
+  },
+
+  toJSON(message: VerifyEmailResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<VerifyEmailResponse>): VerifyEmailResponse {
+    return VerifyEmailResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<VerifyEmailResponse>): VerifyEmailResponse {
+    const message = createBaseVerifyEmailResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseResendEmailVerificationRequest(): ResendEmailVerificationRequest {
+  return {};
+}
+
+export const ResendEmailVerificationRequest: MessageFns<ResendEmailVerificationRequest> = {
+  encode(_: ResendEmailVerificationRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ResendEmailVerificationRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseResendEmailVerificationRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): ResendEmailVerificationRequest {
+    return {};
+  },
+
+  toJSON(_: ResendEmailVerificationRequest): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create(base?: DeepPartial<ResendEmailVerificationRequest>): ResendEmailVerificationRequest {
+    return ResendEmailVerificationRequest.fromPartial(base ?? {});
+  },
+  fromPartial(_: DeepPartial<ResendEmailVerificationRequest>): ResendEmailVerificationRequest {
+    const message = createBaseResendEmailVerificationRequest();
+    return message;
+  },
+};
+
+function createBaseResendEmailVerificationResponse(): ResendEmailVerificationResponse {
+  return { base: undefined, message: "", expiresIn: 0 };
+}
+
+export const ResendEmailVerificationResponse: MessageFns<ResendEmailVerificationResponse> = {
+  encode(message: ResendEmailVerificationResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    if (message.message !== "") {
+      writer.uint32(18).string(message.message);
+    }
+    if (message.expiresIn !== 0) {
+      writer.uint32(24).int32(message.expiresIn);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ResendEmailVerificationResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseResendEmailVerificationResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.message = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.expiresIn = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ResendEmailVerificationResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      message: isSet(object.message) ? globalThis.String(object.message) : "",
+      expiresIn: isSet(object.expiresIn)
+        ? globalThis.Number(object.expiresIn)
+        : isSet(object.expires_in)
+        ? globalThis.Number(object.expires_in)
+        : 0,
+    };
+  },
+
+  toJSON(message: ResendEmailVerificationResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.message !== "") {
+      obj.message = message.message;
+    }
+    if (message.expiresIn !== 0) {
+      obj.expiresIn = Math.round(message.expiresIn);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ResendEmailVerificationResponse>): ResendEmailVerificationResponse {
+    return ResendEmailVerificationResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ResendEmailVerificationResponse>): ResendEmailVerificationResponse {
+    const message = createBaseResendEmailVerificationResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.message = object.message ?? "";
+    message.expiresIn = object.expiresIn ?? 0;
+    return message;
+  },
+};
+
 /** AuthService handles authentication operations. */
 export type AuthServiceDefinition = typeof AuthServiceDefinition;
 export const AuthServiceDefinition = {
@@ -3000,6 +3503,186 @@ export const AuthServiceDefinition = {
               47,
               109,
               101,
+            ]),
+          ],
+        },
+      },
+    },
+    /**
+     * SendEmailVerification sends a 6-digit verification code to the authenticated user's email.
+     * Generates a new token, invalidating any previous unconsumed tokens.
+     */
+    sendEmailVerification: {
+      name: "SendEmailVerification",
+      requestType: SendEmailVerificationRequest,
+      requestStream: false,
+      responseType: SendEmailVerificationResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              45,
+              58,
+              1,
+              42,
+              34,
+              40,
+              47,
+              97,
+              112,
+              105,
+              47,
+              118,
+              49,
+              47,
+              105,
+              97,
+              109,
+              47,
+              97,
+              117,
+              116,
+              104,
+              47,
+              115,
+              101,
+              110,
+              100,
+              45,
+              101,
+              109,
+              97,
+              105,
+              108,
+              45,
+              118,
+              101,
+              114,
+              105,
+              102,
+              105,
+              99,
+              97,
+              116,
+              105,
+              111,
+              110,
+            ]),
+          ],
+        },
+      },
+    },
+    /** VerifyEmail consumes a verification code and marks the authenticated user's email as verified. */
+    verifyEmail: {
+      name: "VerifyEmail",
+      requestType: VerifyEmailRequest,
+      requestStream: false,
+      responseType: VerifyEmailResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              34,
+              58,
+              1,
+              42,
+              34,
+              29,
+              47,
+              97,
+              112,
+              105,
+              47,
+              118,
+              49,
+              47,
+              105,
+              97,
+              109,
+              47,
+              97,
+              117,
+              116,
+              104,
+              47,
+              118,
+              101,
+              114,
+              105,
+              102,
+              121,
+              45,
+              101,
+              109,
+              97,
+              105,
+              108,
+            ]),
+          ],
+        },
+      },
+    },
+    /** ResendEmailVerification re-sends the verification code. Rate-limited to 1 per minute per user. */
+    resendEmailVerification: {
+      name: "ResendEmailVerification",
+      requestType: ResendEmailVerificationRequest,
+      requestStream: false,
+      responseType: ResendEmailVerificationResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              47,
+              58,
+              1,
+              42,
+              34,
+              42,
+              47,
+              97,
+              112,
+              105,
+              47,
+              118,
+              49,
+              47,
+              105,
+              97,
+              109,
+              47,
+              97,
+              117,
+              116,
+              104,
+              47,
+              114,
+              101,
+              115,
+              101,
+              110,
+              100,
+              45,
+              101,
+              109,
+              97,
+              105,
+              108,
+              45,
+              118,
+              101,
+              114,
+              105,
+              102,
+              105,
+              99,
+              97,
+              116,
+              105,
+              111,
+              110,
             ]),
           ],
         },

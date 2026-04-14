@@ -51,6 +51,12 @@ export default function LoginPage() {
                 return
             }
 
+            // If email verification is required, redirect to verification page
+            if (result.requiresEmailVerification) {
+                router.push("/verify-email")
+                return
+            }
+
             // Login successful — AuthProvider state is now updated
             router.push(AUTH_ROUTES.DASHBOARD)
         } catch (err) {
