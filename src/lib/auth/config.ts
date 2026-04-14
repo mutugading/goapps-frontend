@@ -80,6 +80,7 @@ export const AUTH_ROUTES = {
     LOGOUT: "/logout",
     FORGOT_PASSWORD: "/forgot-password",
     VERIFY_OTP: "/verify-otp",
+    VERIFY_EMAIL: "/verify-email",
     RESET_PASSWORD: "/reset-password",
     DASHBOARD: "/dashboard",
 } as const
@@ -117,4 +118,7 @@ export const AUTH_API = {
     ENABLE_2FA: "/api/v1/iam/auth/2fa/enable",
     VERIFY_2FA: "/api/v1/iam/auth/2fa/verify",
     DISABLE_2FA: "/api/v1/iam/auth/2fa/disable",
+    SEND_EMAIL_VERIFICATION: "/api/v1/iam/auth/send-email-verification",
+    VERIFY_EMAIL: "/api/v1/iam/auth/verify-email",
+    RESEND_EMAIL_VERIFICATION: "/api/v1/iam/auth/resend-email-verification",
 } as const

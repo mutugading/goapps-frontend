@@ -29,6 +29,12 @@ export type {
     Disable2FAResponse,
     GetCurrentUserRequest,
     GetCurrentUserResponse,
+    SendEmailVerificationRequest,
+    SendEmailVerificationResponse,
+    VerifyEmailRequest,
+    VerifyEmailResponse,
+    ResendEmailVerificationRequest,
+    ResendEmailVerificationResponse,
 } from "@/types/generated/iam/v1/auth"
 
 // Additional client-side types
@@ -102,6 +108,7 @@ export interface AuthContextValue extends AuthState {
 export interface LoginResult {
     success: boolean
     requires2fa: boolean
+    requiresEmailVerification?: boolean
     error?: string
 }
 

@@ -121,7 +121,7 @@ export function AuthProvider({ children, initialUser = null }: AuthProviderProps
                     return { success: false, requires2fa: true }
                 }
 
-                // Success
+                // Success — set user state
                 setState({
                     user: data.data?.user || null,
                     isAuthenticated: true,
@@ -129,7 +129,11 @@ export function AuthProvider({ children, initialUser = null }: AuthProviderProps
                     error: null,
                 })
 
-                return { success: true, requires2fa: false }
+                return {
+                    success: true,
+                    requires2fa: false,
+                    requiresEmailVerification: data.data?.requiresEmailVerification || false,
+                }
             } catch (error) {
                 const errorMessage = "An unexpected error occurred"
                 console.error("Login error:", error)

@@ -27,6 +27,7 @@ function parseAuthUser(data: unknown): AuthUser | null {
         roles: Array.isArray(obj.roles) ? obj.roles : [],
         permissions: Array.isArray(obj.permissions) ? obj.permissions : [],
         twoFactorEnabled: Boolean(obj.twoFactorEnabled ?? obj.two_factor_enabled ?? false),
+        emailVerified: Boolean(obj.emailVerified ?? obj.email_verified ?? false),
     }
 }
 
