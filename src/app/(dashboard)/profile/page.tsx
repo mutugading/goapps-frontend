@@ -13,7 +13,7 @@ import { ActivityLogInline } from "@/components/settings/activity-log-inline"
 import { ProfileEditForm } from "@/components/settings/profile-edit-form"
 import { cn } from "@/lib/utils"
 import { useQueryClient } from "@tanstack/react-query"
-import { currentUserKeys } from "@/hooks/iam/use-current-user"
+import { currentUserKeys, useCurrentUser } from "@/hooks/iam/use-current-user"
 import {
     User,
     KeyRound,
@@ -32,12 +32,15 @@ const sidebarItems: { id: TabValue; label: string; icon: React.ElementType }[] =
 
 export default function ProfilePage() {
     const queryClient = useQueryClient()
-    const { data: userProfile, isLoading, error } = useUserProfile()
+    const { data: userProfile, isLoading: isProfileLoading } = useUserProfile()
+    const { data: currentUser, isLoading: isCurrentUserLoading } = useCurrentUser()
     const [activeTab, setActiveTab] = useState<TabValue>("general")
     const [twoFactorEnabled, setTwoFactorEnabled] = useState<boolean | undefined>(undefined)
 
+    const isLoading = isProfileLoading && isCurrentUserLoading
+
     // Get current 2FA status - prefer local state, fallback to user data
-    const is2FAEnabled = twoFactorEnabled ?? userProfile?.user.twoFactorEnabled ?? false
+    const is2FAEnabled = twoFactorEnabled ?? userProfile?.user.twoFactorEnabled ?? currentUser?.twoFactorEnabled ?? false
 
     const handle2FAStatusChange = (enabled: boolean) => {
         setTwoFactorEnabled(enabled)
@@ -64,7 +67,7 @@ export default function ProfilePage() {
         )
     }
 
-    if (error || !userProfile) {
+    if (!userProfile && !currentUser) {
         return (
             <div>
                 <PageHeader title="Profile" subtitle="Unable to load profile" />
@@ -87,7 +90,8 @@ export default function ProfilePage() {
         )
     }
 
-    const profileData = {
+    // Use full profile if available, otherwise fall back to basic auth user data
+    const profileData = userProfile ? {
         fullName: userProfile.detail.fullName,
         firstName: userProfile.detail.firstName,
         lastName: userProfile.detail.lastName,
@@ -98,9 +102,20 @@ export default function ProfilePage() {
         profilePictureUrl: userProfile.detail.profilePictureUrl,
         email: userProfile.user.email,
         username: userProfile.user.username,
+    } : {
+        fullName: currentUser?.fullName || "",
+        firstName: "",
+        lastName: "",
+        phone: undefined,
+        position: undefined,
+        dateOfBirth: undefined,
+        address: undefined,
+        profilePictureUrl: currentUser?.profilePictureUrl || undefined,
+        email: currentUser?.email || "",
+        username: currentUser?.username || "",
     }
 
-    const roleCodes = userProfile.roleCodes
+    const roleCodes = userProfile?.roleCodes ?? (currentUser?.roles || [])
 
     return (
         <div>
