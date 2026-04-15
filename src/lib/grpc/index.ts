@@ -22,4 +22,5 @@ export {
   getCmsPageClient,
   getCmsSectionClient,
   getCmsSettingClient,
+  getEmployeeLevelClient,
 } from "./clients"
