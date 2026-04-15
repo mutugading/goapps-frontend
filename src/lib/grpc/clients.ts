@@ -28,10 +28,11 @@ import {
   CMSSettingServiceDefinition,
 } from "@/types/generated/iam/v1/cms"
 import { EmployeeLevelServiceDefinition } from "@/types/generated/iam/v1/employee_level"
+import { EmployeeGroupServiceDefinition } from "@/types/generated/iam/v1/employee_group"
 
 const CHANNEL_OPTIONS = {
-  "grpc.keepalive_time_ms": 10000,
-  "grpc.keepalive_timeout_ms": 5000,
+  "grpc.keepalive_time_ms": 120000,
+  "grpc.keepalive_timeout_ms": 20000,
   "grpc.keepalive_permit_without_calls": 1,
   "grpc.max_reconnect_backoff_ms": 10000,
   "grpc.initial_reconnect_backoff_ms": 1000,
@@ -188,5 +189,11 @@ export function getCmsSettingClient() {
 export function getEmployeeLevelClient() {
   return getOrCreate("employeeLevel", () =>
     createServiceClient(EmployeeLevelServiceDefinition, SERVICE_ADDRESSES.iam, insecure, CHANNEL_OPTIONS)
+  )
+}
+
+export function getEmployeeGroupClient() {
+  return getOrCreate("employeeGroup", () =>
+    createServiceClient(EmployeeGroupServiceDefinition, SERVICE_ADDRESSES.iam, insecure, CHANNEL_OPTIONS)
   )
 }
