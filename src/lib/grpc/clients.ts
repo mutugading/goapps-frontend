@@ -27,6 +27,7 @@ import {
   CMSSectionServiceDefinition,
   CMSSettingServiceDefinition,
 } from "@/types/generated/iam/v1/cms"
+import { EmployeeLevelServiceDefinition } from "@/types/generated/iam/v1/employee_level"
 
 const CHANNEL_OPTIONS = {
   "grpc.keepalive_time_ms": 10000,
@@ -181,5 +182,11 @@ export function getCmsSectionClient() {
 export function getCmsSettingClient() {
   return getOrCreate("cmsSetting", () =>
     createServiceClient(CMSSettingServiceDefinition, SERVICE_ADDRESSES.iam, insecure, CHANNEL_OPTIONS)
+  )
+}
+
+export function getEmployeeLevelClient() {
+  return getOrCreate("employeeLevel", () =>
+    createServiceClient(EmployeeLevelServiceDefinition, SERVICE_ADDRESSES.iam, insecure, CHANNEL_OPTIONS)
   )
 }
