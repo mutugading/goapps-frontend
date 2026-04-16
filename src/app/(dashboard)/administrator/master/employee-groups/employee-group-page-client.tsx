@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, Suspense } from "react"
-import { Plus, Loader2, Download } from "lucide-react"
+import { Plus, Loader2, Download, Upload } from "lucide-react"
 
 import {
   Card,
@@ -11,6 +11,12 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { PageHeader } from "@/components/common/page-header"
 
 import {
@@ -19,6 +25,7 @@ import {
   EmployeeGroupFilters,
   EmployeeGroupTable,
   EmployeeGroupPagination,
+  EmployeeGroupImportDialog,
 } from "@/components/iam/employee-groups"
 
 import {
@@ -46,6 +53,7 @@ function EmployeeGroupPageContent() {
   const { hasPermission } = usePermissionContext()
   const canCreate = hasPermission("iam.master.employeegroup.create")
   const canExport = hasPermission("iam.master.employeegroup.export")
+  const canImport = hasPermission("iam.master.employeegroup.import")
 
   const [filters, setFilters] = useUrlState<ListEmployeeGroupsParams>({
     defaultValues: defaultFilters,
@@ -53,6 +61,7 @@ function EmployeeGroupPageContent() {
 
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
+  const [isImportOpen, setIsImportOpen] = useState(false)
   const [selectedEmployeeGroup, setSelectedEmployeeGroup] =
     useState<EmployeeGroup | null>(null)
 
@@ -97,19 +106,36 @@ function EmployeeGroupPageContent() {
         subtitle="Manage employee group / department categories"
       >
         <div className="flex items-center gap-2">
-          {canExport && (
-            <Button
-              variant="outline"
-              onClick={handleExport}
-              disabled={exportMutation.isPending}
-            >
-              {exportMutation.isPending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Download className="mr-2 h-4 w-4" />
-              )}
-              Export
-            </Button>
+          {(canExport || canImport) && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">
+                  {exportMutation.isPending ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Download className="mr-2 h-4 w-4" />
+                  )}
+                  Export/Import
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {canExport && (
+                  <DropdownMenuItem
+                    onClick={handleExport}
+                    disabled={exportMutation.isPending}
+                  >
+                    <Download className="mr-2 h-4 w-4" />
+                    Export to Excel
+                  </DropdownMenuItem>
+                )}
+                {canImport && (
+                  <DropdownMenuItem onClick={() => setIsImportOpen(true)}>
+                    <Upload className="mr-2 h-4 w-4" />
+                    Import from Excel
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
 
           {canCreate && (
@@ -164,6 +190,11 @@ function EmployeeGroupPageContent() {
         open={isDeleteOpen}
         onOpenChange={setIsDeleteOpen}
         employeeGroup={selectedEmployeeGroup}
+      />
+
+      <EmployeeGroupImportDialog
+        open={isImportOpen}
+        onOpenChange={setIsImportOpen}
       />
     </div>
   )
