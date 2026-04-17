@@ -24,4 +24,5 @@ export {
   getCmsSettingClient,
   getEmployeeLevelClient,
   getEmployeeGroupClient,
+  getOracleSyncClient,
 } from "./clients"
