@@ -72,6 +72,7 @@ export function DataTable<TData>({
   const hasActions = actions && actions.length > 0
 
   return (
+    <div className="w-full min-w-0 max-w-full overflow-x-auto">
     <Table>
       <TableHeader>
         <TableRow>
@@ -122,6 +123,7 @@ export function DataTable<TData>({
         })}
       </TableBody>
     </Table>
+    </div>
   )
 }
 

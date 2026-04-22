@@ -85,6 +85,26 @@ export function ActiveJobStatus({ job }: ActiveJobStatusProps) {
   )
 }
 
+function formatResultSummary(summary: string | undefined): string {
+  if (!summary) return ""
+  if (!summary.startsWith("{")) return summary
+
+  try {
+    const data = JSON.parse(summary)
+    const parts: string[] = []
+
+    if (data.period) parts.push(`Period: ${data.period}`)
+    if (typeof data.processed === "number") parts.push(`Processed: ${data.processed}`)
+    if (typeof data.skipped === "number") parts.push(`Skipped: ${data.skipped}`)
+    if (typeof data.failed === "number") parts.push(`Failed: ${data.failed}`)
+    if (data.message) parts.push(data.message)
+
+    return parts.length > 0 ? parts.join(" · ") : summary
+  } catch {
+    return summary
+  }
+}
+
 interface LatestJobResultProps {
   job: SyncJob
 }
@@ -119,10 +139,12 @@ export function LatestJobResult({ job }: LatestJobResultProps) {
       {(job.errorMessage || job.resultSummary) && (
         <CardContent>
           {job.errorMessage && (
-            <p className="text-sm text-destructive">{job.errorMessage}</p>
+            <p className="text-sm text-destructive mb-1">{job.errorMessage}</p>
           )}
           {job.resultSummary && (
-            <p className="text-sm text-muted-foreground">{job.resultSummary}</p>
+            <p className="text-sm text-muted-foreground italic">
+              {formatResultSummary(job.resultSummary)}
+            </p>
           )}
         </CardContent>
       )}

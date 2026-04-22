@@ -46,66 +46,70 @@ function ItemConsStockPOPageContent() {
   const totalItems = data?.pagination?.totalItems ?? 0
 
   return (
-    <div>
+    <div className="w-full min-w-0 overflow-hidden">
       <PageHeader
         title="Item Cons Stock PO"
         subtitle="View synced item consumption, stock, and purchase order data from Oracle"
       />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Synced Data</CardTitle>
-          <CardDescription>
-            {isLoading
-              ? "Loading..."
-              : `${totalItems} total records`}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <DataFilters filters={filters} onFiltersChange={setFilters} />
+      <div className="grid grid-cols-1 gap-6">
+        <Card className="min-w-0">
+          <CardHeader>
+            <CardTitle>Synced Data</CardTitle>
+            <CardDescription>
+              {isLoading
+                ? "Loading..."
+                : `${totalItems} total records`}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <DataFilters filters={filters} onFiltersChange={setFilters} />
 
-          {isError && (
-            <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-center text-destructive">
-              {error instanceof Error
-                ? error.message
-                : "Failed to load data"}
-            </div>
-          )}
+            {isError && (
+              <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-center text-destructive">
+                {error instanceof Error
+                  ? error.message
+                  : "Failed to load data"}
+              </div>
+            )}
 
-          <ItemConsStockPOTable
-            data={data?.data || []}
-            isLoading={isLoading}
-          />
+            <ItemConsStockPOTable
+              data={data?.data || []}
+              isLoading={isLoading}
+            />
 
-          <DataPagination
-            pagination={data?.pagination}
-            onPageChange={handlePageChange}
-            onPageSizeChange={handlePageSizeChange}
-          />
-        </CardContent>
-      </Card>
+            <DataPagination
+              pagination={data?.pagination}
+              onPageChange={handlePageChange}
+              onPageSizeChange={handlePageSizeChange}
+            />
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }
 
 function ItemConsStockPOPageSkeleton() {
   return (
-    <div>
+    <div className="w-full min-w-0 overflow-hidden space-y-4">
       <PageHeader
         title="Item Cons Stock PO"
         subtitle="View synced item consumption, stock, and purchase order data from Oracle"
       />
-      <Card>
-        <CardHeader>
-          <CardTitle>Synced Data</CardTitle>
-          <CardDescription>Loading...</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-          </div>
-        </CardContent>
-      </Card>
+      <div className="grid grid-cols-1 gap-6">
+        <Card className="min-w-0">
+          <CardHeader>
+            <CardTitle>Synced Data</CardTitle>
+            <CardDescription>Loading...</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }

@@ -70,59 +70,61 @@ function OracleSyncPageContent() {
   const totalItems = data?.pagination?.totalItems ?? 0
 
   return (
-    <div className="space-y-6">
+    <div className="w-full min-w-0 overflow-hidden">
       <PageHeader
         title="Oracle Sync"
         subtitle="Manage Oracle-to-PostgreSQL data synchronization"
       />
 
-      {/* Trigger Card */}
-      <SyncTriggerCard />
+      <div className="grid grid-cols-1 gap-6">
+        {/* Trigger Card */}
+        <SyncTriggerCard />
 
-      {/* Active Job Status */}
-      {liveActiveJob && isJobActive(liveActiveJob.status) && (
-        <ActiveJobStatus job={liveActiveJob} />
-      )}
+        {/* Active Job Status */}
+        {liveActiveJob && isJobActive(liveActiveJob.status) && (
+          <ActiveJobStatus job={liveActiveJob} />
+        )}
 
-      {/* Latest Result */}
-      {!liveActiveJob && latestCompleted && (
-        <LatestJobResult job={latestCompleted} />
-      )}
+        {/* Latest Result */}
+        {!liveActiveJob && latestCompleted && (
+          <LatestJobResult job={latestCompleted} />
+        )}
 
-      {/* Job History */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Job History</CardTitle>
-          <CardDescription>
-            {isLoading
-              ? "Loading..."
-              : `${totalItems} total sync jobs`}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <JobFilters filters={filters} onFiltersChange={setFilters} />
+        {/* Job History */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Job History</CardTitle>
+            <CardDescription>
+              {isLoading
+                ? "Loading..."
+                : `${totalItems} total sync jobs`}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <JobFilters filters={filters} onFiltersChange={setFilters} />
 
-          {isError && (
-            <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-center text-destructive">
-              {error instanceof Error
-                ? error.message
-                : "Failed to load sync jobs"}
-            </div>
-          )}
+            {isError && (
+              <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-center text-destructive">
+                {error instanceof Error
+                  ? error.message
+                  : "Failed to load sync jobs"}
+              </div>
+            )}
 
-          <JobHistoryTable
-            data={data?.data || []}
-            isLoading={isLoading}
-            onViewDetail={handleViewDetail}
-          />
+            <JobHistoryTable
+              data={data?.data || []}
+              isLoading={isLoading}
+              onViewDetail={handleViewDetail}
+            />
 
-          <JobPagination
-            pagination={data?.pagination}
-            onPageChange={handlePageChange}
-            onPageSizeChange={handlePageSizeChange}
-          />
-        </CardContent>
-      </Card>
+            <JobPagination
+              pagination={data?.pagination}
+              onPageChange={handlePageChange}
+              onPageSizeChange={handlePageSizeChange}
+            />
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Detail Dialog */}
       <JobDetailDialog
@@ -136,22 +138,24 @@ function OracleSyncPageContent() {
 
 function OracleSyncPageSkeleton() {
   return (
-    <div className="space-y-6">
+    <div className="w-full min-w-0 overflow-hidden space-y-4">
       <PageHeader
         title="Oracle Sync"
         subtitle="Manage Oracle-to-PostgreSQL data synchronization"
       />
-      <Card>
-        <CardHeader>
-          <CardTitle>Job History</CardTitle>
-          <CardDescription>Loading...</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-          </div>
-        </CardContent>
-      </Card>
+      <div className="grid grid-cols-1 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Job History</CardTitle>
+            <CardDescription>Loading...</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }

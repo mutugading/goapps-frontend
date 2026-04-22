@@ -93,8 +93,8 @@ export default function DashboardLayout({
                     </div>
                 </header>
                 {/* Main content */}
-                <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-                    <main className="flex-1 pt-4">
+                <div className="flex flex-1 flex-col gap-4 p-4 pt-0 min-w-0">
+                    <main className="flex-1 pt-4 min-w-0 w-full">
                         {children}
                     </main>
                     <Footer />

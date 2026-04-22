@@ -83,7 +83,7 @@ export function JobFilters({ filters, onFiltersChange }: JobFiltersProps) {
           value={String(filters.status ?? JobStatus.JOB_STATUS_UNSPECIFIED)}
           onValueChange={handleStatusChange}
         >
-          <SelectTrigger className="w-[140px]">
+          <SelectTrigger className="w-full sm:w-[140px]">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
@@ -100,7 +100,7 @@ export function JobFilters({ filters, onFiltersChange }: JobFiltersProps) {
           value={filters.period || "all"}
           onValueChange={handlePeriodChange}
         >
-          <SelectTrigger className="w-[140px]">
+          <SelectTrigger className="w-full sm:w-[140px]">
             <SelectValue placeholder="Period" />
           </SelectTrigger>
           <SelectContent>
@@ -117,7 +117,7 @@ export function JobFilters({ filters, onFiltersChange }: JobFiltersProps) {
             variant="ghost"
             size="sm"
             onClick={handleClearFilters}
-            className="h-10"
+            className="h-10 w-full sm:w-auto"
           >
             <X className="mr-1 h-4 w-4" />
             Clear
