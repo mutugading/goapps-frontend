@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { Search, Plus, Loader2, AlertCircle } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -92,9 +92,10 @@ export function ItemPickerDialog({
 }: ItemPickerDialogProps) {
   // Auto-fetch periods from oracle sync if not provided
   const { data: periodsData } = useSyncPeriods()
-  const periods = externalPeriods?.length
-    ? externalPeriods
-    : periodsData?.periods || []
+  const periods = useMemo(
+    () => (externalPeriods?.length ? externalPeriods : periodsData?.periods || []),
+    [externalPeriods, periodsData?.periods]
+  )
 
   const [selectedPeriod, setSelectedPeriod] = useState("")
   const [searchInput, setSearchInput] = useState("")
@@ -118,7 +119,7 @@ export function ItemPickerDialog({
     }
   }, [open, periods, selectedPeriod])
 
-  const { data, isLoading, isError } = useUngroupedItems({
+  const { data, isLoading } = useUngroupedItems({
     period: selectedPeriod,
     page,
     pageSize,
@@ -127,7 +128,7 @@ export function ItemPickerDialog({
 
   const addItemsMutation = useAddItemsToGroup()
 
-  const items = data?.data || []
+  const items = useMemo(() => data?.data || [], [data?.data])
   const totalItems = data?.pagination?.totalItems ?? 0
   const totalPages = data?.pagination?.totalPages ?? 0
 

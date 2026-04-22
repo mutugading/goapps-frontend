@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, Suspense } from "react"
+import { useState, useMemo, Suspense } from "react"
 import { useParams, useRouter } from "next/navigation"
 import {
   ArrowLeft,
@@ -8,7 +8,6 @@ import {
   Pencil,
   RefreshCw,
   Loader2,
-  FolderTree,
   Upload,
 } from "lucide-react"
 
@@ -21,7 +20,7 @@ import {
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
+
 import { PageHeader } from "@/components/common/page-header"
 
 import {
@@ -76,17 +75,18 @@ function GroupDetailContent() {
   const [selectedPeriod, setSelectedPeriod] = useState("")
 
   const { data: periodsData } = useSyncPeriods()
-  const periods = periodsData?.periods || []
+  const periods = useMemo(() => periodsData?.periods || [], [periodsData?.periods])
 
-  useEffect(() => {
-    if (periods.length > 0 && !selectedPeriod) {
-      setSelectedPeriod(periods[0])
-    }
-  }, [periods, selectedPeriod])
+  // Auto-select the latest period on first load. Using useMemo avoids the
+  // lint error from calling setState inside useEffect.
+  const effectivePeriod = useMemo(() => {
+    if (selectedPeriod) return selectedPeriod
+    return periods.length > 0 ? periods[0] : ""
+  }, [selectedPeriod, periods])
 
   const { data: ratesData, isLoading: ratesLoading } = useGroupItemRates(
     groupId,
-    selectedPeriod
+    effectivePeriod
   )
   const rates = ratesData?.data || []
 
@@ -241,7 +241,7 @@ function GroupDetailContent() {
                 </CardDescription>
               </div>
               <div className="flex items-center gap-2 shrink-0">
-                <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+                <Select value={effectivePeriod} onValueChange={setSelectedPeriod}>
                   <SelectTrigger className="w-[130px]">
                     <SelectValue placeholder="Period" />
                   </SelectTrigger>
@@ -273,7 +273,7 @@ function GroupDetailContent() {
               onRemove={handleRemoveItem}
               rates={rates}
               ratesLoading={ratesLoading}
-              period={selectedPeriod}
+              period={effectivePeriod}
             />
           </CardContent>
         </Card>

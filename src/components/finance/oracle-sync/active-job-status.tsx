@@ -100,7 +100,7 @@ function formatResultSummary(summary: string | undefined): string {
     if (data.message) parts.push(data.message)
 
     return parts.length > 0 ? parts.join(" · ") : summary
-  } catch (e) {
+  } catch {
     return summary
   }
 }

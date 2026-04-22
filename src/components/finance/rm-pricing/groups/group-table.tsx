@@ -1,12 +1,12 @@
 "use client"
 
-import { Pencil, Trash2, Eye, FolderTree } from "lucide-react"
+import { Pencil, Trash2, Eye } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { DataTable, type ColumnDef, type RowAction } from "@/components/shared"
 
 import type { RMGroupHead } from "@/types/finance/rm-group"
-import { RM_GROUP_FLAG_LABELS, type RMGroupFormData } from "@/types/finance/rm-group"
+import { RM_GROUP_FLAG_LABELS } from "@/types/finance/rm-group"
 import { RMGroupFlag } from "@/types/generated/finance/v1/rm_group"
 
 interface GroupTableProps {
