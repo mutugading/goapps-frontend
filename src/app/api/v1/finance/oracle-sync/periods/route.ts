@@ -11,9 +11,19 @@ export async function GET(request: NextRequest) {
 
         const response = await client.listSyncPeriods({}, metadata)
 
+        // Explicitly serialize — response.periods is string[] from proto
+        const periods = (response.periods || []).map((p) => String(p))
+
         return NextResponse.json({
-            base: response.base,
-            periods: response.periods,
+            base: response.base
+                ? {
+                      isSuccess: response.base.isSuccess ?? false,
+                      statusCode: response.base.statusCode || "200",
+                      message: response.base.message || "",
+                      validationErrors: response.base.validationErrors || [],
+                  }
+                : { isSuccess: true, statusCode: "200", message: "OK", validationErrors: [] },
+            periods,
         })
     } catch (error) {
         if (isGrpcError(error)) return handleGrpcError(error)

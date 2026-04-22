@@ -30,6 +30,8 @@ import {
 import { EmployeeLevelServiceDefinition } from "@/types/generated/iam/v1/employee_level"
 import { EmployeeGroupServiceDefinition } from "@/types/generated/iam/v1/employee_group"
 import { OracleSyncServiceDefinition } from "@/types/generated/finance/v1/oracle_sync"
+import { RMGroupServiceDefinition } from "@/types/generated/finance/v1/rm_group"
+import { RMCostServiceDefinition } from "@/types/generated/finance/v1/rm_cost"
 
 const CHANNEL_OPTIONS = {
   "grpc.keepalive_time_ms": 120000,
@@ -202,5 +204,17 @@ export function getEmployeeGroupClient() {
 export function getOracleSyncClient() {
   return getOrCreate("oracleSync", () =>
     createServiceClient(OracleSyncServiceDefinition, SERVICE_ADDRESSES.finance, insecure, CHANNEL_OPTIONS)
+  )
+}
+
+export function getRmGroupClient() {
+  return getOrCreate("rmGroup", () =>
+    createServiceClient(RMGroupServiceDefinition, SERVICE_ADDRESSES.finance, insecure, CHANNEL_OPTIONS)
+  )
+}
+
+export function getRmCostClient() {
+  return getOrCreate("rmCost", () =>
+    createServiceClient(RMCostServiceDefinition, SERVICE_ADDRESSES.finance, insecure, CHANNEL_OPTIONS)
   )
 }

@@ -25,4 +25,6 @@ export {
   getEmployeeLevelClient,
   getEmployeeGroupClient,
   getOracleSyncClient,
+  getRmGroupClient,
+  getRmCostClient,
 } from "./clients"

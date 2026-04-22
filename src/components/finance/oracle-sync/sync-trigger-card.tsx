@@ -54,32 +54,34 @@ export function SyncTriggerCard() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
-            <div className="space-y-2 sm:flex-1 sm:max-w-xs">
-              <Label htmlFor="period">Period (YYYYMM)</Label>
-              <Input
-                id="period"
-                placeholder="e.g. 202601 (leave empty for auto)"
-                value={period}
-                onChange={(e) => setPeriod(e.target.value)}
-                maxLength={6}
-                pattern="[0-9]*"
-              />
-              <p className="text-xs text-muted-foreground">
-                Leave empty to auto-detect based on current date
-              </p>
+          <div className="space-y-2">
+            <Label htmlFor="period">Period (YYYYMM)</Label>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+              <div className="sm:flex-1 sm:max-w-xs">
+                <Input
+                  id="period"
+                  placeholder="e.g. 202601 (leave empty for auto)"
+                  value={period}
+                  onChange={(e) => setPeriod(e.target.value)}
+                  maxLength={6}
+                  pattern="[0-9]*"
+                />
+              </div>
+              <Button
+                onClick={handleTrigger}
+                disabled={triggerMutation.isPending}
+              >
+                {triggerMutation.isPending ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Play className="mr-2 h-4 w-4" />
+                )}
+                Trigger Sync
+              </Button>
             </div>
-            <Button
-              onClick={handleTrigger}
-              disabled={triggerMutation.isPending}
-            >
-              {triggerMutation.isPending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Play className="mr-2 h-4 w-4" />
-              )}
-              Trigger Sync
-            </Button>
+            <p className="text-xs text-muted-foreground">
+              Leave empty to auto-detect based on current date
+            </p>
           </div>
         </CardContent>
       </Card>
