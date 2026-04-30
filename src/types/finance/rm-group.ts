@@ -133,6 +133,12 @@ export interface ListUngroupedItemsParams {
 
 export interface ExportRMGroupsParams {
   activeFilter?: ActiveFilter
+  /** Free-text search across code/name/description (Filtered mode). */
+  search?: string
+  /** Explicit group_head_id list (Selected mode). When non-empty overrides
+   *  activeFilter and search at the backend. Sent as `group_head_ids` query
+   *  param (comma-separated UUIDs). */
+  groupHeadIds?: string[]
 }
 
 // Form data for group head create/edit

@@ -59,9 +59,14 @@ function RMGroupsPageContent() {
   const exportMutation = useExportRMGroups()
 
   const handleExport = () => {
-    // Export respects the active_filter only (search is UI-level; the backend
-    // Export RPC intentionally does not accept search params).
-    exportMutation.mutate({ activeFilter: filters.activeFilter })
+    // Export honors active_filter + search from the list-page filters.
+    // Selected-mode (group_head_ids) is exposed via the BFF route for
+    // programmatic callers; the list page itself doesn't expose multi-select
+    // export (yet) — Filtered + All cover the bulk-migration workflow.
+    exportMutation.mutate({
+      activeFilter: filters.activeFilter,
+      search: filters.search,
+    })
   }
 
   // Use isFetching (not isLoading) so background refetches triggered on

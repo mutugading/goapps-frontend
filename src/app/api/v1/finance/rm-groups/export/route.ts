@@ -9,9 +9,20 @@ export async function GET(request: NextRequest) {
     const metadata = createMetadataFromRequest(request)
     const client = getRmGroupClient()
 
+    // Comma-separated list of group_head_id UUIDs for the "Selected" mode.
+    const idsParam = searchParams.get("group_head_ids") || searchParams.get("groupHeadIds") || ""
+    const groupHeadIds = idsParam
+      ? idsParam
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean)
+      : []
     const response = await client.exportRMGroups(
       {
-        activeFilter: Number(searchParams.get("activeFilter") || searchParams.get("active_filter")) || 0,
+        activeFilter:
+          Number(searchParams.get("activeFilter") || searchParams.get("active_filter")) || 0,
+        search: searchParams.get("search") || "",
+        groupHeadIds,
       },
       metadata
     )
