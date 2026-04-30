@@ -4,6 +4,7 @@ export type {
   RMCost,
   RMCostRates,
   RMCostHistory,
+  RMCostDetail,
   TriggerRMCostCalculationRequest,
   TriggerRMCostCalculationResponse,
   CalculateRMCostRequest,
@@ -18,11 +19,18 @@ export type {
   ListRMCostPeriodsResponse,
   ExportRMCostsRequest,
   ExportRMCostsResponse,
+  ListCostDetailsRequest,
+  ListCostDetailsResponse,
+  UpdateRMCostInputsRequest,
+  UpdateRMCostInputsResponse,
+  UpdateCostDetailFixRateRequest,
+  UpdateCostDetailFixRateResponse,
 } from "@/types/generated/finance/v1/rm_cost"
 
 export {
   RMCost as RMCostParser,
   RMCostHistory as RMCostHistoryParser,
+  RMCostDetail as RMCostDetailParser,
   TriggerRMCostCalculationResponse as TriggerRMCostCalculationResponseParser,
   CalculateRMCostResponse as CalculateRMCostResponseParser,
   GetRMCostResponse as GetRMCostResponseParser,
@@ -30,6 +38,9 @@ export {
   ListRMCostHistoryResponse as ListRMCostHistoryResponseParser,
   ListRMCostPeriodsResponse as ListRMCostPeriodsResponseParser,
   ExportRMCostsResponse as ExportRMCostsResponseParser,
+  ListCostDetailsResponse as ListCostDetailsResponseParser,
+  UpdateRMCostInputsResponse as UpdateRMCostInputsResponseParser,
+  UpdateCostDetailFixRateResponse as UpdateCostDetailFixRateResponseParser,
   RMCostType,
   rMCostTypeFromJSON,
   rMCostTypeToJSON,
@@ -85,4 +96,28 @@ export interface TriggerRMCostParams {
   period: string
   groupHeadId?: string
   triggerReason: RMCostTriggerReason
+}
+
+// V2 inline-edit input bag for RM Cost rows.
+export interface UpdateRMCostInputsParams {
+  rmCostId: string
+  marketingFreightRate?: number | null
+  marketingAntiDumpingPct?: number | null
+  marketingDutyPct?: number | null
+  marketingTransportRate?: number | null
+  marketingDefaultValue?: number | null
+  simulationRate?: number | null
+  valuationFlag?: string // proto enum string form (RM_VALUATION_FLAG_*)
+  marketingFlag?: string
+  clearMarketingFreightRate?: boolean
+  clearMarketingAntiDumpingPct?: boolean
+  clearMarketingDutyPct?: boolean
+  clearMarketingTransportRate?: boolean
+  clearMarketingDefaultValue?: boolean
+  clearSimulationRate?: boolean
+}
+
+export interface UpdateCostDetailFixRateParams {
+  costDetailId: string
+  fixRate: number | null
 }

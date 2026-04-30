@@ -94,6 +94,134 @@ export function rMGroupFlagToJSON(object: RMGroupFlag): string {
   }
 }
 
+/**
+ * RMValuationFlag selects which computed rate becomes `cost_val` in the
+ * RM Cost row. UNSPECIFIED behaves as AUTO (CL → SL → FL fallback, where
+ * FL incorporates the per-detail valuation_default_value).
+ */
+export enum RMValuationFlag {
+  /** RM_VALUATION_FLAG_UNSPECIFIED - Default zero value. Treated as AUTO (CL→SL→FL fallback). */
+  RM_VALUATION_FLAG_UNSPECIFIED = 0,
+  /** RM_VALUATION_FLAG_CR - Use Consumption Rate (CR) — group-total cons_val / cons_qty. */
+  RM_VALUATION_FLAG_CR = 1,
+  /** RM_VALUATION_FLAG_SR - Use Stock Rate (SR) — group-total stock_val / stock_qty. */
+  RM_VALUATION_FLAG_SR = 2,
+  /** RM_VALUATION_FLAG_PR - Use PO Rate (PR) — group-total po_val / po_qty. */
+  RM_VALUATION_FLAG_PR = 3,
+  /** RM_VALUATION_FLAG_CL - Use Consumption Landed Cost (CL) — group-total CL aggregate. */
+  RM_VALUATION_FLAG_CL = 4,
+  /** RM_VALUATION_FLAG_SL - Use Stock Landed Cost (SL) — group-total SL aggregate. */
+  RM_VALUATION_FLAG_SL = 5,
+  /** RM_VALUATION_FLAG_FL - Use Fix Landed Cost (FL) — MAX of per-detail FL. */
+  RM_VALUATION_FLAG_FL = 6,
+  UNRECOGNIZED = -1,
+}
+
+export function rMValuationFlagFromJSON(object: any): RMValuationFlag {
+  switch (object) {
+    case 0:
+    case "RM_VALUATION_FLAG_UNSPECIFIED":
+      return RMValuationFlag.RM_VALUATION_FLAG_UNSPECIFIED;
+    case 1:
+    case "RM_VALUATION_FLAG_CR":
+      return RMValuationFlag.RM_VALUATION_FLAG_CR;
+    case 2:
+    case "RM_VALUATION_FLAG_SR":
+      return RMValuationFlag.RM_VALUATION_FLAG_SR;
+    case 3:
+    case "RM_VALUATION_FLAG_PR":
+      return RMValuationFlag.RM_VALUATION_FLAG_PR;
+    case 4:
+    case "RM_VALUATION_FLAG_CL":
+      return RMValuationFlag.RM_VALUATION_FLAG_CL;
+    case 5:
+    case "RM_VALUATION_FLAG_SL":
+      return RMValuationFlag.RM_VALUATION_FLAG_SL;
+    case 6:
+    case "RM_VALUATION_FLAG_FL":
+      return RMValuationFlag.RM_VALUATION_FLAG_FL;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return RMValuationFlag.UNRECOGNIZED;
+  }
+}
+
+export function rMValuationFlagToJSON(object: RMValuationFlag): string {
+  switch (object) {
+    case RMValuationFlag.RM_VALUATION_FLAG_UNSPECIFIED:
+      return "RM_VALUATION_FLAG_UNSPECIFIED";
+    case RMValuationFlag.RM_VALUATION_FLAG_CR:
+      return "RM_VALUATION_FLAG_CR";
+    case RMValuationFlag.RM_VALUATION_FLAG_SR:
+      return "RM_VALUATION_FLAG_SR";
+    case RMValuationFlag.RM_VALUATION_FLAG_PR:
+      return "RM_VALUATION_FLAG_PR";
+    case RMValuationFlag.RM_VALUATION_FLAG_CL:
+      return "RM_VALUATION_FLAG_CL";
+    case RMValuationFlag.RM_VALUATION_FLAG_SL:
+      return "RM_VALUATION_FLAG_SL";
+    case RMValuationFlag.RM_VALUATION_FLAG_FL:
+      return "RM_VALUATION_FLAG_FL";
+    case RMValuationFlag.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+/**
+ * RMMarketingFlag selects which computed marketing projection becomes
+ * `cost_mark`. UNSPECIFIED behaves as AUTO (SP → PP → FP fallback).
+ */
+export enum RMMarketingFlag {
+  /** RM_MARKETING_FLAG_UNSPECIFIED - Default zero value. Treated as AUTO (SP→PP→FP fallback). */
+  RM_MARKETING_FLAG_UNSPECIFIED = 0,
+  /** RM_MARKETING_FLAG_SP - Projection Stock Landed Cost. */
+  RM_MARKETING_FLAG_SP = 1,
+  /** RM_MARKETING_FLAG_PP - Projection PO Landed Cost. */
+  RM_MARKETING_FLAG_PP = 2,
+  /** RM_MARKETING_FLAG_FP - Projection Fix Value Landed Cost. */
+  RM_MARKETING_FLAG_FP = 3,
+  UNRECOGNIZED = -1,
+}
+
+export function rMMarketingFlagFromJSON(object: any): RMMarketingFlag {
+  switch (object) {
+    case 0:
+    case "RM_MARKETING_FLAG_UNSPECIFIED":
+      return RMMarketingFlag.RM_MARKETING_FLAG_UNSPECIFIED;
+    case 1:
+    case "RM_MARKETING_FLAG_SP":
+      return RMMarketingFlag.RM_MARKETING_FLAG_SP;
+    case 2:
+    case "RM_MARKETING_FLAG_PP":
+      return RMMarketingFlag.RM_MARKETING_FLAG_PP;
+    case 3:
+    case "RM_MARKETING_FLAG_FP":
+      return RMMarketingFlag.RM_MARKETING_FLAG_FP;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return RMMarketingFlag.UNRECOGNIZED;
+  }
+}
+
+export function rMMarketingFlagToJSON(object: RMMarketingFlag): string {
+  switch (object) {
+    case RMMarketingFlag.RM_MARKETING_FLAG_UNSPECIFIED:
+      return "RM_MARKETING_FLAG_UNSPECIFIED";
+    case RMMarketingFlag.RM_MARKETING_FLAG_SP:
+      return "RM_MARKETING_FLAG_SP";
+    case RMMarketingFlag.RM_MARKETING_FLAG_PP:
+      return "RM_MARKETING_FLAG_PP";
+    case RMMarketingFlag.RM_MARKETING_FLAG_FP:
+      return "RM_MARKETING_FLAG_FP";
+    case RMMarketingFlag.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
 /** RemoveItemsMode controls how RemoveItems disposes of detail rows. */
 export enum RemoveItemsMode {
   /** REMOVE_ITEMS_MODE_UNSPECIFIED - Default zero value. Rejected via not_in: [0]. */
@@ -176,7 +304,31 @@ export interface RMGroupHead {
   /** Whether the group is active. */
   isActive: boolean;
   /** Audit metadata. */
-  audit: AuditInfo | undefined;
+  audit:
+    | AuditInfo
+    | undefined;
+  /** V2: Marketing freight rate (added to base rate before duty/anti). */
+  marketingFreightRate?:
+    | number
+    | undefined;
+  /** V2: Marketing anti-dumping percentage (whole percent, e.g. 5 = 5%). */
+  marketingAntiDumpingPct?:
+    | number
+    | undefined;
+  /** V2: Marketing default value (drives FP projection when set). */
+  marketingDefaultValue?:
+    | number
+    | undefined;
+  /**
+   * V2: Valuation flag (CR/SR/PR/CL/SL/FL) — replaces flag_valuation semantics
+   * for the new engine. When UNSPECIFIED uses AUTO fallback CL→SL→FL.
+   */
+  valuationFlag: RMValuationFlag;
+  /**
+   * V2: Marketing flag (SP/PP/FP) — replaces flag_marketing semantics.
+   * When UNSPECIFIED uses AUTO fallback SP→PP→FP.
+   */
+  marketingFlag: RMMarketingFlag;
 }
 
 /** RMGroupDetail is one item's membership in an RM group. */
@@ -211,8 +363,28 @@ export interface RMGroupDetail {
   isActive: boolean;
   /** Placeholder row (excluded from aggregation regardless of is_active). */
   isDummy: boolean;
+  /** V2: Valuation freight rate (per detail; feeds CL/SL/FL formulas). */
+  valuationFreightRate?:
+    | number
+    | undefined;
+  /** V2: Valuation anti-dumping percentage (decimal, e.g. 0.10 = 10%). */
+  valuationAntiDumpingPct?:
+    | number
+    | undefined;
   /** Audit metadata. */
-  audit: AuditInfo | undefined;
+  audit:
+    | AuditInfo
+    | undefined;
+  /** V2: Valuation duty percentage (decimal). */
+  valuationDutyPct?:
+    | number
+    | undefined;
+  /** V2: Valuation transport rate (per detail). */
+  valuationTransportRate?:
+    | number
+    | undefined;
+  /** V2: Valuation default value (per detail; drives FL). */
+  valuationDefaultValue?: number | undefined;
 }
 
 /** RMGroupHeadWithDetails bundles a head and its details for the Get response. */
@@ -309,10 +481,26 @@ export interface CreateRMGroupRequest {
   colourant: string;
   /** Optional CI name tag. */
   ciName: string;
-  /** Cost percentage multiplier (>= 0). */
+  /** Cost percentage multiplier (>= 0). Aliased as Marketing Duty %. */
   costPercentage: number;
-  /** Per-kg overhead (>= 0). */
+  /** Per-kg overhead (>= 0). Aliased as Marketing Transport Rate. */
   costPerKg: number;
+  /** V2: Marketing freight rate. */
+  marketingFreightRate?:
+    | number
+    | undefined;
+  /** V2: Marketing anti-dumping percentage (whole percent). */
+  marketingAntiDumpingPct?:
+    | number
+    | undefined;
+  /** V2: Marketing default value. */
+  marketingDefaultValue?:
+    | number
+    | undefined;
+  /** V2: Valuation flag. */
+  valuationFlag: RMValuationFlag;
+  /** V2: Marketing flag. */
+  marketingFlag: RMMarketingFlag;
 }
 
 /** Create response. */
@@ -406,6 +594,30 @@ export interface UpdateRMGroupRequest {
   clearInitValMarketing: boolean;
   /** When true, force init_val_simulation to NULL. */
   clearInitValSimulation: boolean;
+  /** V2: Marketing freight rate. */
+  marketingFreightRate?:
+    | number
+    | undefined;
+  /** V2: Marketing anti-dumping % (whole percent). */
+  marketingAntiDumpingPct?:
+    | number
+    | undefined;
+  /** V2: Marketing default value. */
+  marketingDefaultValue?:
+    | number
+    | undefined;
+  /** V2: Valuation flag. */
+  valuationFlag?:
+    | RMValuationFlag
+    | undefined;
+  /** V2: Marketing flag. */
+  marketingFlag?:
+    | RMMarketingFlag
+    | undefined;
+  /** V2 clear flags for nullable marketing fields. */
+  clearMarketingFreightRate: boolean;
+  clearMarketingAntiDumpingPct: boolean;
+  clearMarketingDefaultValue: boolean;
 }
 
 /** Update response. */
@@ -472,6 +684,12 @@ export interface AddItemSelection {
    * grade_code in the sync feed. Use "" when the row has a single variant.
    */
   gradeCode: string;
+  /** V2 optional valuation inputs (per-detail). Backend stores NULL when omitted. */
+  valuationFreightRate?: number | undefined;
+  valuationAntiDumpingPct?: number | undefined;
+  valuationDutyPct?: number | undefined;
+  valuationTransportRate?: number | undefined;
+  valuationDefaultValue?: number | undefined;
 }
 
 /**
@@ -524,6 +742,35 @@ export interface RemoveItemsResponse {
     | undefined;
   /** Number of details affected. */
   removedCount: number;
+}
+
+/** V2: Partial update of one detail row's valuation fields + sort_order/is_active. */
+export interface UpdateGroupItemRequest {
+  /** Owning group head UUID. */
+  groupHeadId: string;
+  /** Detail UUID to update. */
+  groupDetailId: string;
+  valuationFreightRate?: number | undefined;
+  valuationAntiDumpingPct?: number | undefined;
+  valuationDutyPct?: number | undefined;
+  valuationTransportRate?: number | undefined;
+  valuationDefaultValue?: number | undefined;
+  sortOrder?: number | undefined;
+  isActive?:
+    | boolean
+    | undefined;
+  /** Clear flags for nullable valuation fields (force NULL). */
+  clearValuationFreightRate: boolean;
+  clearValuationAntiDumpingPct: boolean;
+  clearValuationDutyPct: boolean;
+  clearValuationTransportRate: boolean;
+  clearValuationDefaultValue: boolean;
+}
+
+/** V2: Update one detail response. */
+export interface UpdateGroupItemResponse {
+  base: BaseResponse | undefined;
+  data: RMGroupDetail | undefined;
 }
 
 /** List items from the Oracle sync feed that have no active RM group assignment. */
@@ -775,6 +1022,11 @@ function createBaseRMGroupHead(): RMGroupHead {
     initValSimulation: undefined,
     isActive: false,
     audit: undefined,
+    marketingFreightRate: undefined,
+    marketingAntiDumpingPct: undefined,
+    marketingDefaultValue: undefined,
+    valuationFlag: 0,
+    marketingFlag: 0,
   };
 }
 
@@ -827,6 +1079,21 @@ export const RMGroupHead: MessageFns<RMGroupHead> = {
     }
     if (message.audit !== undefined) {
       AuditInfo.encode(message.audit, writer.uint32(130).fork()).join();
+    }
+    if (message.marketingFreightRate !== undefined) {
+      writer.uint32(137).double(message.marketingFreightRate);
+    }
+    if (message.marketingAntiDumpingPct !== undefined) {
+      writer.uint32(145).double(message.marketingAntiDumpingPct);
+    }
+    if (message.marketingDefaultValue !== undefined) {
+      writer.uint32(153).double(message.marketingDefaultValue);
+    }
+    if (message.valuationFlag !== 0) {
+      writer.uint32(160).int32(message.valuationFlag);
+    }
+    if (message.marketingFlag !== 0) {
+      writer.uint32(168).int32(message.marketingFlag);
     }
     return writer;
   },
@@ -966,6 +1233,46 @@ export const RMGroupHead: MessageFns<RMGroupHead> = {
           message.audit = AuditInfo.decode(reader, reader.uint32());
           continue;
         }
+        case 17: {
+          if (tag !== 137) {
+            break;
+          }
+
+          message.marketingFreightRate = reader.double();
+          continue;
+        }
+        case 18: {
+          if (tag !== 145) {
+            break;
+          }
+
+          message.marketingAntiDumpingPct = reader.double();
+          continue;
+        }
+        case 19: {
+          if (tag !== 153) {
+            break;
+          }
+
+          message.marketingDefaultValue = reader.double();
+          continue;
+        }
+        case 20: {
+          if (tag !== 160) {
+            break;
+          }
+
+          message.valuationFlag = reader.int32() as any;
+          continue;
+        }
+        case 21: {
+          if (tag !== 168) {
+            break;
+          }
+
+          message.marketingFlag = reader.int32() as any;
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1045,6 +1352,31 @@ export const RMGroupHead: MessageFns<RMGroupHead> = {
         ? globalThis.Boolean(object.is_active)
         : false,
       audit: isSet(object.audit) ? AuditInfo.fromJSON(object.audit) : undefined,
+      marketingFreightRate: isSet(object.marketingFreightRate)
+        ? globalThis.Number(object.marketingFreightRate)
+        : isSet(object.marketing_freight_rate)
+        ? globalThis.Number(object.marketing_freight_rate)
+        : undefined,
+      marketingAntiDumpingPct: isSet(object.marketingAntiDumpingPct)
+        ? globalThis.Number(object.marketingAntiDumpingPct)
+        : isSet(object.marketing_anti_dumping_pct)
+        ? globalThis.Number(object.marketing_anti_dumping_pct)
+        : undefined,
+      marketingDefaultValue: isSet(object.marketingDefaultValue)
+        ? globalThis.Number(object.marketingDefaultValue)
+        : isSet(object.marketing_default_value)
+        ? globalThis.Number(object.marketing_default_value)
+        : undefined,
+      valuationFlag: isSet(object.valuationFlag)
+        ? rMValuationFlagFromJSON(object.valuationFlag)
+        : isSet(object.valuation_flag)
+        ? rMValuationFlagFromJSON(object.valuation_flag)
+        : 0,
+      marketingFlag: isSet(object.marketingFlag)
+        ? rMMarketingFlagFromJSON(object.marketingFlag)
+        : isSet(object.marketing_flag)
+        ? rMMarketingFlagFromJSON(object.marketing_flag)
+        : 0,
     };
   },
 
@@ -1098,6 +1430,21 @@ export const RMGroupHead: MessageFns<RMGroupHead> = {
     if (message.audit !== undefined) {
       obj.audit = AuditInfo.toJSON(message.audit);
     }
+    if (message.marketingFreightRate !== undefined) {
+      obj.marketingFreightRate = message.marketingFreightRate;
+    }
+    if (message.marketingAntiDumpingPct !== undefined) {
+      obj.marketingAntiDumpingPct = message.marketingAntiDumpingPct;
+    }
+    if (message.marketingDefaultValue !== undefined) {
+      obj.marketingDefaultValue = message.marketingDefaultValue;
+    }
+    if (message.valuationFlag !== 0) {
+      obj.valuationFlag = rMValuationFlagToJSON(message.valuationFlag);
+    }
+    if (message.marketingFlag !== 0) {
+      obj.marketingFlag = rMMarketingFlagToJSON(message.marketingFlag);
+    }
     return obj;
   },
 
@@ -1124,6 +1471,11 @@ export const RMGroupHead: MessageFns<RMGroupHead> = {
     message.audit = (object.audit !== undefined && object.audit !== null)
       ? AuditInfo.fromPartial(object.audit)
       : undefined;
+    message.marketingFreightRate = object.marketingFreightRate ?? undefined;
+    message.marketingAntiDumpingPct = object.marketingAntiDumpingPct ?? undefined;
+    message.marketingDefaultValue = object.marketingDefaultValue ?? undefined;
+    message.valuationFlag = object.valuationFlag ?? 0;
+    message.marketingFlag = object.marketingFlag ?? 0;
     return message;
   },
 };
@@ -1143,7 +1495,12 @@ function createBaseRMGroupDetail(): RMGroupDetail {
     sortOrder: 0,
     isActive: false,
     isDummy: false,
+    valuationFreightRate: undefined,
+    valuationAntiDumpingPct: undefined,
     audit: undefined,
+    valuationDutyPct: undefined,
+    valuationTransportRate: undefined,
+    valuationDefaultValue: undefined,
   };
 }
 
@@ -1188,8 +1545,23 @@ export const RMGroupDetail: MessageFns<RMGroupDetail> = {
     if (message.isDummy !== false) {
       writer.uint32(104).bool(message.isDummy);
     }
+    if (message.valuationFreightRate !== undefined) {
+      writer.uint32(113).double(message.valuationFreightRate);
+    }
+    if (message.valuationAntiDumpingPct !== undefined) {
+      writer.uint32(121).double(message.valuationAntiDumpingPct);
+    }
     if (message.audit !== undefined) {
       AuditInfo.encode(message.audit, writer.uint32(130).fork()).join();
+    }
+    if (message.valuationDutyPct !== undefined) {
+      writer.uint32(137).double(message.valuationDutyPct);
+    }
+    if (message.valuationTransportRate !== undefined) {
+      writer.uint32(145).double(message.valuationTransportRate);
+    }
+    if (message.valuationDefaultValue !== undefined) {
+      writer.uint32(153).double(message.valuationDefaultValue);
     }
     return writer;
   },
@@ -1305,12 +1677,52 @@ export const RMGroupDetail: MessageFns<RMGroupDetail> = {
           message.isDummy = reader.bool();
           continue;
         }
+        case 14: {
+          if (tag !== 113) {
+            break;
+          }
+
+          message.valuationFreightRate = reader.double();
+          continue;
+        }
+        case 15: {
+          if (tag !== 121) {
+            break;
+          }
+
+          message.valuationAntiDumpingPct = reader.double();
+          continue;
+        }
         case 16: {
           if (tag !== 130) {
             break;
           }
 
           message.audit = AuditInfo.decode(reader, reader.uint32());
+          continue;
+        }
+        case 17: {
+          if (tag !== 137) {
+            break;
+          }
+
+          message.valuationDutyPct = reader.double();
+          continue;
+        }
+        case 18: {
+          if (tag !== 145) {
+            break;
+          }
+
+          message.valuationTransportRate = reader.double();
+          continue;
+        }
+        case 19: {
+          if (tag !== 153) {
+            break;
+          }
+
+          message.valuationDefaultValue = reader.double();
           continue;
         }
       }
@@ -1389,7 +1801,32 @@ export const RMGroupDetail: MessageFns<RMGroupDetail> = {
         : isSet(object.is_dummy)
         ? globalThis.Boolean(object.is_dummy)
         : false,
+      valuationFreightRate: isSet(object.valuationFreightRate)
+        ? globalThis.Number(object.valuationFreightRate)
+        : isSet(object.valuation_freight_rate)
+        ? globalThis.Number(object.valuation_freight_rate)
+        : undefined,
+      valuationAntiDumpingPct: isSet(object.valuationAntiDumpingPct)
+        ? globalThis.Number(object.valuationAntiDumpingPct)
+        : isSet(object.valuation_anti_dumping_pct)
+        ? globalThis.Number(object.valuation_anti_dumping_pct)
+        : undefined,
       audit: isSet(object.audit) ? AuditInfo.fromJSON(object.audit) : undefined,
+      valuationDutyPct: isSet(object.valuationDutyPct)
+        ? globalThis.Number(object.valuationDutyPct)
+        : isSet(object.valuation_duty_pct)
+        ? globalThis.Number(object.valuation_duty_pct)
+        : undefined,
+      valuationTransportRate: isSet(object.valuationTransportRate)
+        ? globalThis.Number(object.valuationTransportRate)
+        : isSet(object.valuation_transport_rate)
+        ? globalThis.Number(object.valuation_transport_rate)
+        : undefined,
+      valuationDefaultValue: isSet(object.valuationDefaultValue)
+        ? globalThis.Number(object.valuationDefaultValue)
+        : isSet(object.valuation_default_value)
+        ? globalThis.Number(object.valuation_default_value)
+        : undefined,
     };
   },
 
@@ -1434,8 +1871,23 @@ export const RMGroupDetail: MessageFns<RMGroupDetail> = {
     if (message.isDummy !== false) {
       obj.isDummy = message.isDummy;
     }
+    if (message.valuationFreightRate !== undefined) {
+      obj.valuationFreightRate = message.valuationFreightRate;
+    }
+    if (message.valuationAntiDumpingPct !== undefined) {
+      obj.valuationAntiDumpingPct = message.valuationAntiDumpingPct;
+    }
     if (message.audit !== undefined) {
       obj.audit = AuditInfo.toJSON(message.audit);
+    }
+    if (message.valuationDutyPct !== undefined) {
+      obj.valuationDutyPct = message.valuationDutyPct;
+    }
+    if (message.valuationTransportRate !== undefined) {
+      obj.valuationTransportRate = message.valuationTransportRate;
+    }
+    if (message.valuationDefaultValue !== undefined) {
+      obj.valuationDefaultValue = message.valuationDefaultValue;
     }
     return obj;
   },
@@ -1458,9 +1910,14 @@ export const RMGroupDetail: MessageFns<RMGroupDetail> = {
     message.sortOrder = object.sortOrder ?? 0;
     message.isActive = object.isActive ?? false;
     message.isDummy = object.isDummy ?? false;
+    message.valuationFreightRate = object.valuationFreightRate ?? undefined;
+    message.valuationAntiDumpingPct = object.valuationAntiDumpingPct ?? undefined;
     message.audit = (object.audit !== undefined && object.audit !== null)
       ? AuditInfo.fromPartial(object.audit)
       : undefined;
+    message.valuationDutyPct = object.valuationDutyPct ?? undefined;
+    message.valuationTransportRate = object.valuationTransportRate ?? undefined;
+    message.valuationDefaultValue = object.valuationDefaultValue ?? undefined;
     return message;
   },
 };
@@ -2236,7 +2693,20 @@ export const SkippedItem: MessageFns<SkippedItem> = {
 };
 
 function createBaseCreateRMGroupRequest(): CreateRMGroupRequest {
-  return { groupCode: "", groupName: "", description: "", colourant: "", ciName: "", costPercentage: 0, costPerKg: 0 };
+  return {
+    groupCode: "",
+    groupName: "",
+    description: "",
+    colourant: "",
+    ciName: "",
+    costPercentage: 0,
+    costPerKg: 0,
+    marketingFreightRate: undefined,
+    marketingAntiDumpingPct: undefined,
+    marketingDefaultValue: undefined,
+    valuationFlag: 0,
+    marketingFlag: 0,
+  };
 }
 
 export const CreateRMGroupRequest: MessageFns<CreateRMGroupRequest> = {
@@ -2261,6 +2731,21 @@ export const CreateRMGroupRequest: MessageFns<CreateRMGroupRequest> = {
     }
     if (message.costPerKg !== 0) {
       writer.uint32(57).double(message.costPerKg);
+    }
+    if (message.marketingFreightRate !== undefined) {
+      writer.uint32(65).double(message.marketingFreightRate);
+    }
+    if (message.marketingAntiDumpingPct !== undefined) {
+      writer.uint32(73).double(message.marketingAntiDumpingPct);
+    }
+    if (message.marketingDefaultValue !== undefined) {
+      writer.uint32(81).double(message.marketingDefaultValue);
+    }
+    if (message.valuationFlag !== 0) {
+      writer.uint32(88).int32(message.valuationFlag);
+    }
+    if (message.marketingFlag !== 0) {
+      writer.uint32(96).int32(message.marketingFlag);
     }
     return writer;
   },
@@ -2328,6 +2813,46 @@ export const CreateRMGroupRequest: MessageFns<CreateRMGroupRequest> = {
           message.costPerKg = reader.double();
           continue;
         }
+        case 8: {
+          if (tag !== 65) {
+            break;
+          }
+
+          message.marketingFreightRate = reader.double();
+          continue;
+        }
+        case 9: {
+          if (tag !== 73) {
+            break;
+          }
+
+          message.marketingAntiDumpingPct = reader.double();
+          continue;
+        }
+        case 10: {
+          if (tag !== 81) {
+            break;
+          }
+
+          message.marketingDefaultValue = reader.double();
+          continue;
+        }
+        case 11: {
+          if (tag !== 88) {
+            break;
+          }
+
+          message.valuationFlag = reader.int32() as any;
+          continue;
+        }
+        case 12: {
+          if (tag !== 96) {
+            break;
+          }
+
+          message.marketingFlag = reader.int32() as any;
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2366,6 +2891,31 @@ export const CreateRMGroupRequest: MessageFns<CreateRMGroupRequest> = {
         : isSet(object.cost_per_kg)
         ? globalThis.Number(object.cost_per_kg)
         : 0,
+      marketingFreightRate: isSet(object.marketingFreightRate)
+        ? globalThis.Number(object.marketingFreightRate)
+        : isSet(object.marketing_freight_rate)
+        ? globalThis.Number(object.marketing_freight_rate)
+        : undefined,
+      marketingAntiDumpingPct: isSet(object.marketingAntiDumpingPct)
+        ? globalThis.Number(object.marketingAntiDumpingPct)
+        : isSet(object.marketing_anti_dumping_pct)
+        ? globalThis.Number(object.marketing_anti_dumping_pct)
+        : undefined,
+      marketingDefaultValue: isSet(object.marketingDefaultValue)
+        ? globalThis.Number(object.marketingDefaultValue)
+        : isSet(object.marketing_default_value)
+        ? globalThis.Number(object.marketing_default_value)
+        : undefined,
+      valuationFlag: isSet(object.valuationFlag)
+        ? rMValuationFlagFromJSON(object.valuationFlag)
+        : isSet(object.valuation_flag)
+        ? rMValuationFlagFromJSON(object.valuation_flag)
+        : 0,
+      marketingFlag: isSet(object.marketingFlag)
+        ? rMMarketingFlagFromJSON(object.marketingFlag)
+        : isSet(object.marketing_flag)
+        ? rMMarketingFlagFromJSON(object.marketing_flag)
+        : 0,
     };
   },
 
@@ -2392,6 +2942,21 @@ export const CreateRMGroupRequest: MessageFns<CreateRMGroupRequest> = {
     if (message.costPerKg !== 0) {
       obj.costPerKg = message.costPerKg;
     }
+    if (message.marketingFreightRate !== undefined) {
+      obj.marketingFreightRate = message.marketingFreightRate;
+    }
+    if (message.marketingAntiDumpingPct !== undefined) {
+      obj.marketingAntiDumpingPct = message.marketingAntiDumpingPct;
+    }
+    if (message.marketingDefaultValue !== undefined) {
+      obj.marketingDefaultValue = message.marketingDefaultValue;
+    }
+    if (message.valuationFlag !== 0) {
+      obj.valuationFlag = rMValuationFlagToJSON(message.valuationFlag);
+    }
+    if (message.marketingFlag !== 0) {
+      obj.marketingFlag = rMMarketingFlagToJSON(message.marketingFlag);
+    }
     return obj;
   },
 
@@ -2407,6 +2972,11 @@ export const CreateRMGroupRequest: MessageFns<CreateRMGroupRequest> = {
     message.ciName = object.ciName ?? "";
     message.costPercentage = object.costPercentage ?? 0;
     message.costPerKg = object.costPerKg ?? 0;
+    message.marketingFreightRate = object.marketingFreightRate ?? undefined;
+    message.marketingAntiDumpingPct = object.marketingAntiDumpingPct ?? undefined;
+    message.marketingDefaultValue = object.marketingDefaultValue ?? undefined;
+    message.valuationFlag = object.valuationFlag ?? 0;
+    message.marketingFlag = object.marketingFlag ?? 0;
     return message;
   },
 };
@@ -2654,6 +3224,14 @@ function createBaseUpdateRMGroupRequest(): UpdateRMGroupRequest {
     clearInitValValuation: false,
     clearInitValMarketing: false,
     clearInitValSimulation: false,
+    marketingFreightRate: undefined,
+    marketingAntiDumpingPct: undefined,
+    marketingDefaultValue: undefined,
+    valuationFlag: undefined,
+    marketingFlag: undefined,
+    clearMarketingFreightRate: false,
+    clearMarketingAntiDumpingPct: false,
+    clearMarketingDefaultValue: false,
   };
 }
 
@@ -2709,6 +3287,30 @@ export const UpdateRMGroupRequest: MessageFns<UpdateRMGroupRequest> = {
     }
     if (message.clearInitValSimulation !== false) {
       writer.uint32(136).bool(message.clearInitValSimulation);
+    }
+    if (message.marketingFreightRate !== undefined) {
+      writer.uint32(145).double(message.marketingFreightRate);
+    }
+    if (message.marketingAntiDumpingPct !== undefined) {
+      writer.uint32(153).double(message.marketingAntiDumpingPct);
+    }
+    if (message.marketingDefaultValue !== undefined) {
+      writer.uint32(161).double(message.marketingDefaultValue);
+    }
+    if (message.valuationFlag !== undefined) {
+      writer.uint32(168).int32(message.valuationFlag);
+    }
+    if (message.marketingFlag !== undefined) {
+      writer.uint32(176).int32(message.marketingFlag);
+    }
+    if (message.clearMarketingFreightRate !== false) {
+      writer.uint32(184).bool(message.clearMarketingFreightRate);
+    }
+    if (message.clearMarketingAntiDumpingPct !== false) {
+      writer.uint32(192).bool(message.clearMarketingAntiDumpingPct);
+    }
+    if (message.clearMarketingDefaultValue !== false) {
+      writer.uint32(200).bool(message.clearMarketingDefaultValue);
     }
     return writer;
   },
@@ -2856,6 +3458,70 @@ export const UpdateRMGroupRequest: MessageFns<UpdateRMGroupRequest> = {
           message.clearInitValSimulation = reader.bool();
           continue;
         }
+        case 18: {
+          if (tag !== 145) {
+            break;
+          }
+
+          message.marketingFreightRate = reader.double();
+          continue;
+        }
+        case 19: {
+          if (tag !== 153) {
+            break;
+          }
+
+          message.marketingAntiDumpingPct = reader.double();
+          continue;
+        }
+        case 20: {
+          if (tag !== 161) {
+            break;
+          }
+
+          message.marketingDefaultValue = reader.double();
+          continue;
+        }
+        case 21: {
+          if (tag !== 168) {
+            break;
+          }
+
+          message.valuationFlag = reader.int32() as any;
+          continue;
+        }
+        case 22: {
+          if (tag !== 176) {
+            break;
+          }
+
+          message.marketingFlag = reader.int32() as any;
+          continue;
+        }
+        case 23: {
+          if (tag !== 184) {
+            break;
+          }
+
+          message.clearMarketingFreightRate = reader.bool();
+          continue;
+        }
+        case 24: {
+          if (tag !== 192) {
+            break;
+          }
+
+          message.clearMarketingAntiDumpingPct = reader.bool();
+          continue;
+        }
+        case 25: {
+          if (tag !== 200) {
+            break;
+          }
+
+          message.clearMarketingDefaultValue = reader.bool();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2944,6 +3610,46 @@ export const UpdateRMGroupRequest: MessageFns<UpdateRMGroupRequest> = {
         : isSet(object.clear_init_val_simulation)
         ? globalThis.Boolean(object.clear_init_val_simulation)
         : false,
+      marketingFreightRate: isSet(object.marketingFreightRate)
+        ? globalThis.Number(object.marketingFreightRate)
+        : isSet(object.marketing_freight_rate)
+        ? globalThis.Number(object.marketing_freight_rate)
+        : undefined,
+      marketingAntiDumpingPct: isSet(object.marketingAntiDumpingPct)
+        ? globalThis.Number(object.marketingAntiDumpingPct)
+        : isSet(object.marketing_anti_dumping_pct)
+        ? globalThis.Number(object.marketing_anti_dumping_pct)
+        : undefined,
+      marketingDefaultValue: isSet(object.marketingDefaultValue)
+        ? globalThis.Number(object.marketingDefaultValue)
+        : isSet(object.marketing_default_value)
+        ? globalThis.Number(object.marketing_default_value)
+        : undefined,
+      valuationFlag: isSet(object.valuationFlag)
+        ? rMValuationFlagFromJSON(object.valuationFlag)
+        : isSet(object.valuation_flag)
+        ? rMValuationFlagFromJSON(object.valuation_flag)
+        : undefined,
+      marketingFlag: isSet(object.marketingFlag)
+        ? rMMarketingFlagFromJSON(object.marketingFlag)
+        : isSet(object.marketing_flag)
+        ? rMMarketingFlagFromJSON(object.marketing_flag)
+        : undefined,
+      clearMarketingFreightRate: isSet(object.clearMarketingFreightRate)
+        ? globalThis.Boolean(object.clearMarketingFreightRate)
+        : isSet(object.clear_marketing_freight_rate)
+        ? globalThis.Boolean(object.clear_marketing_freight_rate)
+        : false,
+      clearMarketingAntiDumpingPct: isSet(object.clearMarketingAntiDumpingPct)
+        ? globalThis.Boolean(object.clearMarketingAntiDumpingPct)
+        : isSet(object.clear_marketing_anti_dumping_pct)
+        ? globalThis.Boolean(object.clear_marketing_anti_dumping_pct)
+        : false,
+      clearMarketingDefaultValue: isSet(object.clearMarketingDefaultValue)
+        ? globalThis.Boolean(object.clearMarketingDefaultValue)
+        : isSet(object.clear_marketing_default_value)
+        ? globalThis.Boolean(object.clear_marketing_default_value)
+        : false,
     };
   },
 
@@ -3000,6 +3706,30 @@ export const UpdateRMGroupRequest: MessageFns<UpdateRMGroupRequest> = {
     if (message.clearInitValSimulation !== false) {
       obj.clearInitValSimulation = message.clearInitValSimulation;
     }
+    if (message.marketingFreightRate !== undefined) {
+      obj.marketingFreightRate = message.marketingFreightRate;
+    }
+    if (message.marketingAntiDumpingPct !== undefined) {
+      obj.marketingAntiDumpingPct = message.marketingAntiDumpingPct;
+    }
+    if (message.marketingDefaultValue !== undefined) {
+      obj.marketingDefaultValue = message.marketingDefaultValue;
+    }
+    if (message.valuationFlag !== undefined) {
+      obj.valuationFlag = rMValuationFlagToJSON(message.valuationFlag);
+    }
+    if (message.marketingFlag !== undefined) {
+      obj.marketingFlag = rMMarketingFlagToJSON(message.marketingFlag);
+    }
+    if (message.clearMarketingFreightRate !== false) {
+      obj.clearMarketingFreightRate = message.clearMarketingFreightRate;
+    }
+    if (message.clearMarketingAntiDumpingPct !== false) {
+      obj.clearMarketingAntiDumpingPct = message.clearMarketingAntiDumpingPct;
+    }
+    if (message.clearMarketingDefaultValue !== false) {
+      obj.clearMarketingDefaultValue = message.clearMarketingDefaultValue;
+    }
     return obj;
   },
 
@@ -3025,6 +3755,14 @@ export const UpdateRMGroupRequest: MessageFns<UpdateRMGroupRequest> = {
     message.clearInitValValuation = object.clearInitValValuation ?? false;
     message.clearInitValMarketing = object.clearInitValMarketing ?? false;
     message.clearInitValSimulation = object.clearInitValSimulation ?? false;
+    message.marketingFreightRate = object.marketingFreightRate ?? undefined;
+    message.marketingAntiDumpingPct = object.marketingAntiDumpingPct ?? undefined;
+    message.marketingDefaultValue = object.marketingDefaultValue ?? undefined;
+    message.valuationFlag = object.valuationFlag ?? undefined;
+    message.marketingFlag = object.marketingFlag ?? undefined;
+    message.clearMarketingFreightRate = object.clearMarketingFreightRate ?? false;
+    message.clearMarketingAntiDumpingPct = object.clearMarketingAntiDumpingPct ?? false;
+    message.clearMarketingDefaultValue = object.clearMarketingDefaultValue ?? false;
     return message;
   },
 };
@@ -3486,7 +4224,15 @@ export const ListRMGroupsResponse: MessageFns<ListRMGroupsResponse> = {
 };
 
 function createBaseAddItemSelection(): AddItemSelection {
-  return { itemCode: "", gradeCode: "" };
+  return {
+    itemCode: "",
+    gradeCode: "",
+    valuationFreightRate: undefined,
+    valuationAntiDumpingPct: undefined,
+    valuationDutyPct: undefined,
+    valuationTransportRate: undefined,
+    valuationDefaultValue: undefined,
+  };
 }
 
 export const AddItemSelection: MessageFns<AddItemSelection> = {
@@ -3496,6 +4242,21 @@ export const AddItemSelection: MessageFns<AddItemSelection> = {
     }
     if (message.gradeCode !== "") {
       writer.uint32(18).string(message.gradeCode);
+    }
+    if (message.valuationFreightRate !== undefined) {
+      writer.uint32(25).double(message.valuationFreightRate);
+    }
+    if (message.valuationAntiDumpingPct !== undefined) {
+      writer.uint32(33).double(message.valuationAntiDumpingPct);
+    }
+    if (message.valuationDutyPct !== undefined) {
+      writer.uint32(41).double(message.valuationDutyPct);
+    }
+    if (message.valuationTransportRate !== undefined) {
+      writer.uint32(49).double(message.valuationTransportRate);
+    }
+    if (message.valuationDefaultValue !== undefined) {
+      writer.uint32(57).double(message.valuationDefaultValue);
     }
     return writer;
   },
@@ -3523,6 +4284,46 @@ export const AddItemSelection: MessageFns<AddItemSelection> = {
           message.gradeCode = reader.string();
           continue;
         }
+        case 3: {
+          if (tag !== 25) {
+            break;
+          }
+
+          message.valuationFreightRate = reader.double();
+          continue;
+        }
+        case 4: {
+          if (tag !== 33) {
+            break;
+          }
+
+          message.valuationAntiDumpingPct = reader.double();
+          continue;
+        }
+        case 5: {
+          if (tag !== 41) {
+            break;
+          }
+
+          message.valuationDutyPct = reader.double();
+          continue;
+        }
+        case 6: {
+          if (tag !== 49) {
+            break;
+          }
+
+          message.valuationTransportRate = reader.double();
+          continue;
+        }
+        case 7: {
+          if (tag !== 57) {
+            break;
+          }
+
+          message.valuationDefaultValue = reader.double();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3544,6 +4345,31 @@ export const AddItemSelection: MessageFns<AddItemSelection> = {
         : isSet(object.grade_code)
         ? globalThis.String(object.grade_code)
         : "",
+      valuationFreightRate: isSet(object.valuationFreightRate)
+        ? globalThis.Number(object.valuationFreightRate)
+        : isSet(object.valuation_freight_rate)
+        ? globalThis.Number(object.valuation_freight_rate)
+        : undefined,
+      valuationAntiDumpingPct: isSet(object.valuationAntiDumpingPct)
+        ? globalThis.Number(object.valuationAntiDumpingPct)
+        : isSet(object.valuation_anti_dumping_pct)
+        ? globalThis.Number(object.valuation_anti_dumping_pct)
+        : undefined,
+      valuationDutyPct: isSet(object.valuationDutyPct)
+        ? globalThis.Number(object.valuationDutyPct)
+        : isSet(object.valuation_duty_pct)
+        ? globalThis.Number(object.valuation_duty_pct)
+        : undefined,
+      valuationTransportRate: isSet(object.valuationTransportRate)
+        ? globalThis.Number(object.valuationTransportRate)
+        : isSet(object.valuation_transport_rate)
+        ? globalThis.Number(object.valuation_transport_rate)
+        : undefined,
+      valuationDefaultValue: isSet(object.valuationDefaultValue)
+        ? globalThis.Number(object.valuationDefaultValue)
+        : isSet(object.valuation_default_value)
+        ? globalThis.Number(object.valuation_default_value)
+        : undefined,
     };
   },
 
@@ -3555,6 +4381,21 @@ export const AddItemSelection: MessageFns<AddItemSelection> = {
     if (message.gradeCode !== "") {
       obj.gradeCode = message.gradeCode;
     }
+    if (message.valuationFreightRate !== undefined) {
+      obj.valuationFreightRate = message.valuationFreightRate;
+    }
+    if (message.valuationAntiDumpingPct !== undefined) {
+      obj.valuationAntiDumpingPct = message.valuationAntiDumpingPct;
+    }
+    if (message.valuationDutyPct !== undefined) {
+      obj.valuationDutyPct = message.valuationDutyPct;
+    }
+    if (message.valuationTransportRate !== undefined) {
+      obj.valuationTransportRate = message.valuationTransportRate;
+    }
+    if (message.valuationDefaultValue !== undefined) {
+      obj.valuationDefaultValue = message.valuationDefaultValue;
+    }
     return obj;
   },
 
@@ -3565,6 +4406,11 @@ export const AddItemSelection: MessageFns<AddItemSelection> = {
     const message = createBaseAddItemSelection();
     message.itemCode = object.itemCode ?? "";
     message.gradeCode = object.gradeCode ?? "";
+    message.valuationFreightRate = object.valuationFreightRate ?? undefined;
+    message.valuationAntiDumpingPct = object.valuationAntiDumpingPct ?? undefined;
+    message.valuationDutyPct = object.valuationDutyPct ?? undefined;
+    message.valuationTransportRate = object.valuationTransportRate ?? undefined;
+    message.valuationDefaultValue = object.valuationDefaultValue ?? undefined;
     return message;
   },
 };
@@ -3943,6 +4789,425 @@ export const RemoveItemsResponse: MessageFns<RemoveItemsResponse> = {
       ? BaseResponse.fromPartial(object.base)
       : undefined;
     message.removedCount = object.removedCount ?? 0;
+    return message;
+  },
+};
+
+function createBaseUpdateGroupItemRequest(): UpdateGroupItemRequest {
+  return {
+    groupHeadId: "",
+    groupDetailId: "",
+    valuationFreightRate: undefined,
+    valuationAntiDumpingPct: undefined,
+    valuationDutyPct: undefined,
+    valuationTransportRate: undefined,
+    valuationDefaultValue: undefined,
+    sortOrder: undefined,
+    isActive: undefined,
+    clearValuationFreightRate: false,
+    clearValuationAntiDumpingPct: false,
+    clearValuationDutyPct: false,
+    clearValuationTransportRate: false,
+    clearValuationDefaultValue: false,
+  };
+}
+
+export const UpdateGroupItemRequest: MessageFns<UpdateGroupItemRequest> = {
+  encode(message: UpdateGroupItemRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.groupHeadId !== "") {
+      writer.uint32(10).string(message.groupHeadId);
+    }
+    if (message.groupDetailId !== "") {
+      writer.uint32(18).string(message.groupDetailId);
+    }
+    if (message.valuationFreightRate !== undefined) {
+      writer.uint32(25).double(message.valuationFreightRate);
+    }
+    if (message.valuationAntiDumpingPct !== undefined) {
+      writer.uint32(33).double(message.valuationAntiDumpingPct);
+    }
+    if (message.valuationDutyPct !== undefined) {
+      writer.uint32(41).double(message.valuationDutyPct);
+    }
+    if (message.valuationTransportRate !== undefined) {
+      writer.uint32(49).double(message.valuationTransportRate);
+    }
+    if (message.valuationDefaultValue !== undefined) {
+      writer.uint32(57).double(message.valuationDefaultValue);
+    }
+    if (message.sortOrder !== undefined) {
+      writer.uint32(64).int32(message.sortOrder);
+    }
+    if (message.isActive !== undefined) {
+      writer.uint32(72).bool(message.isActive);
+    }
+    if (message.clearValuationFreightRate !== false) {
+      writer.uint32(80).bool(message.clearValuationFreightRate);
+    }
+    if (message.clearValuationAntiDumpingPct !== false) {
+      writer.uint32(88).bool(message.clearValuationAntiDumpingPct);
+    }
+    if (message.clearValuationDutyPct !== false) {
+      writer.uint32(96).bool(message.clearValuationDutyPct);
+    }
+    if (message.clearValuationTransportRate !== false) {
+      writer.uint32(104).bool(message.clearValuationTransportRate);
+    }
+    if (message.clearValuationDefaultValue !== false) {
+      writer.uint32(112).bool(message.clearValuationDefaultValue);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): UpdateGroupItemRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUpdateGroupItemRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.groupHeadId = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.groupDetailId = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 25) {
+            break;
+          }
+
+          message.valuationFreightRate = reader.double();
+          continue;
+        }
+        case 4: {
+          if (tag !== 33) {
+            break;
+          }
+
+          message.valuationAntiDumpingPct = reader.double();
+          continue;
+        }
+        case 5: {
+          if (tag !== 41) {
+            break;
+          }
+
+          message.valuationDutyPct = reader.double();
+          continue;
+        }
+        case 6: {
+          if (tag !== 49) {
+            break;
+          }
+
+          message.valuationTransportRate = reader.double();
+          continue;
+        }
+        case 7: {
+          if (tag !== 57) {
+            break;
+          }
+
+          message.valuationDefaultValue = reader.double();
+          continue;
+        }
+        case 8: {
+          if (tag !== 64) {
+            break;
+          }
+
+          message.sortOrder = reader.int32();
+          continue;
+        }
+        case 9: {
+          if (tag !== 72) {
+            break;
+          }
+
+          message.isActive = reader.bool();
+          continue;
+        }
+        case 10: {
+          if (tag !== 80) {
+            break;
+          }
+
+          message.clearValuationFreightRate = reader.bool();
+          continue;
+        }
+        case 11: {
+          if (tag !== 88) {
+            break;
+          }
+
+          message.clearValuationAntiDumpingPct = reader.bool();
+          continue;
+        }
+        case 12: {
+          if (tag !== 96) {
+            break;
+          }
+
+          message.clearValuationDutyPct = reader.bool();
+          continue;
+        }
+        case 13: {
+          if (tag !== 104) {
+            break;
+          }
+
+          message.clearValuationTransportRate = reader.bool();
+          continue;
+        }
+        case 14: {
+          if (tag !== 112) {
+            break;
+          }
+
+          message.clearValuationDefaultValue = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UpdateGroupItemRequest {
+    return {
+      groupHeadId: isSet(object.groupHeadId)
+        ? globalThis.String(object.groupHeadId)
+        : isSet(object.group_head_id)
+        ? globalThis.String(object.group_head_id)
+        : "",
+      groupDetailId: isSet(object.groupDetailId)
+        ? globalThis.String(object.groupDetailId)
+        : isSet(object.group_detail_id)
+        ? globalThis.String(object.group_detail_id)
+        : "",
+      valuationFreightRate: isSet(object.valuationFreightRate)
+        ? globalThis.Number(object.valuationFreightRate)
+        : isSet(object.valuation_freight_rate)
+        ? globalThis.Number(object.valuation_freight_rate)
+        : undefined,
+      valuationAntiDumpingPct: isSet(object.valuationAntiDumpingPct)
+        ? globalThis.Number(object.valuationAntiDumpingPct)
+        : isSet(object.valuation_anti_dumping_pct)
+        ? globalThis.Number(object.valuation_anti_dumping_pct)
+        : undefined,
+      valuationDutyPct: isSet(object.valuationDutyPct)
+        ? globalThis.Number(object.valuationDutyPct)
+        : isSet(object.valuation_duty_pct)
+        ? globalThis.Number(object.valuation_duty_pct)
+        : undefined,
+      valuationTransportRate: isSet(object.valuationTransportRate)
+        ? globalThis.Number(object.valuationTransportRate)
+        : isSet(object.valuation_transport_rate)
+        ? globalThis.Number(object.valuation_transport_rate)
+        : undefined,
+      valuationDefaultValue: isSet(object.valuationDefaultValue)
+        ? globalThis.Number(object.valuationDefaultValue)
+        : isSet(object.valuation_default_value)
+        ? globalThis.Number(object.valuation_default_value)
+        : undefined,
+      sortOrder: isSet(object.sortOrder)
+        ? globalThis.Number(object.sortOrder)
+        : isSet(object.sort_order)
+        ? globalThis.Number(object.sort_order)
+        : undefined,
+      isActive: isSet(object.isActive)
+        ? globalThis.Boolean(object.isActive)
+        : isSet(object.is_active)
+        ? globalThis.Boolean(object.is_active)
+        : undefined,
+      clearValuationFreightRate: isSet(object.clearValuationFreightRate)
+        ? globalThis.Boolean(object.clearValuationFreightRate)
+        : isSet(object.clear_valuation_freight_rate)
+        ? globalThis.Boolean(object.clear_valuation_freight_rate)
+        : false,
+      clearValuationAntiDumpingPct: isSet(object.clearValuationAntiDumpingPct)
+        ? globalThis.Boolean(object.clearValuationAntiDumpingPct)
+        : isSet(object.clear_valuation_anti_dumping_pct)
+        ? globalThis.Boolean(object.clear_valuation_anti_dumping_pct)
+        : false,
+      clearValuationDutyPct: isSet(object.clearValuationDutyPct)
+        ? globalThis.Boolean(object.clearValuationDutyPct)
+        : isSet(object.clear_valuation_duty_pct)
+        ? globalThis.Boolean(object.clear_valuation_duty_pct)
+        : false,
+      clearValuationTransportRate: isSet(object.clearValuationTransportRate)
+        ? globalThis.Boolean(object.clearValuationTransportRate)
+        : isSet(object.clear_valuation_transport_rate)
+        ? globalThis.Boolean(object.clear_valuation_transport_rate)
+        : false,
+      clearValuationDefaultValue: isSet(object.clearValuationDefaultValue)
+        ? globalThis.Boolean(object.clearValuationDefaultValue)
+        : isSet(object.clear_valuation_default_value)
+        ? globalThis.Boolean(object.clear_valuation_default_value)
+        : false,
+    };
+  },
+
+  toJSON(message: UpdateGroupItemRequest): unknown {
+    const obj: any = {};
+    if (message.groupHeadId !== "") {
+      obj.groupHeadId = message.groupHeadId;
+    }
+    if (message.groupDetailId !== "") {
+      obj.groupDetailId = message.groupDetailId;
+    }
+    if (message.valuationFreightRate !== undefined) {
+      obj.valuationFreightRate = message.valuationFreightRate;
+    }
+    if (message.valuationAntiDumpingPct !== undefined) {
+      obj.valuationAntiDumpingPct = message.valuationAntiDumpingPct;
+    }
+    if (message.valuationDutyPct !== undefined) {
+      obj.valuationDutyPct = message.valuationDutyPct;
+    }
+    if (message.valuationTransportRate !== undefined) {
+      obj.valuationTransportRate = message.valuationTransportRate;
+    }
+    if (message.valuationDefaultValue !== undefined) {
+      obj.valuationDefaultValue = message.valuationDefaultValue;
+    }
+    if (message.sortOrder !== undefined) {
+      obj.sortOrder = Math.round(message.sortOrder);
+    }
+    if (message.isActive !== undefined) {
+      obj.isActive = message.isActive;
+    }
+    if (message.clearValuationFreightRate !== false) {
+      obj.clearValuationFreightRate = message.clearValuationFreightRate;
+    }
+    if (message.clearValuationAntiDumpingPct !== false) {
+      obj.clearValuationAntiDumpingPct = message.clearValuationAntiDumpingPct;
+    }
+    if (message.clearValuationDutyPct !== false) {
+      obj.clearValuationDutyPct = message.clearValuationDutyPct;
+    }
+    if (message.clearValuationTransportRate !== false) {
+      obj.clearValuationTransportRate = message.clearValuationTransportRate;
+    }
+    if (message.clearValuationDefaultValue !== false) {
+      obj.clearValuationDefaultValue = message.clearValuationDefaultValue;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<UpdateGroupItemRequest>): UpdateGroupItemRequest {
+    return UpdateGroupItemRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<UpdateGroupItemRequest>): UpdateGroupItemRequest {
+    const message = createBaseUpdateGroupItemRequest();
+    message.groupHeadId = object.groupHeadId ?? "";
+    message.groupDetailId = object.groupDetailId ?? "";
+    message.valuationFreightRate = object.valuationFreightRate ?? undefined;
+    message.valuationAntiDumpingPct = object.valuationAntiDumpingPct ?? undefined;
+    message.valuationDutyPct = object.valuationDutyPct ?? undefined;
+    message.valuationTransportRate = object.valuationTransportRate ?? undefined;
+    message.valuationDefaultValue = object.valuationDefaultValue ?? undefined;
+    message.sortOrder = object.sortOrder ?? undefined;
+    message.isActive = object.isActive ?? undefined;
+    message.clearValuationFreightRate = object.clearValuationFreightRate ?? false;
+    message.clearValuationAntiDumpingPct = object.clearValuationAntiDumpingPct ?? false;
+    message.clearValuationDutyPct = object.clearValuationDutyPct ?? false;
+    message.clearValuationTransportRate = object.clearValuationTransportRate ?? false;
+    message.clearValuationDefaultValue = object.clearValuationDefaultValue ?? false;
+    return message;
+  },
+};
+
+function createBaseUpdateGroupItemResponse(): UpdateGroupItemResponse {
+  return { base: undefined, data: undefined };
+}
+
+export const UpdateGroupItemResponse: MessageFns<UpdateGroupItemResponse> = {
+  encode(message: UpdateGroupItemResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    if (message.data !== undefined) {
+      RMGroupDetail.encode(message.data, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): UpdateGroupItemResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUpdateGroupItemResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.data = RMGroupDetail.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UpdateGroupItemResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      data: isSet(object.data) ? RMGroupDetail.fromJSON(object.data) : undefined,
+    };
+  },
+
+  toJSON(message: UpdateGroupItemResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.data !== undefined) {
+      obj.data = RMGroupDetail.toJSON(message.data);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<UpdateGroupItemResponse>): UpdateGroupItemResponse {
+    return UpdateGroupItemResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<UpdateGroupItemResponse>): UpdateGroupItemResponse {
+    const message = createBaseUpdateGroupItemResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.data = (object.data !== undefined && object.data !== null)
+      ? RMGroupDetail.fromPartial(object.data)
+      : undefined;
     return message;
   },
 };
@@ -6531,6 +7796,93 @@ export const RMGroupServiceDefinition = {
               111,
               118,
               101,
+            ]),
+          ],
+        },
+      },
+    },
+    /** V2: UpdateGroupItem updates one detail row's valuation fields + sort/active. */
+    updateGroupItem: {
+      name: "UpdateGroupItem",
+      requestType: UpdateGroupItemRequest,
+      requestStream: false,
+      responseType: UpdateGroupItemResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              70,
+              58,
+              1,
+              42,
+              26,
+              65,
+              47,
+              97,
+              112,
+              105,
+              47,
+              118,
+              49,
+              47,
+              102,
+              105,
+              110,
+              97,
+              110,
+              99,
+              101,
+              47,
+              114,
+              109,
+              45,
+              103,
+              114,
+              111,
+              117,
+              112,
+              115,
+              47,
+              123,
+              103,
+              114,
+              111,
+              117,
+              112,
+              95,
+              104,
+              101,
+              97,
+              100,
+              95,
+              105,
+              100,
+              125,
+              47,
+              105,
+              116,
+              101,
+              109,
+              115,
+              47,
+              123,
+              103,
+              114,
+              111,
+              117,
+              112,
+              95,
+              100,
+              101,
+              116,
+              97,
+              105,
+              108,
+              95,
+              105,
+              100,
+              125,
             ]),
           ],
         },

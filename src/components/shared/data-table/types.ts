@@ -22,6 +22,23 @@ export interface ColumnDef<TData> {
   cellClassName?: string
   /** Hide column on mobile */
   hideOnMobile?: boolean
+  /** Pin column to left or right while horizontal-scrolling. */
+  sticky?: "left" | "right"
+  /** Exact rendered width in pixels. Required for sticky columns so the
+   *  table can compute stable cumulative offsets without the cell-padding
+   *  gaps that `w-[Npx]` Tailwind classes leave behind under
+   *  `table-layout: auto`. Applied as `width / min-width / max-width` with
+   *  `box-sizing: border-box` so padding fits inside the declared width. */
+  widthPx?: number
+  /** Manual offset override in pixels from the sticky edge. Usually leave
+   *  unset — the DataTable computes it automatically from preceding
+   *  `widthPx` values on the same side. */
+  stickyOffset?: number
+  /** Whether the user can hide this column via the column-visibility menu.
+   *  Default true. Set to false for required columns (e.g. row identifier). */
+  canHide?: boolean
+  /** Whether this column starts hidden. User can still toggle it on. */
+  defaultHidden?: boolean
 }
 
 /**
@@ -64,6 +81,11 @@ export interface DataTableProps<TData> {
   emptyDescription?: string
   /** Skeleton row count when loading */
   skeletonRowCount?: number
+  /** Stable id used to persist column-visibility preferences in localStorage.
+   *  When set, a column-visibility dropdown appears above the table. */
+  tableId?: string
+  /** Pin the row-actions column to the right. Default false. */
+  stickyActions?: boolean
 }
 
 /**

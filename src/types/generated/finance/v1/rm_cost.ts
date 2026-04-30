@@ -7,7 +7,17 @@
 /* eslint-disable */
 import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
 import { AuditInfo, BaseResponse, PaginationResponse } from "../../common/v1/common";
-import { RMGroupFlag, rMGroupFlagFromJSON, rMGroupFlagToJSON } from "./rm_group";
+import {
+  RMGroupFlag,
+  rMGroupFlagFromJSON,
+  rMGroupFlagToJSON,
+  RMMarketingFlag,
+  rMMarketingFlagFromJSON,
+  rMMarketingFlagToJSON,
+  RMValuationFlag,
+  rMValuationFlagFromJSON,
+  rMValuationFlagToJSON,
+} from "./rm_group";
 
 export const protobufPackage = "finance.v1";
 
@@ -185,6 +195,110 @@ export interface RMCost {
   /** Last calculator (empty when never calculated). */
   calculatedBy: string;
   /** Audit metadata. */
+  audit:
+    | AuditInfo
+    | undefined;
+  /** V2: Valuation flag (CR/SR/PR/CL/SL/FL or AUTO). */
+  valuationFlag: RMValuationFlag;
+  /** V2: Marketing flag (SP/PP/FP or AUTO). */
+  marketingFlag: RMMarketingFlag;
+  /** V2: Marketing input snapshots at calc time. */
+  marketingFreightRate?: number | undefined;
+  marketingAntiDumpingPct?: number | undefined;
+  marketingDutyPct?: number | undefined;
+  marketingTransportRate?: number | undefined;
+  marketingDefaultValue?:
+    | number
+    | undefined;
+  /** V2: Editable per-row simulation rate; 0/NULL → cost_sim = 0. */
+  simulationRate?:
+    | number
+    | undefined;
+  /** V2: Computed group-total rates (snapshots). */
+  clRate?: number | undefined;
+  slRate?: number | undefined;
+  flRate?: number | undefined;
+  spRate?: number | undefined;
+  ppRate?: number | undefined;
+  fpRate?: number | undefined;
+  crRate?: number | undefined;
+  srRate?: number | undefined;
+  prRate?: number | undefined;
+}
+
+/**
+ * V2: RMCostDetail is one row per (cost_id, item_code, grade_code) — full
+ * snapshot of intermediate columns from the Excel reference (rows 9–11).
+ */
+export interface RMCostDetail {
+  costDetailId: string;
+  costId: string;
+  period: string;
+  groupHeadId: string;
+  groupDetailId?: string | undefined;
+  itemCode: string;
+  itemName: string;
+  gradeCode: string;
+  /** Per-detail input snapshot (from group_detail at calc time). */
+  freightRate?:
+    | number
+    | undefined;
+  /** decimal (0.10 = 10%) */
+  antiDumpingPct?:
+    | number
+    | undefined;
+  /** decimal */
+  dutyPct?: number | undefined;
+  transportRate?: number | undefined;
+  valuationDefaultValue?:
+    | number
+    | undefined;
+  /** Consumption stage. */
+  consVal?: number | undefined;
+  consQty?: number | undefined;
+  consRate?: number | undefined;
+  consFreightVal?: number | undefined;
+  consValBased?: number | undefined;
+  consRateBased?: number | undefined;
+  consAntiDumpingVal?: number | undefined;
+  consAntiDumpingRate?: number | undefined;
+  consDutyVal?: number | undefined;
+  consDutyRate?: number | undefined;
+  consTransportVal?: number | undefined;
+  consTransportRate?: number | undefined;
+  consLandedCost?:
+    | number
+    | undefined;
+  /** Stock stage. */
+  stockVal?: number | undefined;
+  stockQty?: number | undefined;
+  stockRate?: number | undefined;
+  stockFreightVal?: number | undefined;
+  stockValBased?: number | undefined;
+  stockRateBased?: number | undefined;
+  stockAntiDumpingVal?: number | undefined;
+  stockAntiDumpingRate?: number | undefined;
+  stockDutyVal?: number | undefined;
+  stockDutyRate?: number | undefined;
+  stockTransportVal?: number | undefined;
+  stockTransportRate?: number | undefined;
+  stockLandedCost?:
+    | number
+    | undefined;
+  /** PO stage. */
+  poVal?: number | undefined;
+  poQty?: number | undefined;
+  poRate?:
+    | number
+    | undefined;
+  /** Fix stage. */
+  fixRate?: number | undefined;
+  fixFreightRate?: number | undefined;
+  fixRateBased?: number | undefined;
+  fixAntiDumpingRate?: number | undefined;
+  fixDutyRate?: number | undefined;
+  fixTransportRate?: number | undefined;
+  fixLandedCost?: number | undefined;
   audit: AuditInfo | undefined;
 }
 
@@ -404,6 +518,60 @@ export interface ListRMCostHistoryResponse {
   pagination: PaginationResponse | undefined;
 }
 
+/** ListCostDetails fetches all detail rows for one cost row. */
+export interface ListCostDetailsRequest {
+  rmCostId: string;
+}
+
+/** List response. */
+export interface ListCostDetailsResponse {
+  base: BaseResponse | undefined;
+  data: RMCostDetail[];
+}
+
+/**
+ * UpdateRMCostInputs edits the editable per-row marketing inputs, simulation
+ * rate, and flags. All fields optional; absent = no change. Use clear_* to
+ * force a nullable field back to NULL.
+ */
+export interface UpdateRMCostInputsRequest {
+  rmCostId: string;
+  marketingFreightRate?: number | undefined;
+  marketingAntiDumpingPct?: number | undefined;
+  marketingDutyPct?: number | undefined;
+  marketingTransportRate?: number | undefined;
+  marketingDefaultValue?: number | undefined;
+  simulationRate?: number | undefined;
+  valuationFlag?: RMValuationFlag | undefined;
+  marketingFlag?: RMMarketingFlag | undefined;
+  clearMarketingFreightRate: boolean;
+  clearMarketingAntiDumpingPct: boolean;
+  clearMarketingDutyPct: boolean;
+  clearMarketingTransportRate: boolean;
+  clearMarketingDefaultValue: boolean;
+  clearSimulationRate: boolean;
+}
+
+/** Update response carries the recomputed cost row. */
+export interface UpdateRMCostInputsResponse {
+  base: BaseResponse | undefined;
+  data: RMCost | undefined;
+}
+
+/** UpdateCostDetailFixRate sets fix_rate on one detail row. */
+export interface UpdateCostDetailFixRateRequest {
+  costDetailId: string;
+  /** Empty/0 clears the fix override (FL chain → 0). */
+  fixRate?: number | undefined;
+}
+
+/** Update response carries both the updated detail and the parent cost row. */
+export interface UpdateCostDetailFixRateResponse {
+  base: BaseResponse | undefined;
+  detail: RMCostDetail | undefined;
+  parentCost: RMCost | undefined;
+}
+
 /** ListRMCostPeriods has no filter arguments. */
 export interface ListRMCostPeriodsRequest {
 }
@@ -607,6 +775,23 @@ function createBaseRMCost(): RMCost {
     calculatedAt: "",
     calculatedBy: "",
     audit: undefined,
+    valuationFlag: 0,
+    marketingFlag: 0,
+    marketingFreightRate: undefined,
+    marketingAntiDumpingPct: undefined,
+    marketingDutyPct: undefined,
+    marketingTransportRate: undefined,
+    marketingDefaultValue: undefined,
+    simulationRate: undefined,
+    clRate: undefined,
+    slRate: undefined,
+    flRate: undefined,
+    spRate: undefined,
+    ppRate: undefined,
+    fpRate: undefined,
+    crRate: undefined,
+    srRate: undefined,
+    prRate: undefined,
   };
 }
 
@@ -674,6 +859,57 @@ export const RMCost: MessageFns<RMCost> = {
     }
     if (message.audit !== undefined) {
       AuditInfo.encode(message.audit, writer.uint32(130).fork()).join();
+    }
+    if (message.valuationFlag !== 0) {
+      writer.uint32(176).int32(message.valuationFlag);
+    }
+    if (message.marketingFlag !== 0) {
+      writer.uint32(184).int32(message.marketingFlag);
+    }
+    if (message.marketingFreightRate !== undefined) {
+      writer.uint32(193).double(message.marketingFreightRate);
+    }
+    if (message.marketingAntiDumpingPct !== undefined) {
+      writer.uint32(201).double(message.marketingAntiDumpingPct);
+    }
+    if (message.marketingDutyPct !== undefined) {
+      writer.uint32(209).double(message.marketingDutyPct);
+    }
+    if (message.marketingTransportRate !== undefined) {
+      writer.uint32(217).double(message.marketingTransportRate);
+    }
+    if (message.marketingDefaultValue !== undefined) {
+      writer.uint32(225).double(message.marketingDefaultValue);
+    }
+    if (message.simulationRate !== undefined) {
+      writer.uint32(233).double(message.simulationRate);
+    }
+    if (message.clRate !== undefined) {
+      writer.uint32(241).double(message.clRate);
+    }
+    if (message.slRate !== undefined) {
+      writer.uint32(249).double(message.slRate);
+    }
+    if (message.flRate !== undefined) {
+      writer.uint32(257).double(message.flRate);
+    }
+    if (message.spRate !== undefined) {
+      writer.uint32(265).double(message.spRate);
+    }
+    if (message.ppRate !== undefined) {
+      writer.uint32(273).double(message.ppRate);
+    }
+    if (message.fpRate !== undefined) {
+      writer.uint32(281).double(message.fpRate);
+    }
+    if (message.crRate !== undefined) {
+      writer.uint32(289).double(message.crRate);
+    }
+    if (message.srRate !== undefined) {
+      writer.uint32(297).double(message.srRate);
+    }
+    if (message.prRate !== undefined) {
+      writer.uint32(305).double(message.prRate);
     }
     return writer;
   },
@@ -853,6 +1089,142 @@ export const RMCost: MessageFns<RMCost> = {
           message.audit = AuditInfo.decode(reader, reader.uint32());
           continue;
         }
+        case 22: {
+          if (tag !== 176) {
+            break;
+          }
+
+          message.valuationFlag = reader.int32() as any;
+          continue;
+        }
+        case 23: {
+          if (tag !== 184) {
+            break;
+          }
+
+          message.marketingFlag = reader.int32() as any;
+          continue;
+        }
+        case 24: {
+          if (tag !== 193) {
+            break;
+          }
+
+          message.marketingFreightRate = reader.double();
+          continue;
+        }
+        case 25: {
+          if (tag !== 201) {
+            break;
+          }
+
+          message.marketingAntiDumpingPct = reader.double();
+          continue;
+        }
+        case 26: {
+          if (tag !== 209) {
+            break;
+          }
+
+          message.marketingDutyPct = reader.double();
+          continue;
+        }
+        case 27: {
+          if (tag !== 217) {
+            break;
+          }
+
+          message.marketingTransportRate = reader.double();
+          continue;
+        }
+        case 28: {
+          if (tag !== 225) {
+            break;
+          }
+
+          message.marketingDefaultValue = reader.double();
+          continue;
+        }
+        case 29: {
+          if (tag !== 233) {
+            break;
+          }
+
+          message.simulationRate = reader.double();
+          continue;
+        }
+        case 30: {
+          if (tag !== 241) {
+            break;
+          }
+
+          message.clRate = reader.double();
+          continue;
+        }
+        case 31: {
+          if (tag !== 249) {
+            break;
+          }
+
+          message.slRate = reader.double();
+          continue;
+        }
+        case 32: {
+          if (tag !== 257) {
+            break;
+          }
+
+          message.flRate = reader.double();
+          continue;
+        }
+        case 33: {
+          if (tag !== 265) {
+            break;
+          }
+
+          message.spRate = reader.double();
+          continue;
+        }
+        case 34: {
+          if (tag !== 273) {
+            break;
+          }
+
+          message.ppRate = reader.double();
+          continue;
+        }
+        case 35: {
+          if (tag !== 281) {
+            break;
+          }
+
+          message.fpRate = reader.double();
+          continue;
+        }
+        case 36: {
+          if (tag !== 289) {
+            break;
+          }
+
+          message.crRate = reader.double();
+          continue;
+        }
+        case 37: {
+          if (tag !== 297) {
+            break;
+          }
+
+          message.srRate = reader.double();
+          continue;
+        }
+        case 38: {
+          if (tag !== 305) {
+            break;
+          }
+
+          message.prRate = reader.double();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -957,6 +1329,91 @@ export const RMCost: MessageFns<RMCost> = {
         ? globalThis.String(object.calculated_by)
         : "",
       audit: isSet(object.audit) ? AuditInfo.fromJSON(object.audit) : undefined,
+      valuationFlag: isSet(object.valuationFlag)
+        ? rMValuationFlagFromJSON(object.valuationFlag)
+        : isSet(object.valuation_flag)
+        ? rMValuationFlagFromJSON(object.valuation_flag)
+        : 0,
+      marketingFlag: isSet(object.marketingFlag)
+        ? rMMarketingFlagFromJSON(object.marketingFlag)
+        : isSet(object.marketing_flag)
+        ? rMMarketingFlagFromJSON(object.marketing_flag)
+        : 0,
+      marketingFreightRate: isSet(object.marketingFreightRate)
+        ? globalThis.Number(object.marketingFreightRate)
+        : isSet(object.marketing_freight_rate)
+        ? globalThis.Number(object.marketing_freight_rate)
+        : undefined,
+      marketingAntiDumpingPct: isSet(object.marketingAntiDumpingPct)
+        ? globalThis.Number(object.marketingAntiDumpingPct)
+        : isSet(object.marketing_anti_dumping_pct)
+        ? globalThis.Number(object.marketing_anti_dumping_pct)
+        : undefined,
+      marketingDutyPct: isSet(object.marketingDutyPct)
+        ? globalThis.Number(object.marketingDutyPct)
+        : isSet(object.marketing_duty_pct)
+        ? globalThis.Number(object.marketing_duty_pct)
+        : undefined,
+      marketingTransportRate: isSet(object.marketingTransportRate)
+        ? globalThis.Number(object.marketingTransportRate)
+        : isSet(object.marketing_transport_rate)
+        ? globalThis.Number(object.marketing_transport_rate)
+        : undefined,
+      marketingDefaultValue: isSet(object.marketingDefaultValue)
+        ? globalThis.Number(object.marketingDefaultValue)
+        : isSet(object.marketing_default_value)
+        ? globalThis.Number(object.marketing_default_value)
+        : undefined,
+      simulationRate: isSet(object.simulationRate)
+        ? globalThis.Number(object.simulationRate)
+        : isSet(object.simulation_rate)
+        ? globalThis.Number(object.simulation_rate)
+        : undefined,
+      clRate: isSet(object.clRate)
+        ? globalThis.Number(object.clRate)
+        : isSet(object.cl_rate)
+        ? globalThis.Number(object.cl_rate)
+        : undefined,
+      slRate: isSet(object.slRate)
+        ? globalThis.Number(object.slRate)
+        : isSet(object.sl_rate)
+        ? globalThis.Number(object.sl_rate)
+        : undefined,
+      flRate: isSet(object.flRate)
+        ? globalThis.Number(object.flRate)
+        : isSet(object.fl_rate)
+        ? globalThis.Number(object.fl_rate)
+        : undefined,
+      spRate: isSet(object.spRate)
+        ? globalThis.Number(object.spRate)
+        : isSet(object.sp_rate)
+        ? globalThis.Number(object.sp_rate)
+        : undefined,
+      ppRate: isSet(object.ppRate)
+        ? globalThis.Number(object.ppRate)
+        : isSet(object.pp_rate)
+        ? globalThis.Number(object.pp_rate)
+        : undefined,
+      fpRate: isSet(object.fpRate)
+        ? globalThis.Number(object.fpRate)
+        : isSet(object.fp_rate)
+        ? globalThis.Number(object.fp_rate)
+        : undefined,
+      crRate: isSet(object.crRate)
+        ? globalThis.Number(object.crRate)
+        : isSet(object.cr_rate)
+        ? globalThis.Number(object.cr_rate)
+        : undefined,
+      srRate: isSet(object.srRate)
+        ? globalThis.Number(object.srRate)
+        : isSet(object.sr_rate)
+        ? globalThis.Number(object.sr_rate)
+        : undefined,
+      prRate: isSet(object.prRate)
+        ? globalThis.Number(object.prRate)
+        : isSet(object.pr_rate)
+        ? globalThis.Number(object.pr_rate)
+        : undefined,
     };
   },
 
@@ -1025,6 +1482,57 @@ export const RMCost: MessageFns<RMCost> = {
     if (message.audit !== undefined) {
       obj.audit = AuditInfo.toJSON(message.audit);
     }
+    if (message.valuationFlag !== 0) {
+      obj.valuationFlag = rMValuationFlagToJSON(message.valuationFlag);
+    }
+    if (message.marketingFlag !== 0) {
+      obj.marketingFlag = rMMarketingFlagToJSON(message.marketingFlag);
+    }
+    if (message.marketingFreightRate !== undefined) {
+      obj.marketingFreightRate = message.marketingFreightRate;
+    }
+    if (message.marketingAntiDumpingPct !== undefined) {
+      obj.marketingAntiDumpingPct = message.marketingAntiDumpingPct;
+    }
+    if (message.marketingDutyPct !== undefined) {
+      obj.marketingDutyPct = message.marketingDutyPct;
+    }
+    if (message.marketingTransportRate !== undefined) {
+      obj.marketingTransportRate = message.marketingTransportRate;
+    }
+    if (message.marketingDefaultValue !== undefined) {
+      obj.marketingDefaultValue = message.marketingDefaultValue;
+    }
+    if (message.simulationRate !== undefined) {
+      obj.simulationRate = message.simulationRate;
+    }
+    if (message.clRate !== undefined) {
+      obj.clRate = message.clRate;
+    }
+    if (message.slRate !== undefined) {
+      obj.slRate = message.slRate;
+    }
+    if (message.flRate !== undefined) {
+      obj.flRate = message.flRate;
+    }
+    if (message.spRate !== undefined) {
+      obj.spRate = message.spRate;
+    }
+    if (message.ppRate !== undefined) {
+      obj.ppRate = message.ppRate;
+    }
+    if (message.fpRate !== undefined) {
+      obj.fpRate = message.fpRate;
+    }
+    if (message.crRate !== undefined) {
+      obj.crRate = message.crRate;
+    }
+    if (message.srRate !== undefined) {
+      obj.srRate = message.srRate;
+    }
+    if (message.prRate !== undefined) {
+      obj.prRate = message.prRate;
+    }
     return obj;
   },
 
@@ -1055,6 +1563,1112 @@ export const RMCost: MessageFns<RMCost> = {
     message.flagSimulationUsed = object.flagSimulationUsed ?? 0;
     message.calculatedAt = object.calculatedAt ?? "";
     message.calculatedBy = object.calculatedBy ?? "";
+    message.audit = (object.audit !== undefined && object.audit !== null)
+      ? AuditInfo.fromPartial(object.audit)
+      : undefined;
+    message.valuationFlag = object.valuationFlag ?? 0;
+    message.marketingFlag = object.marketingFlag ?? 0;
+    message.marketingFreightRate = object.marketingFreightRate ?? undefined;
+    message.marketingAntiDumpingPct = object.marketingAntiDumpingPct ?? undefined;
+    message.marketingDutyPct = object.marketingDutyPct ?? undefined;
+    message.marketingTransportRate = object.marketingTransportRate ?? undefined;
+    message.marketingDefaultValue = object.marketingDefaultValue ?? undefined;
+    message.simulationRate = object.simulationRate ?? undefined;
+    message.clRate = object.clRate ?? undefined;
+    message.slRate = object.slRate ?? undefined;
+    message.flRate = object.flRate ?? undefined;
+    message.spRate = object.spRate ?? undefined;
+    message.ppRate = object.ppRate ?? undefined;
+    message.fpRate = object.fpRate ?? undefined;
+    message.crRate = object.crRate ?? undefined;
+    message.srRate = object.srRate ?? undefined;
+    message.prRate = object.prRate ?? undefined;
+    return message;
+  },
+};
+
+function createBaseRMCostDetail(): RMCostDetail {
+  return {
+    costDetailId: "",
+    costId: "",
+    period: "",
+    groupHeadId: "",
+    groupDetailId: undefined,
+    itemCode: "",
+    itemName: "",
+    gradeCode: "",
+    freightRate: undefined,
+    antiDumpingPct: undefined,
+    dutyPct: undefined,
+    transportRate: undefined,
+    valuationDefaultValue: undefined,
+    consVal: undefined,
+    consQty: undefined,
+    consRate: undefined,
+    consFreightVal: undefined,
+    consValBased: undefined,
+    consRateBased: undefined,
+    consAntiDumpingVal: undefined,
+    consAntiDumpingRate: undefined,
+    consDutyVal: undefined,
+    consDutyRate: undefined,
+    consTransportVal: undefined,
+    consTransportRate: undefined,
+    consLandedCost: undefined,
+    stockVal: undefined,
+    stockQty: undefined,
+    stockRate: undefined,
+    stockFreightVal: undefined,
+    stockValBased: undefined,
+    stockRateBased: undefined,
+    stockAntiDumpingVal: undefined,
+    stockAntiDumpingRate: undefined,
+    stockDutyVal: undefined,
+    stockDutyRate: undefined,
+    stockTransportVal: undefined,
+    stockTransportRate: undefined,
+    stockLandedCost: undefined,
+    poVal: undefined,
+    poQty: undefined,
+    poRate: undefined,
+    fixRate: undefined,
+    fixFreightRate: undefined,
+    fixRateBased: undefined,
+    fixAntiDumpingRate: undefined,
+    fixDutyRate: undefined,
+    fixTransportRate: undefined,
+    fixLandedCost: undefined,
+    audit: undefined,
+  };
+}
+
+export const RMCostDetail: MessageFns<RMCostDetail> = {
+  encode(message: RMCostDetail, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.costDetailId !== "") {
+      writer.uint32(10).string(message.costDetailId);
+    }
+    if (message.costId !== "") {
+      writer.uint32(18).string(message.costId);
+    }
+    if (message.period !== "") {
+      writer.uint32(26).string(message.period);
+    }
+    if (message.groupHeadId !== "") {
+      writer.uint32(34).string(message.groupHeadId);
+    }
+    if (message.groupDetailId !== undefined) {
+      writer.uint32(42).string(message.groupDetailId);
+    }
+    if (message.itemCode !== "") {
+      writer.uint32(50).string(message.itemCode);
+    }
+    if (message.itemName !== "") {
+      writer.uint32(58).string(message.itemName);
+    }
+    if (message.gradeCode !== "") {
+      writer.uint32(66).string(message.gradeCode);
+    }
+    if (message.freightRate !== undefined) {
+      writer.uint32(73).double(message.freightRate);
+    }
+    if (message.antiDumpingPct !== undefined) {
+      writer.uint32(81).double(message.antiDumpingPct);
+    }
+    if (message.dutyPct !== undefined) {
+      writer.uint32(89).double(message.dutyPct);
+    }
+    if (message.transportRate !== undefined) {
+      writer.uint32(97).double(message.transportRate);
+    }
+    if (message.valuationDefaultValue !== undefined) {
+      writer.uint32(105).double(message.valuationDefaultValue);
+    }
+    if (message.consVal !== undefined) {
+      writer.uint32(113).double(message.consVal);
+    }
+    if (message.consQty !== undefined) {
+      writer.uint32(121).double(message.consQty);
+    }
+    if (message.consRate !== undefined) {
+      writer.uint32(129).double(message.consRate);
+    }
+    if (message.consFreightVal !== undefined) {
+      writer.uint32(137).double(message.consFreightVal);
+    }
+    if (message.consValBased !== undefined) {
+      writer.uint32(145).double(message.consValBased);
+    }
+    if (message.consRateBased !== undefined) {
+      writer.uint32(153).double(message.consRateBased);
+    }
+    if (message.consAntiDumpingVal !== undefined) {
+      writer.uint32(161).double(message.consAntiDumpingVal);
+    }
+    if (message.consAntiDumpingRate !== undefined) {
+      writer.uint32(169).double(message.consAntiDumpingRate);
+    }
+    if (message.consDutyVal !== undefined) {
+      writer.uint32(177).double(message.consDutyVal);
+    }
+    if (message.consDutyRate !== undefined) {
+      writer.uint32(185).double(message.consDutyRate);
+    }
+    if (message.consTransportVal !== undefined) {
+      writer.uint32(193).double(message.consTransportVal);
+    }
+    if (message.consTransportRate !== undefined) {
+      writer.uint32(201).double(message.consTransportRate);
+    }
+    if (message.consLandedCost !== undefined) {
+      writer.uint32(209).double(message.consLandedCost);
+    }
+    if (message.stockVal !== undefined) {
+      writer.uint32(217).double(message.stockVal);
+    }
+    if (message.stockQty !== undefined) {
+      writer.uint32(225).double(message.stockQty);
+    }
+    if (message.stockRate !== undefined) {
+      writer.uint32(233).double(message.stockRate);
+    }
+    if (message.stockFreightVal !== undefined) {
+      writer.uint32(241).double(message.stockFreightVal);
+    }
+    if (message.stockValBased !== undefined) {
+      writer.uint32(249).double(message.stockValBased);
+    }
+    if (message.stockRateBased !== undefined) {
+      writer.uint32(257).double(message.stockRateBased);
+    }
+    if (message.stockAntiDumpingVal !== undefined) {
+      writer.uint32(265).double(message.stockAntiDumpingVal);
+    }
+    if (message.stockAntiDumpingRate !== undefined) {
+      writer.uint32(273).double(message.stockAntiDumpingRate);
+    }
+    if (message.stockDutyVal !== undefined) {
+      writer.uint32(281).double(message.stockDutyVal);
+    }
+    if (message.stockDutyRate !== undefined) {
+      writer.uint32(289).double(message.stockDutyRate);
+    }
+    if (message.stockTransportVal !== undefined) {
+      writer.uint32(297).double(message.stockTransportVal);
+    }
+    if (message.stockTransportRate !== undefined) {
+      writer.uint32(305).double(message.stockTransportRate);
+    }
+    if (message.stockLandedCost !== undefined) {
+      writer.uint32(313).double(message.stockLandedCost);
+    }
+    if (message.poVal !== undefined) {
+      writer.uint32(321).double(message.poVal);
+    }
+    if (message.poQty !== undefined) {
+      writer.uint32(329).double(message.poQty);
+    }
+    if (message.poRate !== undefined) {
+      writer.uint32(337).double(message.poRate);
+    }
+    if (message.fixRate !== undefined) {
+      writer.uint32(345).double(message.fixRate);
+    }
+    if (message.fixFreightRate !== undefined) {
+      writer.uint32(353).double(message.fixFreightRate);
+    }
+    if (message.fixRateBased !== undefined) {
+      writer.uint32(361).double(message.fixRateBased);
+    }
+    if (message.fixAntiDumpingRate !== undefined) {
+      writer.uint32(369).double(message.fixAntiDumpingRate);
+    }
+    if (message.fixDutyRate !== undefined) {
+      writer.uint32(377).double(message.fixDutyRate);
+    }
+    if (message.fixTransportRate !== undefined) {
+      writer.uint32(385).double(message.fixTransportRate);
+    }
+    if (message.fixLandedCost !== undefined) {
+      writer.uint32(393).double(message.fixLandedCost);
+    }
+    if (message.audit !== undefined) {
+      AuditInfo.encode(message.audit, writer.uint32(402).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): RMCostDetail {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRMCostDetail();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.costDetailId = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.costId = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.period = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.groupHeadId = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.groupDetailId = reader.string();
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.itemCode = reader.string();
+          continue;
+        }
+        case 7: {
+          if (tag !== 58) {
+            break;
+          }
+
+          message.itemName = reader.string();
+          continue;
+        }
+        case 8: {
+          if (tag !== 66) {
+            break;
+          }
+
+          message.gradeCode = reader.string();
+          continue;
+        }
+        case 9: {
+          if (tag !== 73) {
+            break;
+          }
+
+          message.freightRate = reader.double();
+          continue;
+        }
+        case 10: {
+          if (tag !== 81) {
+            break;
+          }
+
+          message.antiDumpingPct = reader.double();
+          continue;
+        }
+        case 11: {
+          if (tag !== 89) {
+            break;
+          }
+
+          message.dutyPct = reader.double();
+          continue;
+        }
+        case 12: {
+          if (tag !== 97) {
+            break;
+          }
+
+          message.transportRate = reader.double();
+          continue;
+        }
+        case 13: {
+          if (tag !== 105) {
+            break;
+          }
+
+          message.valuationDefaultValue = reader.double();
+          continue;
+        }
+        case 14: {
+          if (tag !== 113) {
+            break;
+          }
+
+          message.consVal = reader.double();
+          continue;
+        }
+        case 15: {
+          if (tag !== 121) {
+            break;
+          }
+
+          message.consQty = reader.double();
+          continue;
+        }
+        case 16: {
+          if (tag !== 129) {
+            break;
+          }
+
+          message.consRate = reader.double();
+          continue;
+        }
+        case 17: {
+          if (tag !== 137) {
+            break;
+          }
+
+          message.consFreightVal = reader.double();
+          continue;
+        }
+        case 18: {
+          if (tag !== 145) {
+            break;
+          }
+
+          message.consValBased = reader.double();
+          continue;
+        }
+        case 19: {
+          if (tag !== 153) {
+            break;
+          }
+
+          message.consRateBased = reader.double();
+          continue;
+        }
+        case 20: {
+          if (tag !== 161) {
+            break;
+          }
+
+          message.consAntiDumpingVal = reader.double();
+          continue;
+        }
+        case 21: {
+          if (tag !== 169) {
+            break;
+          }
+
+          message.consAntiDumpingRate = reader.double();
+          continue;
+        }
+        case 22: {
+          if (tag !== 177) {
+            break;
+          }
+
+          message.consDutyVal = reader.double();
+          continue;
+        }
+        case 23: {
+          if (tag !== 185) {
+            break;
+          }
+
+          message.consDutyRate = reader.double();
+          continue;
+        }
+        case 24: {
+          if (tag !== 193) {
+            break;
+          }
+
+          message.consTransportVal = reader.double();
+          continue;
+        }
+        case 25: {
+          if (tag !== 201) {
+            break;
+          }
+
+          message.consTransportRate = reader.double();
+          continue;
+        }
+        case 26: {
+          if (tag !== 209) {
+            break;
+          }
+
+          message.consLandedCost = reader.double();
+          continue;
+        }
+        case 27: {
+          if (tag !== 217) {
+            break;
+          }
+
+          message.stockVal = reader.double();
+          continue;
+        }
+        case 28: {
+          if (tag !== 225) {
+            break;
+          }
+
+          message.stockQty = reader.double();
+          continue;
+        }
+        case 29: {
+          if (tag !== 233) {
+            break;
+          }
+
+          message.stockRate = reader.double();
+          continue;
+        }
+        case 30: {
+          if (tag !== 241) {
+            break;
+          }
+
+          message.stockFreightVal = reader.double();
+          continue;
+        }
+        case 31: {
+          if (tag !== 249) {
+            break;
+          }
+
+          message.stockValBased = reader.double();
+          continue;
+        }
+        case 32: {
+          if (tag !== 257) {
+            break;
+          }
+
+          message.stockRateBased = reader.double();
+          continue;
+        }
+        case 33: {
+          if (tag !== 265) {
+            break;
+          }
+
+          message.stockAntiDumpingVal = reader.double();
+          continue;
+        }
+        case 34: {
+          if (tag !== 273) {
+            break;
+          }
+
+          message.stockAntiDumpingRate = reader.double();
+          continue;
+        }
+        case 35: {
+          if (tag !== 281) {
+            break;
+          }
+
+          message.stockDutyVal = reader.double();
+          continue;
+        }
+        case 36: {
+          if (tag !== 289) {
+            break;
+          }
+
+          message.stockDutyRate = reader.double();
+          continue;
+        }
+        case 37: {
+          if (tag !== 297) {
+            break;
+          }
+
+          message.stockTransportVal = reader.double();
+          continue;
+        }
+        case 38: {
+          if (tag !== 305) {
+            break;
+          }
+
+          message.stockTransportRate = reader.double();
+          continue;
+        }
+        case 39: {
+          if (tag !== 313) {
+            break;
+          }
+
+          message.stockLandedCost = reader.double();
+          continue;
+        }
+        case 40: {
+          if (tag !== 321) {
+            break;
+          }
+
+          message.poVal = reader.double();
+          continue;
+        }
+        case 41: {
+          if (tag !== 329) {
+            break;
+          }
+
+          message.poQty = reader.double();
+          continue;
+        }
+        case 42: {
+          if (tag !== 337) {
+            break;
+          }
+
+          message.poRate = reader.double();
+          continue;
+        }
+        case 43: {
+          if (tag !== 345) {
+            break;
+          }
+
+          message.fixRate = reader.double();
+          continue;
+        }
+        case 44: {
+          if (tag !== 353) {
+            break;
+          }
+
+          message.fixFreightRate = reader.double();
+          continue;
+        }
+        case 45: {
+          if (tag !== 361) {
+            break;
+          }
+
+          message.fixRateBased = reader.double();
+          continue;
+        }
+        case 46: {
+          if (tag !== 369) {
+            break;
+          }
+
+          message.fixAntiDumpingRate = reader.double();
+          continue;
+        }
+        case 47: {
+          if (tag !== 377) {
+            break;
+          }
+
+          message.fixDutyRate = reader.double();
+          continue;
+        }
+        case 48: {
+          if (tag !== 385) {
+            break;
+          }
+
+          message.fixTransportRate = reader.double();
+          continue;
+        }
+        case 49: {
+          if (tag !== 393) {
+            break;
+          }
+
+          message.fixLandedCost = reader.double();
+          continue;
+        }
+        case 50: {
+          if (tag !== 402) {
+            break;
+          }
+
+          message.audit = AuditInfo.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RMCostDetail {
+    return {
+      costDetailId: isSet(object.costDetailId)
+        ? globalThis.String(object.costDetailId)
+        : isSet(object.cost_detail_id)
+        ? globalThis.String(object.cost_detail_id)
+        : "",
+      costId: isSet(object.costId)
+        ? globalThis.String(object.costId)
+        : isSet(object.cost_id)
+        ? globalThis.String(object.cost_id)
+        : "",
+      period: isSet(object.period) ? globalThis.String(object.period) : "",
+      groupHeadId: isSet(object.groupHeadId)
+        ? globalThis.String(object.groupHeadId)
+        : isSet(object.group_head_id)
+        ? globalThis.String(object.group_head_id)
+        : "",
+      groupDetailId: isSet(object.groupDetailId)
+        ? globalThis.String(object.groupDetailId)
+        : isSet(object.group_detail_id)
+        ? globalThis.String(object.group_detail_id)
+        : undefined,
+      itemCode: isSet(object.itemCode)
+        ? globalThis.String(object.itemCode)
+        : isSet(object.item_code)
+        ? globalThis.String(object.item_code)
+        : "",
+      itemName: isSet(object.itemName)
+        ? globalThis.String(object.itemName)
+        : isSet(object.item_name)
+        ? globalThis.String(object.item_name)
+        : "",
+      gradeCode: isSet(object.gradeCode)
+        ? globalThis.String(object.gradeCode)
+        : isSet(object.grade_code)
+        ? globalThis.String(object.grade_code)
+        : "",
+      freightRate: isSet(object.freightRate)
+        ? globalThis.Number(object.freightRate)
+        : isSet(object.freight_rate)
+        ? globalThis.Number(object.freight_rate)
+        : undefined,
+      antiDumpingPct: isSet(object.antiDumpingPct)
+        ? globalThis.Number(object.antiDumpingPct)
+        : isSet(object.anti_dumping_pct)
+        ? globalThis.Number(object.anti_dumping_pct)
+        : undefined,
+      dutyPct: isSet(object.dutyPct)
+        ? globalThis.Number(object.dutyPct)
+        : isSet(object.duty_pct)
+        ? globalThis.Number(object.duty_pct)
+        : undefined,
+      transportRate: isSet(object.transportRate)
+        ? globalThis.Number(object.transportRate)
+        : isSet(object.transport_rate)
+        ? globalThis.Number(object.transport_rate)
+        : undefined,
+      valuationDefaultValue: isSet(object.valuationDefaultValue)
+        ? globalThis.Number(object.valuationDefaultValue)
+        : isSet(object.valuation_default_value)
+        ? globalThis.Number(object.valuation_default_value)
+        : undefined,
+      consVal: isSet(object.consVal)
+        ? globalThis.Number(object.consVal)
+        : isSet(object.cons_val)
+        ? globalThis.Number(object.cons_val)
+        : undefined,
+      consQty: isSet(object.consQty)
+        ? globalThis.Number(object.consQty)
+        : isSet(object.cons_qty)
+        ? globalThis.Number(object.cons_qty)
+        : undefined,
+      consRate: isSet(object.consRate)
+        ? globalThis.Number(object.consRate)
+        : isSet(object.cons_rate)
+        ? globalThis.Number(object.cons_rate)
+        : undefined,
+      consFreightVal: isSet(object.consFreightVal)
+        ? globalThis.Number(object.consFreightVal)
+        : isSet(object.cons_freight_val)
+        ? globalThis.Number(object.cons_freight_val)
+        : undefined,
+      consValBased: isSet(object.consValBased)
+        ? globalThis.Number(object.consValBased)
+        : isSet(object.cons_val_based)
+        ? globalThis.Number(object.cons_val_based)
+        : undefined,
+      consRateBased: isSet(object.consRateBased)
+        ? globalThis.Number(object.consRateBased)
+        : isSet(object.cons_rate_based)
+        ? globalThis.Number(object.cons_rate_based)
+        : undefined,
+      consAntiDumpingVal: isSet(object.consAntiDumpingVal)
+        ? globalThis.Number(object.consAntiDumpingVal)
+        : isSet(object.cons_anti_dumping_val)
+        ? globalThis.Number(object.cons_anti_dumping_val)
+        : undefined,
+      consAntiDumpingRate: isSet(object.consAntiDumpingRate)
+        ? globalThis.Number(object.consAntiDumpingRate)
+        : isSet(object.cons_anti_dumping_rate)
+        ? globalThis.Number(object.cons_anti_dumping_rate)
+        : undefined,
+      consDutyVal: isSet(object.consDutyVal)
+        ? globalThis.Number(object.consDutyVal)
+        : isSet(object.cons_duty_val)
+        ? globalThis.Number(object.cons_duty_val)
+        : undefined,
+      consDutyRate: isSet(object.consDutyRate)
+        ? globalThis.Number(object.consDutyRate)
+        : isSet(object.cons_duty_rate)
+        ? globalThis.Number(object.cons_duty_rate)
+        : undefined,
+      consTransportVal: isSet(object.consTransportVal)
+        ? globalThis.Number(object.consTransportVal)
+        : isSet(object.cons_transport_val)
+        ? globalThis.Number(object.cons_transport_val)
+        : undefined,
+      consTransportRate: isSet(object.consTransportRate)
+        ? globalThis.Number(object.consTransportRate)
+        : isSet(object.cons_transport_rate)
+        ? globalThis.Number(object.cons_transport_rate)
+        : undefined,
+      consLandedCost: isSet(object.consLandedCost)
+        ? globalThis.Number(object.consLandedCost)
+        : isSet(object.cons_landed_cost)
+        ? globalThis.Number(object.cons_landed_cost)
+        : undefined,
+      stockVal: isSet(object.stockVal)
+        ? globalThis.Number(object.stockVal)
+        : isSet(object.stock_val)
+        ? globalThis.Number(object.stock_val)
+        : undefined,
+      stockQty: isSet(object.stockQty)
+        ? globalThis.Number(object.stockQty)
+        : isSet(object.stock_qty)
+        ? globalThis.Number(object.stock_qty)
+        : undefined,
+      stockRate: isSet(object.stockRate)
+        ? globalThis.Number(object.stockRate)
+        : isSet(object.stock_rate)
+        ? globalThis.Number(object.stock_rate)
+        : undefined,
+      stockFreightVal: isSet(object.stockFreightVal)
+        ? globalThis.Number(object.stockFreightVal)
+        : isSet(object.stock_freight_val)
+        ? globalThis.Number(object.stock_freight_val)
+        : undefined,
+      stockValBased: isSet(object.stockValBased)
+        ? globalThis.Number(object.stockValBased)
+        : isSet(object.stock_val_based)
+        ? globalThis.Number(object.stock_val_based)
+        : undefined,
+      stockRateBased: isSet(object.stockRateBased)
+        ? globalThis.Number(object.stockRateBased)
+        : isSet(object.stock_rate_based)
+        ? globalThis.Number(object.stock_rate_based)
+        : undefined,
+      stockAntiDumpingVal: isSet(object.stockAntiDumpingVal)
+        ? globalThis.Number(object.stockAntiDumpingVal)
+        : isSet(object.stock_anti_dumping_val)
+        ? globalThis.Number(object.stock_anti_dumping_val)
+        : undefined,
+      stockAntiDumpingRate: isSet(object.stockAntiDumpingRate)
+        ? globalThis.Number(object.stockAntiDumpingRate)
+        : isSet(object.stock_anti_dumping_rate)
+        ? globalThis.Number(object.stock_anti_dumping_rate)
+        : undefined,
+      stockDutyVal: isSet(object.stockDutyVal)
+        ? globalThis.Number(object.stockDutyVal)
+        : isSet(object.stock_duty_val)
+        ? globalThis.Number(object.stock_duty_val)
+        : undefined,
+      stockDutyRate: isSet(object.stockDutyRate)
+        ? globalThis.Number(object.stockDutyRate)
+        : isSet(object.stock_duty_rate)
+        ? globalThis.Number(object.stock_duty_rate)
+        : undefined,
+      stockTransportVal: isSet(object.stockTransportVal)
+        ? globalThis.Number(object.stockTransportVal)
+        : isSet(object.stock_transport_val)
+        ? globalThis.Number(object.stock_transport_val)
+        : undefined,
+      stockTransportRate: isSet(object.stockTransportRate)
+        ? globalThis.Number(object.stockTransportRate)
+        : isSet(object.stock_transport_rate)
+        ? globalThis.Number(object.stock_transport_rate)
+        : undefined,
+      stockLandedCost: isSet(object.stockLandedCost)
+        ? globalThis.Number(object.stockLandedCost)
+        : isSet(object.stock_landed_cost)
+        ? globalThis.Number(object.stock_landed_cost)
+        : undefined,
+      poVal: isSet(object.poVal)
+        ? globalThis.Number(object.poVal)
+        : isSet(object.po_val)
+        ? globalThis.Number(object.po_val)
+        : undefined,
+      poQty: isSet(object.poQty)
+        ? globalThis.Number(object.poQty)
+        : isSet(object.po_qty)
+        ? globalThis.Number(object.po_qty)
+        : undefined,
+      poRate: isSet(object.poRate)
+        ? globalThis.Number(object.poRate)
+        : isSet(object.po_rate)
+        ? globalThis.Number(object.po_rate)
+        : undefined,
+      fixRate: isSet(object.fixRate)
+        ? globalThis.Number(object.fixRate)
+        : isSet(object.fix_rate)
+        ? globalThis.Number(object.fix_rate)
+        : undefined,
+      fixFreightRate: isSet(object.fixFreightRate)
+        ? globalThis.Number(object.fixFreightRate)
+        : isSet(object.fix_freight_rate)
+        ? globalThis.Number(object.fix_freight_rate)
+        : undefined,
+      fixRateBased: isSet(object.fixRateBased)
+        ? globalThis.Number(object.fixRateBased)
+        : isSet(object.fix_rate_based)
+        ? globalThis.Number(object.fix_rate_based)
+        : undefined,
+      fixAntiDumpingRate: isSet(object.fixAntiDumpingRate)
+        ? globalThis.Number(object.fixAntiDumpingRate)
+        : isSet(object.fix_anti_dumping_rate)
+        ? globalThis.Number(object.fix_anti_dumping_rate)
+        : undefined,
+      fixDutyRate: isSet(object.fixDutyRate)
+        ? globalThis.Number(object.fixDutyRate)
+        : isSet(object.fix_duty_rate)
+        ? globalThis.Number(object.fix_duty_rate)
+        : undefined,
+      fixTransportRate: isSet(object.fixTransportRate)
+        ? globalThis.Number(object.fixTransportRate)
+        : isSet(object.fix_transport_rate)
+        ? globalThis.Number(object.fix_transport_rate)
+        : undefined,
+      fixLandedCost: isSet(object.fixLandedCost)
+        ? globalThis.Number(object.fixLandedCost)
+        : isSet(object.fix_landed_cost)
+        ? globalThis.Number(object.fix_landed_cost)
+        : undefined,
+      audit: isSet(object.audit) ? AuditInfo.fromJSON(object.audit) : undefined,
+    };
+  },
+
+  toJSON(message: RMCostDetail): unknown {
+    const obj: any = {};
+    if (message.costDetailId !== "") {
+      obj.costDetailId = message.costDetailId;
+    }
+    if (message.costId !== "") {
+      obj.costId = message.costId;
+    }
+    if (message.period !== "") {
+      obj.period = message.period;
+    }
+    if (message.groupHeadId !== "") {
+      obj.groupHeadId = message.groupHeadId;
+    }
+    if (message.groupDetailId !== undefined) {
+      obj.groupDetailId = message.groupDetailId;
+    }
+    if (message.itemCode !== "") {
+      obj.itemCode = message.itemCode;
+    }
+    if (message.itemName !== "") {
+      obj.itemName = message.itemName;
+    }
+    if (message.gradeCode !== "") {
+      obj.gradeCode = message.gradeCode;
+    }
+    if (message.freightRate !== undefined) {
+      obj.freightRate = message.freightRate;
+    }
+    if (message.antiDumpingPct !== undefined) {
+      obj.antiDumpingPct = message.antiDumpingPct;
+    }
+    if (message.dutyPct !== undefined) {
+      obj.dutyPct = message.dutyPct;
+    }
+    if (message.transportRate !== undefined) {
+      obj.transportRate = message.transportRate;
+    }
+    if (message.valuationDefaultValue !== undefined) {
+      obj.valuationDefaultValue = message.valuationDefaultValue;
+    }
+    if (message.consVal !== undefined) {
+      obj.consVal = message.consVal;
+    }
+    if (message.consQty !== undefined) {
+      obj.consQty = message.consQty;
+    }
+    if (message.consRate !== undefined) {
+      obj.consRate = message.consRate;
+    }
+    if (message.consFreightVal !== undefined) {
+      obj.consFreightVal = message.consFreightVal;
+    }
+    if (message.consValBased !== undefined) {
+      obj.consValBased = message.consValBased;
+    }
+    if (message.consRateBased !== undefined) {
+      obj.consRateBased = message.consRateBased;
+    }
+    if (message.consAntiDumpingVal !== undefined) {
+      obj.consAntiDumpingVal = message.consAntiDumpingVal;
+    }
+    if (message.consAntiDumpingRate !== undefined) {
+      obj.consAntiDumpingRate = message.consAntiDumpingRate;
+    }
+    if (message.consDutyVal !== undefined) {
+      obj.consDutyVal = message.consDutyVal;
+    }
+    if (message.consDutyRate !== undefined) {
+      obj.consDutyRate = message.consDutyRate;
+    }
+    if (message.consTransportVal !== undefined) {
+      obj.consTransportVal = message.consTransportVal;
+    }
+    if (message.consTransportRate !== undefined) {
+      obj.consTransportRate = message.consTransportRate;
+    }
+    if (message.consLandedCost !== undefined) {
+      obj.consLandedCost = message.consLandedCost;
+    }
+    if (message.stockVal !== undefined) {
+      obj.stockVal = message.stockVal;
+    }
+    if (message.stockQty !== undefined) {
+      obj.stockQty = message.stockQty;
+    }
+    if (message.stockRate !== undefined) {
+      obj.stockRate = message.stockRate;
+    }
+    if (message.stockFreightVal !== undefined) {
+      obj.stockFreightVal = message.stockFreightVal;
+    }
+    if (message.stockValBased !== undefined) {
+      obj.stockValBased = message.stockValBased;
+    }
+    if (message.stockRateBased !== undefined) {
+      obj.stockRateBased = message.stockRateBased;
+    }
+    if (message.stockAntiDumpingVal !== undefined) {
+      obj.stockAntiDumpingVal = message.stockAntiDumpingVal;
+    }
+    if (message.stockAntiDumpingRate !== undefined) {
+      obj.stockAntiDumpingRate = message.stockAntiDumpingRate;
+    }
+    if (message.stockDutyVal !== undefined) {
+      obj.stockDutyVal = message.stockDutyVal;
+    }
+    if (message.stockDutyRate !== undefined) {
+      obj.stockDutyRate = message.stockDutyRate;
+    }
+    if (message.stockTransportVal !== undefined) {
+      obj.stockTransportVal = message.stockTransportVal;
+    }
+    if (message.stockTransportRate !== undefined) {
+      obj.stockTransportRate = message.stockTransportRate;
+    }
+    if (message.stockLandedCost !== undefined) {
+      obj.stockLandedCost = message.stockLandedCost;
+    }
+    if (message.poVal !== undefined) {
+      obj.poVal = message.poVal;
+    }
+    if (message.poQty !== undefined) {
+      obj.poQty = message.poQty;
+    }
+    if (message.poRate !== undefined) {
+      obj.poRate = message.poRate;
+    }
+    if (message.fixRate !== undefined) {
+      obj.fixRate = message.fixRate;
+    }
+    if (message.fixFreightRate !== undefined) {
+      obj.fixFreightRate = message.fixFreightRate;
+    }
+    if (message.fixRateBased !== undefined) {
+      obj.fixRateBased = message.fixRateBased;
+    }
+    if (message.fixAntiDumpingRate !== undefined) {
+      obj.fixAntiDumpingRate = message.fixAntiDumpingRate;
+    }
+    if (message.fixDutyRate !== undefined) {
+      obj.fixDutyRate = message.fixDutyRate;
+    }
+    if (message.fixTransportRate !== undefined) {
+      obj.fixTransportRate = message.fixTransportRate;
+    }
+    if (message.fixLandedCost !== undefined) {
+      obj.fixLandedCost = message.fixLandedCost;
+    }
+    if (message.audit !== undefined) {
+      obj.audit = AuditInfo.toJSON(message.audit);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<RMCostDetail>): RMCostDetail {
+    return RMCostDetail.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<RMCostDetail>): RMCostDetail {
+    const message = createBaseRMCostDetail();
+    message.costDetailId = object.costDetailId ?? "";
+    message.costId = object.costId ?? "";
+    message.period = object.period ?? "";
+    message.groupHeadId = object.groupHeadId ?? "";
+    message.groupDetailId = object.groupDetailId ?? undefined;
+    message.itemCode = object.itemCode ?? "";
+    message.itemName = object.itemName ?? "";
+    message.gradeCode = object.gradeCode ?? "";
+    message.freightRate = object.freightRate ?? undefined;
+    message.antiDumpingPct = object.antiDumpingPct ?? undefined;
+    message.dutyPct = object.dutyPct ?? undefined;
+    message.transportRate = object.transportRate ?? undefined;
+    message.valuationDefaultValue = object.valuationDefaultValue ?? undefined;
+    message.consVal = object.consVal ?? undefined;
+    message.consQty = object.consQty ?? undefined;
+    message.consRate = object.consRate ?? undefined;
+    message.consFreightVal = object.consFreightVal ?? undefined;
+    message.consValBased = object.consValBased ?? undefined;
+    message.consRateBased = object.consRateBased ?? undefined;
+    message.consAntiDumpingVal = object.consAntiDumpingVal ?? undefined;
+    message.consAntiDumpingRate = object.consAntiDumpingRate ?? undefined;
+    message.consDutyVal = object.consDutyVal ?? undefined;
+    message.consDutyRate = object.consDutyRate ?? undefined;
+    message.consTransportVal = object.consTransportVal ?? undefined;
+    message.consTransportRate = object.consTransportRate ?? undefined;
+    message.consLandedCost = object.consLandedCost ?? undefined;
+    message.stockVal = object.stockVal ?? undefined;
+    message.stockQty = object.stockQty ?? undefined;
+    message.stockRate = object.stockRate ?? undefined;
+    message.stockFreightVal = object.stockFreightVal ?? undefined;
+    message.stockValBased = object.stockValBased ?? undefined;
+    message.stockRateBased = object.stockRateBased ?? undefined;
+    message.stockAntiDumpingVal = object.stockAntiDumpingVal ?? undefined;
+    message.stockAntiDumpingRate = object.stockAntiDumpingRate ?? undefined;
+    message.stockDutyVal = object.stockDutyVal ?? undefined;
+    message.stockDutyRate = object.stockDutyRate ?? undefined;
+    message.stockTransportVal = object.stockTransportVal ?? undefined;
+    message.stockTransportRate = object.stockTransportRate ?? undefined;
+    message.stockLandedCost = object.stockLandedCost ?? undefined;
+    message.poVal = object.poVal ?? undefined;
+    message.poQty = object.poQty ?? undefined;
+    message.poRate = object.poRate ?? undefined;
+    message.fixRate = object.fixRate ?? undefined;
+    message.fixFreightRate = object.fixFreightRate ?? undefined;
+    message.fixRateBased = object.fixRateBased ?? undefined;
+    message.fixAntiDumpingRate = object.fixAntiDumpingRate ?? undefined;
+    message.fixDutyRate = object.fixDutyRate ?? undefined;
+    message.fixTransportRate = object.fixTransportRate ?? undefined;
+    message.fixLandedCost = object.fixLandedCost ?? undefined;
     message.audit = (object.audit !== undefined && object.audit !== null)
       ? AuditInfo.fromPartial(object.audit)
       : undefined;
@@ -2737,6 +4351,772 @@ export const ListRMCostHistoryResponse: MessageFns<ListRMCostHistoryResponse> = 
   },
 };
 
+function createBaseListCostDetailsRequest(): ListCostDetailsRequest {
+  return { rmCostId: "" };
+}
+
+export const ListCostDetailsRequest: MessageFns<ListCostDetailsRequest> = {
+  encode(message: ListCostDetailsRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.rmCostId !== "") {
+      writer.uint32(10).string(message.rmCostId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ListCostDetailsRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListCostDetailsRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.rmCostId = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListCostDetailsRequest {
+    return {
+      rmCostId: isSet(object.rmCostId)
+        ? globalThis.String(object.rmCostId)
+        : isSet(object.rm_cost_id)
+        ? globalThis.String(object.rm_cost_id)
+        : "",
+    };
+  },
+
+  toJSON(message: ListCostDetailsRequest): unknown {
+    const obj: any = {};
+    if (message.rmCostId !== "") {
+      obj.rmCostId = message.rmCostId;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListCostDetailsRequest>): ListCostDetailsRequest {
+    return ListCostDetailsRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ListCostDetailsRequest>): ListCostDetailsRequest {
+    const message = createBaseListCostDetailsRequest();
+    message.rmCostId = object.rmCostId ?? "";
+    return message;
+  },
+};
+
+function createBaseListCostDetailsResponse(): ListCostDetailsResponse {
+  return { base: undefined, data: [] };
+}
+
+export const ListCostDetailsResponse: MessageFns<ListCostDetailsResponse> = {
+  encode(message: ListCostDetailsResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    for (const v of message.data) {
+      RMCostDetail.encode(v!, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ListCostDetailsResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListCostDetailsResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.data.push(RMCostDetail.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListCostDetailsResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      data: globalThis.Array.isArray(object?.data) ? object.data.map((e: any) => RMCostDetail.fromJSON(e)) : [],
+    };
+  },
+
+  toJSON(message: ListCostDetailsResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.data?.length) {
+      obj.data = message.data.map((e) => RMCostDetail.toJSON(e));
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListCostDetailsResponse>): ListCostDetailsResponse {
+    return ListCostDetailsResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ListCostDetailsResponse>): ListCostDetailsResponse {
+    const message = createBaseListCostDetailsResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.data = object.data?.map((e) => RMCostDetail.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseUpdateRMCostInputsRequest(): UpdateRMCostInputsRequest {
+  return {
+    rmCostId: "",
+    marketingFreightRate: undefined,
+    marketingAntiDumpingPct: undefined,
+    marketingDutyPct: undefined,
+    marketingTransportRate: undefined,
+    marketingDefaultValue: undefined,
+    simulationRate: undefined,
+    valuationFlag: undefined,
+    marketingFlag: undefined,
+    clearMarketingFreightRate: false,
+    clearMarketingAntiDumpingPct: false,
+    clearMarketingDutyPct: false,
+    clearMarketingTransportRate: false,
+    clearMarketingDefaultValue: false,
+    clearSimulationRate: false,
+  };
+}
+
+export const UpdateRMCostInputsRequest: MessageFns<UpdateRMCostInputsRequest> = {
+  encode(message: UpdateRMCostInputsRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.rmCostId !== "") {
+      writer.uint32(10).string(message.rmCostId);
+    }
+    if (message.marketingFreightRate !== undefined) {
+      writer.uint32(17).double(message.marketingFreightRate);
+    }
+    if (message.marketingAntiDumpingPct !== undefined) {
+      writer.uint32(25).double(message.marketingAntiDumpingPct);
+    }
+    if (message.marketingDutyPct !== undefined) {
+      writer.uint32(33).double(message.marketingDutyPct);
+    }
+    if (message.marketingTransportRate !== undefined) {
+      writer.uint32(41).double(message.marketingTransportRate);
+    }
+    if (message.marketingDefaultValue !== undefined) {
+      writer.uint32(49).double(message.marketingDefaultValue);
+    }
+    if (message.simulationRate !== undefined) {
+      writer.uint32(57).double(message.simulationRate);
+    }
+    if (message.valuationFlag !== undefined) {
+      writer.uint32(64).int32(message.valuationFlag);
+    }
+    if (message.marketingFlag !== undefined) {
+      writer.uint32(72).int32(message.marketingFlag);
+    }
+    if (message.clearMarketingFreightRate !== false) {
+      writer.uint32(80).bool(message.clearMarketingFreightRate);
+    }
+    if (message.clearMarketingAntiDumpingPct !== false) {
+      writer.uint32(88).bool(message.clearMarketingAntiDumpingPct);
+    }
+    if (message.clearMarketingDutyPct !== false) {
+      writer.uint32(96).bool(message.clearMarketingDutyPct);
+    }
+    if (message.clearMarketingTransportRate !== false) {
+      writer.uint32(104).bool(message.clearMarketingTransportRate);
+    }
+    if (message.clearMarketingDefaultValue !== false) {
+      writer.uint32(112).bool(message.clearMarketingDefaultValue);
+    }
+    if (message.clearSimulationRate !== false) {
+      writer.uint32(120).bool(message.clearSimulationRate);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): UpdateRMCostInputsRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUpdateRMCostInputsRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.rmCostId = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 17) {
+            break;
+          }
+
+          message.marketingFreightRate = reader.double();
+          continue;
+        }
+        case 3: {
+          if (tag !== 25) {
+            break;
+          }
+
+          message.marketingAntiDumpingPct = reader.double();
+          continue;
+        }
+        case 4: {
+          if (tag !== 33) {
+            break;
+          }
+
+          message.marketingDutyPct = reader.double();
+          continue;
+        }
+        case 5: {
+          if (tag !== 41) {
+            break;
+          }
+
+          message.marketingTransportRate = reader.double();
+          continue;
+        }
+        case 6: {
+          if (tag !== 49) {
+            break;
+          }
+
+          message.marketingDefaultValue = reader.double();
+          continue;
+        }
+        case 7: {
+          if (tag !== 57) {
+            break;
+          }
+
+          message.simulationRate = reader.double();
+          continue;
+        }
+        case 8: {
+          if (tag !== 64) {
+            break;
+          }
+
+          message.valuationFlag = reader.int32() as any;
+          continue;
+        }
+        case 9: {
+          if (tag !== 72) {
+            break;
+          }
+
+          message.marketingFlag = reader.int32() as any;
+          continue;
+        }
+        case 10: {
+          if (tag !== 80) {
+            break;
+          }
+
+          message.clearMarketingFreightRate = reader.bool();
+          continue;
+        }
+        case 11: {
+          if (tag !== 88) {
+            break;
+          }
+
+          message.clearMarketingAntiDumpingPct = reader.bool();
+          continue;
+        }
+        case 12: {
+          if (tag !== 96) {
+            break;
+          }
+
+          message.clearMarketingDutyPct = reader.bool();
+          continue;
+        }
+        case 13: {
+          if (tag !== 104) {
+            break;
+          }
+
+          message.clearMarketingTransportRate = reader.bool();
+          continue;
+        }
+        case 14: {
+          if (tag !== 112) {
+            break;
+          }
+
+          message.clearMarketingDefaultValue = reader.bool();
+          continue;
+        }
+        case 15: {
+          if (tag !== 120) {
+            break;
+          }
+
+          message.clearSimulationRate = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UpdateRMCostInputsRequest {
+    return {
+      rmCostId: isSet(object.rmCostId)
+        ? globalThis.String(object.rmCostId)
+        : isSet(object.rm_cost_id)
+        ? globalThis.String(object.rm_cost_id)
+        : "",
+      marketingFreightRate: isSet(object.marketingFreightRate)
+        ? globalThis.Number(object.marketingFreightRate)
+        : isSet(object.marketing_freight_rate)
+        ? globalThis.Number(object.marketing_freight_rate)
+        : undefined,
+      marketingAntiDumpingPct: isSet(object.marketingAntiDumpingPct)
+        ? globalThis.Number(object.marketingAntiDumpingPct)
+        : isSet(object.marketing_anti_dumping_pct)
+        ? globalThis.Number(object.marketing_anti_dumping_pct)
+        : undefined,
+      marketingDutyPct: isSet(object.marketingDutyPct)
+        ? globalThis.Number(object.marketingDutyPct)
+        : isSet(object.marketing_duty_pct)
+        ? globalThis.Number(object.marketing_duty_pct)
+        : undefined,
+      marketingTransportRate: isSet(object.marketingTransportRate)
+        ? globalThis.Number(object.marketingTransportRate)
+        : isSet(object.marketing_transport_rate)
+        ? globalThis.Number(object.marketing_transport_rate)
+        : undefined,
+      marketingDefaultValue: isSet(object.marketingDefaultValue)
+        ? globalThis.Number(object.marketingDefaultValue)
+        : isSet(object.marketing_default_value)
+        ? globalThis.Number(object.marketing_default_value)
+        : undefined,
+      simulationRate: isSet(object.simulationRate)
+        ? globalThis.Number(object.simulationRate)
+        : isSet(object.simulation_rate)
+        ? globalThis.Number(object.simulation_rate)
+        : undefined,
+      valuationFlag: isSet(object.valuationFlag)
+        ? rMValuationFlagFromJSON(object.valuationFlag)
+        : isSet(object.valuation_flag)
+        ? rMValuationFlagFromJSON(object.valuation_flag)
+        : undefined,
+      marketingFlag: isSet(object.marketingFlag)
+        ? rMMarketingFlagFromJSON(object.marketingFlag)
+        : isSet(object.marketing_flag)
+        ? rMMarketingFlagFromJSON(object.marketing_flag)
+        : undefined,
+      clearMarketingFreightRate: isSet(object.clearMarketingFreightRate)
+        ? globalThis.Boolean(object.clearMarketingFreightRate)
+        : isSet(object.clear_marketing_freight_rate)
+        ? globalThis.Boolean(object.clear_marketing_freight_rate)
+        : false,
+      clearMarketingAntiDumpingPct: isSet(object.clearMarketingAntiDumpingPct)
+        ? globalThis.Boolean(object.clearMarketingAntiDumpingPct)
+        : isSet(object.clear_marketing_anti_dumping_pct)
+        ? globalThis.Boolean(object.clear_marketing_anti_dumping_pct)
+        : false,
+      clearMarketingDutyPct: isSet(object.clearMarketingDutyPct)
+        ? globalThis.Boolean(object.clearMarketingDutyPct)
+        : isSet(object.clear_marketing_duty_pct)
+        ? globalThis.Boolean(object.clear_marketing_duty_pct)
+        : false,
+      clearMarketingTransportRate: isSet(object.clearMarketingTransportRate)
+        ? globalThis.Boolean(object.clearMarketingTransportRate)
+        : isSet(object.clear_marketing_transport_rate)
+        ? globalThis.Boolean(object.clear_marketing_transport_rate)
+        : false,
+      clearMarketingDefaultValue: isSet(object.clearMarketingDefaultValue)
+        ? globalThis.Boolean(object.clearMarketingDefaultValue)
+        : isSet(object.clear_marketing_default_value)
+        ? globalThis.Boolean(object.clear_marketing_default_value)
+        : false,
+      clearSimulationRate: isSet(object.clearSimulationRate)
+        ? globalThis.Boolean(object.clearSimulationRate)
+        : isSet(object.clear_simulation_rate)
+        ? globalThis.Boolean(object.clear_simulation_rate)
+        : false,
+    };
+  },
+
+  toJSON(message: UpdateRMCostInputsRequest): unknown {
+    const obj: any = {};
+    if (message.rmCostId !== "") {
+      obj.rmCostId = message.rmCostId;
+    }
+    if (message.marketingFreightRate !== undefined) {
+      obj.marketingFreightRate = message.marketingFreightRate;
+    }
+    if (message.marketingAntiDumpingPct !== undefined) {
+      obj.marketingAntiDumpingPct = message.marketingAntiDumpingPct;
+    }
+    if (message.marketingDutyPct !== undefined) {
+      obj.marketingDutyPct = message.marketingDutyPct;
+    }
+    if (message.marketingTransportRate !== undefined) {
+      obj.marketingTransportRate = message.marketingTransportRate;
+    }
+    if (message.marketingDefaultValue !== undefined) {
+      obj.marketingDefaultValue = message.marketingDefaultValue;
+    }
+    if (message.simulationRate !== undefined) {
+      obj.simulationRate = message.simulationRate;
+    }
+    if (message.valuationFlag !== undefined) {
+      obj.valuationFlag = rMValuationFlagToJSON(message.valuationFlag);
+    }
+    if (message.marketingFlag !== undefined) {
+      obj.marketingFlag = rMMarketingFlagToJSON(message.marketingFlag);
+    }
+    if (message.clearMarketingFreightRate !== false) {
+      obj.clearMarketingFreightRate = message.clearMarketingFreightRate;
+    }
+    if (message.clearMarketingAntiDumpingPct !== false) {
+      obj.clearMarketingAntiDumpingPct = message.clearMarketingAntiDumpingPct;
+    }
+    if (message.clearMarketingDutyPct !== false) {
+      obj.clearMarketingDutyPct = message.clearMarketingDutyPct;
+    }
+    if (message.clearMarketingTransportRate !== false) {
+      obj.clearMarketingTransportRate = message.clearMarketingTransportRate;
+    }
+    if (message.clearMarketingDefaultValue !== false) {
+      obj.clearMarketingDefaultValue = message.clearMarketingDefaultValue;
+    }
+    if (message.clearSimulationRate !== false) {
+      obj.clearSimulationRate = message.clearSimulationRate;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<UpdateRMCostInputsRequest>): UpdateRMCostInputsRequest {
+    return UpdateRMCostInputsRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<UpdateRMCostInputsRequest>): UpdateRMCostInputsRequest {
+    const message = createBaseUpdateRMCostInputsRequest();
+    message.rmCostId = object.rmCostId ?? "";
+    message.marketingFreightRate = object.marketingFreightRate ?? undefined;
+    message.marketingAntiDumpingPct = object.marketingAntiDumpingPct ?? undefined;
+    message.marketingDutyPct = object.marketingDutyPct ?? undefined;
+    message.marketingTransportRate = object.marketingTransportRate ?? undefined;
+    message.marketingDefaultValue = object.marketingDefaultValue ?? undefined;
+    message.simulationRate = object.simulationRate ?? undefined;
+    message.valuationFlag = object.valuationFlag ?? undefined;
+    message.marketingFlag = object.marketingFlag ?? undefined;
+    message.clearMarketingFreightRate = object.clearMarketingFreightRate ?? false;
+    message.clearMarketingAntiDumpingPct = object.clearMarketingAntiDumpingPct ?? false;
+    message.clearMarketingDutyPct = object.clearMarketingDutyPct ?? false;
+    message.clearMarketingTransportRate = object.clearMarketingTransportRate ?? false;
+    message.clearMarketingDefaultValue = object.clearMarketingDefaultValue ?? false;
+    message.clearSimulationRate = object.clearSimulationRate ?? false;
+    return message;
+  },
+};
+
+function createBaseUpdateRMCostInputsResponse(): UpdateRMCostInputsResponse {
+  return { base: undefined, data: undefined };
+}
+
+export const UpdateRMCostInputsResponse: MessageFns<UpdateRMCostInputsResponse> = {
+  encode(message: UpdateRMCostInputsResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    if (message.data !== undefined) {
+      RMCost.encode(message.data, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): UpdateRMCostInputsResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUpdateRMCostInputsResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.data = RMCost.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UpdateRMCostInputsResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      data: isSet(object.data) ? RMCost.fromJSON(object.data) : undefined,
+    };
+  },
+
+  toJSON(message: UpdateRMCostInputsResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.data !== undefined) {
+      obj.data = RMCost.toJSON(message.data);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<UpdateRMCostInputsResponse>): UpdateRMCostInputsResponse {
+    return UpdateRMCostInputsResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<UpdateRMCostInputsResponse>): UpdateRMCostInputsResponse {
+    const message = createBaseUpdateRMCostInputsResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.data = (object.data !== undefined && object.data !== null) ? RMCost.fromPartial(object.data) : undefined;
+    return message;
+  },
+};
+
+function createBaseUpdateCostDetailFixRateRequest(): UpdateCostDetailFixRateRequest {
+  return { costDetailId: "", fixRate: undefined };
+}
+
+export const UpdateCostDetailFixRateRequest: MessageFns<UpdateCostDetailFixRateRequest> = {
+  encode(message: UpdateCostDetailFixRateRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.costDetailId !== "") {
+      writer.uint32(10).string(message.costDetailId);
+    }
+    if (message.fixRate !== undefined) {
+      writer.uint32(17).double(message.fixRate);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): UpdateCostDetailFixRateRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUpdateCostDetailFixRateRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.costDetailId = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 17) {
+            break;
+          }
+
+          message.fixRate = reader.double();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UpdateCostDetailFixRateRequest {
+    return {
+      costDetailId: isSet(object.costDetailId)
+        ? globalThis.String(object.costDetailId)
+        : isSet(object.cost_detail_id)
+        ? globalThis.String(object.cost_detail_id)
+        : "",
+      fixRate: isSet(object.fixRate)
+        ? globalThis.Number(object.fixRate)
+        : isSet(object.fix_rate)
+        ? globalThis.Number(object.fix_rate)
+        : undefined,
+    };
+  },
+
+  toJSON(message: UpdateCostDetailFixRateRequest): unknown {
+    const obj: any = {};
+    if (message.costDetailId !== "") {
+      obj.costDetailId = message.costDetailId;
+    }
+    if (message.fixRate !== undefined) {
+      obj.fixRate = message.fixRate;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<UpdateCostDetailFixRateRequest>): UpdateCostDetailFixRateRequest {
+    return UpdateCostDetailFixRateRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<UpdateCostDetailFixRateRequest>): UpdateCostDetailFixRateRequest {
+    const message = createBaseUpdateCostDetailFixRateRequest();
+    message.costDetailId = object.costDetailId ?? "";
+    message.fixRate = object.fixRate ?? undefined;
+    return message;
+  },
+};
+
+function createBaseUpdateCostDetailFixRateResponse(): UpdateCostDetailFixRateResponse {
+  return { base: undefined, detail: undefined, parentCost: undefined };
+}
+
+export const UpdateCostDetailFixRateResponse: MessageFns<UpdateCostDetailFixRateResponse> = {
+  encode(message: UpdateCostDetailFixRateResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    if (message.detail !== undefined) {
+      RMCostDetail.encode(message.detail, writer.uint32(18).fork()).join();
+    }
+    if (message.parentCost !== undefined) {
+      RMCost.encode(message.parentCost, writer.uint32(26).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): UpdateCostDetailFixRateResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUpdateCostDetailFixRateResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.detail = RMCostDetail.decode(reader, reader.uint32());
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.parentCost = RMCost.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UpdateCostDetailFixRateResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      detail: isSet(object.detail) ? RMCostDetail.fromJSON(object.detail) : undefined,
+      parentCost: isSet(object.parentCost)
+        ? RMCost.fromJSON(object.parentCost)
+        : isSet(object.parent_cost)
+        ? RMCost.fromJSON(object.parent_cost)
+        : undefined,
+    };
+  },
+
+  toJSON(message: UpdateCostDetailFixRateResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.detail !== undefined) {
+      obj.detail = RMCostDetail.toJSON(message.detail);
+    }
+    if (message.parentCost !== undefined) {
+      obj.parentCost = RMCost.toJSON(message.parentCost);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<UpdateCostDetailFixRateResponse>): UpdateCostDetailFixRateResponse {
+    return UpdateCostDetailFixRateResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<UpdateCostDetailFixRateResponse>): UpdateCostDetailFixRateResponse {
+    const message = createBaseUpdateCostDetailFixRateResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.detail = (object.detail !== undefined && object.detail !== null)
+      ? RMCostDetail.fromPartial(object.detail)
+      : undefined;
+    message.parentCost = (object.parentCost !== undefined && object.parentCost !== null)
+      ? RMCost.fromPartial(object.parentCost)
+      : undefined;
+    return message;
+  },
+};
+
 function createBaseListRMCostPeriodsRequest(): ListRMCostPeriodsRequest {
   return {};
 }
@@ -3447,6 +5827,225 @@ export const RMCostServiceDefinition = {
               111,
               114,
               116,
+            ]),
+          ],
+        },
+      },
+    },
+    /** V2: ListCostDetails returns per-item snapshot rows for a cost row. */
+    listCostDetails: {
+      name: "ListCostDetails",
+      requestType: ListCostDetailsRequest,
+      requestStream: false,
+      responseType: ListCostDetailsResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              47,
+              18,
+              45,
+              47,
+              97,
+              112,
+              105,
+              47,
+              118,
+              49,
+              47,
+              102,
+              105,
+              110,
+              97,
+              110,
+              99,
+              101,
+              47,
+              114,
+              109,
+              45,
+              99,
+              111,
+              115,
+              116,
+              115,
+              47,
+              123,
+              114,
+              109,
+              95,
+              99,
+              111,
+              115,
+              116,
+              95,
+              105,
+              100,
+              125,
+              47,
+              100,
+              101,
+              116,
+              97,
+              105,
+              108,
+              115,
+            ]),
+          ],
+        },
+      },
+    },
+    /**
+     * V2: UpdateRMCostInputs edits any of the per-row marketing snapshot inputs
+     * (freight/anti/duty/transport/default), simulation_rate, or flags. Triggers
+     * in-place recompute of SP/PP/FP/cost_mark and cost_sim from stored snapshots.
+     * No full pipeline recalc required.
+     */
+    updateRMCostInputs: {
+      name: "UpdateRMCostInputs",
+      requestType: UpdateRMCostInputsRequest,
+      requestStream: false,
+      responseType: UpdateRMCostInputsResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              49,
+              58,
+              1,
+              42,
+              26,
+              44,
+              47,
+              97,
+              112,
+              105,
+              47,
+              118,
+              49,
+              47,
+              102,
+              105,
+              110,
+              97,
+              110,
+              99,
+              101,
+              47,
+              114,
+              109,
+              45,
+              99,
+              111,
+              115,
+              116,
+              115,
+              47,
+              123,
+              114,
+              109,
+              95,
+              99,
+              111,
+              115,
+              116,
+              95,
+              105,
+              100,
+              125,
+              47,
+              105,
+              110,
+              112,
+              117,
+              116,
+              115,
+            ]),
+          ],
+        },
+      },
+    },
+    /**
+     * V2: UpdateCostDetailFixRate sets fix_rate on one detail row, recomputes
+     * its fix-stage chain, recomputes parent cost row's fl_rate (=MAX) and
+     * cost_val if valuation_flag is AUTO/FL.
+     */
+    updateCostDetailFixRate: {
+      name: "UpdateCostDetailFixRate",
+      requestType: UpdateCostDetailFixRateRequest,
+      requestStream: false,
+      responseType: UpdateCostDetailFixRateResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              63,
+              58,
+              1,
+              42,
+              26,
+              58,
+              47,
+              97,
+              112,
+              105,
+              47,
+              118,
+              49,
+              47,
+              102,
+              105,
+              110,
+              97,
+              110,
+              99,
+              101,
+              47,
+              114,
+              109,
+              45,
+              99,
+              111,
+              115,
+              116,
+              115,
+              47,
+              100,
+              101,
+              116,
+              97,
+              105,
+              108,
+              115,
+              47,
+              123,
+              99,
+              111,
+              115,
+              116,
+              95,
+              100,
+              101,
+              116,
+              97,
+              105,
+              108,
+              95,
+              105,
+              100,
+              125,
+              47,
+              102,
+              105,
+              120,
+              45,
+              114,
+              97,
+              116,
+              101,
             ]),
           ],
         },

@@ -6,8 +6,14 @@ import { Badge } from "@/components/ui/badge"
 import { DataTable, type ColumnDef, type RowAction } from "@/components/shared"
 
 import type { RMGroupHead } from "@/types/finance/rm-group"
-import { RM_GROUP_FLAG_LABELS } from "@/types/finance/rm-group"
-import { RMGroupFlag } from "@/types/generated/finance/v1/rm_group"
+import {
+  RM_VALUATION_FLAG_LABELS,
+  RM_MARKETING_FLAG_LABELS,
+} from "@/types/finance/rm-group"
+import {
+  RMValuationFlag,
+  RMMarketingFlag,
+} from "@/types/generated/finance/v1/rm_group"
 
 interface GroupTableProps {
   data: RMGroupHead[]
@@ -15,11 +21,6 @@ interface GroupTableProps {
   onEdit: (group: RMGroupHead) => void
   onDelete: (group: RMGroupHead) => void
   onView: (group: RMGroupHead) => void
-}
-
-function formatFlag(flag: number | undefined): string {
-  if (flag === undefined) return "—"
-  return RM_GROUP_FLAG_LABELS[flag as RMGroupFlag] || "—"
 }
 
 function formatDecimal(val: number | undefined | null, digits = 4): string {
@@ -30,34 +31,38 @@ function formatDecimal(val: number | undefined | null, digits = 4): string {
   })
 }
 
-function FlagCell({
-  flag,
-  initVal,
-}: {
-  flag: number | undefined
-  initVal: number | null | undefined
-}) {
-  const isInit = flag === RMGroupFlag.RM_GROUP_FLAG_INIT
-  return (
-    <div className="flex flex-col items-center gap-0.5">
-      <Badge variant="outline" className="text-[10px]">
-        {formatFlag(flag)}
-      </Badge>
-      {isInit && (
-        <span className="font-mono text-[10px] text-muted-foreground">
-          {formatDecimal(initVal, 2)}
-        </span>
-      )}
-    </div>
-  )
+/** Format a decimal-stored percent (0.04) as a whole-percent string ("4.00"). */
+function formatPctFromDecimal(val: number | undefined | null, digits = 2): string {
+  if (val === undefined || val === null) return "—"
+  return (val * 100).toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: digits,
+  })
 }
+
+function valuationFlagShort(flag: number | undefined): string {
+  const f = (flag ?? RMValuationFlag.RM_VALUATION_FLAG_UNSPECIFIED) as RMValuationFlag
+  if (f === RMValuationFlag.RM_VALUATION_FLAG_UNSPECIFIED) return "AUTO"
+  return RM_VALUATION_FLAG_LABELS[f]?.split(" ")[0] || "AUTO"
+}
+
+function marketingFlagShort(flag: number | undefined): string {
+  const f = (flag ?? RMMarketingFlag.RM_MARKETING_FLAG_UNSPECIFIED) as RMMarketingFlag
+  if (f === RMMarketingFlag.RM_MARKETING_FLAG_UNSPECIFIED) return "AUTO"
+  return RM_MARKETING_FLAG_LABELS[f]?.split(" ")[0] || "AUTO"
+}
+
+const num = "text-right font-mono text-xs"
+const numHead = "text-right"
 
 export function GroupTable({ data, isLoading, onEdit, onDelete, onView }: GroupTableProps) {
   const columns: ColumnDef<RMGroupHead>[] = [
     {
       id: "groupCode",
       header: "Code",
-      width: "w-[140px]",
+      widthPx: 140,
+      sticky: "left",
+      canHide: false,
       cell: (row) => (
         <span className="font-medium font-mono">{row.groupCode || "-"}</span>
       ),
@@ -65,41 +70,38 @@ export function GroupTable({ data, isLoading, onEdit, onDelete, onView }: GroupT
     {
       id: "groupName",
       header: "Name",
-      accessorKey: "groupName",
+      widthPx: 220,
+      sticky: "left",
+      canHide: false,
+      cell: (row) => (
+        <span className="truncate block">{row.groupName || "-"}</span>
+      ),
     },
+    { id: "costPercentage", header: "Duty %", width: "w-[100px]", headerClassName: numHead, cellClassName: num, cell: (row) => formatPctFromDecimal(row.costPercentage) },
+    { id: "costPerKg", header: "Transport", width: "w-[110px]", headerClassName: numHead, cellClassName: num, cell: (row) => formatDecimal(row.costPerKg) },
+    { id: "marketingFreightRate", header: "Mkt Freight", width: "w-[110px]", headerClassName: numHead, cellClassName: num, cell: (row) => formatDecimal(row.marketingFreightRate) },
+    { id: "marketingAntiDumpingPct", header: "Mkt Anti %", width: "w-[110px]", headerClassName: numHead, cellClassName: num, cell: (row) => formatPctFromDecimal(row.marketingAntiDumpingPct) },
+    { id: "marketingDefaultValue", header: "Default Val", width: "w-[120px]", headerClassName: numHead, cellClassName: num, cell: (row) => formatDecimal(row.marketingDefaultValue) },
     {
       id: "flags",
-      header: "Flags (V / M / S)",
-      hideOnMobile: true,
+      header: "Flags (Val / Mkt)",
+      width: "w-[140px]",
       cell: (row) => (
-        <div className="flex items-start gap-2 text-xs font-mono">
-          <FlagCell flag={row.flagValuation} initVal={row.initValValuation} />
-          <span className="pt-1">/</span>
-          <FlagCell flag={row.flagMarketing} initVal={row.initValMarketing} />
-          <span className="pt-1">/</span>
-          <FlagCell flag={row.flagSimulation} initVal={row.initValSimulation} />
+        <div className="flex items-center gap-1 text-xs font-mono">
+          <Badge variant="outline" className="text-[10px]">
+            {valuationFlagShort(row.valuationFlag)}
+          </Badge>
+          <span className="text-muted-foreground">/</span>
+          <Badge variant="outline" className="text-[10px]">
+            {marketingFlagShort(row.marketingFlag)}
+          </Badge>
         </div>
-      ),
-    },
-    {
-      id: "costPercentage",
-      header: "Cost %",
-      hideOnMobile: true,
-      cell: (row) => (
-        <span className="font-mono text-sm">{formatDecimal(row.costPercentage)}</span>
-      ),
-    },
-    {
-      id: "costPerKg",
-      header: "Cost/Kg",
-      hideOnMobile: true,
-      cell: (row) => (
-        <span className="font-mono text-sm">{formatDecimal(row.costPerKg)}</span>
       ),
     },
     {
       id: "isActive",
       header: "Status",
+      width: "w-[90px]",
       cell: (row) => (
         <Badge variant={row.isActive ? "default" : "secondary"}>
           {row.isActive ? "Active" : "Inactive"}
@@ -137,6 +139,8 @@ export function GroupTable({ data, isLoading, onEdit, onDelete, onView }: GroupT
       keyField="groupHeadId"
       actions={actions}
       isLoading={isLoading}
+      tableId="rmgroup.list.v2"
+      stickyActions
       emptyMessage="No RM groups found"
       emptyDescription="Create a new group to get started"
     />
