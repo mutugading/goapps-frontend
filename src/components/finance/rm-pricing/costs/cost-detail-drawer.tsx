@@ -25,12 +25,14 @@ import type { RMCost, RMCostHistory } from "@/types/finance/rm-cost"
 import { RM_COST_TRIGGER_REASON_LABELS } from "@/types/finance/rm-cost"
 import { RM_GROUP_FLAG_LABELS } from "@/types/finance/rm-group"
 import { RMGroupFlag } from "@/types/generated/finance/v1/rm_group"
+import { CostV2InputsPanel } from "./cost-v2-inputs-panel"
+import { CostDetailSnapshotsPanel } from "./cost-detail-snapshots-panel"
 
 interface CostDetailDrawerProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   cost: RMCost | null
-  defaultTab?: "detail" | "history"
+  defaultTab?: "detail" | "history" | "inputs" | "snapshots"
   history?: RMCostHistory[]
   isHistoryLoading?: boolean
 }
@@ -120,43 +122,72 @@ export function CostDetailDrawer({
 }: CostDetailDrawerProps) {
   if (!cost) return null
 
-  const rates = cost.rates
-
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
-        className="w-full sm:max-w-2xl lg:max-w-3xl overflow-y-auto p-6"
+        className="w-full !max-w-none sm:!max-w-2xl lg:!max-w-4xl p-0"
       >
-        <SheetHeader className="px-0">
-          <SheetTitle className="font-mono">{cost.rmCode}</SheetTitle>
-          <SheetDescription>
-            Period {cost.period} • {cost.rmName || "—"}
-          </SheetDescription>
-        </SheetHeader>
+        <div className="flex h-full flex-col">
+          <SheetHeader className="sticky top-0 z-10 border-b bg-background px-6 py-4">
+            <SheetTitle className="font-mono">{cost.rmCode}</SheetTitle>
+            <SheetDescription>
+              Period {cost.period} • {cost.rmName || "—"}
+            </SheetDescription>
+          </SheetHeader>
 
-        <Tabs key={`${cost.rmCostId}-${defaultTab}`} defaultValue={defaultTab} className="mt-4">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="detail">Detail</TabsTrigger>
-            <TabsTrigger value="history">History</TabsTrigger>
-          </TabsList>
+          <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6">
+            <Tabs key={`${cost.rmCostId}-${defaultTab}`} defaultValue={defaultTab}>
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="detail">Detail</TabsTrigger>
+                <TabsTrigger value="snapshots">Items</TabsTrigger>
+                <TabsTrigger value="inputs">Edit Inputs</TabsTrigger>
+                <TabsTrigger value="history">History</TabsTrigger>
+              </TabsList>
 
-          <TabsContent value="detail" className="mt-4 space-y-6">
-            <div>
-              <h4 className="text-sm font-medium mb-2">Stage Rates (Aggregated)</h4>
-              <div className="rounded-md border p-3 bg-muted/30">
-                <RateRow label="CONS" value={rates?.cons} />
-                <RateRow label="STORES" value={rates?.stores} />
-                <RateRow label="DEPT" value={rates?.dept} />
-                <RateRow label="PO_1" value={rates?.po1} />
-                <RateRow label="PO_2" value={rates?.po2} />
-                <RateRow label="PO_3" value={rates?.po3} />
+              <TabsContent value="detail" className="mt-4 space-y-6">
+                <div>
+                  <h4 className="text-sm font-medium mb-2">V2 Rates (group totals)</h4>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="rounded-md border p-3 bg-muted/30">
+                  <p className="mb-2 text-xs font-medium uppercase text-muted-foreground">Base</p>
+                  <RateRow label="CR" value={cost.crRate} />
+                  <RateRow label="SR" value={cost.srRate} />
+                  <RateRow label="PR" value={cost.prRate} />
+                </div>
+                <div className="rounded-md border p-3 bg-muted/30">
+                  <p className="mb-2 text-xs font-medium uppercase text-muted-foreground">Valuation Landed</p>
+                  <RateRow label="CL" value={cost.clRate} />
+                  <RateRow label="SL" value={cost.slRate} />
+                  <RateRow label="FL" value={cost.flRate} />
+                </div>
+                <div className="rounded-md border p-3 bg-muted/30">
+                  <p className="mb-2 text-xs font-medium uppercase text-muted-foreground">Marketing Inputs</p>
+                  <RateRow label="Fix Rate (FR)" value={cost.marketingDefaultValue} />
+                  <RateRow label="Sim Rate" value={cost.simulationRate} />
+                  <RateRow label="Proj Freight" value={cost.marketingFreightRate} />
+                  <RateRow
+                    label="Proj Anti %"
+                    value={cost.marketingAntiDumpingPct !== undefined && cost.marketingAntiDumpingPct !== null ? cost.marketingAntiDumpingPct * 100 : undefined}
+                  />
+                  <RateRow
+                    label="Proj Duty %"
+                    value={cost.marketingDutyPct !== undefined && cost.marketingDutyPct !== null ? cost.marketingDutyPct * 100 : undefined}
+                  />
+                  <RateRow label="Proj Transport" value={cost.marketingTransportRate} />
+                </div>
+                <div className="rounded-md border p-3 bg-muted/30">
+                  <p className="mb-2 text-xs font-medium uppercase text-muted-foreground">Marketing Landed</p>
+                  <RateRow label="SP" value={cost.spRate} />
+                  <RateRow label="PP" value={cost.ppRate} />
+                  <RateRow label="FP" value={cost.fpRate} />
+                </div>
               </div>
             </div>
 
             <Separator />
 
             <div>
-              <h4 className="text-sm font-medium mb-2">Landed Costs</h4>
+              <h4 className="text-sm font-medium mb-2">Selected Costs</h4>
               <div className="rounded-md border p-3 space-y-1">
                 <CostRow
                   label="Valuation"
@@ -200,6 +231,15 @@ export function CostDetailDrawer({
                 </div>
               </div>
             </div>
+          </TabsContent>
+
+          <TabsContent value="snapshots" className="mt-4">
+            <CostDetailSnapshotsPanel rmCostId={cost.rmCostId} />
+          </TabsContent>
+
+          <TabsContent value="inputs" className="mt-4">
+            {/* key forces remount when row changes so internal state resets cleanly */}
+            <CostV2InputsPanel key={cost.rmCostId} cost={cost} />
           </TabsContent>
 
           <TabsContent value="history" className="mt-4">
@@ -258,8 +298,10 @@ export function CostDetailDrawer({
                 </Table>
               </div>
             )}
-          </TabsContent>
-        </Tabs>
+              </TabsContent>
+            </Tabs>
+          </div>
+        </div>
       </SheetContent>
     </Sheet>
   )

@@ -13,13 +13,21 @@ import {
   RemoveItemsResponseParser,
   ImportGroupItemsResponseParser,
   DownloadGroupItemsTemplateResponseParser,
+  UpdateGroupItemResponseParser,
   type ImportGroupItemsResponse,
   type DownloadGroupItemsTemplateResponse,
+  type UpdateGroupItemResponse,
 } from "@/types/finance/rm-group"
 
 export interface AddItemSelectionInput {
   itemCode: string
   gradeCode?: string
+  // V2 valuation inputs (optional).
+  valuationFreightRate?: number | null
+  valuationAntiDumpingPct?: number | null
+  valuationDutyPct?: number | null
+  valuationTransportRate?: number | null
+  valuationDefaultValue?: number | null
 }
 
 interface AddItemsVars {
@@ -40,6 +48,11 @@ export function useAddItemsToGroup() {
         body.selections = selections.map((s) => ({
           itemCode: s.itemCode,
           gradeCode: s.gradeCode || "",
+          valuationFreightRate: s.valuationFreightRate ?? undefined,
+          valuationAntiDumpingPct: s.valuationAntiDumpingPct ?? undefined,
+          valuationDutyPct: s.valuationDutyPct ?? undefined,
+          valuationTransportRate: s.valuationTransportRate ?? undefined,
+          valuationDefaultValue: s.valuationDefaultValue ?? undefined,
         }))
       }
       if (itemCodes && itemCodes.length > 0) {
@@ -77,6 +90,48 @@ export function useAddItemsToGroup() {
       }
     },
     onError: (err: Error) => toast.error(err.message || "Failed to add items"),
+  })
+}
+
+// V2: useUpdateGroupItem patches one detail row's valuation fields + sort/active.
+export interface UpdateGroupItemVars {
+  groupHeadId: string
+  groupDetailId: string
+  valuationFreightRate?: number | null
+  valuationAntiDumpingPct?: number | null
+  valuationDutyPct?: number | null
+  valuationTransportRate?: number | null
+  valuationDefaultValue?: number | null
+  sortOrder?: number
+  isActive?: boolean
+  clearValuationFreightRate?: boolean
+  clearValuationAntiDumpingPct?: boolean
+  clearValuationDutyPct?: boolean
+  clearValuationTransportRate?: boolean
+  clearValuationDefaultValue?: boolean
+}
+
+export function useUpdateGroupItem() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (vars: UpdateGroupItemVars): Promise<UpdateGroupItemResponse> => {
+      const { groupHeadId, groupDetailId, ...body } = vars
+      const raw = await apiClient.put<unknown>(
+        `/api/v1/finance/rm-groups/${groupHeadId}/items/${groupDetailId}`,
+        body,
+      )
+      return UpdateGroupItemResponseParser.fromJSON(raw)
+    },
+    onSuccess: (response, vars) => {
+      queryClient.invalidateQueries({ queryKey: rmGroupKeys.detail(vars.groupHeadId) })
+      queryClient.invalidateQueries({ queryKey: groupItemRatesKeys.all })
+      if (response.base?.isSuccess) {
+        toast.success("Item updated")
+      } else {
+        toast.error(response.base?.message || "Failed to update item")
+      }
+    },
+    onError: (err: Error) => toast.error(err.message || "Failed to update item"),
   })
 }
 

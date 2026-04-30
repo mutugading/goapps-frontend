@@ -28,6 +28,7 @@ import {
   ItemPickerDialog,
   ItemListTable,
   GroupItemsImportDialog,
+  GroupItemV2EditDialog,
 } from "@/components/finance/rm-pricing/groups"
 import { CostRecalculateDialog } from "@/components/finance/rm-pricing/costs"
 import {
@@ -44,8 +45,14 @@ import { useSyncPeriods } from "@/hooks/finance/use-oracle-sync"
 import { useGroupItemRates } from "@/hooks/finance/use-group-item-rates"
 
 import type { RMGroupHead, RMGroupDetail } from "@/types/finance/rm-group"
-import { RM_GROUP_FLAG_LABELS } from "@/types/finance/rm-group"
-import { RMGroupFlag } from "@/types/generated/finance/v1/rm_group"
+import {
+  RM_VALUATION_FLAG_LABELS,
+  RM_MARKETING_FLAG_LABELS,
+} from "@/types/finance/rm-group"
+import {
+  RMValuationFlag,
+  RMMarketingFlag,
+} from "@/types/generated/finance/v1/rm_group"
 
 function formatDecimal(val: number | undefined, digits = 6): string {
   if (val === undefined || val === null) return "—"
@@ -55,9 +62,23 @@ function formatDecimal(val: number | undefined, digits = 6): string {
   })
 }
 
-function flagLabel(flag: number | undefined): string {
-  if (flag === undefined) return "—"
-  return RM_GROUP_FLAG_LABELS[flag as RMGroupFlag] || "—"
+/** Format a decimal-stored percent (0.04) as a whole-percent string ("4.00"). */
+function formatPctFromDecimal(val: number | undefined, digits = 2): string {
+  if (val === undefined || val === null) return "—"
+  return (val * 100).toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: digits,
+  })
+}
+
+function valuationFlagLabel(flag: number | undefined): string {
+  if (flag === undefined) return "AUTO"
+  return RM_VALUATION_FLAG_LABELS[flag as RMValuationFlag] || "AUTO"
+}
+
+function marketingFlagLabel(flag: number | undefined): string {
+  if (flag === undefined) return "AUTO"
+  return RM_MARKETING_FLAG_LABELS[flag as RMMarketingFlag] || "AUTO"
 }
 
 function GroupDetailContent() {
@@ -72,6 +93,7 @@ function GroupDetailContent() {
   const [isPickerOpen, setIsPickerOpen] = useState(false)
   const [isImportOpen, setIsImportOpen] = useState(false)
   const [isRecalcOpen, setIsRecalcOpen] = useState(false)
+  const [editValuationDetail, setEditValuationDetail] = useState<RMGroupDetail | null>(null)
   const [selectedPeriod, setSelectedPeriod] = useState("")
 
   const { data: periodsData } = useSyncPeriods()
@@ -154,17 +176,35 @@ function GroupDetailContent() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card className="min-w-0">
             <CardHeader className="pb-2 text-sm font-medium">
-              Cost Parameters
+              Marketing Inputs
             </CardHeader>
             <CardContent>
               <div className="space-y-1 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Percentage</span>
-                  <span className="font-mono">{formatDecimal(group.costPercentage, 6)}</span>
+                  <span className="text-muted-foreground">Duty %</span>
+                  <span className="font-mono">{formatPctFromDecimal(group.costPercentage)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Per Kg</span>
-                  <span className="font-mono">{formatDecimal(group.costPerKg, 6)}</span>
+                  <span className="text-muted-foreground">Transport Rate</span>
+                  <span className="font-mono">{formatDecimal(group.costPerKg, 4)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Freight Rate</span>
+                  <span className="font-mono">
+                    {formatDecimal(group.marketingFreightRate, 4)}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Anti Dumping %</span>
+                  <span className="font-mono">
+                    {formatPctFromDecimal(group.marketingAntiDumpingPct)}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Default Value</span>
+                  <span className="font-mono">
+                    {formatDecimal(group.marketingDefaultValue, 4)}
+                  </span>
                 </div>
               </div>
             </CardContent>
@@ -172,38 +212,26 @@ function GroupDetailContent() {
 
           <Card className="min-w-0">
             <CardHeader className="pb-2 text-sm font-medium">
-              Flags (V / M / S)
+              Selection Flags
             </CardHeader>
             <CardContent>
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge variant="outline">{flagLabel(group.flagValuation)}</Badge>
-                <span className="text-muted-foreground opacity-50">/</span>
-                <Badge variant="outline">{flagLabel(group.flagMarketing)}</Badge>
-                <span className="text-muted-foreground opacity-50">/</span>
-                <Badge variant="outline">{flagLabel(group.flagSimulation)}</Badge>
-              </div>
-              {(group.initValValuation || group.initValMarketing || group.initValSimulation) && (
-                <div className="mt-3 pt-3 border-t text-[11px] text-muted-foreground space-y-0.5">
-                  {group.initValValuation != null && (
-                    <div className="flex justify-between gap-2">
-                      <span className="shrink-0">Init Val:</span>
-                      <span className="font-mono truncate">{formatDecimal(group.initValValuation)}</span>
-                    </div>
-                  )}
-                  {group.initValMarketing != null && (
-                    <div className="flex justify-between gap-2">
-                      <span className="shrink-0">Init Mark:</span>
-                      <span className="font-mono truncate">{formatDecimal(group.initValMarketing)}</span>
-                    </div>
-                  )}
-                  {group.initValSimulation != null && (
-                    <div className="flex justify-between gap-2">
-                      <span className="shrink-0">Init Sim:</span>
-                      <span className="font-mono truncate">{formatDecimal(group.initValSimulation)}</span>
-                    </div>
-                  )}
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-muted-foreground">Valuation</span>
+                  <Badge variant="outline" className="font-mono text-[10px]">
+                    {valuationFlagLabel(group.valuationFlag)}
+                  </Badge>
                 </div>
-              )}
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-muted-foreground">Marketing</span>
+                  <Badge variant="outline" className="font-mono text-[10px]">
+                    {marketingFlagLabel(group.marketingFlag)}
+                  </Badge>
+                </div>
+                <p className="text-[10px] text-muted-foreground pt-2 border-t">
+                  AUTO uses cascade fallback (CL→SL→FL / SP→PP→FP).
+                </p>
+              </div>
             </CardContent>
           </Card>
 
@@ -271,6 +299,7 @@ function GroupDetailContent() {
               data={details}
               isLoading={isLoading}
               onRemove={handleRemoveItem}
+              onEditValuation={setEditValuationDetail}
               rates={rates}
               ratesLoading={ratesLoading}
               period={effectivePeriod}
@@ -304,6 +333,12 @@ function GroupDetailContent() {
         open={isRecalcOpen}
         onOpenChange={setIsRecalcOpen}
         defaultGroupHeadId={groupId}
+      />
+
+      <GroupItemV2EditDialog
+        open={!!editValuationDetail}
+        onOpenChange={(open) => !open && setEditValuationDetail(null)}
+        detail={editValuationDetail}
       />
     </div>
   )

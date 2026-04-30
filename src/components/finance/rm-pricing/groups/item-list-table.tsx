@@ -1,6 +1,6 @@
 "use client"
 
-import { Trash2 } from "lucide-react"
+import { Pencil, Trash2 } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { DataTable, type ColumnDef, type RowAction } from "@/components/shared"
@@ -11,6 +11,7 @@ interface ItemListTableProps {
   data: RMGroupDetail[]
   isLoading?: boolean
   onRemove: (item: RMGroupDetail) => void
+  onEditValuation?: (item: RMGroupDetail) => void
   rates?: RMGroupItemRates[]
   ratesLoading?: boolean
   period?: string
@@ -28,6 +29,7 @@ export function ItemListTable({
   data,
   isLoading,
   onRemove,
+  onEditValuation,
   rates,
   ratesLoading,
   period,
@@ -185,15 +187,19 @@ export function ItemListTable({
     {
       id: "sortOrder",
       header: "#",
-      width: "w-[50px]",
-      cell: (row, index) => (
+      widthPx: 50,
+      sticky: "left",
+      canHide: false,
+      cell: (_row, index) => (
         <span className="text-muted-foreground text-sm">{(index ?? 0) + 1}</span>
       ),
     },
     {
       id: "itemCode",
       header: "Item Code",
-      width: "w-[140px]",
+      widthPx: 140,
+      sticky: "left",
+      canHide: false,
       cell: (row) => (
         <span className="font-medium font-mono">{row.itemCode || "-"}</span>
       ),
@@ -201,12 +207,17 @@ export function ItemListTable({
     {
       id: "itemName",
       header: "Item Name",
-      accessorKey: "itemName",
+      widthPx: 220,
+      sticky: "left",
+      canHide: false,
+      cell: (row) => (
+        <span className="truncate block">{row.itemName || "-"}</span>
+      ),
     },
     {
       id: "gradeCode",
       header: "Grade",
-      hideOnMobile: true,
+      width: "w-[80px]",
       cell: (row) => (
         <span className="text-muted-foreground text-sm">{row.gradeCode || "—"}</span>
       ),
@@ -214,7 +225,7 @@ export function ItemListTable({
     {
       id: "uomCode",
       header: "UOM",
-      hideOnMobile: true,
+      width: "w-[80px]",
       cell: (row) => (
         <span className="text-muted-foreground text-sm">{row.uomCode || "—"}</span>
       ),
@@ -223,26 +234,26 @@ export function ItemListTable({
     {
       id: "isActive",
       header: "Status",
+      width: "w-[90px]",
       cell: (row) => (
         <Badge variant={row.isActive ? "default" : "secondary"}>
           {row.isActive ? "Active" : "Inactive"}
         </Badge>
       ),
     },
-    {
-      id: "isDummy",
-      header: "Dummy",
-      hideOnMobile: true,
-      cell: (row) =>
-        row.isDummy ? (
-          <Badge variant="outline" className="text-[10px]">
-            Dummy
-          </Badge>
-        ) : null,
-    },
   ]
 
   const actions: RowAction<RMGroupDetail>[] = [
+    ...(onEditValuation
+      ? [
+          {
+            id: "edit-valuation",
+            label: "Edit Valuation Inputs",
+            icon: <Pencil className="h-4 w-4" />,
+            onClick: onEditValuation,
+          } satisfies RowAction<RMGroupDetail>,
+        ]
+      : []),
     {
       id: "remove",
       label: "Remove",
@@ -259,6 +270,8 @@ export function ItemListTable({
       keyField="groupDetailId"
       actions={actions}
       isLoading={isLoading}
+      tableId="rmgroup.detail.items.v2"
+      stickyActions
       emptyMessage="No items in this group"
       emptyDescription="Add items using the picker above"
     />

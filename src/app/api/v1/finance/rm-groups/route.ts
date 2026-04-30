@@ -39,6 +39,11 @@ export async function GET(request: NextRequest) {
       initValMarketing: item.initValMarketing ?? undefined,
       initValSimulation: item.initValSimulation ?? undefined,
       isActive: item.isActive ?? true,
+      marketingFreightRate: item.marketingFreightRate ?? undefined,
+      marketingAntiDumpingPct: item.marketingAntiDumpingPct ?? undefined,
+      marketingDefaultValue: item.marketingDefaultValue ?? undefined,
+      valuationFlag: item.valuationFlag ?? 0,
+      marketingFlag: item.marketingFlag ?? 0,
       audit: item.audit
         ? {
             createdAt: item.audit.createdAt || "",
@@ -110,6 +115,11 @@ export async function POST(request: NextRequest) {
           initValMarketing: head.initValMarketing ?? undefined,
           initValSimulation: head.initValSimulation ?? undefined,
           isActive: head.isActive ?? true,
+          marketingFreightRate: head.marketingFreightRate ?? undefined,
+          marketingAntiDumpingPct: head.marketingAntiDumpingPct ?? undefined,
+          marketingDefaultValue: head.marketingDefaultValue ?? undefined,
+          valuationFlag: head.valuationFlag ?? 0,
+          marketingFlag: head.marketingFlag ?? 0,
         }
       : undefined
 

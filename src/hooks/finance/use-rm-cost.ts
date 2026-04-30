@@ -2,7 +2,7 @@
 
 // RM Cost list / get / history hooks
 
-import { useMutation, useQuery } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { apiClient, buildQueryString, downloadFileFromBytes } from "@/lib/api"
 import {
@@ -12,11 +12,19 @@ import {
   type GetRMCostResponse,
   type ListRMCostHistoryResponse,
   type ExportRMCostsResponse,
+  type ListCostDetailsResponse,
+  type UpdateRMCostInputsResponse,
+  type UpdateCostDetailFixRateResponse,
+  type UpdateRMCostInputsParams,
+  type UpdateCostDetailFixRateParams,
   ListRMCostsResponseParser,
   GetRMCostResponseParser,
   ListRMCostHistoryResponseParser,
   ListRMCostPeriodsResponseParser,
   ExportRMCostsResponseParser,
+  ListCostDetailsResponseParser,
+  UpdateRMCostInputsResponseParser,
+  UpdateCostDetailFixRateResponseParser,
 } from "@/types/finance/rm-cost"
 
 export interface ExportRMCostsParams {
@@ -35,6 +43,7 @@ export const rmCostKeys = {
   histories: () => [...rmCostKeys.all, "history"] as const,
   history: (params: ListRMCostHistoryParams) => [...rmCostKeys.histories(), params] as const,
   periods: () => [...rmCostKeys.all, "periods"] as const,
+  costDetails: (rmCostId: string) => [...rmCostKeys.all, "cost-details", rmCostId] as const,
 }
 
 export function useRMCostPeriods() {
@@ -90,6 +99,77 @@ export function useExportRMCosts() {
     },
     onError: (error: Error) => {
       toast.error(error.message || "Failed to export RM Costs")
+    },
+  })
+}
+
+// =============================================================================
+// V2 hooks
+// =============================================================================
+
+// useCostDetails fetches per-(item, grade) snapshots for one cost row.
+export function useCostDetails(rmCostId: string, enabled = true) {
+  return useQuery({
+    queryKey: rmCostKeys.costDetails(rmCostId),
+    queryFn: async (): Promise<ListCostDetailsResponse> => {
+      const raw = await apiClient.get<unknown>(`/api/v1/finance/rm-costs/by-id/${rmCostId}/details`)
+      return ListCostDetailsResponseParser.fromJSON(raw)
+    },
+    enabled: enabled && !!rmCostId,
+  })
+}
+
+// useUpdateRMCostInputs edits marketing snapshot / simulation_rate / flags
+// inline. Recomputes cost_mark + cost_sim only (no per-detail recalc).
+export function useUpdateRMCostInputs() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (params: UpdateRMCostInputsParams): Promise<UpdateRMCostInputsResponse> => {
+      const { rmCostId, ...body } = params
+      const raw = await apiClient.put<unknown>(
+        `/api/v1/finance/rm-costs/by-id/${rmCostId}/inputs`,
+        body,
+      )
+      return UpdateRMCostInputsResponseParser.fromJSON(raw)
+    },
+    onSuccess: (response) => {
+      if (response.base?.isSuccess) {
+        queryClient.invalidateQueries({ queryKey: rmCostKeys.all })
+        toast.success("RM Cost inputs updated")
+      } else {
+        toast.error(response.base?.message || "Failed to update inputs")
+      }
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to update inputs")
+    },
+  })
+}
+
+// useUpdateCostDetailFixRate edits one detail row's fix_rate. Recomputes the
+// FL chain on that detail and the parent fl_rate (= MAX). Updates cost_val
+// when the parent's valuation_flag is AUTO or FL.
+export function useUpdateCostDetailFixRate() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (params: UpdateCostDetailFixRateParams): Promise<UpdateCostDetailFixRateResponse> => {
+      const { costDetailId, fixRate } = params
+      const raw = await apiClient.put<unknown>(
+        `/api/v1/finance/rm-costs/details/${costDetailId}/fix-rate`,
+        { fixRate },
+      )
+      return UpdateCostDetailFixRateResponseParser.fromJSON(raw)
+    },
+    onSuccess: (response) => {
+      if (response.base?.isSuccess) {
+        queryClient.invalidateQueries({ queryKey: rmCostKeys.all })
+        toast.success("Fix rate updated")
+      } else {
+        toast.error(response.base?.message || "Failed to update fix rate")
+      }
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to update fix rate")
     },
   })
 }

@@ -25,6 +25,11 @@ function serializeHead(head: any) {
     initValMarketing: head.initValMarketing ?? undefined,
     initValSimulation: head.initValSimulation ?? undefined,
     isActive: head.isActive ?? true,
+    marketingFreightRate: head.marketingFreightRate ?? undefined,
+    marketingAntiDumpingPct: head.marketingAntiDumpingPct ?? undefined,
+    marketingDefaultValue: head.marketingDefaultValue ?? undefined,
+    valuationFlag: head.valuationFlag ?? 0,
+    marketingFlag: head.marketingFlag ?? 0,
     audit: head.audit
       ? {
           createdAt: head.audit.createdAt || "",
@@ -52,6 +57,11 @@ function serializeDetail(detail: any) {
     sortOrder: detail.sortOrder ?? 0,
     isActive: detail.isActive ?? true,
     isDummy: detail.isDummy ?? false,
+    valuationFreightRate: detail.valuationFreightRate ?? undefined,
+    valuationAntiDumpingPct: detail.valuationAntiDumpingPct ?? undefined,
+    valuationDutyPct: detail.valuationDutyPct ?? undefined,
+    valuationTransportRate: detail.valuationTransportRate ?? undefined,
+    valuationDefaultValue: detail.valuationDefaultValue ?? undefined,
     audit: detail.audit
       ? {
           createdAt: detail.audit.createdAt || "",

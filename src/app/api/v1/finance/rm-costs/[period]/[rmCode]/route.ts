@@ -47,6 +47,24 @@ function serializeCost(cost: any) {
     flagSimulationUsed: cost.flagSimulationUsed ?? 0,
     calculatedAt: cost.calculatedAt || "",
     calculatedBy: cost.calculatedBy || "",
+    // V2 snapshot + computed fields.
+    valuationFlag: cost.valuationFlag ?? 0,
+    marketingFlag: cost.marketingFlag ?? 0,
+    marketingFreightRate: cost.marketingFreightRate ?? undefined,
+    marketingAntiDumpingPct: cost.marketingAntiDumpingPct ?? undefined,
+    marketingDutyPct: cost.marketingDutyPct ?? undefined,
+    marketingTransportRate: cost.marketingTransportRate ?? undefined,
+    marketingDefaultValue: cost.marketingDefaultValue ?? undefined,
+    simulationRate: cost.simulationRate ?? undefined,
+    clRate: cost.clRate ?? undefined,
+    slRate: cost.slRate ?? undefined,
+    flRate: cost.flRate ?? undefined,
+    spRate: cost.spRate ?? undefined,
+    ppRate: cost.ppRate ?? undefined,
+    fpRate: cost.fpRate ?? undefined,
+    crRate: cost.crRate ?? undefined,
+    srRate: cost.srRate ?? undefined,
+    prRate: cost.prRate ?? undefined,
   }
 }
 

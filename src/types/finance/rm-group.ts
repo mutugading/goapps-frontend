@@ -37,6 +37,9 @@ export type {
   ImportRMGroupsResponse,
   DownloadRMGroupTemplateRequest,
   DownloadRMGroupTemplateResponse,
+  AddItemSelection,
+  UpdateGroupItemRequest,
+  UpdateGroupItemResponse,
 } from "@/types/generated/finance/v1/rm_group"
 
 export {
@@ -61,6 +64,13 @@ export {
   RMGroupFlag,
   rMGroupFlagFromJSON,
   rMGroupFlagToJSON,
+  RMValuationFlag,
+  rMValuationFlagFromJSON,
+  rMValuationFlagToJSON,
+  RMMarketingFlag,
+  rMMarketingFlagFromJSON,
+  rMMarketingFlagToJSON,
+  UpdateGroupItemResponse as UpdateGroupItemResponseParser,
 } from "@/types/generated/finance/v1/rm_group"
 
 export {
@@ -75,7 +85,11 @@ export type {
 } from "@/types/generated/common/v1/common"
 
 import { ActiveFilter } from "@/types/generated/finance/v1/uom"
-import { RMGroupFlag } from "@/types/generated/finance/v1/rm_group"
+import {
+  RMGroupFlag,
+  RMValuationFlag,
+  RMMarketingFlag,
+} from "@/types/generated/finance/v1/rm_group"
 
 // UI Labels for flags
 export const RM_GROUP_FLAG_LABELS: Record<RMGroupFlag, string> = {
@@ -154,4 +168,78 @@ export const DEFAULT_RM_GROUP_FORM_VALUES: RMGroupFormData = {
   initValMarketing: null,
   initValSimulation: null,
   isActive: true,
+}
+
+// =============================================================================
+// V2 helpers — Marketing flag, Valuation flag, V2 form data
+// =============================================================================
+
+export const RM_VALUATION_FLAG_LABELS: Record<RMValuationFlag, string> = {
+  [RMValuationFlag.RM_VALUATION_FLAG_UNSPECIFIED]: "AUTO",
+  [RMValuationFlag.RM_VALUATION_FLAG_CR]: "CR (Consumption Rate)",
+  [RMValuationFlag.RM_VALUATION_FLAG_SR]: "SR (Stock Rate)",
+  [RMValuationFlag.RM_VALUATION_FLAG_PR]: "PR (PO Rate)",
+  [RMValuationFlag.RM_VALUATION_FLAG_CL]: "CL (Consumption Landed)",
+  [RMValuationFlag.RM_VALUATION_FLAG_SL]: "SL (Stock Landed)",
+  [RMValuationFlag.RM_VALUATION_FLAG_FL]: "FL (Fix Landed)",
+  [RMValuationFlag.UNRECOGNIZED]: "AUTO",
+}
+
+export const RM_VALUATION_FLAG_OPTIONS: Array<{ value: RMValuationFlag; label: string }> = [
+  { value: RMValuationFlag.RM_VALUATION_FLAG_UNSPECIFIED, label: "AUTO (CL → SL → FL)" },
+  { value: RMValuationFlag.RM_VALUATION_FLAG_CR, label: "CR (Consumption Rate)" },
+  { value: RMValuationFlag.RM_VALUATION_FLAG_SR, label: "SR (Stock Rate)" },
+  { value: RMValuationFlag.RM_VALUATION_FLAG_PR, label: "PR (PO Rate)" },
+  { value: RMValuationFlag.RM_VALUATION_FLAG_CL, label: "CL (Consumption Landed)" },
+  { value: RMValuationFlag.RM_VALUATION_FLAG_SL, label: "SL (Stock Landed)" },
+  { value: RMValuationFlag.RM_VALUATION_FLAG_FL, label: "FL (Fix Landed)" },
+]
+
+export const RM_MARKETING_FLAG_LABELS: Record<RMMarketingFlag, string> = {
+  [RMMarketingFlag.RM_MARKETING_FLAG_UNSPECIFIED]: "AUTO",
+  [RMMarketingFlag.RM_MARKETING_FLAG_SP]: "SP (Projection Stock)",
+  [RMMarketingFlag.RM_MARKETING_FLAG_PP]: "PP (Projection PO)",
+  [RMMarketingFlag.RM_MARKETING_FLAG_FP]: "FP (Projection Fix)",
+  [RMMarketingFlag.UNRECOGNIZED]: "AUTO",
+}
+
+export const RM_MARKETING_FLAG_OPTIONS: Array<{ value: RMMarketingFlag; label: string }> = [
+  { value: RMMarketingFlag.RM_MARKETING_FLAG_UNSPECIFIED, label: "AUTO (SP → PP → FP)" },
+  { value: RMMarketingFlag.RM_MARKETING_FLAG_SP, label: "SP (Projection Stock)" },
+  { value: RMMarketingFlag.RM_MARKETING_FLAG_PP, label: "PP (Projection PO)" },
+  { value: RMMarketingFlag.RM_MARKETING_FLAG_FP, label: "FP (Projection Fix)" },
+]
+
+// V2 form fields for the group head form (alongside V1 form data above).
+export interface RMGroupV2FormData {
+  marketingFreightRate: number | null
+  marketingAntiDumpingPct: number | null
+  marketingDefaultValue: number | null
+  valuationFlag: RMValuationFlag
+  marketingFlag: RMMarketingFlag
+}
+
+export const DEFAULT_RM_GROUP_V2_FORM_VALUES: RMGroupV2FormData = {
+  marketingFreightRate: null,
+  marketingAntiDumpingPct: null,
+  marketingDefaultValue: null,
+  valuationFlag: RMValuationFlag.RM_VALUATION_FLAG_UNSPECIFIED,
+  marketingFlag: RMMarketingFlag.RM_MARKETING_FLAG_UNSPECIFIED,
+}
+
+// V2 valuation inputs at the per-detail level (one bag per item-grade).
+export interface RMGroupDetailV2FormData {
+  valuationFreightRate: number | null
+  valuationAntiDumpingPct: number | null
+  valuationDutyPct: number | null
+  valuationTransportRate: number | null
+  valuationDefaultValue: number | null
+}
+
+export const DEFAULT_RM_GROUP_DETAIL_V2_FORM_VALUES: RMGroupDetailV2FormData = {
+  valuationFreightRate: null,
+  valuationAntiDumpingPct: null,
+  valuationDutyPct: null,
+  valuationTransportRate: null,
+  valuationDefaultValue: null,
 }

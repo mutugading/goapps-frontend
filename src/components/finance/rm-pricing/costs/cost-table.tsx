@@ -6,8 +6,14 @@ import { Badge } from "@/components/ui/badge"
 import { DataTable, type ColumnDef, type RowAction } from "@/components/shared"
 
 import type { RMCost } from "@/types/finance/rm-cost"
-import { RM_GROUP_FLAG_LABELS } from "@/types/finance/rm-group"
-import { RMGroupFlag } from "@/types/generated/finance/v1/rm_group"
+import {
+  RM_VALUATION_FLAG_LABELS,
+  RM_MARKETING_FLAG_LABELS,
+} from "@/types/finance/rm-group"
+import {
+  RMValuationFlag,
+  RMMarketingFlag,
+} from "@/types/generated/finance/v1/rm_group"
 
 interface CostTableProps {
   data: RMCost[]
@@ -17,26 +23,39 @@ interface CostTableProps {
   onViewItems?: (cost: RMCost) => void
 }
 
-function formatCost(val: number | undefined): string {
-  if (val === undefined || val === null) return "—"
-  return val.toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 4,
-  })
-}
-
-function formatRate(val: number | undefined): string {
+function formatRate(val: number | undefined | null, digits = 4): string {
   if (val === undefined || val === null || val === 0) return "—"
   return val.toLocaleString("en-US", {
     minimumFractionDigits: 2,
-    maximumFractionDigits: 4,
+    maximumFractionDigits: digits,
   })
 }
 
-function formatFlag(flag: number | undefined): string {
-  if (flag === undefined) return "—"
-  return RM_GROUP_FLAG_LABELS[flag as RMGroupFlag] || "—"
+/** Format a decimal-stored percent (0.04) as a whole-percent string ("4.00"). */
+function formatPctFromDecimal(val: number | undefined | null, digits = 2): string {
+  if (val === undefined || val === null || val === 0) return "—"
+  return (val * 100).toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: digits,
+  })
 }
+
+function valuationFlagShort(flag: number | undefined): string {
+  const f = (flag ?? RMValuationFlag.RM_VALUATION_FLAG_UNSPECIFIED) as RMValuationFlag
+  if (f === RMValuationFlag.RM_VALUATION_FLAG_UNSPECIFIED) return "AUTO"
+  return RM_VALUATION_FLAG_LABELS[f]?.split(" ")[0] || "AUTO"
+}
+
+function marketingFlagShort(flag: number | undefined): string {
+  const f = (flag ?? RMMarketingFlag.RM_MARKETING_FLAG_UNSPECIFIED) as RMMarketingFlag
+  if (f === RMMarketingFlag.RM_MARKETING_FLAG_UNSPECIFIED) return "AUTO"
+  return RM_MARKETING_FLAG_LABELS[f]?.split(" ")[0] || "AUTO"
+}
+
+const num = "text-right font-mono text-xs"
+const numHead = "text-right"
+const numWidth = "w-[90px]"
+const flagWidth = "w-[80px]"
 
 export function CostTable({
   data,
@@ -45,11 +64,17 @@ export function CostTable({
   onViewHistory,
   onViewItems,
 }: CostTableProps) {
+  // Column order mirrors the Excel reference (Testing_RM_Cost.xlsx row 4):
+  // BASE: CR, SR, PR | VALUATION: CL, SL, FL → flag → cost_val |
+  // MARKETING: FR (editable), Sim Rate (input), projections, SP/PP/FP → flag → cost_mark |
+  // SIMULATION: cost_sim.
   const columns: ColumnDef<RMCost>[] = [
     {
       id: "period",
       header: "Period",
-      width: "w-[90px]",
+      widthPx: 90,
+      sticky: "left",
+      canHide: false,
       cell: (row) => (
         <Badge variant="outline" className="font-mono">
           {row.period || "—"}
@@ -58,8 +83,10 @@ export function CostTable({
     },
     {
       id: "rmCode",
-      header: "RM Code",
-      width: "w-[140px]",
+      header: "Code",
+      widthPx: 140,
+      sticky: "left",
+      canHide: false,
       cell: (row) => (
         <span className="font-medium font-mono">{row.rmCode || "—"}</span>
       ),
@@ -67,64 +94,80 @@ export function CostTable({
     {
       id: "rmName",
       header: "Name",
+      widthPx: 200,
+      sticky: "left",
+      canHide: false,
+      cell: (row) => <span className="truncate text-sm">{row.rmName || "—"}</span>,
+    },
+
+    // ── Base rates (Excel E5/F5/G5) ──
+    { id: "crRate", header: "CR", width: numWidth, headerClassName: numHead, cellClassName: num, cell: (row) => formatRate(row.crRate) },
+    { id: "srRate", header: "SR", width: numWidth, headerClassName: numHead, cellClassName: num, cell: (row) => formatRate(row.srRate) },
+    { id: "prRate", header: "PR", width: numWidth, headerClassName: numHead, cellClassName: num, cell: (row) => formatRate(row.prRate) },
+
+    // ── Valuation landed (H5/I5/J5) ──
+    { id: "clRate", header: "CL", width: numWidth, headerClassName: numHead, cellClassName: num, cell: (row) => formatRate(row.clRate) },
+    { id: "slRate", header: "SL", width: numWidth, headerClassName: numHead, cellClassName: num, cell: (row) => formatRate(row.slRate) },
+    { id: "flRate", header: "FL", width: numWidth, headerClassName: numHead, cellClassName: num, cell: (row) => formatRate(row.flRate) },
+    {
+      id: "valuationFlag",
+      header: "Val Flag",
+      width: flagWidth,
       cell: (row) => (
-        <span className="text-sm">{row.rmName || "—"}</span>
+        <Badge variant="outline" className="font-mono text-[10px]">
+          {valuationFlagShort(row.valuationFlag)}
+        </Badge>
       ),
     },
     {
-      id: "costValuation",
-      header: "Valuation",
-      width: "w-[140px]",
-      headerClassName: "text-right",
-      cellClassName: "text-right",
-      hideOnMobile: true,
+      id: "costVal",
+      header: "Valuation Cost",
+      width: "w-[130px]",
+      headerClassName: numHead,
+      cellClassName: "text-right font-mono text-sm font-semibold",
+      cell: (row) => formatRate(row.costValuation),
+    },
+
+    // ── Marketing inputs (M5/N5/O5..R5) ──
+    { id: "marketingFixRate", header: "FR", width: numWidth, headerClassName: numHead, cellClassName: num, cell: (row) => formatRate(row.marketingDefaultValue) },
+    { id: "simulationRate", header: "Sim Rate", width: numWidth, headerClassName: numHead, cellClassName: num, cell: (row) => formatRate(row.simulationRate) },
+    { id: "projFreight", header: "Proj Freight", width: numWidth, headerClassName: numHead, cellClassName: num, defaultHidden: true, cell: (row) => formatRate(row.marketingFreightRate) },
+    { id: "projAnti", header: "Proj Anti %", width: numWidth, headerClassName: numHead, cellClassName: num, defaultHidden: true, cell: (row) => formatPctFromDecimal(row.marketingAntiDumpingPct) },
+    { id: "projDuty", header: "Proj Duty %", width: numWidth, headerClassName: numHead, cellClassName: num, defaultHidden: true, cell: (row) => formatPctFromDecimal(row.marketingDutyPct) },
+    { id: "projTransport", header: "Proj Transport", width: "w-[110px]", headerClassName: numHead, cellClassName: num, defaultHidden: true, cell: (row) => formatRate(row.marketingTransportRate) },
+
+    // ── Marketing landed (S5/T5/U5) ──
+    { id: "spRate", header: "SP", width: numWidth, headerClassName: numHead, cellClassName: num, cell: (row) => formatRate(row.spRate) },
+    { id: "ppRate", header: "PP", width: numWidth, headerClassName: numHead, cellClassName: num, cell: (row) => formatRate(row.ppRate) },
+    { id: "fpRate", header: "FP", width: numWidth, headerClassName: numHead, cellClassName: num, cell: (row) => formatRate(row.fpRate) },
+    {
+      id: "marketingFlag",
+      header: "Mkt Flag",
+      width: flagWidth,
       cell: (row) => (
-        <div className="font-mono text-sm">
-          <span>{formatCost(row.costValuation)}</span>
-          <div className="text-[10px] text-muted-foreground">
-            {formatFlag(row.flagValuationUsed)}
-          </div>
-        </div>
+        <Badge variant="outline" className="font-mono text-[10px]">
+          {marketingFlagShort(row.marketingFlag)}
+        </Badge>
       ),
     },
     {
-      id: "costMarketing",
-      header: "Marketing",
-      width: "w-[140px]",
-      headerClassName: "text-right",
-      cellClassName: "text-right",
-      hideOnMobile: true,
-      cell: (row) => (
-        <div className="font-mono text-sm">
-          <span>{formatCost(row.costMarketing)}</span>
-          <div className="text-[10px] text-muted-foreground">
-            {formatFlag(row.flagMarketingUsed)}
-          </div>
-        </div>
-      ),
+      id: "costMark",
+      header: "Marketing Cost",
+      width: "w-[130px]",
+      headerClassName: numHead,
+      cellClassName: "text-right font-mono text-sm font-semibold",
+      cell: (row) => formatRate(row.costMarketing),
     },
+
+    // ── Simulation cost (X5) ──
     {
-      id: "costSimulation",
-      header: "Simulation",
-      width: "w-[140px]",
-      headerClassName: "text-right",
-      cellClassName: "text-right",
-      hideOnMobile: true,
-      cell: (row) => (
-        <div className="font-mono text-sm">
-          <span>{formatCost(row.costSimulation)}</span>
-          <div className="text-[10px] text-muted-foreground">
-            {formatFlag(row.flagSimulationUsed)}
-          </div>
-        </div>
-      ),
+      id: "costSim",
+      header: "Simulation Cost",
+      width: "w-[130px]",
+      headerClassName: numHead,
+      cellClassName: "text-right font-mono text-sm font-semibold",
+      cell: (row) => formatRate(row.costSimulation),
     },
-    { id: "consRate",   header: "Cons",    width: "w-[100px]", headerClassName: "text-right", cellClassName: "text-right font-mono text-xs", hideOnMobile: true, cell: (row) => formatRate(row.rates?.cons) },
-    { id: "storesRate", header: "Stores",  width: "w-[100px]", headerClassName: "text-right", cellClassName: "text-right font-mono text-xs", hideOnMobile: true, cell: (row) => formatRate(row.rates?.stores) },
-    { id: "deptRate",   header: "Dept",    width: "w-[100px]", headerClassName: "text-right", cellClassName: "text-right font-mono text-xs", hideOnMobile: true, cell: (row) => formatRate(row.rates?.dept) },
-    { id: "po1Rate",    header: "PO 1",    width: "w-[100px]", headerClassName: "text-right", cellClassName: "text-right font-mono text-xs", hideOnMobile: true, cell: (row) => formatRate(row.rates?.po1) },
-    { id: "po2Rate",    header: "PO 2",    width: "w-[100px]", headerClassName: "text-right", cellClassName: "text-right font-mono text-xs", hideOnMobile: true, cell: (row) => formatRate(row.rates?.po2) },
-    { id: "po3Rate",    header: "PO 3",    width: "w-[100px]", headerClassName: "text-right", cellClassName: "text-right font-mono text-xs", hideOnMobile: true, cell: (row) => formatRate(row.rates?.po3) },
   ]
 
   const actions: RowAction<RMCost>[] = [
@@ -160,6 +203,8 @@ export function CostTable({
       keyField="rmCostId"
       actions={actions}
       isLoading={isLoading}
+      tableId="rmcost.list.v2"
+      stickyActions
       emptyMessage="No cost data found"
       emptyDescription="Trigger a recalculation or wait for Oracle sync"
     />
