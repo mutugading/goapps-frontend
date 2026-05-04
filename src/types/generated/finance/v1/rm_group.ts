@@ -930,10 +930,24 @@ export interface GetRMGroupItemRatesResponse {
   data: RMGroupItemRates[];
 }
 
-/** ExportRMGroupsRequest filters the export. Active filter only (no pagination). */
+/**
+ * ExportRMGroupsRequest filters the export. Three mutually-exclusive modes:
+ *
+ *   - All groups: leave both filters unset (default).
+ *   - Filtered:   set `active_filter` (and/or `search`) to narrow the set.
+ *   - Selected:   pass an explicit list of group_head_ids; all other filters
+ *                 are ignored.
+ */
 export interface ExportRMGroupsRequest {
   /** Filter by active/inactive (UNSPECIFIED = all). */
   activeFilter: ActiveFilter;
+  /**
+   * Optional explicit group selection. When non-empty, only these groups
+   * are exported (overrides `active_filter` and `search`).
+   */
+  groupHeadIds: string[];
+  /** Optional code/name search string. Empty = no search filter. */
+  search: string;
 }
 
 /** ExportRMGroupsResponse returns a multi-sheet Excel (Groups + Items). */
@@ -6747,13 +6761,19 @@ export const GetRMGroupItemRatesResponse: MessageFns<GetRMGroupItemRatesResponse
 };
 
 function createBaseExportRMGroupsRequest(): ExportRMGroupsRequest {
-  return { activeFilter: 0 };
+  return { activeFilter: 0, groupHeadIds: [], search: "" };
 }
 
 export const ExportRMGroupsRequest: MessageFns<ExportRMGroupsRequest> = {
   encode(message: ExportRMGroupsRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.activeFilter !== 0) {
       writer.uint32(8).int32(message.activeFilter);
+    }
+    for (const v of message.groupHeadIds) {
+      writer.uint32(18).string(v!);
+    }
+    if (message.search !== "") {
+      writer.uint32(26).string(message.search);
     }
     return writer;
   },
@@ -6773,6 +6793,22 @@ export const ExportRMGroupsRequest: MessageFns<ExportRMGroupsRequest> = {
           message.activeFilter = reader.int32() as any;
           continue;
         }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.groupHeadIds.push(reader.string());
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.search = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -6789,6 +6825,12 @@ export const ExportRMGroupsRequest: MessageFns<ExportRMGroupsRequest> = {
         : isSet(object.active_filter)
         ? activeFilterFromJSON(object.active_filter)
         : 0,
+      groupHeadIds: globalThis.Array.isArray(object?.groupHeadIds)
+        ? object.groupHeadIds.map((e: any) => globalThis.String(e))
+        : globalThis.Array.isArray(object?.group_head_ids)
+        ? object.group_head_ids.map((e: any) => globalThis.String(e))
+        : [],
+      search: isSet(object.search) ? globalThis.String(object.search) : "",
     };
   },
 
@@ -6796,6 +6838,12 @@ export const ExportRMGroupsRequest: MessageFns<ExportRMGroupsRequest> = {
     const obj: any = {};
     if (message.activeFilter !== 0) {
       obj.activeFilter = activeFilterToJSON(message.activeFilter);
+    }
+    if (message.groupHeadIds?.length) {
+      obj.groupHeadIds = message.groupHeadIds;
+    }
+    if (message.search !== "") {
+      obj.search = message.search;
     }
     return obj;
   },
@@ -6806,6 +6854,8 @@ export const ExportRMGroupsRequest: MessageFns<ExportRMGroupsRequest> = {
   fromPartial(object: DeepPartial<ExportRMGroupsRequest>): ExportRMGroupsRequest {
     const message = createBaseExportRMGroupsRequest();
     message.activeFilter = object.activeFilter ?? 0;
+    message.groupHeadIds = object.groupHeadIds?.map((e) => e) || [];
+    message.search = object.search ?? "";
     return message;
   },
 };
