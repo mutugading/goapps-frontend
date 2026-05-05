@@ -1,8 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// Finance RM Group - list ungrouped items for a period
+// Finance RM Group — list grouping monitor (ungrouped or grouped scope).
 
 import { NextRequest, NextResponse } from "next/server"
 import { getRmGroupClient, createMetadataFromRequest, isGrpcError, handleGrpcError } from "@/lib/grpc"
+import { RMGroupingScope } from "@/types/generated/finance/v1/rm_group"
 
 function serializeBase(base: any) {
   return base
@@ -15,6 +16,11 @@ function serializeBase(base: any) {
     : { isSuccess: true, statusCode: "200", message: "OK", validationErrors: [] }
 }
 
+function parseScope(raw: string | null): RMGroupingScope {
+  if (raw === "grouped") return RMGroupingScope.RM_GROUPING_SCOPE_GROUPED
+  return RMGroupingScope.RM_GROUPING_SCOPE_UNGROUPED
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
@@ -25,39 +31,26 @@ export async function GET(request: NextRequest) {
       {
         page: Number(searchParams.get("page")) || 1,
         pageSize: Number(searchParams.get("pageSize") || searchParams.get("page_size")) || 20,
-        period: searchParams.get("period") || "",
         search: searchParams.get("search") || "",
+        scope: parseScope(searchParams.get("scope")),
+        sortBy: searchParams.get("sort_by") || searchParams.get("sortBy") || "",
+        sortOrder: searchParams.get("sort_order") || searchParams.get("sortOrder") || "",
       },
       metadata
     )
 
-    // Explicitly serialize ungrouped items
     const data = (response.data || []).map((item) => ({
-      period: item.period || "",
       itemCode: item.itemCode || "",
       itemName: item.itemName || "",
       itemTypeCode: item.itemTypeCode || "",
       gradeCode: item.gradeCode || "",
       itemGrade: item.itemGrade || "",
       uomCode: item.uomCode || "",
-      consQty: item.consQty ?? 0,
-      consVal: item.consVal ?? 0,
-      consRate: item.consRate ?? 0,
-      storesQty: item.storesQty ?? 0,
-      storesVal: item.storesVal ?? 0,
-      storesRate: item.storesRate ?? 0,
-      deptQty: item.deptQty ?? 0,
-      deptVal: item.deptVal ?? 0,
-      deptRate: item.deptRate ?? 0,
-      lastPoQty1: item.lastPoQty1 ?? 0,
-      lastPoVal1: item.lastPoVal1 ?? 0,
-      lastPoRate1: item.lastPoRate1 ?? 0,
-      lastPoQty2: item.lastPoQty2 ?? 0,
-      lastPoVal2: item.lastPoVal2 ?? 0,
-      lastPoRate2: item.lastPoRate2 ?? 0,
-      lastPoQty3: item.lastPoQty3 ?? 0,
-      lastPoVal3: item.lastPoVal3 ?? 0,
-      lastPoRate3: item.lastPoRate3 ?? 0,
+      groupHeadId: item.groupHeadId || "",
+      groupCode: item.groupCode || "",
+      groupName: item.groupName || "",
+      sortOrder: item.sortOrder ?? 0,
+      assignedAt: item.assignedAt || "",
     }))
 
     const pagination = response.pagination
@@ -76,10 +69,15 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     if (isGrpcError(error)) return handleGrpcError(error)
-    console.error("Error fetching ungrouped items:", error)
+    console.error("Error fetching grouping monitor:", error)
     return NextResponse.json(
       {
-        base: { isSuccess: false, statusCode: "500", message: "Failed to fetch ungrouped items", validationErrors: [] },
+        base: {
+          isSuccess: false,
+          statusCode: "500",
+          message: "Failed to fetch grouping monitor",
+          validationErrors: [],
+        },
         data: [],
         pagination: { currentPage: 1, pageSize: 20, totalItems: 0, totalPages: 0 },
       },

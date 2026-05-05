@@ -4,25 +4,28 @@ import { Plus } from "lucide-react"
 
 import { DataTable, type ColumnDef, type RowAction } from "@/components/shared"
 
-import type { UngroupedItem } from "@/types/finance/rm-group"
+import type { GroupingScope, UngroupedItem } from "@/types/finance/rm-group"
 
 interface UngroupedTableProps {
   data: UngroupedItem[]
   isLoading?: boolean
+  scope: GroupingScope
   onAddToGroup?: (item: UngroupedItem) => void
 }
 
-function fmt(value: number | undefined): string {
-  if (!value || value === 0) return "—"
-  return value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+function formatAssignedAt(value: string | undefined): string {
+  if (!value) return "—"
+  const d = new Date(value)
+  if (Number.isNaN(d.getTime())) return value
+  return d.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })
 }
 
-export function UngroupedTable({ data, isLoading, onAddToGroup }: UngroupedTableProps) {
-  const columns: ColumnDef<UngroupedItem>[] = [
+export function UngroupedTable({ data, isLoading, scope, onAddToGroup }: UngroupedTableProps) {
+  const baseColumns: ColumnDef<UngroupedItem>[] = [
     {
       id: "itemCode",
       header: "Item Code",
-      width: "w-[120px]",
+      width: "w-[140px]",
       cell: (row) => (
         <span className="font-medium font-mono text-sm">{row.itemCode || "—"}</span>
       ),
@@ -34,190 +37,99 @@ export function UngroupedTable({ data, isLoading, onAddToGroup }: UngroupedTable
     },
     {
       id: "gradeCode",
-      header: "Grade",
-      width: "w-[80px]",
+      header: "Grade Code",
+      width: "w-[100px]",
+      cell: (row) => (
+        <span className="text-sm font-mono">{row.gradeCode || "—"}</span>
+      ),
+    },
+    {
+      id: "itemGrade",
+      header: "Grade Name",
+      width: "w-[180px]",
       hideOnMobile: true,
       cell: (row) => (
-        <span className="text-sm text-muted-foreground">{row.gradeCode || "—"}</span>
+        <span className="text-sm text-muted-foreground">{row.itemGrade || "—"}</span>
       ),
     },
     {
       id: "uomCode",
       header: "UOM",
-      width: "w-[60px]",
+      width: "w-[80px]",
       hideOnMobile: true,
       cell: (row) => (
         <span className="text-sm text-muted-foreground">{row.uomCode || "—"}</span>
       ),
     },
+  ]
+
+  const groupedColumns: ColumnDef<UngroupedItem>[] = [
     {
-      id: "consQty",
-      header: "Cons Qty",
-      width: "w-[100px]",
-      hideOnMobile: true,
-      cellClassName: "text-right font-mono",
-      cell: (row) => fmt(row.consQty),
+      id: "groupCode",
+      header: "Group Code",
+      width: "w-[140px]",
+      cell: (row) => (
+        <span className="font-medium font-mono text-sm">{row.groupCode || "—"}</span>
+      ),
     },
     {
-      id: "consVal",
-      header: "Cons Value",
-      width: "w-[110px]",
-      hideOnMobile: true,
-      cellClassName: "text-right font-mono",
-      cell: (row) => fmt(row.consVal),
+      id: "groupName",
+      header: "Group Name",
+      cell: (row) => <span className="text-sm">{row.groupName || "—"}</span>,
     },
     {
-      id: "consRate",
-      header: "Cons Rate",
-      width: "w-[100px]",
+      id: "sortOrder",
+      header: "Sort",
+      width: "w-[70px]",
       hideOnMobile: true,
       cellClassName: "text-right font-mono",
-      cell: (row) => fmt(row.consRate),
+      cell: (row) => row.sortOrder ?? "—",
     },
     {
-      id: "storesQty",
-      header: "Stores Qty",
-      width: "w-[100px]",
+      id: "assignedAt",
+      header: "Assigned",
+      width: "w-[120px]",
       hideOnMobile: true,
-      cellClassName: "text-right font-mono",
-      cell: (row) => fmt(row.storesQty),
-    },
-    {
-      id: "storesVal",
-      header: "Stores Value",
-      width: "w-[110px]",
-      hideOnMobile: true,
-      cellClassName: "text-right font-mono",
-      cell: (row) => fmt(row.storesVal),
-    },
-    {
-      id: "storesRate",
-      header: "Stores Rate",
-      width: "w-[100px]",
-      hideOnMobile: true,
-      cellClassName: "text-right font-mono",
-      cell: (row) => fmt(row.storesRate),
-    },
-    {
-      id: "deptQty",
-      header: "Dept Qty",
-      width: "w-[100px]",
-      hideOnMobile: true,
-      cellClassName: "text-right font-mono",
-      cell: (row) => fmt(row.deptQty),
-    },
-    {
-      id: "deptVal",
-      header: "Dept Value",
-      width: "w-[110px]",
-      hideOnMobile: true,
-      cellClassName: "text-right font-mono",
-      cell: (row) => fmt(row.deptVal),
-    },
-    {
-      id: "deptRate",
-      header: "Dept Rate",
-      width: "w-[100px]",
-      hideOnMobile: true,
-      cellClassName: "text-right font-mono",
-      cell: (row) => fmt(row.deptRate),
-    },
-    {
-      id: "lastPoQty1",
-      header: "PO1 Qty",
-      width: "w-[100px]",
-      hideOnMobile: true,
-      cellClassName: "text-right font-mono",
-      cell: (row) => fmt(row.lastPoQty1),
-    },
-    {
-      id: "lastPoVal1",
-      header: "PO1 Value",
-      width: "w-[110px]",
-      hideOnMobile: true,
-      cellClassName: "text-right font-mono",
-      cell: (row) => fmt(row.lastPoVal1),
-    },
-    {
-      id: "lastPoRate1",
-      header: "PO1 Rate",
-      width: "w-[100px]",
-      hideOnMobile: true,
-      cellClassName: "text-right font-mono",
-      cell: (row) => fmt(row.lastPoRate1),
-    },
-    {
-      id: "lastPoQty2",
-      header: "PO2 Qty",
-      width: "w-[100px]",
-      hideOnMobile: true,
-      cellClassName: "text-right font-mono",
-      cell: (row) => fmt(row.lastPoQty2),
-    },
-    {
-      id: "lastPoVal2",
-      header: "PO2 Value",
-      width: "w-[110px]",
-      hideOnMobile: true,
-      cellClassName: "text-right font-mono",
-      cell: (row) => fmt(row.lastPoVal2),
-    },
-    {
-      id: "lastPoRate2",
-      header: "PO2 Rate",
-      width: "w-[100px]",
-      hideOnMobile: true,
-      cellClassName: "text-right font-mono",
-      cell: (row) => fmt(row.lastPoRate2),
-    },
-    {
-      id: "lastPoQty3",
-      header: "PO3 Qty",
-      width: "w-[100px]",
-      hideOnMobile: true,
-      cellClassName: "text-right font-mono",
-      cell: (row) => fmt(row.lastPoQty3),
-    },
-    {
-      id: "lastPoVal3",
-      header: "PO3 Value",
-      width: "w-[110px]",
-      hideOnMobile: true,
-      cellClassName: "text-right font-mono",
-      cell: (row) => fmt(row.lastPoVal3),
-    },
-    {
-      id: "lastPoRate3",
-      header: "PO3 Rate",
-      width: "w-[100px]",
-      hideOnMobile: true,
-      cellClassName: "text-right font-mono",
-      cell: (row) => fmt(row.lastPoRate3),
+      cell: (row) => (
+        <span className="text-sm text-muted-foreground">
+          {formatAssignedAt(row.assignedAt)}
+        </span>
+      ),
     },
   ]
 
-  const actions: RowAction<UngroupedItem>[] = onAddToGroup
-    ? [
-        {
-          id: "addToGroup",
-          label: "Add to Group",
-          icon: <Plus className="h-4 w-4" />,
-          onClick: onAddToGroup,
-        },
-      ]
-    : []
+  const columns: ColumnDef<UngroupedItem>[] =
+    scope === "grouped" ? [...baseColumns, ...groupedColumns] : baseColumns
+
+  const actions: RowAction<UngroupedItem>[] =
+    scope === "ungrouped" && onAddToGroup
+      ? [
+          {
+            id: "addToGroup",
+            label: "Add to Group",
+            icon: <Plus className="h-4 w-4" />,
+            onClick: onAddToGroup,
+          },
+        ]
+      : []
 
   return (
     <DataTable
       data={data}
       columns={columns}
       getRowKey={(row, index) =>
-        `${row.period || ""}::${row.itemCode}::${row.gradeCode || ""}::${index}`
+        `${row.itemCode}::${row.gradeCode || ""}::${index}`
       }
       actions={actions}
       isLoading={isLoading}
-      emptyMessage="All items are grouped"
-      emptyDescription="No ungrouped items for this period"
+      emptyMessage={
+        scope === "grouped" ? "No grouped items match the filter" : "All items are grouped"
+      }
+      emptyDescription={
+        scope === "grouped"
+          ? "No (item_code, grade_code) pairs are currently assigned to an active group"
+          : "Every (item_code, grade_code) pair from the sync feed is assigned to a group"
+      }
     />
   )
 }

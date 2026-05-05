@@ -1,6 +1,7 @@
 "use client"
 
-// Ungrouped Items hook - items in cst_item_cons_stk_po not in any active group
+// Grouping Monitor hooks — cross-period view of (item_code, grade_code)
+// pairs filtered by scope: ungrouped (no active group) or grouped.
 
 import { useMutation, useQuery } from "@tanstack/react-query"
 import { toast } from "sonner"
@@ -8,15 +9,11 @@ import { apiClient, buildQueryString, downloadFileFromBytes } from "@/lib/api"
 import {
   type ListUngroupedItemsParams,
   type ListUngroupedItemsResponse,
+  type ExportUngroupedItemsParams,
   type ExportUngroupedItemsResponse,
   ListUngroupedItemsResponseParser,
   ExportUngroupedItemsResponseParser,
 } from "@/types/finance/rm-group"
-
-export interface ExportUngroupedItemsParams {
-  period?: string
-  search?: string
-}
 
 export const ungroupedItemKeys = {
   all: ["finance", "ungrouped-items"] as const,
@@ -32,7 +29,6 @@ export function useUngroupedItems(params: ListUngroupedItemsParams) {
       const raw = await apiClient.get<unknown>(`/api/v1/finance/rm-groups/ungrouped${qs}`)
       return ListUngroupedItemsResponseParser.fromJSON(raw)
     },
-    enabled: !!params.period,
   })
 }
 
@@ -45,14 +41,14 @@ export function useExportUngroupedItems() {
     },
     onSuccess: (response) => {
       if (response.base?.isSuccess && response.fileContent.length > 0) {
-        downloadFileFromBytes(response.fileContent, response.fileName || "ungrouped-items-export.xlsx")
+        downloadFileFromBytes(response.fileContent, response.fileName || "grouping-monitor-export.xlsx")
         toast.success("Export completed successfully")
       } else {
-        toast.error(response.base?.message || "Failed to export ungrouped items")
+        toast.error(response.base?.message || "Failed to export")
       }
     },
     onError: (error: Error) => {
-      toast.error(error.message || "Failed to export ungrouped items")
+      toast.error(error.message || "Failed to export")
     },
   })
 }
