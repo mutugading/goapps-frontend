@@ -50,6 +50,8 @@ function serializeCost(cost: any) {
     // V2 snapshot + computed fields.
     valuationFlag: cost.valuationFlag ?? 0,
     marketingFlag: cost.marketingFlag ?? 0,
+    valuationFlagUsed: cost.valuationFlagUsed ?? 0,
+    marketingFlagUsed: cost.marketingFlagUsed ?? 0,
     marketingFreightRate: cost.marketingFreightRate ?? undefined,
     marketingAntiDumpingPct: cost.marketingAntiDumpingPct ?? undefined,
     marketingDutyPct: cost.marketingDutyPct ?? undefined,
