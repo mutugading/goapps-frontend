@@ -24,7 +24,11 @@ import {
 import type { RMCost, RMCostHistory } from "@/types/finance/rm-cost"
 import { RM_COST_TRIGGER_REASON_LABELS } from "@/types/finance/rm-cost"
 import { RM_GROUP_FLAG_LABELS } from "@/types/finance/rm-group"
-import { RMGroupFlag } from "@/types/generated/finance/v1/rm_group"
+import {
+  RMGroupFlag,
+  RMValuationFlag,
+  RMMarketingFlag,
+} from "@/types/generated/finance/v1/rm_group"
 import { CostV2InputsPanel } from "./cost-v2-inputs-panel"
 import { CostDetailSnapshotsPanel } from "./cost-detail-snapshots-panel"
 
@@ -48,6 +52,42 @@ function formatVal(val: number | undefined, digits = 6): string {
 function flagLabel(flag: number | undefined): string {
   if (flag === undefined) return "—"
   return RM_GROUP_FLAG_LABELS[flag as RMGroupFlag] || "—"
+}
+
+// Short badge labels for V2 valuation flag (no parenthetical descriptor).
+function valuationFlagLabel(flag: RMValuationFlag | undefined): string {
+  switch (flag) {
+    case RMValuationFlag.RM_VALUATION_FLAG_CR:
+      return "CR"
+    case RMValuationFlag.RM_VALUATION_FLAG_SR:
+      return "SR"
+    case RMValuationFlag.RM_VALUATION_FLAG_PR:
+      return "PR"
+    case RMValuationFlag.RM_VALUATION_FLAG_CL:
+      return "CL"
+    case RMValuationFlag.RM_VALUATION_FLAG_SL:
+      return "SL"
+    case RMValuationFlag.RM_VALUATION_FLAG_FL:
+      return "FL"
+    case RMValuationFlag.RM_VALUATION_FLAG_UNSPECIFIED:
+    default:
+      return "AUTO"
+  }
+}
+
+// Short badge labels for V2 marketing flag.
+function marketingFlagLabel(flag: RMMarketingFlag | undefined): string {
+  switch (flag) {
+    case RMMarketingFlag.RM_MARKETING_FLAG_SP:
+      return "SP"
+    case RMMarketingFlag.RM_MARKETING_FLAG_PP:
+      return "PP"
+    case RMMarketingFlag.RM_MARKETING_FLAG_FP:
+      return "FP"
+    case RMMarketingFlag.RM_MARKETING_FLAG_UNSPECIFIED:
+    default:
+      return "AUTO"
+  }
 }
 
 function formatDateTime(ts: string | undefined): string {
@@ -80,28 +120,31 @@ function RateRow({ label, value }: { label: string; value: number | undefined })
 function CostRow({
   label,
   value,
-  flag,
-  flagUsed,
+  flagText,
+  flagUsedText,
 }: {
   label: string
   value: number | undefined
-  flag: number | undefined
-  flagUsed: number | undefined
+  /** Configured flag label (e.g. "AUTO", "CL", "CONS"). */
+  flagText: string
+  /** Resolved flag label after cascade (e.g. AUTO → "CL"). When equal to
+   *  flagText, the cascade arrow is omitted. */
+  flagUsedText: string
 }) {
-  const cascaded = flag !== flagUsed
+  const cascaded = flagText !== flagUsedText && flagUsedText !== ""
   return (
     <div className="flex items-center justify-between py-2">
       <div className="space-y-0.5">
         <span className="text-sm font-medium">{label}</span>
         <div className="flex items-center gap-1 text-xs">
           <Badge variant="outline" className="text-[10px]">
-            {flagLabel(flag)}
+            {flagText}
           </Badge>
           {cascaded && (
             <>
               <span className="text-muted-foreground">→</span>
               <Badge variant="secondary" className="text-[10px]">
-                {flagLabel(flagUsed)}
+                {flagUsedText}
               </Badge>
             </>
           )}
@@ -192,22 +235,22 @@ export function CostDetailDrawer({
                 <CostRow
                   label="Valuation"
                   value={cost.costValuation}
-                  flag={cost.flagValuation}
-                  flagUsed={cost.flagValuationUsed}
+                  flagText={valuationFlagLabel(cost.valuationFlag)}
+                  flagUsedText={valuationFlagLabel(cost.valuationFlagUsed)}
                 />
                 <Separator />
                 <CostRow
                   label="Marketing"
                   value={cost.costMarketing}
-                  flag={cost.flagMarketing}
-                  flagUsed={cost.flagMarketingUsed}
+                  flagText={marketingFlagLabel(cost.marketingFlag)}
+                  flagUsedText={marketingFlagLabel(cost.marketingFlagUsed)}
                 />
                 <Separator />
                 <CostRow
                   label="Simulation"
                   value={cost.costSimulation}
-                  flag={cost.flagSimulation}
-                  flagUsed={cost.flagSimulationUsed}
+                  flagText={flagLabel(cost.flagSimulation)}
+                  flagUsedText={flagLabel(cost.flagSimulationUsed)}
                 />
               </div>
             </div>

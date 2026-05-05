@@ -223,7 +223,16 @@ export interface RMCost {
   fpRate?: number | undefined;
   crRate?: number | undefined;
   srRate?: number | undefined;
-  prRate?: number | undefined;
+  prRate?:
+    | number
+    | undefined;
+  /**
+   * V2: Valuation flag actually used after AUTO cascade (CL→SL→FL fallback).
+   * Equals valuation_flag when explicit, or the resolved choice when AUTO.
+   */
+  valuationFlagUsed: RMValuationFlag;
+  /** V2: Marketing flag actually used after AUTO cascade (SP→PP→FP fallback). */
+  marketingFlagUsed: RMMarketingFlag;
 }
 
 /**
@@ -792,6 +801,8 @@ function createBaseRMCost(): RMCost {
     crRate: undefined,
     srRate: undefined,
     prRate: undefined,
+    valuationFlagUsed: 0,
+    marketingFlagUsed: 0,
   };
 }
 
@@ -910,6 +921,12 @@ export const RMCost: MessageFns<RMCost> = {
     }
     if (message.prRate !== undefined) {
       writer.uint32(305).double(message.prRate);
+    }
+    if (message.valuationFlagUsed !== 0) {
+      writer.uint32(312).int32(message.valuationFlagUsed);
+    }
+    if (message.marketingFlagUsed !== 0) {
+      writer.uint32(320).int32(message.marketingFlagUsed);
     }
     return writer;
   },
@@ -1225,6 +1242,22 @@ export const RMCost: MessageFns<RMCost> = {
           message.prRate = reader.double();
           continue;
         }
+        case 39: {
+          if (tag !== 312) {
+            break;
+          }
+
+          message.valuationFlagUsed = reader.int32() as any;
+          continue;
+        }
+        case 40: {
+          if (tag !== 320) {
+            break;
+          }
+
+          message.marketingFlagUsed = reader.int32() as any;
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1414,6 +1447,16 @@ export const RMCost: MessageFns<RMCost> = {
         : isSet(object.pr_rate)
         ? globalThis.Number(object.pr_rate)
         : undefined,
+      valuationFlagUsed: isSet(object.valuationFlagUsed)
+        ? rMValuationFlagFromJSON(object.valuationFlagUsed)
+        : isSet(object.valuation_flag_used)
+        ? rMValuationFlagFromJSON(object.valuation_flag_used)
+        : 0,
+      marketingFlagUsed: isSet(object.marketingFlagUsed)
+        ? rMMarketingFlagFromJSON(object.marketingFlagUsed)
+        : isSet(object.marketing_flag_used)
+        ? rMMarketingFlagFromJSON(object.marketing_flag_used)
+        : 0,
     };
   },
 
@@ -1533,6 +1576,12 @@ export const RMCost: MessageFns<RMCost> = {
     if (message.prRate !== undefined) {
       obj.prRate = message.prRate;
     }
+    if (message.valuationFlagUsed !== 0) {
+      obj.valuationFlagUsed = rMValuationFlagToJSON(message.valuationFlagUsed);
+    }
+    if (message.marketingFlagUsed !== 0) {
+      obj.marketingFlagUsed = rMMarketingFlagToJSON(message.marketingFlagUsed);
+    }
     return obj;
   },
 
@@ -1583,6 +1632,8 @@ export const RMCost: MessageFns<RMCost> = {
     message.crRate = object.crRate ?? undefined;
     message.srRate = object.srRate ?? undefined;
     message.prRate = object.prRate ?? undefined;
+    message.valuationFlagUsed = object.valuationFlagUsed ?? 0;
+    message.marketingFlagUsed = object.marketingFlagUsed ?? 0;
     return message;
   },
 };
