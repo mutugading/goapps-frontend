@@ -265,6 +265,57 @@ export function removeItemsModeToJSON(object: RemoveItemsMode): string {
   }
 }
 
+/**
+ * RMGroupingScope filters the grouping monitor view by whether each
+ * (item_code, grade_code) pair is currently assigned to an active RM group.
+ * Status is evaluated cross-period — group membership is master data and
+ * does not depend on the period the item appeared in the sync feed.
+ */
+export enum RMGroupingScope {
+  /** RM_GROUPING_SCOPE_UNSPECIFIED - Default zero value. Treated as UNGROUPED. */
+  RM_GROUPING_SCOPE_UNSPECIFIED = 0,
+  /**
+   * RM_GROUPING_SCOPE_UNGROUPED - Items not assigned to any active group (deleted/inactive details count
+   * as ungrouped — operator must reassign to surface the item again).
+   */
+  RM_GROUPING_SCOPE_UNGROUPED = 1,
+  /** RM_GROUPING_SCOPE_GROUPED - Items with at least one active, non-deleted detail row in any group. */
+  RM_GROUPING_SCOPE_GROUPED = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function rMGroupingScopeFromJSON(object: any): RMGroupingScope {
+  switch (object) {
+    case 0:
+    case "RM_GROUPING_SCOPE_UNSPECIFIED":
+      return RMGroupingScope.RM_GROUPING_SCOPE_UNSPECIFIED;
+    case 1:
+    case "RM_GROUPING_SCOPE_UNGROUPED":
+      return RMGroupingScope.RM_GROUPING_SCOPE_UNGROUPED;
+    case 2:
+    case "RM_GROUPING_SCOPE_GROUPED":
+      return RMGroupingScope.RM_GROUPING_SCOPE_GROUPED;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return RMGroupingScope.UNRECOGNIZED;
+  }
+}
+
+export function rMGroupingScopeToJSON(object: RMGroupingScope): string {
+  switch (object) {
+    case RMGroupingScope.RM_GROUPING_SCOPE_UNSPECIFIED:
+      return "RM_GROUPING_SCOPE_UNSPECIFIED";
+    case RMGroupingScope.RM_GROUPING_SCOPE_UNGROUPED:
+      return "RM_GROUPING_SCOPE_UNGROUPED";
+    case RMGroupingScope.RM_GROUPING_SCOPE_GROUPED:
+      return "RM_GROUPING_SCOPE_GROUPED";
+    case RMGroupingScope.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
 /** RMGroupHead is the aggregate root representing an RM group's cost configuration. */
 export interface RMGroupHead {
   /** Group head UUID. */
@@ -398,60 +449,40 @@ export interface RMGroupHeadWithDetails {
 }
 
 /**
- * UngroupedItem is a raw material present in the Oracle sync feed that has no
- * active RM group assignment.
+ * UngroupedItem represents one (item_code, grade_code) pair viewed through the
+ * grouping monitor. Used by both UNGROUPED and GROUPED scopes — the group_*
+ * fields are populated only when the item is assigned to an active group.
+ *
+ * Per-period qty/rate snapshot fields were removed (reserved 1, 8-25) because
+ * the monitor view is cross-period and those numbers are no longer relevant
+ * to the grouped/ungrouped status.
  */
 export interface UngroupedItem {
-  /** Period (YYYYMM). */
-  period: string;
   /** Item code. */
   itemCode: string;
-  /** Item name. */
+  /** Item name (latest known from sync feed). */
   itemName: string;
-  /** Item type code. */
+  /** Item type code (latest known from sync feed). */
   itemTypeCode: string;
   /** Grade code. */
   gradeCode: string;
-  /** Item grade. */
+  /** Item grade (grade_name from the sync feed). */
   itemGrade: string;
-  /** UOM code. */
+  /** UOM code (latest known from sync feed). */
   uomCode: string;
-  /** CONS stage value. */
-  consVal: number;
-  /** STORES stage value. */
-  storesVal: number;
-  /** CONS stage quantity. */
-  consQty: number;
-  /** CONS stage rate. */
-  consRate: number;
-  /** STORES stage quantity. */
-  storesQty: number;
-  /** STORES stage rate. */
-  storesRate: number;
-  /** DEPT stage quantity. */
-  deptQty: number;
-  /** DEPT stage value. */
-  deptVal: number;
-  /** DEPT stage rate. */
-  deptRate: number;
-  /** PO_1 stage quantity. */
-  lastPoQty1: number;
-  /** PO_1 stage value. */
-  lastPoVal1: number;
-  /** PO_1 stage rate. */
-  lastPoRate1: number;
-  /** PO_2 stage quantity. */
-  lastPoQty2: number;
-  /** PO_2 stage value. */
-  lastPoVal2: number;
-  /** PO_2 stage rate. */
-  lastPoRate2: number;
-  /** PO_3 stage quantity. */
-  lastPoQty3: number;
-  /** PO_3 stage value. */
-  lastPoVal3: number;
-  /** PO_3 stage rate. */
-  lastPoRate3: number;
+  /** Owning group head UUID. Empty when scope = UNGROUPED. */
+  groupHeadId: string;
+  /** Owning group code (uppercase). Empty when scope = UNGROUPED. */
+  groupCode: string;
+  /** Owning group name. Empty when scope = UNGROUPED. */
+  groupName: string;
+  /** Sort order within the group. Zero when scope = UNGROUPED. */
+  sortOrder: number;
+  /**
+   * ISO-8601 timestamp the item was first added to the group (created_at on
+   * the active detail row). Empty when scope = UNGROUPED.
+   */
+  assignedAt: string;
 }
 
 /**
@@ -773,16 +804,29 @@ export interface UpdateGroupItemResponse {
   data: RMGroupDetail | undefined;
 }
 
-/** List items from the Oracle sync feed that have no active RM group assignment. */
+/**
+ * List items in the grouping monitor. `scope` selects ungrouped vs grouped;
+ * status is evaluated cross-period.
+ */
 export interface ListUngroupedItemsRequest {
   /** Page number (1-indexed). */
   page: number;
   /** Page size (1-100). */
   pageSize: number;
-  /** Period filter (YYYYMM). Empty = all periods. */
-  period: string;
-  /** Free-text search on item_code, item_name, item_type_code, grade_code. */
+  /**
+   * Free-text search on item_code, item_name, grade_code, grade_name and
+   * (when scope = GROUPED) group_code / group_name.
+   */
   search: string;
+  /** Selector for ungrouped vs grouped view. UNSPECIFIED = UNGROUPED. */
+  scope: RMGroupingScope;
+  /**
+   * Sort column. Empty defaults to item_code. group_*, sort_order and
+   * assigned_at apply only when scope = GROUPED.
+   */
+  sortBy: string;
+  /** Sort direction. Empty defaults to asc. */
+  sortOrder: string;
 }
 
 /** ImportGroupItemsRequest bulk-adds items to a specific existing group. */
@@ -832,12 +876,19 @@ export interface DownloadGroupItemsTemplateResponse {
   fileName: string;
 }
 
-/** ExportUngroupedItemsRequest filters the ungrouped items export. No pagination. */
+/** ExportUngroupedItemsRequest filters the grouping monitor export. No pagination. */
 export interface ExportUngroupedItemsRequest {
-  /** Period filter (YYYYMM). Empty = all periods. */
-  period: string;
-  /** Free-text search on item_code, item_name, item_type_code, grade_code. */
+  /**
+   * Free-text search on item_code, item_name, grade_code, grade_name and
+   * (when scope = GROUPED) group_code / group_name.
+   */
   search: string;
+  /** Selector for ungrouped vs grouped view. UNSPECIFIED = UNGROUPED. */
+  scope: RMGroupingScope;
+  /** Sort column. Empty defaults to item_code. */
+  sortBy: string;
+  /** Sort direction. Empty defaults to asc. */
+  sortOrder: string;
 }
 
 /** ExportUngroupedItemsResponse carries the Excel bytes + filename. */
@@ -2018,39 +2069,22 @@ export const RMGroupHeadWithDetails: MessageFns<RMGroupHeadWithDetails> = {
 
 function createBaseUngroupedItem(): UngroupedItem {
   return {
-    period: "",
     itemCode: "",
     itemName: "",
     itemTypeCode: "",
     gradeCode: "",
     itemGrade: "",
     uomCode: "",
-    consVal: 0,
-    storesVal: 0,
-    consQty: 0,
-    consRate: 0,
-    storesQty: 0,
-    storesRate: 0,
-    deptQty: 0,
-    deptVal: 0,
-    deptRate: 0,
-    lastPoQty1: 0,
-    lastPoVal1: 0,
-    lastPoRate1: 0,
-    lastPoQty2: 0,
-    lastPoVal2: 0,
-    lastPoRate2: 0,
-    lastPoQty3: 0,
-    lastPoVal3: 0,
-    lastPoRate3: 0,
+    groupHeadId: "",
+    groupCode: "",
+    groupName: "",
+    sortOrder: 0,
+    assignedAt: "",
   };
 }
 
 export const UngroupedItem: MessageFns<UngroupedItem> = {
   encode(message: UngroupedItem, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.period !== "") {
-      writer.uint32(10).string(message.period);
-    }
     if (message.itemCode !== "") {
       writer.uint32(18).string(message.itemCode);
     }
@@ -2069,59 +2103,20 @@ export const UngroupedItem: MessageFns<UngroupedItem> = {
     if (message.uomCode !== "") {
       writer.uint32(58).string(message.uomCode);
     }
-    if (message.consVal !== 0) {
-      writer.uint32(65).double(message.consVal);
+    if (message.groupHeadId !== "") {
+      writer.uint32(210).string(message.groupHeadId);
     }
-    if (message.storesVal !== 0) {
-      writer.uint32(73).double(message.storesVal);
+    if (message.groupCode !== "") {
+      writer.uint32(218).string(message.groupCode);
     }
-    if (message.consQty !== 0) {
-      writer.uint32(81).double(message.consQty);
+    if (message.groupName !== "") {
+      writer.uint32(226).string(message.groupName);
     }
-    if (message.consRate !== 0) {
-      writer.uint32(89).double(message.consRate);
+    if (message.sortOrder !== 0) {
+      writer.uint32(232).int32(message.sortOrder);
     }
-    if (message.storesQty !== 0) {
-      writer.uint32(97).double(message.storesQty);
-    }
-    if (message.storesRate !== 0) {
-      writer.uint32(105).double(message.storesRate);
-    }
-    if (message.deptQty !== 0) {
-      writer.uint32(113).double(message.deptQty);
-    }
-    if (message.deptVal !== 0) {
-      writer.uint32(121).double(message.deptVal);
-    }
-    if (message.deptRate !== 0) {
-      writer.uint32(129).double(message.deptRate);
-    }
-    if (message.lastPoQty1 !== 0) {
-      writer.uint32(137).double(message.lastPoQty1);
-    }
-    if (message.lastPoVal1 !== 0) {
-      writer.uint32(145).double(message.lastPoVal1);
-    }
-    if (message.lastPoRate1 !== 0) {
-      writer.uint32(153).double(message.lastPoRate1);
-    }
-    if (message.lastPoQty2 !== 0) {
-      writer.uint32(161).double(message.lastPoQty2);
-    }
-    if (message.lastPoVal2 !== 0) {
-      writer.uint32(169).double(message.lastPoVal2);
-    }
-    if (message.lastPoRate2 !== 0) {
-      writer.uint32(177).double(message.lastPoRate2);
-    }
-    if (message.lastPoQty3 !== 0) {
-      writer.uint32(185).double(message.lastPoQty3);
-    }
-    if (message.lastPoVal3 !== 0) {
-      writer.uint32(193).double(message.lastPoVal3);
-    }
-    if (message.lastPoRate3 !== 0) {
-      writer.uint32(201).double(message.lastPoRate3);
+    if (message.assignedAt !== "") {
+      writer.uint32(242).string(message.assignedAt);
     }
     return writer;
   },
@@ -2133,14 +2128,6 @@ export const UngroupedItem: MessageFns<UngroupedItem> = {
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.period = reader.string();
-          continue;
-        }
         case 2: {
           if (tag !== 18) {
             break;
@@ -2189,148 +2176,44 @@ export const UngroupedItem: MessageFns<UngroupedItem> = {
           message.uomCode = reader.string();
           continue;
         }
-        case 8: {
-          if (tag !== 65) {
+        case 26: {
+          if (tag !== 210) {
             break;
           }
 
-          message.consVal = reader.double();
+          message.groupHeadId = reader.string();
           continue;
         }
-        case 9: {
-          if (tag !== 73) {
+        case 27: {
+          if (tag !== 218) {
             break;
           }
 
-          message.storesVal = reader.double();
+          message.groupCode = reader.string();
           continue;
         }
-        case 10: {
-          if (tag !== 81) {
+        case 28: {
+          if (tag !== 226) {
             break;
           }
 
-          message.consQty = reader.double();
+          message.groupName = reader.string();
           continue;
         }
-        case 11: {
-          if (tag !== 89) {
+        case 29: {
+          if (tag !== 232) {
             break;
           }
 
-          message.consRate = reader.double();
+          message.sortOrder = reader.int32();
           continue;
         }
-        case 12: {
-          if (tag !== 97) {
+        case 30: {
+          if (tag !== 242) {
             break;
           }
 
-          message.storesQty = reader.double();
-          continue;
-        }
-        case 13: {
-          if (tag !== 105) {
-            break;
-          }
-
-          message.storesRate = reader.double();
-          continue;
-        }
-        case 14: {
-          if (tag !== 113) {
-            break;
-          }
-
-          message.deptQty = reader.double();
-          continue;
-        }
-        case 15: {
-          if (tag !== 121) {
-            break;
-          }
-
-          message.deptVal = reader.double();
-          continue;
-        }
-        case 16: {
-          if (tag !== 129) {
-            break;
-          }
-
-          message.deptRate = reader.double();
-          continue;
-        }
-        case 17: {
-          if (tag !== 137) {
-            break;
-          }
-
-          message.lastPoQty1 = reader.double();
-          continue;
-        }
-        case 18: {
-          if (tag !== 145) {
-            break;
-          }
-
-          message.lastPoVal1 = reader.double();
-          continue;
-        }
-        case 19: {
-          if (tag !== 153) {
-            break;
-          }
-
-          message.lastPoRate1 = reader.double();
-          continue;
-        }
-        case 20: {
-          if (tag !== 161) {
-            break;
-          }
-
-          message.lastPoQty2 = reader.double();
-          continue;
-        }
-        case 21: {
-          if (tag !== 169) {
-            break;
-          }
-
-          message.lastPoVal2 = reader.double();
-          continue;
-        }
-        case 22: {
-          if (tag !== 177) {
-            break;
-          }
-
-          message.lastPoRate2 = reader.double();
-          continue;
-        }
-        case 23: {
-          if (tag !== 185) {
-            break;
-          }
-
-          message.lastPoQty3 = reader.double();
-          continue;
-        }
-        case 24: {
-          if (tag !== 193) {
-            break;
-          }
-
-          message.lastPoVal3 = reader.double();
-          continue;
-        }
-        case 25: {
-          if (tag !== 201) {
-            break;
-          }
-
-          message.lastPoRate3 = reader.double();
+          message.assignedAt = reader.string();
           continue;
         }
       }
@@ -2344,7 +2227,6 @@ export const UngroupedItem: MessageFns<UngroupedItem> = {
 
   fromJSON(object: any): UngroupedItem {
     return {
-      period: isSet(object.period) ? globalThis.String(object.period) : "",
       itemCode: isSet(object.itemCode)
         ? globalThis.String(object.itemCode)
         : isSet(object.item_code)
@@ -2375,104 +2257,36 @@ export const UngroupedItem: MessageFns<UngroupedItem> = {
         : isSet(object.uom_code)
         ? globalThis.String(object.uom_code)
         : "",
-      consVal: isSet(object.consVal)
-        ? globalThis.Number(object.consVal)
-        : isSet(object.cons_val)
-        ? globalThis.Number(object.cons_val)
+      groupHeadId: isSet(object.groupHeadId)
+        ? globalThis.String(object.groupHeadId)
+        : isSet(object.group_head_id)
+        ? globalThis.String(object.group_head_id)
+        : "",
+      groupCode: isSet(object.groupCode)
+        ? globalThis.String(object.groupCode)
+        : isSet(object.group_code)
+        ? globalThis.String(object.group_code)
+        : "",
+      groupName: isSet(object.groupName)
+        ? globalThis.String(object.groupName)
+        : isSet(object.group_name)
+        ? globalThis.String(object.group_name)
+        : "",
+      sortOrder: isSet(object.sortOrder)
+        ? globalThis.Number(object.sortOrder)
+        : isSet(object.sort_order)
+        ? globalThis.Number(object.sort_order)
         : 0,
-      storesVal: isSet(object.storesVal)
-        ? globalThis.Number(object.storesVal)
-        : isSet(object.stores_val)
-        ? globalThis.Number(object.stores_val)
-        : 0,
-      consQty: isSet(object.consQty)
-        ? globalThis.Number(object.consQty)
-        : isSet(object.cons_qty)
-        ? globalThis.Number(object.cons_qty)
-        : 0,
-      consRate: isSet(object.consRate)
-        ? globalThis.Number(object.consRate)
-        : isSet(object.cons_rate)
-        ? globalThis.Number(object.cons_rate)
-        : 0,
-      storesQty: isSet(object.storesQty)
-        ? globalThis.Number(object.storesQty)
-        : isSet(object.stores_qty)
-        ? globalThis.Number(object.stores_qty)
-        : 0,
-      storesRate: isSet(object.storesRate)
-        ? globalThis.Number(object.storesRate)
-        : isSet(object.stores_rate)
-        ? globalThis.Number(object.stores_rate)
-        : 0,
-      deptQty: isSet(object.deptQty)
-        ? globalThis.Number(object.deptQty)
-        : isSet(object.dept_qty)
-        ? globalThis.Number(object.dept_qty)
-        : 0,
-      deptVal: isSet(object.deptVal)
-        ? globalThis.Number(object.deptVal)
-        : isSet(object.dept_val)
-        ? globalThis.Number(object.dept_val)
-        : 0,
-      deptRate: isSet(object.deptRate)
-        ? globalThis.Number(object.deptRate)
-        : isSet(object.dept_rate)
-        ? globalThis.Number(object.dept_rate)
-        : 0,
-      lastPoQty1: isSet(object.lastPoQty1)
-        ? globalThis.Number(object.lastPoQty1)
-        : isSet(object.last_po_qty1)
-        ? globalThis.Number(object.last_po_qty1)
-        : 0,
-      lastPoVal1: isSet(object.lastPoVal1)
-        ? globalThis.Number(object.lastPoVal1)
-        : isSet(object.last_po_val1)
-        ? globalThis.Number(object.last_po_val1)
-        : 0,
-      lastPoRate1: isSet(object.lastPoRate1)
-        ? globalThis.Number(object.lastPoRate1)
-        : isSet(object.last_po_rate1)
-        ? globalThis.Number(object.last_po_rate1)
-        : 0,
-      lastPoQty2: isSet(object.lastPoQty2)
-        ? globalThis.Number(object.lastPoQty2)
-        : isSet(object.last_po_qty2)
-        ? globalThis.Number(object.last_po_qty2)
-        : 0,
-      lastPoVal2: isSet(object.lastPoVal2)
-        ? globalThis.Number(object.lastPoVal2)
-        : isSet(object.last_po_val2)
-        ? globalThis.Number(object.last_po_val2)
-        : 0,
-      lastPoRate2: isSet(object.lastPoRate2)
-        ? globalThis.Number(object.lastPoRate2)
-        : isSet(object.last_po_rate2)
-        ? globalThis.Number(object.last_po_rate2)
-        : 0,
-      lastPoQty3: isSet(object.lastPoQty3)
-        ? globalThis.Number(object.lastPoQty3)
-        : isSet(object.last_po_qty3)
-        ? globalThis.Number(object.last_po_qty3)
-        : 0,
-      lastPoVal3: isSet(object.lastPoVal3)
-        ? globalThis.Number(object.lastPoVal3)
-        : isSet(object.last_po_val3)
-        ? globalThis.Number(object.last_po_val3)
-        : 0,
-      lastPoRate3: isSet(object.lastPoRate3)
-        ? globalThis.Number(object.lastPoRate3)
-        : isSet(object.last_po_rate3)
-        ? globalThis.Number(object.last_po_rate3)
-        : 0,
+      assignedAt: isSet(object.assignedAt)
+        ? globalThis.String(object.assignedAt)
+        : isSet(object.assigned_at)
+        ? globalThis.String(object.assigned_at)
+        : "",
     };
   },
 
   toJSON(message: UngroupedItem): unknown {
     const obj: any = {};
-    if (message.period !== "") {
-      obj.period = message.period;
-    }
     if (message.itemCode !== "") {
       obj.itemCode = message.itemCode;
     }
@@ -2491,59 +2305,20 @@ export const UngroupedItem: MessageFns<UngroupedItem> = {
     if (message.uomCode !== "") {
       obj.uomCode = message.uomCode;
     }
-    if (message.consVal !== 0) {
-      obj.consVal = message.consVal;
+    if (message.groupHeadId !== "") {
+      obj.groupHeadId = message.groupHeadId;
     }
-    if (message.storesVal !== 0) {
-      obj.storesVal = message.storesVal;
+    if (message.groupCode !== "") {
+      obj.groupCode = message.groupCode;
     }
-    if (message.consQty !== 0) {
-      obj.consQty = message.consQty;
+    if (message.groupName !== "") {
+      obj.groupName = message.groupName;
     }
-    if (message.consRate !== 0) {
-      obj.consRate = message.consRate;
+    if (message.sortOrder !== 0) {
+      obj.sortOrder = Math.round(message.sortOrder);
     }
-    if (message.storesQty !== 0) {
-      obj.storesQty = message.storesQty;
-    }
-    if (message.storesRate !== 0) {
-      obj.storesRate = message.storesRate;
-    }
-    if (message.deptQty !== 0) {
-      obj.deptQty = message.deptQty;
-    }
-    if (message.deptVal !== 0) {
-      obj.deptVal = message.deptVal;
-    }
-    if (message.deptRate !== 0) {
-      obj.deptRate = message.deptRate;
-    }
-    if (message.lastPoQty1 !== 0) {
-      obj.lastPoQty1 = message.lastPoQty1;
-    }
-    if (message.lastPoVal1 !== 0) {
-      obj.lastPoVal1 = message.lastPoVal1;
-    }
-    if (message.lastPoRate1 !== 0) {
-      obj.lastPoRate1 = message.lastPoRate1;
-    }
-    if (message.lastPoQty2 !== 0) {
-      obj.lastPoQty2 = message.lastPoQty2;
-    }
-    if (message.lastPoVal2 !== 0) {
-      obj.lastPoVal2 = message.lastPoVal2;
-    }
-    if (message.lastPoRate2 !== 0) {
-      obj.lastPoRate2 = message.lastPoRate2;
-    }
-    if (message.lastPoQty3 !== 0) {
-      obj.lastPoQty3 = message.lastPoQty3;
-    }
-    if (message.lastPoVal3 !== 0) {
-      obj.lastPoVal3 = message.lastPoVal3;
-    }
-    if (message.lastPoRate3 !== 0) {
-      obj.lastPoRate3 = message.lastPoRate3;
+    if (message.assignedAt !== "") {
+      obj.assignedAt = message.assignedAt;
     }
     return obj;
   },
@@ -2553,31 +2328,17 @@ export const UngroupedItem: MessageFns<UngroupedItem> = {
   },
   fromPartial(object: DeepPartial<UngroupedItem>): UngroupedItem {
     const message = createBaseUngroupedItem();
-    message.period = object.period ?? "";
     message.itemCode = object.itemCode ?? "";
     message.itemName = object.itemName ?? "";
     message.itemTypeCode = object.itemTypeCode ?? "";
     message.gradeCode = object.gradeCode ?? "";
     message.itemGrade = object.itemGrade ?? "";
     message.uomCode = object.uomCode ?? "";
-    message.consVal = object.consVal ?? 0;
-    message.storesVal = object.storesVal ?? 0;
-    message.consQty = object.consQty ?? 0;
-    message.consRate = object.consRate ?? 0;
-    message.storesQty = object.storesQty ?? 0;
-    message.storesRate = object.storesRate ?? 0;
-    message.deptQty = object.deptQty ?? 0;
-    message.deptVal = object.deptVal ?? 0;
-    message.deptRate = object.deptRate ?? 0;
-    message.lastPoQty1 = object.lastPoQty1 ?? 0;
-    message.lastPoVal1 = object.lastPoVal1 ?? 0;
-    message.lastPoRate1 = object.lastPoRate1 ?? 0;
-    message.lastPoQty2 = object.lastPoQty2 ?? 0;
-    message.lastPoVal2 = object.lastPoVal2 ?? 0;
-    message.lastPoRate2 = object.lastPoRate2 ?? 0;
-    message.lastPoQty3 = object.lastPoQty3 ?? 0;
-    message.lastPoVal3 = object.lastPoVal3 ?? 0;
-    message.lastPoRate3 = object.lastPoRate3 ?? 0;
+    message.groupHeadId = object.groupHeadId ?? "";
+    message.groupCode = object.groupCode ?? "";
+    message.groupName = object.groupName ?? "";
+    message.sortOrder = object.sortOrder ?? 0;
+    message.assignedAt = object.assignedAt ?? "";
     return message;
   },
 };
@@ -5227,7 +4988,7 @@ export const UpdateGroupItemResponse: MessageFns<UpdateGroupItemResponse> = {
 };
 
 function createBaseListUngroupedItemsRequest(): ListUngroupedItemsRequest {
-  return { page: 0, pageSize: 0, period: "", search: "" };
+  return { page: 0, pageSize: 0, search: "", scope: 0, sortBy: "", sortOrder: "" };
 }
 
 export const ListUngroupedItemsRequest: MessageFns<ListUngroupedItemsRequest> = {
@@ -5238,11 +4999,17 @@ export const ListUngroupedItemsRequest: MessageFns<ListUngroupedItemsRequest> = 
     if (message.pageSize !== 0) {
       writer.uint32(16).int32(message.pageSize);
     }
-    if (message.period !== "") {
-      writer.uint32(26).string(message.period);
-    }
     if (message.search !== "") {
       writer.uint32(34).string(message.search);
+    }
+    if (message.scope !== 0) {
+      writer.uint32(40).int32(message.scope);
+    }
+    if (message.sortBy !== "") {
+      writer.uint32(50).string(message.sortBy);
+    }
+    if (message.sortOrder !== "") {
+      writer.uint32(58).string(message.sortOrder);
     }
     return writer;
   },
@@ -5270,20 +5037,36 @@ export const ListUngroupedItemsRequest: MessageFns<ListUngroupedItemsRequest> = 
           message.pageSize = reader.int32();
           continue;
         }
-        case 3: {
-          if (tag !== 26) {
-            break;
-          }
-
-          message.period = reader.string();
-          continue;
-        }
         case 4: {
           if (tag !== 34) {
             break;
           }
 
           message.search = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.scope = reader.int32() as any;
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.sortBy = reader.string();
+          continue;
+        }
+        case 7: {
+          if (tag !== 58) {
+            break;
+          }
+
+          message.sortOrder = reader.string();
           continue;
         }
       }
@@ -5303,8 +5086,18 @@ export const ListUngroupedItemsRequest: MessageFns<ListUngroupedItemsRequest> = 
         : isSet(object.page_size)
         ? globalThis.Number(object.page_size)
         : 0,
-      period: isSet(object.period) ? globalThis.String(object.period) : "",
       search: isSet(object.search) ? globalThis.String(object.search) : "",
+      scope: isSet(object.scope) ? rMGroupingScopeFromJSON(object.scope) : 0,
+      sortBy: isSet(object.sortBy)
+        ? globalThis.String(object.sortBy)
+        : isSet(object.sort_by)
+        ? globalThis.String(object.sort_by)
+        : "",
+      sortOrder: isSet(object.sortOrder)
+        ? globalThis.String(object.sortOrder)
+        : isSet(object.sort_order)
+        ? globalThis.String(object.sort_order)
+        : "",
     };
   },
 
@@ -5316,11 +5109,17 @@ export const ListUngroupedItemsRequest: MessageFns<ListUngroupedItemsRequest> = 
     if (message.pageSize !== 0) {
       obj.pageSize = Math.round(message.pageSize);
     }
-    if (message.period !== "") {
-      obj.period = message.period;
-    }
     if (message.search !== "") {
       obj.search = message.search;
+    }
+    if (message.scope !== 0) {
+      obj.scope = rMGroupingScopeToJSON(message.scope);
+    }
+    if (message.sortBy !== "") {
+      obj.sortBy = message.sortBy;
+    }
+    if (message.sortOrder !== "") {
+      obj.sortOrder = message.sortOrder;
     }
     return obj;
   },
@@ -5332,8 +5131,10 @@ export const ListUngroupedItemsRequest: MessageFns<ListUngroupedItemsRequest> = 
     const message = createBaseListUngroupedItemsRequest();
     message.page = object.page ?? 0;
     message.pageSize = object.pageSize ?? 0;
-    message.period = object.period ?? "";
     message.search = object.search ?? "";
+    message.scope = object.scope ?? 0;
+    message.sortBy = object.sortBy ?? "";
+    message.sortOrder = object.sortOrder ?? "";
     return message;
   },
 };
@@ -5742,16 +5543,22 @@ export const DownloadGroupItemsTemplateResponse: MessageFns<DownloadGroupItemsTe
 };
 
 function createBaseExportUngroupedItemsRequest(): ExportUngroupedItemsRequest {
-  return { period: "", search: "" };
+  return { search: "", scope: 0, sortBy: "", sortOrder: "" };
 }
 
 export const ExportUngroupedItemsRequest: MessageFns<ExportUngroupedItemsRequest> = {
   encode(message: ExportUngroupedItemsRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.period !== "") {
-      writer.uint32(10).string(message.period);
-    }
     if (message.search !== "") {
       writer.uint32(18).string(message.search);
+    }
+    if (message.scope !== 0) {
+      writer.uint32(24).int32(message.scope);
+    }
+    if (message.sortBy !== "") {
+      writer.uint32(34).string(message.sortBy);
+    }
+    if (message.sortOrder !== "") {
+      writer.uint32(42).string(message.sortOrder);
     }
     return writer;
   },
@@ -5763,20 +5570,36 @@ export const ExportUngroupedItemsRequest: MessageFns<ExportUngroupedItemsRequest
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.period = reader.string();
-          continue;
-        }
         case 2: {
           if (tag !== 18) {
             break;
           }
 
           message.search = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.scope = reader.int32() as any;
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.sortBy = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.sortOrder = reader.string();
           continue;
         }
       }
@@ -5790,18 +5613,34 @@ export const ExportUngroupedItemsRequest: MessageFns<ExportUngroupedItemsRequest
 
   fromJSON(object: any): ExportUngroupedItemsRequest {
     return {
-      period: isSet(object.period) ? globalThis.String(object.period) : "",
       search: isSet(object.search) ? globalThis.String(object.search) : "",
+      scope: isSet(object.scope) ? rMGroupingScopeFromJSON(object.scope) : 0,
+      sortBy: isSet(object.sortBy)
+        ? globalThis.String(object.sortBy)
+        : isSet(object.sort_by)
+        ? globalThis.String(object.sort_by)
+        : "",
+      sortOrder: isSet(object.sortOrder)
+        ? globalThis.String(object.sortOrder)
+        : isSet(object.sort_order)
+        ? globalThis.String(object.sort_order)
+        : "",
     };
   },
 
   toJSON(message: ExportUngroupedItemsRequest): unknown {
     const obj: any = {};
-    if (message.period !== "") {
-      obj.period = message.period;
-    }
     if (message.search !== "") {
       obj.search = message.search;
+    }
+    if (message.scope !== 0) {
+      obj.scope = rMGroupingScopeToJSON(message.scope);
+    }
+    if (message.sortBy !== "") {
+      obj.sortBy = message.sortBy;
+    }
+    if (message.sortOrder !== "") {
+      obj.sortOrder = message.sortOrder;
     }
     return obj;
   },
@@ -5811,8 +5650,10 @@ export const ExportUngroupedItemsRequest: MessageFns<ExportUngroupedItemsRequest
   },
   fromPartial(object: DeepPartial<ExportUngroupedItemsRequest>): ExportUngroupedItemsRequest {
     const message = createBaseExportUngroupedItemsRequest();
-    message.period = object.period ?? "";
     message.search = object.search ?? "";
+    message.scope = object.scope ?? 0;
+    message.sortBy = object.sortBy ?? "";
+    message.sortOrder = object.sortOrder ?? "";
     return message;
   },
 };

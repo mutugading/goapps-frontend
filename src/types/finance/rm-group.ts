@@ -124,11 +124,37 @@ export interface ListRMGroupsParams {
   sortOrder?: string
 }
 
+/** Grouping monitor scope. UNGROUPED = items not in any active group;
+ *  GROUPED = items currently assigned to an active group. */
+export type GroupingScope = "ungrouped" | "grouped"
+
+/** Allowed sort columns for the grouping monitor. group_*, sort_order and
+ *  assigned_at apply only to scope=grouped. */
+export type GroupingSortBy =
+  | "item_code"
+  | "item_name"
+  | "grade_code"
+  | "item_grade"
+  | "uom_code"
+  | "group_code"
+  | "group_name"
+  | "sort_order"
+  | "assigned_at"
+
 export interface ListUngroupedItemsParams {
-  period: string
   page?: number
   pageSize?: number
   search?: string
+  scope?: GroupingScope
+  sortBy?: GroupingSortBy | string
+  sortOrder?: "asc" | "desc" | string
+}
+
+export interface ExportUngroupedItemsParams {
+  search?: string
+  scope?: GroupingScope
+  sortBy?: GroupingSortBy | string
+  sortOrder?: "asc" | "desc" | string
 }
 
 export interface ExportRMGroupsParams {

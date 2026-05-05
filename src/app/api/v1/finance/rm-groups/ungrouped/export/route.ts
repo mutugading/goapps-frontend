@@ -1,7 +1,13 @@
-// GET /api/v1/finance/rm-groups/ungrouped/export - Export Ungrouped Items to Excel
+// GET /api/v1/finance/rm-groups/ungrouped/export — Export grouping monitor to Excel.
 
 import { NextRequest, NextResponse } from "next/server"
 import { getRmGroupClient, createMetadataFromRequest, isGrpcError, handleGrpcError } from "@/lib/grpc"
+import { RMGroupingScope } from "@/types/generated/finance/v1/rm_group"
+
+function parseScope(raw: string | null): RMGroupingScope {
+  if (raw === "grouped") return RMGroupingScope.RM_GROUPING_SCOPE_GROUPED
+  return RMGroupingScope.RM_GROUPING_SCOPE_UNGROUPED
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,8 +17,10 @@ export async function GET(request: NextRequest) {
 
     const response = await client.exportUngroupedItems(
       {
-        period: searchParams.get("period") || "",
         search: searchParams.get("search") || "",
+        scope: parseScope(searchParams.get("scope")),
+        sortBy: searchParams.get("sort_by") || searchParams.get("sortBy") || "",
+        sortOrder: searchParams.get("sort_order") || searchParams.get("sortOrder") || "",
       },
       metadata
     )
@@ -26,13 +34,13 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     if (isGrpcError(error)) return handleGrpcError(error)
-    console.error("Error exporting Ungrouped Items:", error)
+    console.error("Error exporting grouping monitor:", error)
     return NextResponse.json(
       {
         base: {
           isSuccess: false,
           statusCode: "500",
-          message: "Failed to export ungrouped items",
+          message: "Failed to export grouping monitor",
           validationErrors: [],
         },
       },
