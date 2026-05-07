@@ -64,12 +64,17 @@ export default function NotificationsPage() {
     <div className="space-y-4">
       <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Notifikasi</h1>
-          <p className="text-sm text-muted-foreground">Semua notifikasi Anda di satu tempat.</p>
+          <h1 className="text-2xl font-bold">Notifications</h1>
+          <p className="text-sm text-muted-foreground">All your notifications in one place.</p>
         </div>
-        <Button variant="outline" onClick={() => markAllRead.mutate()} disabled={markAllRead.isPending}>
+        <Button
+          variant="outline"
+          className="cursor-pointer"
+          onClick={() => markAllRead.mutate()}
+          disabled={markAllRead.isPending}
+        >
           <CheckCheck className="mr-2 h-4 w-4" />
-          Tandai semua sudah dibaca
+          Mark all as read
         </Button>
       </div>
 
@@ -81,17 +86,17 @@ export default function NotificationsPage() {
         }}
       >
         <TabsList>
-          <TabsTrigger value="all">Semua</TabsTrigger>
-          <TabsTrigger value="unread">Belum Dibaca</TabsTrigger>
-          <TabsTrigger value="archived">Arsip</TabsTrigger>
+          <TabsTrigger value="all" className="cursor-pointer">All</TabsTrigger>
+          <TabsTrigger value="unread" className="cursor-pointer">Unread</TabsTrigger>
+          <TabsTrigger value="archived" className="cursor-pointer">Archived</TabsTrigger>
         </TabsList>
       </Tabs>
 
       <div className="rounded-lg border">
         {list.isLoading ? (
-          <div className="px-4 py-12 text-center text-sm text-muted-foreground">Memuat…</div>
+          <div className="px-4 py-12 text-center text-sm text-muted-foreground">Loading…</div>
         ) : items.length === 0 ? (
-          <div className="px-4 py-12 text-center text-sm text-muted-foreground">Tidak ada notifikasi.</div>
+          <div className="px-4 py-12 text-center text-sm text-muted-foreground">No notifications.</div>
         ) : (
           <ul className="divide-y">
             {items.map((n) => (
@@ -116,7 +121,7 @@ export default function NotificationsPage() {
                       {typeLabel(n.type)}
                     </Badge>
                     {n.status === NotificationStatus.NOTIFICATION_STATUS_UNREAD && (
-                      <Badge variant="secondary" className="text-[10px]">BARU</Badge>
+                      <Badge variant="secondary" className="text-[10px]">NEW</Badge>
                     )}
                     <span className="ml-auto text-xs text-muted-foreground">{formatDate(n.createdAt)}</span>
                   </div>
@@ -128,7 +133,8 @@ export default function NotificationsPage() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      title="Tandai sudah dibaca"
+                      className="cursor-pointer"
+                      title="Mark as read"
                       onClick={(e) => {
                         e.stopPropagation()
                         markRead.mutate(n.notificationId)
@@ -141,7 +147,8 @@ export default function NotificationsPage() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      title="Arsipkan"
+                      className="cursor-pointer"
+                      title="Archive"
                       onClick={(e) => {
                         e.stopPropagation()
                         archive.mutate(n.notificationId)
@@ -153,7 +160,8 @@ export default function NotificationsPage() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    title="Hapus"
+                    className="cursor-pointer"
+                    title="Delete"
                     onClick={(e) => {
                       e.stopPropagation()
                       del.mutate(n.notificationId)
@@ -171,19 +179,26 @@ export default function NotificationsPage() {
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
           <span className="text-sm text-muted-foreground">
-            Halaman {page} dari {totalPages} • Total {total}
+            Page {page} of {totalPages} • Total {total}
           </span>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>
-              Sebelumnya
+            <Button
+              variant="outline"
+              size="sm"
+              className="cursor-pointer"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+            >
+              Previous
             </Button>
             <Button
               variant="outline"
               size="sm"
+              className="cursor-pointer"
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page >= totalPages}
             >
-              Selanjutnya
+              Next
             </Button>
           </div>
         </div>

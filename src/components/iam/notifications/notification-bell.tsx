@@ -27,13 +27,13 @@ function formatRelative(iso: string): string {
   if (Number.isNaN(t)) return ""
   const diff = Date.now() - t
   const sec = Math.floor(diff / 1000)
-  if (sec < 60) return "baru saja"
+  if (sec < 60) return "just now"
   const min = Math.floor(sec / 60)
-  if (min < 60) return `${min}m lalu`
+  if (min < 60) return `${min}m ago`
   const hour = Math.floor(min / 60)
-  if (hour < 24) return `${hour}j lalu`
+  if (hour < 24) return `${hour}h ago`
   const day = Math.floor(hour / 24)
-  if (day < 30) return `${day}h lalu`
+  if (day < 30) return `${day}d ago`
   return new Date(iso).toLocaleDateString()
 }
 
@@ -60,37 +60,41 @@ export function NotificationBell() {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative">
+        <Button variant="ghost" size="icon" className="relative cursor-pointer">
           <Bell className="h-5 w-5" />
           {count > 0 && (
             <Badge className="absolute -top-1 -right-1 h-5 min-w-5 rounded-full px-1.5 py-0 text-[10px] leading-none">
               {count > 99 ? "99+" : count}
             </Badge>
           )}
-          <span className="sr-only">Notifikasi</span>
+          <span className="sr-only">Notifications</span>
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-[calc(100vw-2rem)] max-w-96 p-0 sm:w-96">
-        <div className="flex items-center justify-between border-b px-4 py-3">
+      <PopoverContent
+        align="end"
+        className="flex w-[calc(100vw-2rem)] max-w-96 flex-col p-0 sm:w-96"
+      >
+        <div className="flex shrink-0 items-center justify-between border-b px-4 py-3">
           <div className="flex items-center gap-2">
-            <span className="font-semibold">Notifikasi</span>
-            {count > 0 && <Badge variant="secondary">{count} baru</Badge>}
+            <span className="font-semibold">Notifications</span>
+            {count > 0 && <Badge variant="secondary">{count} new</Badge>}
           </div>
           <Button
             variant="ghost"
             size="sm"
+            className="cursor-pointer"
             onClick={() => markAllRead.mutate()}
             disabled={count === 0 || markAllRead.isPending}
           >
             <CheckCheck className="mr-1 h-4 w-4" />
-            Tandai semua
+            Mark all read
           </Button>
         </div>
 
-        <ScrollArea className="max-h-96">
+        <ScrollArea className="h-96 min-h-0 flex-1">
           {items.length === 0 ? (
             <div className="px-4 py-12 text-center text-sm text-muted-foreground">
-              Tidak ada notifikasi.
+              No notifications.
             </div>
           ) : (
             <ul className="divide-y">
@@ -99,7 +103,7 @@ export function NotificationBell() {
                   key={n.notificationId}
                   role="button"
                   tabIndex={0}
-                  className={`cursor-pointer px-4 py-3 hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring ${
+                  className={`cursor-pointer px-4 py-3 hover:bg-accent focus:bg-accent focus:outline-none ${
                     n.status === NotificationStatus.NOTIFICATION_STATUS_UNREAD ? "bg-accent/30" : ""
                   }`}
                   onClick={() => handleClick(n)}
@@ -128,12 +132,12 @@ export function NotificationBell() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-7 w-7 shrink-0"
+                        className="h-7 w-7 shrink-0 cursor-pointer"
                         onClick={(ev) => {
                           ev.stopPropagation()
                           markRead.mutate(n.notificationId)
                         }}
-                        title="Tandai sudah dibaca"
+                        title="Mark as read"
                       >
                         <Check className="h-4 w-4" />
                       </Button>
@@ -145,14 +149,14 @@ export function NotificationBell() {
           )}
         </ScrollArea>
 
-        <div className="border-t px-4 py-2">
+        <div className="shrink-0 border-t px-4 py-2">
           <Button
             variant="link"
             size="sm"
-            className="w-full"
+            className="w-full cursor-pointer"
             onClick={() => router.push("/notifications")}
           >
-            Lihat semua notifikasi
+            View all notifications
           </Button>
         </div>
       </PopoverContent>
