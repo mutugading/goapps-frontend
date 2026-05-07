@@ -6,7 +6,7 @@
 //
 // EventSource handles automatic reconnect and Last-Event-ID resume natively.
 
-import { createContext, useContext, useEffect, useRef, useState } from "react"
+import { createContext, useContext, useEffect, useRef, useSyncExternalStore } from "react"
 import { useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 
@@ -22,10 +22,10 @@ import {
 
 interface NotificationContextValue {
   // Status of the SSE connection.
-  connected: boolean
+  connected?: boolean
 }
 
-const NotificationContext = createContext<NotificationContextValue>({ connected: false })
+const NotificationContext = createContext<NotificationContextValue>({})
 
 interface ProviderProps {
   children: React.ReactNode
@@ -39,12 +39,32 @@ interface RawStreamEvent {
   is_heartbeat?: boolean
 }
 
+// connectionStore is a tiny external store that backs useNotificationConnection
+// without violating React's "no setState during effect body" rule. The provider
+// effect updates `connectedFlag` directly through setters that broadcast to
+// any subscribed consumer via useSyncExternalStore.
+const connectionStore = (() => {
+  let connected = false
+  const listeners = new Set<() => void>()
+  const notify = () => listeners.forEach((l) => l())
+  return {
+    set(v: boolean) {
+      if (connected === v) return
+      connected = v
+      notify()
+    },
+    subscribe(l: () => void) {
+      listeners.add(l)
+      return () => listeners.delete(l)
+    },
+    getSnapshot: () => connected,
+  }
+})()
+
 export function NotificationProvider({ children }: ProviderProps) {
   const { isAuthenticated } = useAuth()
   const qc = useQueryClient()
   const esRef = useRef<EventSource | null>(null)
-  // connected lives in state so context consumers re-render when it flips.
-  const [connected, setConnected] = useState(false)
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -53,14 +73,14 @@ export function NotificationProvider({ children }: ProviderProps) {
         esRef.current.close()
         esRef.current = null
       }
-      setConnected(false)
+      connectionStore.set(false)
       return
     }
 
     // Open SSE.
     const es = new EventSource("/api/v1/iam/notifications/stream", { withCredentials: true })
     esRef.current = es
-    es.onopen = () => setConnected(true)
+    es.onopen = () => connectionStore.set(true)
 
     const handleEvent = (raw: RawStreamEvent) => {
       const isHeartbeat = raw.isHeartbeat ?? raw.is_heartbeat ?? false
@@ -104,24 +124,28 @@ export function NotificationProvider({ children }: ProviderProps) {
     es.onerror = () => {
       // EventSource auto-reconnects with exponential backoff; reflect dropped
       // state so consumers can show a "reconnecting" hint if they want.
-      setConnected(false)
+      connectionStore.set(false)
     }
 
     return () => {
       es.removeEventListener("notification", onMessage as EventListener)
       es.close()
       if (esRef.current === es) esRef.current = null
-      setConnected(false)
+      connectionStore.set(false)
     }
   }, [isAuthenticated, qc])
 
-  return (
-    <NotificationContext.Provider value={{ connected }}>
-      {children}
-    </NotificationContext.Provider>
-  )
+  return <NotificationContext.Provider value={{}}>{children}</NotificationContext.Provider>
 }
 
+// useNotificationConnection returns the current SSE connection status. Reads
+// from a small external store, avoiding the no-setState-in-effect rule.
 export function useNotificationConnection(): NotificationContextValue {
-  return useContext(NotificationContext)
+  void useContext(NotificationContext) // keep provider dependency for future fields
+  const connected = useSyncExternalStore(
+    connectionStore.subscribe,
+    connectionStore.getSnapshot,
+    connectionStore.getSnapshot, // SSR-safe snapshot (always false on server)
+  )
+  return { connected }
 }
