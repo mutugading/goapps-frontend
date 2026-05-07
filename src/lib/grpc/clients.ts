@@ -29,6 +29,7 @@ import {
 } from "@/types/generated/iam/v1/cms"
 import { EmployeeLevelServiceDefinition } from "@/types/generated/iam/v1/employee_level"
 import { EmployeeGroupServiceDefinition } from "@/types/generated/iam/v1/employee_group"
+import { NotificationServiceDefinition } from "@/types/generated/iam/v1/notification"
 import { OracleSyncServiceDefinition } from "@/types/generated/finance/v1/oracle_sync"
 import { RMGroupServiceDefinition } from "@/types/generated/finance/v1/rm_group"
 import { RMCostServiceDefinition } from "@/types/generated/finance/v1/rm_cost"
@@ -198,6 +199,12 @@ export function getEmployeeLevelClient() {
 export function getEmployeeGroupClient() {
   return getOrCreate("employeeGroup", () =>
     createServiceClient(EmployeeGroupServiceDefinition, SERVICE_ADDRESSES.iam, insecure, CHANNEL_OPTIONS)
+  )
+}
+
+export function getNotificationClient() {
+  return getOrCreate("notification", () =>
+    createServiceClient(NotificationServiceDefinition, SERVICE_ADDRESSES.iam, insecure, CHANNEL_OPTIONS)
   )
 }
 
