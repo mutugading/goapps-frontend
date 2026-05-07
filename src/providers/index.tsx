@@ -5,6 +5,7 @@ import { ThemeProvider } from "./theme-provider"
 import { QueryProvider } from "./query-provider"
 import { AuthProvider } from "./auth-provider"
 import { PermissionProvider } from "./permission-provider"
+import { NotificationProvider } from "./notification-provider"
 
 interface ProvidersProps {
     children: React.ReactNode
@@ -21,7 +22,9 @@ export function Providers({ children }: ProvidersProps) {
             >
                 <AuthProvider>
                     <PermissionProvider>
-                        {children}
+                        <NotificationProvider>
+                            {children}
+                        </NotificationProvider>
                     </PermissionProvider>
                 </AuthProvider>
                 <Toaster richColors position="top-right" />

@@ -24,6 +24,7 @@ export {
   getCmsSettingClient,
   getEmployeeLevelClient,
   getEmployeeGroupClient,
+  getNotificationClient,
   getOracleSyncClient,
   getRmGroupClient,
   getRmCostClient,

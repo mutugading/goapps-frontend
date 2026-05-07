@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { useEffect } from "react"
 import { AppSidebar } from "@/components/app-sidebar"
 import { DynamicBreadcrumb } from "@/components/common/dynamic-breadcrumb"
+import { NotificationBell } from "@/components/iam/notifications/notification-bell"
 import { Footer } from "@/components/common/footer"
 import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -83,13 +84,18 @@ export default function DashboardLayout({
             <SidebarInset>
                 {/* Sticky header with breadcrumbs */}
                 <header className="sticky top-0 z-50 flex h-16 shrink-0 items-center gap-2 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
-                    <div className="flex items-center gap-2 px-4">
-                        <SidebarTrigger className="-ml-1" />
+                    <div className="flex flex-1 items-center gap-2 px-4 min-w-0">
+                        <SidebarTrigger className="-ml-1 shrink-0" />
                         <Separator
                             orientation="vertical"
-                            className="mr-2 data-[orientation=vertical]:h-4"
+                            className="mr-2 shrink-0 data-[orientation=vertical]:h-4"
                         />
-                        <DynamicBreadcrumb />
+                        <div className="min-w-0 flex-1 truncate">
+                            <DynamicBreadcrumb />
+                        </div>
+                        <div className="flex shrink-0 items-center gap-2">
+                            <NotificationBell />
+                        </div>
                     </div>
                 </header>
                 {/* Main content */}
