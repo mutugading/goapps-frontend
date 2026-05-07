@@ -21,6 +21,7 @@ import {
   CostFilters,
   CostPagination,
 } from "@/components/finance/rm-pricing/costs"
+import { ExportRMCostButton } from "@/components/finance/rm-pricing/costs/export-rm-cost-button"
 
 import { useRMCosts, useRMCostHistory, useRMCostPeriods } from "@/hooks/finance/use-rm-cost"
 import { useUrlState } from "@/lib/hooks"
@@ -113,6 +114,15 @@ function RMCostsPageContent() {
         subtitle="View calculated raw material costs per period"
       >
         <div className="flex items-center gap-2">
+          <ExportRMCostButton
+            filters={{
+              period: filters.period || "",
+              rmType: filters.rmType,
+              groupHeadId: filters.groupHeadId,
+              search: filters.search,
+            }}
+            disabled={listLoading}
+          />
           <Button onClick={() => setIsRecalcOpen(true)}>
             <RefreshCw className="mr-2 h-4 w-4" />
             Recalculate

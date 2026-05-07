@@ -611,6 +611,66 @@ export interface ExportRMCostsResponse {
   fileName: string;
 }
 
+/**
+ * RequestRMCostExportRequest queues an async export job. Same filters as
+ * ExportRMCostsRequest; reused for symmetry between sync + async variants.
+ */
+export interface RequestRMCostExportRequest {
+  /**
+   * Period filter (YYYYMM). Required for async export — files are namespaced
+   * by period in MinIO and the user almost always exports one period at a time.
+   */
+  period: string;
+  /** Filter by RM type. UNSPECIFIED = all types in the period. */
+  rmType: RMCostType;
+  /** Optional group scope. */
+  groupHeadId?:
+    | string
+    | undefined;
+  /** Free-text search on rm_code + rm_name. */
+  search: string;
+}
+
+/** RequestRMCostExportResponse acknowledges the queued job. */
+export interface RequestRMCostExportResponse {
+  base: BaseResponse | undefined;
+  data: ExportJobInfo | undefined;
+}
+
+/**
+ * GetExportDownloadURLRequest identifies the export job whose artifact the
+ * caller wants to download.
+ */
+export interface GetExportDownloadURLRequest {
+  jobId: string;
+}
+
+/** GetExportDownloadURLResponse carries a presigned download URL. */
+export interface GetExportDownloadURLResponse {
+  base: BaseResponse | undefined;
+  data: ExportDownloadInfo | undefined;
+}
+
+/** ExportDownloadInfo carries the presigned URL and suggested filename for the UI. */
+export interface ExportDownloadInfo {
+  /** Short-lived presigned URL the browser can redirect to. */
+  url: string;
+  /** Suggested filename (Content-Disposition). */
+  fileName: string;
+  /** ISO8601 expiry for the presigned URL. */
+  expiresAt: string;
+}
+
+/** ExportJobInfo summarizes a freshly-queued export job for the UI. */
+export interface ExportJobInfo {
+  /** job_execution.job_id (UUID). */
+  jobId: string;
+  /** human-readable code (e.g. "RM_COST_EX-202604-001"). */
+  jobCode: string;
+  /** initial status, typically "QUEUED". */
+  status: string;
+}
+
 /** Response carries the distinct set of calculated periods. */
 export interface ListRMCostPeriodsResponse {
   /** Standard response envelope. */
@@ -5429,6 +5489,546 @@ export const ExportRMCostsResponse: MessageFns<ExportRMCostsResponse> = {
   },
 };
 
+function createBaseRequestRMCostExportRequest(): RequestRMCostExportRequest {
+  return { period: "", rmType: 0, groupHeadId: undefined, search: "" };
+}
+
+export const RequestRMCostExportRequest: MessageFns<RequestRMCostExportRequest> = {
+  encode(message: RequestRMCostExportRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.period !== "") {
+      writer.uint32(10).string(message.period);
+    }
+    if (message.rmType !== 0) {
+      writer.uint32(16).int32(message.rmType);
+    }
+    if (message.groupHeadId !== undefined) {
+      writer.uint32(26).string(message.groupHeadId);
+    }
+    if (message.search !== "") {
+      writer.uint32(34).string(message.search);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): RequestRMCostExportRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRequestRMCostExportRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.period = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.rmType = reader.int32() as any;
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.groupHeadId = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.search = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RequestRMCostExportRequest {
+    return {
+      period: isSet(object.period) ? globalThis.String(object.period) : "",
+      rmType: isSet(object.rmType)
+        ? rMCostTypeFromJSON(object.rmType)
+        : isSet(object.rm_type)
+        ? rMCostTypeFromJSON(object.rm_type)
+        : 0,
+      groupHeadId: isSet(object.groupHeadId)
+        ? globalThis.String(object.groupHeadId)
+        : isSet(object.group_head_id)
+        ? globalThis.String(object.group_head_id)
+        : undefined,
+      search: isSet(object.search) ? globalThis.String(object.search) : "",
+    };
+  },
+
+  toJSON(message: RequestRMCostExportRequest): unknown {
+    const obj: any = {};
+    if (message.period !== "") {
+      obj.period = message.period;
+    }
+    if (message.rmType !== 0) {
+      obj.rmType = rMCostTypeToJSON(message.rmType);
+    }
+    if (message.groupHeadId !== undefined) {
+      obj.groupHeadId = message.groupHeadId;
+    }
+    if (message.search !== "") {
+      obj.search = message.search;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<RequestRMCostExportRequest>): RequestRMCostExportRequest {
+    return RequestRMCostExportRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<RequestRMCostExportRequest>): RequestRMCostExportRequest {
+    const message = createBaseRequestRMCostExportRequest();
+    message.period = object.period ?? "";
+    message.rmType = object.rmType ?? 0;
+    message.groupHeadId = object.groupHeadId ?? undefined;
+    message.search = object.search ?? "";
+    return message;
+  },
+};
+
+function createBaseRequestRMCostExportResponse(): RequestRMCostExportResponse {
+  return { base: undefined, data: undefined };
+}
+
+export const RequestRMCostExportResponse: MessageFns<RequestRMCostExportResponse> = {
+  encode(message: RequestRMCostExportResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    if (message.data !== undefined) {
+      ExportJobInfo.encode(message.data, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): RequestRMCostExportResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRequestRMCostExportResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.data = ExportJobInfo.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RequestRMCostExportResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      data: isSet(object.data) ? ExportJobInfo.fromJSON(object.data) : undefined,
+    };
+  },
+
+  toJSON(message: RequestRMCostExportResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.data !== undefined) {
+      obj.data = ExportJobInfo.toJSON(message.data);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<RequestRMCostExportResponse>): RequestRMCostExportResponse {
+    return RequestRMCostExportResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<RequestRMCostExportResponse>): RequestRMCostExportResponse {
+    const message = createBaseRequestRMCostExportResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.data = (object.data !== undefined && object.data !== null)
+      ? ExportJobInfo.fromPartial(object.data)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseGetExportDownloadURLRequest(): GetExportDownloadURLRequest {
+  return { jobId: "" };
+}
+
+export const GetExportDownloadURLRequest: MessageFns<GetExportDownloadURLRequest> = {
+  encode(message: GetExportDownloadURLRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.jobId !== "") {
+      writer.uint32(10).string(message.jobId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetExportDownloadURLRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetExportDownloadURLRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.jobId = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetExportDownloadURLRequest {
+    return {
+      jobId: isSet(object.jobId)
+        ? globalThis.String(object.jobId)
+        : isSet(object.job_id)
+        ? globalThis.String(object.job_id)
+        : "",
+    };
+  },
+
+  toJSON(message: GetExportDownloadURLRequest): unknown {
+    const obj: any = {};
+    if (message.jobId !== "") {
+      obj.jobId = message.jobId;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetExportDownloadURLRequest>): GetExportDownloadURLRequest {
+    return GetExportDownloadURLRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GetExportDownloadURLRequest>): GetExportDownloadURLRequest {
+    const message = createBaseGetExportDownloadURLRequest();
+    message.jobId = object.jobId ?? "";
+    return message;
+  },
+};
+
+function createBaseGetExportDownloadURLResponse(): GetExportDownloadURLResponse {
+  return { base: undefined, data: undefined };
+}
+
+export const GetExportDownloadURLResponse: MessageFns<GetExportDownloadURLResponse> = {
+  encode(message: GetExportDownloadURLResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    if (message.data !== undefined) {
+      ExportDownloadInfo.encode(message.data, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetExportDownloadURLResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetExportDownloadURLResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.data = ExportDownloadInfo.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetExportDownloadURLResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      data: isSet(object.data) ? ExportDownloadInfo.fromJSON(object.data) : undefined,
+    };
+  },
+
+  toJSON(message: GetExportDownloadURLResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.data !== undefined) {
+      obj.data = ExportDownloadInfo.toJSON(message.data);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetExportDownloadURLResponse>): GetExportDownloadURLResponse {
+    return GetExportDownloadURLResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GetExportDownloadURLResponse>): GetExportDownloadURLResponse {
+    const message = createBaseGetExportDownloadURLResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.data = (object.data !== undefined && object.data !== null)
+      ? ExportDownloadInfo.fromPartial(object.data)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseExportDownloadInfo(): ExportDownloadInfo {
+  return { url: "", fileName: "", expiresAt: "" };
+}
+
+export const ExportDownloadInfo: MessageFns<ExportDownloadInfo> = {
+  encode(message: ExportDownloadInfo, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.url !== "") {
+      writer.uint32(10).string(message.url);
+    }
+    if (message.fileName !== "") {
+      writer.uint32(18).string(message.fileName);
+    }
+    if (message.expiresAt !== "") {
+      writer.uint32(26).string(message.expiresAt);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ExportDownloadInfo {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseExportDownloadInfo();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.url = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.fileName = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.expiresAt = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ExportDownloadInfo {
+    return {
+      url: isSet(object.url) ? globalThis.String(object.url) : "",
+      fileName: isSet(object.fileName)
+        ? globalThis.String(object.fileName)
+        : isSet(object.file_name)
+        ? globalThis.String(object.file_name)
+        : "",
+      expiresAt: isSet(object.expiresAt)
+        ? globalThis.String(object.expiresAt)
+        : isSet(object.expires_at)
+        ? globalThis.String(object.expires_at)
+        : "",
+    };
+  },
+
+  toJSON(message: ExportDownloadInfo): unknown {
+    const obj: any = {};
+    if (message.url !== "") {
+      obj.url = message.url;
+    }
+    if (message.fileName !== "") {
+      obj.fileName = message.fileName;
+    }
+    if (message.expiresAt !== "") {
+      obj.expiresAt = message.expiresAt;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ExportDownloadInfo>): ExportDownloadInfo {
+    return ExportDownloadInfo.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ExportDownloadInfo>): ExportDownloadInfo {
+    const message = createBaseExportDownloadInfo();
+    message.url = object.url ?? "";
+    message.fileName = object.fileName ?? "";
+    message.expiresAt = object.expiresAt ?? "";
+    return message;
+  },
+};
+
+function createBaseExportJobInfo(): ExportJobInfo {
+  return { jobId: "", jobCode: "", status: "" };
+}
+
+export const ExportJobInfo: MessageFns<ExportJobInfo> = {
+  encode(message: ExportJobInfo, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.jobId !== "") {
+      writer.uint32(10).string(message.jobId);
+    }
+    if (message.jobCode !== "") {
+      writer.uint32(18).string(message.jobCode);
+    }
+    if (message.status !== "") {
+      writer.uint32(26).string(message.status);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ExportJobInfo {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseExportJobInfo();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.jobId = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.jobCode = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.status = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ExportJobInfo {
+    return {
+      jobId: isSet(object.jobId)
+        ? globalThis.String(object.jobId)
+        : isSet(object.job_id)
+        ? globalThis.String(object.job_id)
+        : "",
+      jobCode: isSet(object.jobCode)
+        ? globalThis.String(object.jobCode)
+        : isSet(object.job_code)
+        ? globalThis.String(object.job_code)
+        : "",
+      status: isSet(object.status) ? globalThis.String(object.status) : "",
+    };
+  },
+
+  toJSON(message: ExportJobInfo): unknown {
+    const obj: any = {};
+    if (message.jobId !== "") {
+      obj.jobId = message.jobId;
+    }
+    if (message.jobCode !== "") {
+      obj.jobCode = message.jobCode;
+    }
+    if (message.status !== "") {
+      obj.status = message.status;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ExportJobInfo>): ExportJobInfo {
+    return ExportJobInfo.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ExportJobInfo>): ExportJobInfo {
+    const message = createBaseExportJobInfo();
+    message.jobId = object.jobId ?? "";
+    message.jobCode = object.jobCode ?? "";
+    message.status = object.status ?? "";
+    return message;
+  },
+};
+
 function createBaseListRMCostPeriodsResponse(): ListRMCostPeriodsResponse {
   return { base: undefined, periods: [] };
 }
@@ -5833,7 +6433,11 @@ export const RMCostServiceDefinition = {
         },
       },
     },
-    /** ExportRMCosts exports cost rows matching the filter to a single-sheet Excel. */
+    /**
+     * ExportRMCosts exports cost rows matching the filter to a single-sheet Excel.
+     * SYNCHRONOUS variant — returns the bytes directly. Suitable only for small
+     * result sets. Prefer RequestRMCostExport for production use.
+     */
     exportRMCosts: {
       name: "ExportRMCosts",
       requestType: ExportRMCostsRequest,
@@ -5872,6 +6476,146 @@ export const RMCostServiceDefinition = {
               116,
               115,
               47,
+              101,
+              120,
+              112,
+              111,
+              114,
+              116,
+            ]),
+          ],
+        },
+      },
+    },
+    /**
+     * GetExportDownloadURL returns a short-lived presigned URL for downloading the
+     * xlsx artifact produced by a completed rm_cost_export job. The caller must
+     * own the job (job_execution.created_by matches the authenticated user).
+     */
+    getExportDownloadURL: {
+      name: "GetExportDownloadURL",
+      requestType: GetExportDownloadURLRequest,
+      requestStream: false,
+      responseType: GetExportDownloadURLResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              52,
+              18,
+              50,
+              47,
+              97,
+              112,
+              105,
+              47,
+              118,
+              49,
+              47,
+              102,
+              105,
+              110,
+              97,
+              110,
+              99,
+              101,
+              47,
+              114,
+              109,
+              45,
+              99,
+              111,
+              115,
+              116,
+              115,
+              47,
+              101,
+              120,
+              112,
+              111,
+              114,
+              116,
+              115,
+              47,
+              123,
+              106,
+              111,
+              98,
+              95,
+              105,
+              100,
+              125,
+              47,
+              100,
+              111,
+              119,
+              110,
+              108,
+              111,
+              97,
+              100,
+            ]),
+          ],
+        },
+      },
+    },
+    /**
+     * RequestRMCostExport queues an asynchronous export job. The worker renders a
+     * 2-sheet Excel (Header + Detail) covering the filtered rows (or the entire
+     * period when no further filter is set), uploads it to MinIO, and emits an
+     * EXPORT_READY notification with a DOWNLOAD action to the requesting user.
+     * Returns immediately with the job_id so the UI can show progress.
+     */
+    requestRMCostExport: {
+      name: "RequestRMCostExport",
+      requestType: RequestRMCostExportRequest,
+      requestStream: false,
+      responseType: RequestRMCostExportResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              44,
+              58,
+              1,
+              42,
+              34,
+              39,
+              47,
+              97,
+              112,
+              105,
+              47,
+              118,
+              49,
+              47,
+              102,
+              105,
+              110,
+              97,
+              110,
+              99,
+              101,
+              47,
+              114,
+              109,
+              45,
+              99,
+              111,
+              115,
+              116,
+              115,
+              47,
+              114,
+              101,
+              113,
+              117,
+              101,
+              115,
+              116,
+              45,
               101,
               120,
               112,
