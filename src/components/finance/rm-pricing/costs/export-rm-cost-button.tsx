@@ -22,18 +22,18 @@ export function ExportRMCostButton({ filters, disabled }: Props) {
     onMutate: () => setPending(true),
     onSettled: () => setPending(false),
     onSuccess: (info) => {
-      toast.success("Export dimulai", {
-        description: `Job ${info.jobCode} sedang diproses. Anda akan dapat notifikasi saat siap diunduh.`,
+      toast.success("Export started", {
+        description: `Job ${info.jobCode} is being processed. You will receive a notification when it's ready to download.`,
       })
     },
     onError: (err: Error) => {
-      toast.error("Gagal memulai export", { description: err.message })
+      toast.error("Failed to start export", { description: err.message })
     },
   })
 
   const handleClick = () => {
     if (!filters.period) {
-      toast.warning("Pilih period dulu sebelum export.")
+      toast.warning("Please select a period before exporting.")
       return
     }
     mutation.mutate(filters)
@@ -42,11 +42,12 @@ export function ExportRMCostButton({ filters, disabled }: Props) {
   return (
     <Button
       variant="outline"
+      className="cursor-pointer"
       onClick={handleClick}
       disabled={disabled || pending || !filters.period}
     >
       <Download className="mr-2 h-4 w-4" />
-      {pending ? "Menyusun…" : "Export"}
+      {pending ? "Preparing…" : "Export"}
     </Button>
   )
 }
