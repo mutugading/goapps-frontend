@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import {
   useNotifications,
   useUnreadCount,
@@ -72,10 +71,12 @@ export function NotificationBell() {
       </PopoverTrigger>
       <PopoverContent
         align="end"
-        // Cap the whole popover at ~viewport-height minus the navbar so the
-        // ScrollArea inside has a real upper bound and the list stops growing
-        // off-screen on long notification lists.
-        className="flex max-h-[calc(100vh-6rem)] w-[calc(100vw-2rem)] max-w-96 flex-col p-0 sm:w-96"
+        sideOffset={8}
+        collisionPadding={8}
+        // Use Radix's auto-calculated available height (viewport minus trigger
+        // position minus padding) so the popover never grows past the screen
+        // regardless of viewport size or list length.
+        className="flex max-h-[var(--radix-popover-content-available-height)] w-[calc(100vw-2rem)] max-w-96 flex-col p-0 sm:w-96"
       >
         <div className="flex shrink-0 items-center justify-between border-b px-4 py-3">
           <div className="flex items-center gap-2">
@@ -94,7 +95,15 @@ export function NotificationBell() {
           </Button>
         </div>
 
-        <ScrollArea className="min-h-0 flex-1">
+        {/*
+          Plain overflow-y-auto wins over shadcn ScrollArea here because Radix
+          ScrollArea renders an extra <div data-radix-scroll-area-viewport>
+          with display:table-like inline styles that breaks flex-height
+          inheritance inside the popover. A plain overscroll container honors
+          flex-1 + min-h-0 reliably and the native scrollbar is fine for a
+          dropdown.
+        */}
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
           {items.length === 0 ? (
             <div className="px-4 py-12 text-center text-sm text-muted-foreground">
               No notifications.
@@ -150,7 +159,7 @@ export function NotificationBell() {
               ))}
             </ul>
           )}
-        </ScrollArea>
+        </div>
 
         <div className="shrink-0 border-t px-4 py-2">
           <Button
