@@ -72,7 +72,10 @@ export function NotificationBell() {
       </PopoverTrigger>
       <PopoverContent
         align="end"
-        className="flex w-[calc(100vw-2rem)] max-w-96 flex-col p-0 sm:w-96"
+        // Cap the whole popover at ~viewport-height minus the navbar so the
+        // ScrollArea inside has a real upper bound and the list stops growing
+        // off-screen on long notification lists.
+        className="flex max-h-[calc(100vh-6rem)] w-[calc(100vw-2rem)] max-w-96 flex-col p-0 sm:w-96"
       >
         <div className="flex shrink-0 items-center justify-between border-b px-4 py-3">
           <div className="flex items-center gap-2">
@@ -91,7 +94,7 @@ export function NotificationBell() {
           </Button>
         </div>
 
-        <ScrollArea className="h-96 min-h-0 flex-1">
+        <ScrollArea className="min-h-0 flex-1">
           {items.length === 0 ? (
             <div className="px-4 py-12 text-center text-sm text-muted-foreground">
               No notifications.
