@@ -6,7 +6,7 @@
 //
 // EventSource handles automatic reconnect and Last-Event-ID resume natively.
 
-import { createContext, useContext, useEffect, useRef } from "react"
+import { createContext, useContext, useEffect, useRef, useState } from "react"
 import { useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 
@@ -43,6 +43,8 @@ export function NotificationProvider({ children }: ProviderProps) {
   const { isAuthenticated } = useAuth()
   const qc = useQueryClient()
   const esRef = useRef<EventSource | null>(null)
+  // connected lives in state so context consumers re-render when it flips.
+  const [connected, setConnected] = useState(false)
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -51,12 +53,14 @@ export function NotificationProvider({ children }: ProviderProps) {
         esRef.current.close()
         esRef.current = null
       }
+      setConnected(false)
       return
     }
 
     // Open SSE.
     const es = new EventSource("/api/v1/iam/notifications/stream", { withCredentials: true })
     esRef.current = es
+    es.onopen = () => setConnected(true)
 
     const handleEvent = (raw: RawStreamEvent) => {
       const isHeartbeat = raw.isHeartbeat ?? raw.is_heartbeat ?? false
@@ -98,20 +102,21 @@ export function NotificationProvider({ children }: ProviderProps) {
     es.onmessage = onMessage
 
     es.onerror = () => {
-      // EventSource auto-reconnects with exponential backoff; we just log here.
-      // Do NOT close the EventSource — let the browser handle reconnect.
-      // In dev with HMR you may see one transient error; that's expected.
+      // EventSource auto-reconnects with exponential backoff; reflect dropped
+      // state so consumers can show a "reconnecting" hint if they want.
+      setConnected(false)
     }
 
     return () => {
       es.removeEventListener("notification", onMessage as EventListener)
       es.close()
       if (esRef.current === es) esRef.current = null
+      setConnected(false)
     }
   }, [isAuthenticated, qc])
 
   return (
-    <NotificationContext.Provider value={{ connected: esRef.current !== null }}>
+    <NotificationContext.Provider value={{ connected }}>
       {children}
     </NotificationContext.Provider>
   )

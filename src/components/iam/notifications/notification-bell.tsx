@@ -97,10 +97,18 @@ export function NotificationBell() {
               {items.map((n) => (
                 <li
                   key={n.notificationId}
-                  className={`cursor-pointer px-4 py-3 hover:bg-accent ${
+                  role="button"
+                  tabIndex={0}
+                  className={`cursor-pointer px-4 py-3 hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring ${
                     n.status === NotificationStatus.NOTIFICATION_STATUS_UNREAD ? "bg-accent/30" : ""
                   }`}
                   onClick={() => handleClick(n)}
+                  onKeyDown={(ev) => {
+                    if (ev.key === "Enter" || ev.key === " ") {
+                      ev.preventDefault()
+                      handleClick(n)
+                    }
+                  }}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">

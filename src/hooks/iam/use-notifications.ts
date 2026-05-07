@@ -14,7 +14,7 @@ import {
 export const notificationKeys = {
   all: ["iam", "notifications"] as const,
   lists: () => ["iam", "notifications", "list"] as const,
-  list: (params: ListNotificationsParams) => ["iam", "notifications", "list", params] as const,
+  list: (params: ListNotificationsParams) => ["iam", "notifications", "list", JSON.stringify(params)] as const,
   unreadCount: () => ["iam", "notifications", "unread-count"] as const,
 }
 
