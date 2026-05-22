@@ -52,6 +52,7 @@ import { CostRoutingRuleServiceDefinition } from "@/types/generated/finance/v1/c
 import { CostAuditLogServiceDefinition } from "@/types/generated/finance/v1/cost_audit_log"
 import { CostNotificationServiceDefinition } from "@/types/generated/finance/v1/cost_notification"
 import { CostProductParameterServiceDefinition } from "@/types/generated/finance/v1/cost_product_parameter"
+import { CostCalcServiceDefinition } from "@/types/generated/finance/v1/cost_calc"
 
 const CHANNEL_OPTIONS = {
   "grpc.keepalive_time_ms": 120000,
@@ -334,6 +335,12 @@ export function getCostNotificationClient() {
 export function getCostProductParameterClient() {
   return getOrCreate("costProductParameter", () =>
     createServiceClient(CostProductParameterServiceDefinition, SERVICE_ADDRESSES.finance, insecure, CHANNEL_OPTIONS)
+  )
+}
+
+export function getCostCalcClient() {
+  return getOrCreate("costCalc", () =>
+    createServiceClient(CostCalcServiceDefinition, SERVICE_ADDRESSES.finance, insecure, CHANNEL_OPTIONS)
   )
 }
 

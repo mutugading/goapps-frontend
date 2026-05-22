@@ -43,6 +43,7 @@ export {
   getCostAuditLogClient,
   getCostNotificationClient,
   getCostProductParameterClient,
+  getCostCalcClient,
   getWorkflowTemplateClient,
   getWorkflowInstanceClient,
 } from "./clients"
