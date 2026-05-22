@@ -23,6 +23,7 @@ import {
   AttachmentsPanel,
   CommentsPanel,
 } from "@/components/finance/cost-request-comment"
+import { RoutingPanel } from "./routing-panel"
 import { StatusBadge } from "./status-badge"
 import {
   CloseDialog,
@@ -272,10 +273,11 @@ export function RequestDetailPanel({ request, onEdit }: Props) {
         </Card>
       )}
 
-      {/* Routing panel — full implementation lands in S7.17d. */}
-      <Card className="p-4 text-sm text-muted-foreground">
-        Routing — coming up (S7.17d).
-      </Card>
+      {/* Routing panel — 3 states: linked / own / nothing. */}
+      <RoutingPanel
+        requestId={request.requestId}
+        linkedRouteHeadId={request.linkedRouteHeadId}
+      />
 
       {/* Comments + attachments (Phase A §7.1.7–10) */}
       <AttachmentsPanel requestId={request.requestId} />

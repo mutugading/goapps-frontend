@@ -24,6 +24,8 @@ import Link from "next/link"
 
 import { ErpItemCombobox } from "@/components/finance/comboboxes/erp-item-combobox"
 import { ProductMasterCombobox } from "@/components/finance/comboboxes/product-master-combobox"
+import { DuplicateRouteDialog } from "@/components/finance/cost-route/duplicate-route-dialog"
+import { LinkedRequestsPopover } from "@/components/finance/cost-route/linked-requests-popover"
 import { RouteGraphFlow } from "@/components/finance/cost-route/route-graph-flow"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -73,6 +75,7 @@ export function RouteGraphEditor({ headId }: Props) {
   const [working, setWorking] = useState<RouteGraph | null>(null)
   const [dirty, setDirty] = useState(false)
   const [stageDialogOpen, setStageDialogOpen] = useState(false)
+  const [forkOpen, setForkOpen] = useState(false)
   const [rmDialog, setRmDialog] = useState<{ seqIdx: number } | null>(null)
   const [view, setView] = useState<"visual" | "cards">("visual")
 
@@ -216,6 +219,10 @@ export function RouteGraphEditor({ headId }: Props) {
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
+          <LinkedRequestsPopover headId={headId} />
+          <Button variant="outline" size="sm" onClick={() => setForkOpen(true)}>
+            🔱 Fork
+          </Button>
           {!locked && (
             <Button onClick={() => setStageDialogOpen(true)} variant="outline">
               <Plus className="mr-1 h-4 w-4" /> Add stage
@@ -386,6 +393,13 @@ export function RouteGraphEditor({ headId }: Props) {
           addStage(level, productSysId, productCode, productName)
           setStageDialogOpen(false)
         }}
+      />
+
+      <DuplicateRouteDialog
+        open={forkOpen}
+        onClose={() => setForkOpen(false)}
+        sourceHeadId={headId}
+        sourceProductCode={head?.productCode}
       />
 
       {rmDialog && (

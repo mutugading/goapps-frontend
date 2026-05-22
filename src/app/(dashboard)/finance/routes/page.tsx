@@ -5,9 +5,16 @@ import { useState } from "react"
 import { Loader2 } from "lucide-react"
 
 import { DebouncedSearchInput } from "@/components/common"
+import { CreateRoutingWizard } from "@/components/finance/cost-product-request/create-routing-wizard"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useRoutes } from "@/hooks/finance/use-cost-route"
@@ -17,6 +24,7 @@ export default function RoutesListPage() {
   const [search, setSearch] = useState("")
   const [status, setStatus] = useState<RouteStatus | "">("")
   const [page, setPage] = useState(1)
+  const [wizardOpen, setWizardOpen] = useState(false)
   const pageSize = 20
 
   const { data, isLoading } = useRoutes({ search, status, page, pageSize })
@@ -30,7 +38,24 @@ export default function RoutesListPage() {
             Multi-stage routings (DAG): one head per product, each stage produces an intermediate or FG product.
           </p>
         </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button>+ New route ▾</Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            <DropdownMenuItem onClick={() => setWizardOpen(true)}>
+              From product (wizard)
+            </DropdownMenuItem>
+            {/* "From template (duplicate)" deferred — user opens an existing route then Fork. */}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
+
+      <CreateRoutingWizard
+        open={wizardOpen}
+        onClose={() => setWizardOpen(false)}
+        requestId={0}
+      />
 
       <Card className="p-4">
         <div className="flex flex-wrap gap-3">
