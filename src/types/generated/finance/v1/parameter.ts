@@ -143,6 +143,18 @@ export interface Parameter {
   uomCode: string;
   /** Resolved UOM name (read-only, populated from mst_uom join). */
   uomName: string;
+  /** Responsible department (Engineering, Production, Finance, RND). Optional. */
+  ownerDepartment: string;
+  /** Whether this parameter must be filled per product before the request can leave PARAMETER_PENDING. */
+  isRequiredForCosting: boolean;
+  /** FALSE = stored in cost_product_parameter (Phase B static). TRUE = stored per period in Phase C (deferred). */
+  isPeriodDependent: boolean;
+  /** When NOT empty the UI renders a combobox sourced from the named master (e.g. YARN_TYPE). Free-text fallback while master is not yet built. */
+  lookupMasterCode: string;
+  /** Render order within display_group. */
+  displayOrder: number;
+  /** Form section: Spec / Machine / Grade / Packing / Cost / etc. */
+  displayGroup: string;
 }
 
 /** CreateParameterRequest is the request for creating a new parameter. */
@@ -168,6 +180,18 @@ export interface CreateParameterRequest {
   minValue: string;
   /** Maximum value (optional, decimal as string). */
   maxValue: string;
+  /** Owner department (optional, max 30 chars). */
+  ownerDepartment: string;
+  /** Whether required for costing (default false). */
+  isRequiredForCosting: boolean;
+  /** Period-dependent flag (default false). TRUE = Phase C period-storage (deferred). */
+  isPeriodDependent: boolean;
+  /** Lookup master code (optional, max 30 chars). E.g. 'YARN_TYPE'. */
+  lookupMasterCode: string;
+  /** Display order within display group (default 0). */
+  displayOrder: number;
+  /** Display group (optional, max 50 chars). E.g. 'Spec', 'Machine'. */
+  displayGroup: string;
 }
 
 /** CreateParameterResponse is the response for creating a parameter. */
@@ -236,7 +260,31 @@ export interface UpdateParameterRequest {
     | string
     | undefined;
   /** New active status (optional). */
-  isActive?: boolean | undefined;
+  isActive?:
+    | boolean
+    | undefined;
+  /** New owner department (optional). */
+  ownerDepartment?:
+    | string
+    | undefined;
+  /** New is_required_for_costing flag (optional). */
+  isRequiredForCosting?:
+    | boolean
+    | undefined;
+  /** New is_period_dependent flag (optional). */
+  isPeriodDependent?:
+    | boolean
+    | undefined;
+  /** New lookup master code (optional). Set to empty string to clear. */
+  lookupMasterCode?:
+    | string
+    | undefined;
+  /** New display order (optional). */
+  displayOrder?:
+    | number
+    | undefined;
+  /** New display group (optional). Set to empty string to clear. */
+  displayGroup?: string | undefined;
 }
 
 /** UpdateParameterResponse is the response for updating a parameter. */
@@ -385,6 +433,12 @@ function createBaseParameter(): Parameter {
     uomId: "",
     uomCode: "",
     uomName: "",
+    ownerDepartment: "",
+    isRequiredForCosting: false,
+    isPeriodDependent: false,
+    lookupMasterCode: "",
+    displayOrder: 0,
+    displayGroup: "",
   };
 }
 
@@ -431,6 +485,24 @@ export const Parameter: MessageFns<Parameter> = {
     }
     if (message.uomName !== "") {
       writer.uint32(186).string(message.uomName);
+    }
+    if (message.ownerDepartment !== "") {
+      writer.uint32(194).string(message.ownerDepartment);
+    }
+    if (message.isRequiredForCosting !== false) {
+      writer.uint32(200).bool(message.isRequiredForCosting);
+    }
+    if (message.isPeriodDependent !== false) {
+      writer.uint32(208).bool(message.isPeriodDependent);
+    }
+    if (message.lookupMasterCode !== "") {
+      writer.uint32(218).string(message.lookupMasterCode);
+    }
+    if (message.displayOrder !== 0) {
+      writer.uint32(224).int32(message.displayOrder);
+    }
+    if (message.displayGroup !== "") {
+      writer.uint32(234).string(message.displayGroup);
     }
     return writer;
   },
@@ -554,6 +626,54 @@ export const Parameter: MessageFns<Parameter> = {
           message.uomName = reader.string();
           continue;
         }
+        case 24: {
+          if (tag !== 194) {
+            break;
+          }
+
+          message.ownerDepartment = reader.string();
+          continue;
+        }
+        case 25: {
+          if (tag !== 200) {
+            break;
+          }
+
+          message.isRequiredForCosting = reader.bool();
+          continue;
+        }
+        case 26: {
+          if (tag !== 208) {
+            break;
+          }
+
+          message.isPeriodDependent = reader.bool();
+          continue;
+        }
+        case 27: {
+          if (tag !== 218) {
+            break;
+          }
+
+          message.lookupMasterCode = reader.string();
+          continue;
+        }
+        case 28: {
+          if (tag !== 224) {
+            break;
+          }
+
+          message.displayOrder = reader.int32();
+          continue;
+        }
+        case 29: {
+          if (tag !== 234) {
+            break;
+          }
+
+          message.displayGroup = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -631,6 +751,36 @@ export const Parameter: MessageFns<Parameter> = {
         : isSet(object.uom_name)
         ? globalThis.String(object.uom_name)
         : "",
+      ownerDepartment: isSet(object.ownerDepartment)
+        ? globalThis.String(object.ownerDepartment)
+        : isSet(object.owner_department)
+        ? globalThis.String(object.owner_department)
+        : "",
+      isRequiredForCosting: isSet(object.isRequiredForCosting)
+        ? globalThis.Boolean(object.isRequiredForCosting)
+        : isSet(object.is_required_for_costing)
+        ? globalThis.Boolean(object.is_required_for_costing)
+        : false,
+      isPeriodDependent: isSet(object.isPeriodDependent)
+        ? globalThis.Boolean(object.isPeriodDependent)
+        : isSet(object.is_period_dependent)
+        ? globalThis.Boolean(object.is_period_dependent)
+        : false,
+      lookupMasterCode: isSet(object.lookupMasterCode)
+        ? globalThis.String(object.lookupMasterCode)
+        : isSet(object.lookup_master_code)
+        ? globalThis.String(object.lookup_master_code)
+        : "",
+      displayOrder: isSet(object.displayOrder)
+        ? globalThis.Number(object.displayOrder)
+        : isSet(object.display_order)
+        ? globalThis.Number(object.display_order)
+        : 0,
+      displayGroup: isSet(object.displayGroup)
+        ? globalThis.String(object.displayGroup)
+        : isSet(object.display_group)
+        ? globalThis.String(object.display_group)
+        : "",
     };
   },
 
@@ -678,6 +828,24 @@ export const Parameter: MessageFns<Parameter> = {
     if (message.uomName !== "") {
       obj.uomName = message.uomName;
     }
+    if (message.ownerDepartment !== "") {
+      obj.ownerDepartment = message.ownerDepartment;
+    }
+    if (message.isRequiredForCosting !== false) {
+      obj.isRequiredForCosting = message.isRequiredForCosting;
+    }
+    if (message.isPeriodDependent !== false) {
+      obj.isPeriodDependent = message.isPeriodDependent;
+    }
+    if (message.lookupMasterCode !== "") {
+      obj.lookupMasterCode = message.lookupMasterCode;
+    }
+    if (message.displayOrder !== 0) {
+      obj.displayOrder = Math.round(message.displayOrder);
+    }
+    if (message.displayGroup !== "") {
+      obj.displayGroup = message.displayGroup;
+    }
     return obj;
   },
 
@@ -702,6 +870,12 @@ export const Parameter: MessageFns<Parameter> = {
     message.uomId = object.uomId ?? "";
     message.uomCode = object.uomCode ?? "";
     message.uomName = object.uomName ?? "";
+    message.ownerDepartment = object.ownerDepartment ?? "";
+    message.isRequiredForCosting = object.isRequiredForCosting ?? false;
+    message.isPeriodDependent = object.isPeriodDependent ?? false;
+    message.lookupMasterCode = object.lookupMasterCode ?? "";
+    message.displayOrder = object.displayOrder ?? 0;
+    message.displayGroup = object.displayGroup ?? "";
     return message;
   },
 };
@@ -717,6 +891,12 @@ function createBaseCreateParameterRequest(): CreateParameterRequest {
     defaultValue: "",
     minValue: "",
     maxValue: "",
+    ownerDepartment: "",
+    isRequiredForCosting: false,
+    isPeriodDependent: false,
+    lookupMasterCode: "",
+    displayOrder: 0,
+    displayGroup: "",
   };
 }
 
@@ -748,6 +928,24 @@ export const CreateParameterRequest: MessageFns<CreateParameterRequest> = {
     }
     if (message.maxValue !== "") {
       writer.uint32(74).string(message.maxValue);
+    }
+    if (message.ownerDepartment !== "") {
+      writer.uint32(82).string(message.ownerDepartment);
+    }
+    if (message.isRequiredForCosting !== false) {
+      writer.uint32(88).bool(message.isRequiredForCosting);
+    }
+    if (message.isPeriodDependent !== false) {
+      writer.uint32(96).bool(message.isPeriodDependent);
+    }
+    if (message.lookupMasterCode !== "") {
+      writer.uint32(106).string(message.lookupMasterCode);
+    }
+    if (message.displayOrder !== 0) {
+      writer.uint32(112).int32(message.displayOrder);
+    }
+    if (message.displayGroup !== "") {
+      writer.uint32(122).string(message.displayGroup);
     }
     return writer;
   },
@@ -831,6 +1029,54 @@ export const CreateParameterRequest: MessageFns<CreateParameterRequest> = {
           message.maxValue = reader.string();
           continue;
         }
+        case 10: {
+          if (tag !== 82) {
+            break;
+          }
+
+          message.ownerDepartment = reader.string();
+          continue;
+        }
+        case 11: {
+          if (tag !== 88) {
+            break;
+          }
+
+          message.isRequiredForCosting = reader.bool();
+          continue;
+        }
+        case 12: {
+          if (tag !== 96) {
+            break;
+          }
+
+          message.isPeriodDependent = reader.bool();
+          continue;
+        }
+        case 13: {
+          if (tag !== 106) {
+            break;
+          }
+
+          message.lookupMasterCode = reader.string();
+          continue;
+        }
+        case 14: {
+          if (tag !== 112) {
+            break;
+          }
+
+          message.displayOrder = reader.int32();
+          continue;
+        }
+        case 15: {
+          if (tag !== 122) {
+            break;
+          }
+
+          message.displayGroup = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -887,6 +1133,36 @@ export const CreateParameterRequest: MessageFns<CreateParameterRequest> = {
         : isSet(object.max_value)
         ? globalThis.String(object.max_value)
         : "",
+      ownerDepartment: isSet(object.ownerDepartment)
+        ? globalThis.String(object.ownerDepartment)
+        : isSet(object.owner_department)
+        ? globalThis.String(object.owner_department)
+        : "",
+      isRequiredForCosting: isSet(object.isRequiredForCosting)
+        ? globalThis.Boolean(object.isRequiredForCosting)
+        : isSet(object.is_required_for_costing)
+        ? globalThis.Boolean(object.is_required_for_costing)
+        : false,
+      isPeriodDependent: isSet(object.isPeriodDependent)
+        ? globalThis.Boolean(object.isPeriodDependent)
+        : isSet(object.is_period_dependent)
+        ? globalThis.Boolean(object.is_period_dependent)
+        : false,
+      lookupMasterCode: isSet(object.lookupMasterCode)
+        ? globalThis.String(object.lookupMasterCode)
+        : isSet(object.lookup_master_code)
+        ? globalThis.String(object.lookup_master_code)
+        : "",
+      displayOrder: isSet(object.displayOrder)
+        ? globalThis.Number(object.displayOrder)
+        : isSet(object.display_order)
+        ? globalThis.Number(object.display_order)
+        : 0,
+      displayGroup: isSet(object.displayGroup)
+        ? globalThis.String(object.displayGroup)
+        : isSet(object.display_group)
+        ? globalThis.String(object.display_group)
+        : "",
     };
   },
 
@@ -919,6 +1195,24 @@ export const CreateParameterRequest: MessageFns<CreateParameterRequest> = {
     if (message.maxValue !== "") {
       obj.maxValue = message.maxValue;
     }
+    if (message.ownerDepartment !== "") {
+      obj.ownerDepartment = message.ownerDepartment;
+    }
+    if (message.isRequiredForCosting !== false) {
+      obj.isRequiredForCosting = message.isRequiredForCosting;
+    }
+    if (message.isPeriodDependent !== false) {
+      obj.isPeriodDependent = message.isPeriodDependent;
+    }
+    if (message.lookupMasterCode !== "") {
+      obj.lookupMasterCode = message.lookupMasterCode;
+    }
+    if (message.displayOrder !== 0) {
+      obj.displayOrder = Math.round(message.displayOrder);
+    }
+    if (message.displayGroup !== "") {
+      obj.displayGroup = message.displayGroup;
+    }
     return obj;
   },
 
@@ -936,6 +1230,12 @@ export const CreateParameterRequest: MessageFns<CreateParameterRequest> = {
     message.defaultValue = object.defaultValue ?? "";
     message.minValue = object.minValue ?? "";
     message.maxValue = object.maxValue ?? "";
+    message.ownerDepartment = object.ownerDepartment ?? "";
+    message.isRequiredForCosting = object.isRequiredForCosting ?? false;
+    message.isPeriodDependent = object.isPeriodDependent ?? false;
+    message.lookupMasterCode = object.lookupMasterCode ?? "";
+    message.displayOrder = object.displayOrder ?? 0;
+    message.displayGroup = object.displayGroup ?? "";
     return message;
   },
 };
@@ -1172,6 +1472,12 @@ function createBaseUpdateParameterRequest(): UpdateParameterRequest {
     minValue: undefined,
     maxValue: undefined,
     isActive: undefined,
+    ownerDepartment: undefined,
+    isRequiredForCosting: undefined,
+    isPeriodDependent: undefined,
+    lookupMasterCode: undefined,
+    displayOrder: undefined,
+    displayGroup: undefined,
   };
 }
 
@@ -1206,6 +1512,24 @@ export const UpdateParameterRequest: MessageFns<UpdateParameterRequest> = {
     }
     if (message.isActive !== undefined) {
       writer.uint32(80).bool(message.isActive);
+    }
+    if (message.ownerDepartment !== undefined) {
+      writer.uint32(90).string(message.ownerDepartment);
+    }
+    if (message.isRequiredForCosting !== undefined) {
+      writer.uint32(96).bool(message.isRequiredForCosting);
+    }
+    if (message.isPeriodDependent !== undefined) {
+      writer.uint32(104).bool(message.isPeriodDependent);
+    }
+    if (message.lookupMasterCode !== undefined) {
+      writer.uint32(114).string(message.lookupMasterCode);
+    }
+    if (message.displayOrder !== undefined) {
+      writer.uint32(120).int32(message.displayOrder);
+    }
+    if (message.displayGroup !== undefined) {
+      writer.uint32(130).string(message.displayGroup);
     }
     return writer;
   },
@@ -1297,6 +1621,54 @@ export const UpdateParameterRequest: MessageFns<UpdateParameterRequest> = {
           message.isActive = reader.bool();
           continue;
         }
+        case 11: {
+          if (tag !== 90) {
+            break;
+          }
+
+          message.ownerDepartment = reader.string();
+          continue;
+        }
+        case 12: {
+          if (tag !== 96) {
+            break;
+          }
+
+          message.isRequiredForCosting = reader.bool();
+          continue;
+        }
+        case 13: {
+          if (tag !== 104) {
+            break;
+          }
+
+          message.isPeriodDependent = reader.bool();
+          continue;
+        }
+        case 14: {
+          if (tag !== 114) {
+            break;
+          }
+
+          message.lookupMasterCode = reader.string();
+          continue;
+        }
+        case 15: {
+          if (tag !== 120) {
+            break;
+          }
+
+          message.displayOrder = reader.int32();
+          continue;
+        }
+        case 16: {
+          if (tag !== 130) {
+            break;
+          }
+
+          message.displayGroup = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1358,6 +1730,36 @@ export const UpdateParameterRequest: MessageFns<UpdateParameterRequest> = {
         : isSet(object.is_active)
         ? globalThis.Boolean(object.is_active)
         : undefined,
+      ownerDepartment: isSet(object.ownerDepartment)
+        ? globalThis.String(object.ownerDepartment)
+        : isSet(object.owner_department)
+        ? globalThis.String(object.owner_department)
+        : undefined,
+      isRequiredForCosting: isSet(object.isRequiredForCosting)
+        ? globalThis.Boolean(object.isRequiredForCosting)
+        : isSet(object.is_required_for_costing)
+        ? globalThis.Boolean(object.is_required_for_costing)
+        : undefined,
+      isPeriodDependent: isSet(object.isPeriodDependent)
+        ? globalThis.Boolean(object.isPeriodDependent)
+        : isSet(object.is_period_dependent)
+        ? globalThis.Boolean(object.is_period_dependent)
+        : undefined,
+      lookupMasterCode: isSet(object.lookupMasterCode)
+        ? globalThis.String(object.lookupMasterCode)
+        : isSet(object.lookup_master_code)
+        ? globalThis.String(object.lookup_master_code)
+        : undefined,
+      displayOrder: isSet(object.displayOrder)
+        ? globalThis.Number(object.displayOrder)
+        : isSet(object.display_order)
+        ? globalThis.Number(object.display_order)
+        : undefined,
+      displayGroup: isSet(object.displayGroup)
+        ? globalThis.String(object.displayGroup)
+        : isSet(object.display_group)
+        ? globalThis.String(object.display_group)
+        : undefined,
     };
   },
 
@@ -1393,6 +1795,24 @@ export const UpdateParameterRequest: MessageFns<UpdateParameterRequest> = {
     if (message.isActive !== undefined) {
       obj.isActive = message.isActive;
     }
+    if (message.ownerDepartment !== undefined) {
+      obj.ownerDepartment = message.ownerDepartment;
+    }
+    if (message.isRequiredForCosting !== undefined) {
+      obj.isRequiredForCosting = message.isRequiredForCosting;
+    }
+    if (message.isPeriodDependent !== undefined) {
+      obj.isPeriodDependent = message.isPeriodDependent;
+    }
+    if (message.lookupMasterCode !== undefined) {
+      obj.lookupMasterCode = message.lookupMasterCode;
+    }
+    if (message.displayOrder !== undefined) {
+      obj.displayOrder = Math.round(message.displayOrder);
+    }
+    if (message.displayGroup !== undefined) {
+      obj.displayGroup = message.displayGroup;
+    }
     return obj;
   },
 
@@ -1411,6 +1831,12 @@ export const UpdateParameterRequest: MessageFns<UpdateParameterRequest> = {
     message.minValue = object.minValue ?? undefined;
     message.maxValue = object.maxValue ?? undefined;
     message.isActive = object.isActive ?? undefined;
+    message.ownerDepartment = object.ownerDepartment ?? undefined;
+    message.isRequiredForCosting = object.isRequiredForCosting ?? undefined;
+    message.isPeriodDependent = object.isPeriodDependent ?? undefined;
+    message.lookupMasterCode = object.lookupMasterCode ?? undefined;
+    message.displayOrder = object.displayOrder ?? undefined;
+    message.displayGroup = object.displayGroup ?? undefined;
     return message;
   },
 };

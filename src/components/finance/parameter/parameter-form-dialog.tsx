@@ -43,6 +43,7 @@ import {
 } from "@/types/finance/parameter"
 import { useCreateParameter, useUpdateParameter } from "@/hooks/finance/use-parameter"
 import { useUOMs } from "@/hooks/finance/use-uom"
+import { useDepartments } from "@/hooks/iam/use-departments"
 import { ActiveFilter } from "@/types/finance/uom"
 
 interface ParameterFormValues {
@@ -56,6 +57,12 @@ interface ParameterFormValues {
   minValue: string
   maxValue: string
   isActive: boolean
+  ownerDepartment: string
+  isRequiredForCosting: boolean
+  isPeriodDependent: boolean
+  lookupMasterCode: string
+  displayOrder: number
+  displayGroup: string
 }
 
 const parameterFormSchema = z.object({
@@ -85,6 +92,12 @@ const parameterFormSchema = z.object({
   minValue: z.string(),
   maxValue: z.string(),
   isActive: z.boolean(),
+  ownerDepartment: z.string().max(30),
+  isRequiredForCosting: z.boolean(),
+  isPeriodDependent: z.boolean(),
+  lookupMasterCode: z.string().max(30),
+  displayOrder: z.coerce.number().int().gte(0),
+  displayGroup: z.string().max(50),
 })
 
 interface ParameterFormDialogProps {
@@ -105,6 +118,8 @@ export function ParameterFormDialog({
   const updateMutation = useUpdateParameter()
 
   // Fetch active UOMs for the dropdown
+  const { items: departments } = useDepartments()
+
   const { data: uomData } = useUOMs({
     page: 1,
     pageSize: 100,
@@ -126,6 +141,12 @@ export function ParameterFormDialog({
       minValue: "",
       maxValue: "",
       isActive: true,
+      ownerDepartment: "",
+      isRequiredForCosting: false,
+      isPeriodDependent: false,
+      lookupMasterCode: "",
+      displayOrder: 0,
+      displayGroup: "",
     },
   })
 
@@ -143,6 +164,12 @@ export function ParameterFormDialog({
           minValue: parameter.minValue || "",
           maxValue: parameter.maxValue || "",
           isActive: parameter.isActive ?? true,
+          ownerDepartment: parameter.ownerDepartment || "",
+          isRequiredForCosting: parameter.isRequiredForCosting ?? false,
+          isPeriodDependent: parameter.isPeriodDependent ?? false,
+          lookupMasterCode: parameter.lookupMasterCode || "",
+          displayOrder: parameter.displayOrder ?? 0,
+          displayGroup: parameter.displayGroup || "",
         })
       } else {
         form.reset({
@@ -156,6 +183,12 @@ export function ParameterFormDialog({
           minValue: "",
           maxValue: "",
           isActive: true,
+          ownerDepartment: "",
+          isRequiredForCosting: false,
+          isPeriodDependent: false,
+          lookupMasterCode: "",
+          displayOrder: 0,
+          displayGroup: "",
         })
       }
     }
@@ -177,6 +210,12 @@ export function ParameterFormDialog({
             minValue: values.minValue || undefined,
             maxValue: values.maxValue || undefined,
             isActive: values.isActive,
+            ownerDepartment: values.ownerDepartment,
+            isRequiredForCosting: values.isRequiredForCosting,
+            isPeriodDependent: values.isPeriodDependent,
+            lookupMasterCode: values.lookupMasterCode,
+            displayOrder: values.displayOrder,
+            displayGroup: values.displayGroup,
           },
         })
       } else {
@@ -190,6 +229,12 @@ export function ParameterFormDialog({
           defaultValue: values.defaultValue || "",
           minValue: values.minValue || "",
           maxValue: values.maxValue || "",
+          ownerDepartment: values.ownerDepartment,
+          isRequiredForCosting: values.isRequiredForCosting,
+          isPeriodDependent: values.isPeriodDependent,
+          lookupMasterCode: values.lookupMasterCode,
+          displayOrder: values.displayOrder,
+          displayGroup: values.displayGroup,
         })
       }
       onOpenChange(false)
@@ -431,6 +476,167 @@ export function ParameterFormDialog({
                   </FormItem>
                 )}
               />
+            </div>
+
+            {/* ── Costing Metadata (Phase B product↔param binding) ─────────── */}
+            <div className="border-t pt-4">
+              <div className="mb-3">
+                <h4 className="text-sm font-semibold">Costing Metadata</h4>
+                <p className="text-xs text-muted-foreground">
+                  Drives how this parameter appears on the per-product parameter form during
+                  costing.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:items-start">
+                <FormField
+                  control={form.control}
+                  name="ownerDepartment"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Owner Department</FormLabel>
+                      <Select
+                        onValueChange={(v) => field.onChange(v === "__none__" ? "" : v)}
+                        value={field.value || "__none__"}
+                        disabled={isPending}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select department" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="__none__">—</SelectItem>
+                          {departments.map((d) => (
+                            <SelectItem key={d.id} value={d.code || d.name}>
+                              {d.name}
+                              {d.code && d.code !== d.name && ` (${d.code})`}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>Pick from IAM master department.</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="displayGroup"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Display Group</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="e.g., Spec, Machine, Grade, Packing"
+                          {...field}
+                          value={field.value || ""}
+                          disabled={isPending}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Section heading shown on the per-product param form.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="displayOrder"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Display Order</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min={0}
+                          {...field}
+                          value={field.value ?? 0}
+                          onChange={(e) => field.onChange(Number(e.target.value || 0))}
+                          disabled={isPending}
+                        />
+                      </FormControl>
+                      <FormDescription>Render order within the display group.</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="lookupMasterCode"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Lookup Master Code</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="e.g., YARN_TYPE, MACHINE (optional)"
+                          {...field}
+                          value={field.value || ""}
+                          disabled={isPending}
+                          className="uppercase"
+                          onChange={(e) => field.onChange(e.target.value.toUpperCase())}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        When set, the per-product form renders a combobox sourced from this master.
+                        Leave empty for free-text / typed input.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="mt-4 space-y-3">
+                <FormField
+                  control={form.control}
+                  name="isRequiredForCosting"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                      <div className="space-y-0.5">
+                        <FormLabel>Required for Costing</FormLabel>
+                        <FormDescription>
+                          Product cannot leave PARAMETER_PENDING until this param has a value.
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value ?? false}
+                          onCheckedChange={field.onChange}
+                          disabled={isPending}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="isPeriodDependent"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                      <div className="space-y-0.5">
+                        <FormLabel>Period-Dependent</FormLabel>
+                        <FormDescription>
+                          Value changes per period (Phase C). Leave OFF for static values stored in
+                          cost_product_parameter.
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value ?? false}
+                          onCheckedChange={field.onChange}
+                          disabled={isPending}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </div>
             </div>
 
             {isEditing && (

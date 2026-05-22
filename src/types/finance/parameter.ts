@@ -174,6 +174,13 @@ export interface ParameterFormData {
   minValue: string
   maxValue: string
   isActive: boolean
+  // Phase B costing metadata
+  ownerDepartment: string
+  isRequiredForCosting: boolean
+  isPeriodDependent: boolean
+  lookupMasterCode: string
+  displayOrder: number
+  displayGroup: string
 }
 
 /**
@@ -190,4 +197,21 @@ export const DEFAULT_PARAMETER_FORM_VALUES: ParameterFormData = {
   minValue: "",
   maxValue: "",
   isActive: true,
+  ownerDepartment: "",
+  isRequiredForCosting: false,
+  isPeriodDependent: false,
+  lookupMasterCode: "",
+  displayOrder: 0,
+  displayGroup: "",
 }
+
+/**
+ * Owner department options.
+ */
+export const OWNER_DEPARTMENT_OPTIONS = [
+  { value: "", label: "—" },
+  { value: "Engineering", label: "Engineering" },
+  { value: "Production", label: "Production" },
+  { value: "Finance", label: "Finance" },
+  { value: "RND", label: "R&D" },
+]

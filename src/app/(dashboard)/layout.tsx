@@ -4,7 +4,10 @@ import { useAuth } from "@/providers/auth-provider"
 import { useRouter } from "next/navigation"
 import { useEffect } from "react"
 import { AppSidebar } from "@/components/app-sidebar"
-import { DynamicBreadcrumb } from "@/components/common/dynamic-breadcrumb"
+import {
+    BreadcrumbOverrideProvider,
+    DynamicBreadcrumb,
+} from "@/components/common/dynamic-breadcrumb"
 import { NotificationBell } from "@/components/iam/notifications/notification-bell"
 import { Footer } from "@/components/common/footer"
 import { Separator } from "@/components/ui/separator"
@@ -80,6 +83,7 @@ export default function DashboardLayout({
 
     return (
         <SidebarProvider>
+            <BreadcrumbOverrideProvider>
             <AppSidebar />
             <SidebarInset>
                 {/* Sticky header with breadcrumbs */}
@@ -106,6 +110,7 @@ export default function DashboardLayout({
                     <Footer />
                 </div>
             </SidebarInset>
+            </BreadcrumbOverrideProvider>
         </SidebarProvider>
     )
 }

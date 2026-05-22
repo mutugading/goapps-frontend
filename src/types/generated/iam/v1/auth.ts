@@ -78,6 +78,10 @@ export interface AuthUser {
   twoFactorEnabled: boolean;
   /** Whether the user has verified their email address (true if email_verified_at IS NOT NULL). */
   emailVerified: boolean;
+  /** Section UUID assigned to the user via user_detail (empty if not assigned). */
+  sectionId: string;
+  /** Department UUID derived from the user's section (empty if no section assigned). */
+  departmentId: string;
 }
 
 /** LogoutRequest is the request for logout. */
@@ -694,6 +698,8 @@ function createBaseAuthUser(): AuthUser {
     permissions: [],
     twoFactorEnabled: false,
     emailVerified: false,
+    sectionId: "",
+    departmentId: "",
   };
 }
 
@@ -725,6 +731,12 @@ export const AuthUser: MessageFns<AuthUser> = {
     }
     if (message.emailVerified !== false) {
       writer.uint32(72).bool(message.emailVerified);
+    }
+    if (message.sectionId !== "") {
+      writer.uint32(82).string(message.sectionId);
+    }
+    if (message.departmentId !== "") {
+      writer.uint32(90).string(message.departmentId);
     }
     return writer;
   },
@@ -808,6 +820,22 @@ export const AuthUser: MessageFns<AuthUser> = {
           message.emailVerified = reader.bool();
           continue;
         }
+        case 10: {
+          if (tag !== 82) {
+            break;
+          }
+
+          message.sectionId = reader.string();
+          continue;
+        }
+        case 11: {
+          if (tag !== 90) {
+            break;
+          }
+
+          message.departmentId = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -852,6 +880,16 @@ export const AuthUser: MessageFns<AuthUser> = {
         : isSet(object.email_verified)
         ? globalThis.Boolean(object.email_verified)
         : false,
+      sectionId: isSet(object.sectionId)
+        ? globalThis.String(object.sectionId)
+        : isSet(object.section_id)
+        ? globalThis.String(object.section_id)
+        : "",
+      departmentId: isSet(object.departmentId)
+        ? globalThis.String(object.departmentId)
+        : isSet(object.department_id)
+        ? globalThis.String(object.department_id)
+        : "",
     };
   },
 
@@ -884,6 +922,12 @@ export const AuthUser: MessageFns<AuthUser> = {
     if (message.emailVerified !== false) {
       obj.emailVerified = message.emailVerified;
     }
+    if (message.sectionId !== "") {
+      obj.sectionId = message.sectionId;
+    }
+    if (message.departmentId !== "") {
+      obj.departmentId = message.departmentId;
+    }
     return obj;
   },
 
@@ -901,6 +945,8 @@ export const AuthUser: MessageFns<AuthUser> = {
     message.permissions = object.permissions?.map((e) => e) || [];
     message.twoFactorEnabled = object.twoFactorEnabled ?? false;
     message.emailVerified = object.emailVerified ?? false;
+    message.sectionId = object.sectionId ?? "";
+    message.departmentId = object.departmentId ?? "";
     return message;
   },
 };

@@ -72,7 +72,25 @@ export interface User {
     | string
     | undefined;
   /** Audit information. */
-  audit: AuditInfo | undefined;
+  audit:
+    | AuditInfo
+    | undefined;
+  /** Employee level reference (optional). */
+  employeeLevelId: string;
+  /** Employee level code (denormalized for read). */
+  employeeLevelCode: string;
+  /** Employee group reference (optional). */
+  employeeGroupId: string;
+  /** Employee group code (denormalized for read). */
+  employeeGroupCode: string;
+  /** Primary company-mapping reference (optional). */
+  primaryCompanyMappingId: string;
+  /** Primary company-mapping denormalized fields (empty if no primary mapping). */
+  primaryCompanyName: string;
+  primaryDivisionName: string;
+  primaryDepartmentName: string;
+  /** Primary section name (empty when the primary mapping has no section). */
+  primarySectionName: string;
 }
 
 /** UserDetail represents employee details. */
@@ -182,6 +200,16 @@ export interface CreateUserRequest {
     | undefined;
   /** Initial role IDs to assign. */
   roleIds: string[];
+  /** Employee level ID to assign (optional, UUID). */
+  employeeLevelId?:
+    | string
+    | undefined;
+  /** Employee group ID to assign (optional, UUID). */
+  employeeGroupId?:
+    | string
+    | undefined;
+  /** Primary company-mapping ID to assign on creation (optional, UUID). */
+  companyMappingId?: string | undefined;
 }
 
 /** CreateUserResponse is the response for creating a user. */
@@ -243,7 +271,19 @@ export interface UpdateUserRequest {
     | boolean
     | undefined;
   /** Unlock account (optional). */
-  unlockAccount?: boolean | undefined;
+  unlockAccount?:
+    | boolean
+    | undefined;
+  /** Employee level ID (optional, UUID; clears when omitted from request body). */
+  employeeLevelId?:
+    | string
+    | undefined;
+  /** Employee group ID (optional, UUID). */
+  employeeGroupId?:
+    | string
+    | undefined;
+  /** Primary company-mapping ID (optional, UUID). */
+  companyMappingId?: string | undefined;
 }
 
 /** UpdateUserResponse is the response for updating a user. */
@@ -579,6 +619,62 @@ export interface UploadProfilePictureResponse {
   profilePictureUrl: string;
 }
 
+/**
+ * UserCompanyMappingRef is a thin reference to a CompanyMapping with the
+ * denormalized hierarchy and the user-junction is_primary flag for display.
+ */
+export interface UserCompanyMappingRef {
+  companyMappingId: string;
+  code: string;
+  name: string;
+  companyName: string;
+  divisionName: string;
+  departmentName: string;
+  /** Section name (empty if mapping has no section). */
+  sectionName: string;
+  isPrimary: boolean;
+}
+
+/** AssignUserCompanyMappingRequest assigns a mapping to a user. */
+export interface AssignUserCompanyMappingRequest {
+  userId: string;
+  companyMappingId: string;
+  /**
+   * If true, the mapping becomes the user's primary mapping (any existing
+   * primary is unset transactionally).
+   */
+  isPrimary: boolean;
+}
+
+/** AssignUserCompanyMappingResponse is the response for assigning a mapping. */
+export interface AssignUserCompanyMappingResponse {
+  base: BaseResponse | undefined;
+}
+
+/** RemoveUserCompanyMappingRequest removes a mapping from a user. */
+export interface RemoveUserCompanyMappingRequest {
+  userId: string;
+  companyMappingId: string;
+}
+
+/** RemoveUserCompanyMappingResponse is the response for removing a mapping. */
+export interface RemoveUserCompanyMappingResponse {
+  base: BaseResponse | undefined;
+}
+
+/** GetUserCompanyMappingsRequest fetches the mappings assigned to a user. */
+export interface GetUserCompanyMappingsRequest {
+  userId: string;
+}
+
+/** GetUserCompanyMappingsResponse contains a user's mapping list. */
+export interface GetUserCompanyMappingsResponse {
+  base: BaseResponse | undefined;
+  data: UserCompanyMappingRef[];
+  /** Primary mapping ID (empty if user has no primary mapping). */
+  primaryCompanyMappingId: string;
+}
+
 function createBaseUser(): User {
   return {
     userId: "",
@@ -589,6 +685,15 @@ function createBaseUser(): User {
     twoFactorEnabled: false,
     lastLoginAt: undefined,
     audit: undefined,
+    employeeLevelId: "",
+    employeeLevelCode: "",
+    employeeGroupId: "",
+    employeeGroupCode: "",
+    primaryCompanyMappingId: "",
+    primaryCompanyName: "",
+    primaryDivisionName: "",
+    primaryDepartmentName: "",
+    primarySectionName: "",
   };
 }
 
@@ -617,6 +722,33 @@ export const User: MessageFns<User> = {
     }
     if (message.audit !== undefined) {
       AuditInfo.encode(message.audit, writer.uint32(66).fork()).join();
+    }
+    if (message.employeeLevelId !== "") {
+      writer.uint32(74).string(message.employeeLevelId);
+    }
+    if (message.employeeLevelCode !== "") {
+      writer.uint32(82).string(message.employeeLevelCode);
+    }
+    if (message.employeeGroupId !== "") {
+      writer.uint32(90).string(message.employeeGroupId);
+    }
+    if (message.employeeGroupCode !== "") {
+      writer.uint32(98).string(message.employeeGroupCode);
+    }
+    if (message.primaryCompanyMappingId !== "") {
+      writer.uint32(106).string(message.primaryCompanyMappingId);
+    }
+    if (message.primaryCompanyName !== "") {
+      writer.uint32(114).string(message.primaryCompanyName);
+    }
+    if (message.primaryDivisionName !== "") {
+      writer.uint32(122).string(message.primaryDivisionName);
+    }
+    if (message.primaryDepartmentName !== "") {
+      writer.uint32(130).string(message.primaryDepartmentName);
+    }
+    if (message.primarySectionName !== "") {
+      writer.uint32(138).string(message.primarySectionName);
     }
     return writer;
   },
@@ -692,6 +824,78 @@ export const User: MessageFns<User> = {
           message.audit = AuditInfo.decode(reader, reader.uint32());
           continue;
         }
+        case 9: {
+          if (tag !== 74) {
+            break;
+          }
+
+          message.employeeLevelId = reader.string();
+          continue;
+        }
+        case 10: {
+          if (tag !== 82) {
+            break;
+          }
+
+          message.employeeLevelCode = reader.string();
+          continue;
+        }
+        case 11: {
+          if (tag !== 90) {
+            break;
+          }
+
+          message.employeeGroupId = reader.string();
+          continue;
+        }
+        case 12: {
+          if (tag !== 98) {
+            break;
+          }
+
+          message.employeeGroupCode = reader.string();
+          continue;
+        }
+        case 13: {
+          if (tag !== 106) {
+            break;
+          }
+
+          message.primaryCompanyMappingId = reader.string();
+          continue;
+        }
+        case 14: {
+          if (tag !== 114) {
+            break;
+          }
+
+          message.primaryCompanyName = reader.string();
+          continue;
+        }
+        case 15: {
+          if (tag !== 122) {
+            break;
+          }
+
+          message.primaryDivisionName = reader.string();
+          continue;
+        }
+        case 16: {
+          if (tag !== 130) {
+            break;
+          }
+
+          message.primaryDepartmentName = reader.string();
+          continue;
+        }
+        case 17: {
+          if (tag !== 138) {
+            break;
+          }
+
+          message.primarySectionName = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -731,6 +935,51 @@ export const User: MessageFns<User> = {
         ? globalThis.String(object.last_login_at)
         : undefined,
       audit: isSet(object.audit) ? AuditInfo.fromJSON(object.audit) : undefined,
+      employeeLevelId: isSet(object.employeeLevelId)
+        ? globalThis.String(object.employeeLevelId)
+        : isSet(object.employee_level_id)
+        ? globalThis.String(object.employee_level_id)
+        : "",
+      employeeLevelCode: isSet(object.employeeLevelCode)
+        ? globalThis.String(object.employeeLevelCode)
+        : isSet(object.employee_level_code)
+        ? globalThis.String(object.employee_level_code)
+        : "",
+      employeeGroupId: isSet(object.employeeGroupId)
+        ? globalThis.String(object.employeeGroupId)
+        : isSet(object.employee_group_id)
+        ? globalThis.String(object.employee_group_id)
+        : "",
+      employeeGroupCode: isSet(object.employeeGroupCode)
+        ? globalThis.String(object.employeeGroupCode)
+        : isSet(object.employee_group_code)
+        ? globalThis.String(object.employee_group_code)
+        : "",
+      primaryCompanyMappingId: isSet(object.primaryCompanyMappingId)
+        ? globalThis.String(object.primaryCompanyMappingId)
+        : isSet(object.primary_company_mapping_id)
+        ? globalThis.String(object.primary_company_mapping_id)
+        : "",
+      primaryCompanyName: isSet(object.primaryCompanyName)
+        ? globalThis.String(object.primaryCompanyName)
+        : isSet(object.primary_company_name)
+        ? globalThis.String(object.primary_company_name)
+        : "",
+      primaryDivisionName: isSet(object.primaryDivisionName)
+        ? globalThis.String(object.primaryDivisionName)
+        : isSet(object.primary_division_name)
+        ? globalThis.String(object.primary_division_name)
+        : "",
+      primaryDepartmentName: isSet(object.primaryDepartmentName)
+        ? globalThis.String(object.primaryDepartmentName)
+        : isSet(object.primary_department_name)
+        ? globalThis.String(object.primary_department_name)
+        : "",
+      primarySectionName: isSet(object.primarySectionName)
+        ? globalThis.String(object.primarySectionName)
+        : isSet(object.primary_section_name)
+        ? globalThis.String(object.primary_section_name)
+        : "",
     };
   },
 
@@ -760,6 +1009,33 @@ export const User: MessageFns<User> = {
     if (message.audit !== undefined) {
       obj.audit = AuditInfo.toJSON(message.audit);
     }
+    if (message.employeeLevelId !== "") {
+      obj.employeeLevelId = message.employeeLevelId;
+    }
+    if (message.employeeLevelCode !== "") {
+      obj.employeeLevelCode = message.employeeLevelCode;
+    }
+    if (message.employeeGroupId !== "") {
+      obj.employeeGroupId = message.employeeGroupId;
+    }
+    if (message.employeeGroupCode !== "") {
+      obj.employeeGroupCode = message.employeeGroupCode;
+    }
+    if (message.primaryCompanyMappingId !== "") {
+      obj.primaryCompanyMappingId = message.primaryCompanyMappingId;
+    }
+    if (message.primaryCompanyName !== "") {
+      obj.primaryCompanyName = message.primaryCompanyName;
+    }
+    if (message.primaryDivisionName !== "") {
+      obj.primaryDivisionName = message.primaryDivisionName;
+    }
+    if (message.primaryDepartmentName !== "") {
+      obj.primaryDepartmentName = message.primaryDepartmentName;
+    }
+    if (message.primarySectionName !== "") {
+      obj.primarySectionName = message.primarySectionName;
+    }
     return obj;
   },
 
@@ -778,6 +1054,15 @@ export const User: MessageFns<User> = {
     message.audit = (object.audit !== undefined && object.audit !== null)
       ? AuditInfo.fromPartial(object.audit)
       : undefined;
+    message.employeeLevelId = object.employeeLevelId ?? "";
+    message.employeeLevelCode = object.employeeLevelCode ?? "";
+    message.employeeGroupId = object.employeeGroupId ?? "";
+    message.employeeGroupCode = object.employeeGroupCode ?? "";
+    message.primaryCompanyMappingId = object.primaryCompanyMappingId ?? "";
+    message.primaryCompanyName = object.primaryCompanyName ?? "";
+    message.primaryDivisionName = object.primaryDivisionName ?? "";
+    message.primaryDepartmentName = object.primaryDepartmentName ?? "";
+    message.primarySectionName = object.primarySectionName ?? "";
     return message;
   },
 };
@@ -1515,6 +1800,9 @@ function createBaseCreateUserRequest(): CreateUserRequest {
     dateOfBirth: undefined,
     address: undefined,
     roleIds: [],
+    employeeLevelId: undefined,
+    employeeGroupId: undefined,
+    companyMappingId: undefined,
   };
 }
 
@@ -1558,6 +1846,15 @@ export const CreateUserRequest: MessageFns<CreateUserRequest> = {
     }
     for (const v of message.roleIds) {
       writer.uint32(106).string(v!);
+    }
+    if (message.employeeLevelId !== undefined) {
+      writer.uint32(114).string(message.employeeLevelId);
+    }
+    if (message.employeeGroupId !== undefined) {
+      writer.uint32(122).string(message.employeeGroupId);
+    }
+    if (message.companyMappingId !== undefined) {
+      writer.uint32(130).string(message.companyMappingId);
     }
     return writer;
   },
@@ -1673,6 +1970,30 @@ export const CreateUserRequest: MessageFns<CreateUserRequest> = {
           message.roleIds.push(reader.string());
           continue;
         }
+        case 14: {
+          if (tag !== 114) {
+            break;
+          }
+
+          message.employeeLevelId = reader.string();
+          continue;
+        }
+        case 15: {
+          if (tag !== 122) {
+            break;
+          }
+
+          message.employeeGroupId = reader.string();
+          continue;
+        }
+        case 16: {
+          if (tag !== 130) {
+            break;
+          }
+
+          message.companyMappingId = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1725,6 +2046,21 @@ export const CreateUserRequest: MessageFns<CreateUserRequest> = {
         : globalThis.Array.isArray(object?.role_ids)
         ? object.role_ids.map((e: any) => globalThis.String(e))
         : [],
+      employeeLevelId: isSet(object.employeeLevelId)
+        ? globalThis.String(object.employeeLevelId)
+        : isSet(object.employee_level_id)
+        ? globalThis.String(object.employee_level_id)
+        : undefined,
+      employeeGroupId: isSet(object.employeeGroupId)
+        ? globalThis.String(object.employeeGroupId)
+        : isSet(object.employee_group_id)
+        ? globalThis.String(object.employee_group_id)
+        : undefined,
+      companyMappingId: isSet(object.companyMappingId)
+        ? globalThis.String(object.companyMappingId)
+        : isSet(object.company_mapping_id)
+        ? globalThis.String(object.company_mapping_id)
+        : undefined,
     };
   },
 
@@ -1769,6 +2105,15 @@ export const CreateUserRequest: MessageFns<CreateUserRequest> = {
     if (message.roleIds?.length) {
       obj.roleIds = message.roleIds;
     }
+    if (message.employeeLevelId !== undefined) {
+      obj.employeeLevelId = message.employeeLevelId;
+    }
+    if (message.employeeGroupId !== undefined) {
+      obj.employeeGroupId = message.employeeGroupId;
+    }
+    if (message.companyMappingId !== undefined) {
+      obj.companyMappingId = message.companyMappingId;
+    }
     return obj;
   },
 
@@ -1790,6 +2135,9 @@ export const CreateUserRequest: MessageFns<CreateUserRequest> = {
     message.dateOfBirth = object.dateOfBirth ?? undefined;
     message.address = object.address ?? undefined;
     message.roleIds = object.roleIds?.map((e) => e) || [];
+    message.employeeLevelId = object.employeeLevelId ?? undefined;
+    message.employeeGroupId = object.employeeGroupId ?? undefined;
+    message.companyMappingId = object.companyMappingId ?? undefined;
     return message;
   },
 };
@@ -2161,7 +2509,16 @@ export const GetUserDetailResponse: MessageFns<GetUserDetailResponse> = {
 };
 
 function createBaseUpdateUserRequest(): UpdateUserRequest {
-  return { userId: "", username: undefined, email: undefined, isActive: undefined, unlockAccount: undefined };
+  return {
+    userId: "",
+    username: undefined,
+    email: undefined,
+    isActive: undefined,
+    unlockAccount: undefined,
+    employeeLevelId: undefined,
+    employeeGroupId: undefined,
+    companyMappingId: undefined,
+  };
 }
 
 export const UpdateUserRequest: MessageFns<UpdateUserRequest> = {
@@ -2180,6 +2537,15 @@ export const UpdateUserRequest: MessageFns<UpdateUserRequest> = {
     }
     if (message.unlockAccount !== undefined) {
       writer.uint32(40).bool(message.unlockAccount);
+    }
+    if (message.employeeLevelId !== undefined) {
+      writer.uint32(50).string(message.employeeLevelId);
+    }
+    if (message.employeeGroupId !== undefined) {
+      writer.uint32(58).string(message.employeeGroupId);
+    }
+    if (message.companyMappingId !== undefined) {
+      writer.uint32(66).string(message.companyMappingId);
     }
     return writer;
   },
@@ -2231,6 +2597,30 @@ export const UpdateUserRequest: MessageFns<UpdateUserRequest> = {
           message.unlockAccount = reader.bool();
           continue;
         }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.employeeLevelId = reader.string();
+          continue;
+        }
+        case 7: {
+          if (tag !== 58) {
+            break;
+          }
+
+          message.employeeGroupId = reader.string();
+          continue;
+        }
+        case 8: {
+          if (tag !== 66) {
+            break;
+          }
+
+          message.companyMappingId = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2259,6 +2649,21 @@ export const UpdateUserRequest: MessageFns<UpdateUserRequest> = {
         : isSet(object.unlock_account)
         ? globalThis.Boolean(object.unlock_account)
         : undefined,
+      employeeLevelId: isSet(object.employeeLevelId)
+        ? globalThis.String(object.employeeLevelId)
+        : isSet(object.employee_level_id)
+        ? globalThis.String(object.employee_level_id)
+        : undefined,
+      employeeGroupId: isSet(object.employeeGroupId)
+        ? globalThis.String(object.employeeGroupId)
+        : isSet(object.employee_group_id)
+        ? globalThis.String(object.employee_group_id)
+        : undefined,
+      companyMappingId: isSet(object.companyMappingId)
+        ? globalThis.String(object.companyMappingId)
+        : isSet(object.company_mapping_id)
+        ? globalThis.String(object.company_mapping_id)
+        : undefined,
     };
   },
 
@@ -2279,6 +2684,15 @@ export const UpdateUserRequest: MessageFns<UpdateUserRequest> = {
     if (message.unlockAccount !== undefined) {
       obj.unlockAccount = message.unlockAccount;
     }
+    if (message.employeeLevelId !== undefined) {
+      obj.employeeLevelId = message.employeeLevelId;
+    }
+    if (message.employeeGroupId !== undefined) {
+      obj.employeeGroupId = message.employeeGroupId;
+    }
+    if (message.companyMappingId !== undefined) {
+      obj.companyMappingId = message.companyMappingId;
+    }
     return obj;
   },
 
@@ -2292,6 +2706,9 @@ export const UpdateUserRequest: MessageFns<UpdateUserRequest> = {
     message.email = object.email ?? undefined;
     message.isActive = object.isActive ?? undefined;
     message.unlockAccount = object.unlockAccount ?? undefined;
+    message.employeeLevelId = object.employeeLevelId ?? undefined;
+    message.employeeGroupId = object.employeeGroupId ?? undefined;
+    message.companyMappingId = object.companyMappingId ?? undefined;
     return message;
   },
 };
@@ -5297,6 +5714,683 @@ export const UploadProfilePictureResponse: MessageFns<UploadProfilePictureRespon
   },
 };
 
+function createBaseUserCompanyMappingRef(): UserCompanyMappingRef {
+  return {
+    companyMappingId: "",
+    code: "",
+    name: "",
+    companyName: "",
+    divisionName: "",
+    departmentName: "",
+    sectionName: "",
+    isPrimary: false,
+  };
+}
+
+export const UserCompanyMappingRef: MessageFns<UserCompanyMappingRef> = {
+  encode(message: UserCompanyMappingRef, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.companyMappingId !== "") {
+      writer.uint32(10).string(message.companyMappingId);
+    }
+    if (message.code !== "") {
+      writer.uint32(18).string(message.code);
+    }
+    if (message.name !== "") {
+      writer.uint32(26).string(message.name);
+    }
+    if (message.companyName !== "") {
+      writer.uint32(34).string(message.companyName);
+    }
+    if (message.divisionName !== "") {
+      writer.uint32(42).string(message.divisionName);
+    }
+    if (message.departmentName !== "") {
+      writer.uint32(50).string(message.departmentName);
+    }
+    if (message.sectionName !== "") {
+      writer.uint32(58).string(message.sectionName);
+    }
+    if (message.isPrimary !== false) {
+      writer.uint32(64).bool(message.isPrimary);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): UserCompanyMappingRef {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUserCompanyMappingRef();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.companyMappingId = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.code = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.companyName = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.divisionName = reader.string();
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.departmentName = reader.string();
+          continue;
+        }
+        case 7: {
+          if (tag !== 58) {
+            break;
+          }
+
+          message.sectionName = reader.string();
+          continue;
+        }
+        case 8: {
+          if (tag !== 64) {
+            break;
+          }
+
+          message.isPrimary = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UserCompanyMappingRef {
+    return {
+      companyMappingId: isSet(object.companyMappingId)
+        ? globalThis.String(object.companyMappingId)
+        : isSet(object.company_mapping_id)
+        ? globalThis.String(object.company_mapping_id)
+        : "",
+      code: isSet(object.code) ? globalThis.String(object.code) : "",
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      companyName: isSet(object.companyName)
+        ? globalThis.String(object.companyName)
+        : isSet(object.company_name)
+        ? globalThis.String(object.company_name)
+        : "",
+      divisionName: isSet(object.divisionName)
+        ? globalThis.String(object.divisionName)
+        : isSet(object.division_name)
+        ? globalThis.String(object.division_name)
+        : "",
+      departmentName: isSet(object.departmentName)
+        ? globalThis.String(object.departmentName)
+        : isSet(object.department_name)
+        ? globalThis.String(object.department_name)
+        : "",
+      sectionName: isSet(object.sectionName)
+        ? globalThis.String(object.sectionName)
+        : isSet(object.section_name)
+        ? globalThis.String(object.section_name)
+        : "",
+      isPrimary: isSet(object.isPrimary)
+        ? globalThis.Boolean(object.isPrimary)
+        : isSet(object.is_primary)
+        ? globalThis.Boolean(object.is_primary)
+        : false,
+    };
+  },
+
+  toJSON(message: UserCompanyMappingRef): unknown {
+    const obj: any = {};
+    if (message.companyMappingId !== "") {
+      obj.companyMappingId = message.companyMappingId;
+    }
+    if (message.code !== "") {
+      obj.code = message.code;
+    }
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.companyName !== "") {
+      obj.companyName = message.companyName;
+    }
+    if (message.divisionName !== "") {
+      obj.divisionName = message.divisionName;
+    }
+    if (message.departmentName !== "") {
+      obj.departmentName = message.departmentName;
+    }
+    if (message.sectionName !== "") {
+      obj.sectionName = message.sectionName;
+    }
+    if (message.isPrimary !== false) {
+      obj.isPrimary = message.isPrimary;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<UserCompanyMappingRef>): UserCompanyMappingRef {
+    return UserCompanyMappingRef.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<UserCompanyMappingRef>): UserCompanyMappingRef {
+    const message = createBaseUserCompanyMappingRef();
+    message.companyMappingId = object.companyMappingId ?? "";
+    message.code = object.code ?? "";
+    message.name = object.name ?? "";
+    message.companyName = object.companyName ?? "";
+    message.divisionName = object.divisionName ?? "";
+    message.departmentName = object.departmentName ?? "";
+    message.sectionName = object.sectionName ?? "";
+    message.isPrimary = object.isPrimary ?? false;
+    return message;
+  },
+};
+
+function createBaseAssignUserCompanyMappingRequest(): AssignUserCompanyMappingRequest {
+  return { userId: "", companyMappingId: "", isPrimary: false };
+}
+
+export const AssignUserCompanyMappingRequest: MessageFns<AssignUserCompanyMappingRequest> = {
+  encode(message: AssignUserCompanyMappingRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.userId !== "") {
+      writer.uint32(10).string(message.userId);
+    }
+    if (message.companyMappingId !== "") {
+      writer.uint32(18).string(message.companyMappingId);
+    }
+    if (message.isPrimary !== false) {
+      writer.uint32(24).bool(message.isPrimary);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): AssignUserCompanyMappingRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAssignUserCompanyMappingRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.userId = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.companyMappingId = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.isPrimary = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AssignUserCompanyMappingRequest {
+    return {
+      userId: isSet(object.userId)
+        ? globalThis.String(object.userId)
+        : isSet(object.user_id)
+        ? globalThis.String(object.user_id)
+        : "",
+      companyMappingId: isSet(object.companyMappingId)
+        ? globalThis.String(object.companyMappingId)
+        : isSet(object.company_mapping_id)
+        ? globalThis.String(object.company_mapping_id)
+        : "",
+      isPrimary: isSet(object.isPrimary)
+        ? globalThis.Boolean(object.isPrimary)
+        : isSet(object.is_primary)
+        ? globalThis.Boolean(object.is_primary)
+        : false,
+    };
+  },
+
+  toJSON(message: AssignUserCompanyMappingRequest): unknown {
+    const obj: any = {};
+    if (message.userId !== "") {
+      obj.userId = message.userId;
+    }
+    if (message.companyMappingId !== "") {
+      obj.companyMappingId = message.companyMappingId;
+    }
+    if (message.isPrimary !== false) {
+      obj.isPrimary = message.isPrimary;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<AssignUserCompanyMappingRequest>): AssignUserCompanyMappingRequest {
+    return AssignUserCompanyMappingRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<AssignUserCompanyMappingRequest>): AssignUserCompanyMappingRequest {
+    const message = createBaseAssignUserCompanyMappingRequest();
+    message.userId = object.userId ?? "";
+    message.companyMappingId = object.companyMappingId ?? "";
+    message.isPrimary = object.isPrimary ?? false;
+    return message;
+  },
+};
+
+function createBaseAssignUserCompanyMappingResponse(): AssignUserCompanyMappingResponse {
+  return { base: undefined };
+}
+
+export const AssignUserCompanyMappingResponse: MessageFns<AssignUserCompanyMappingResponse> = {
+  encode(message: AssignUserCompanyMappingResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): AssignUserCompanyMappingResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAssignUserCompanyMappingResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AssignUserCompanyMappingResponse {
+    return { base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined };
+  },
+
+  toJSON(message: AssignUserCompanyMappingResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<AssignUserCompanyMappingResponse>): AssignUserCompanyMappingResponse {
+    return AssignUserCompanyMappingResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<AssignUserCompanyMappingResponse>): AssignUserCompanyMappingResponse {
+    const message = createBaseAssignUserCompanyMappingResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseRemoveUserCompanyMappingRequest(): RemoveUserCompanyMappingRequest {
+  return { userId: "", companyMappingId: "" };
+}
+
+export const RemoveUserCompanyMappingRequest: MessageFns<RemoveUserCompanyMappingRequest> = {
+  encode(message: RemoveUserCompanyMappingRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.userId !== "") {
+      writer.uint32(10).string(message.userId);
+    }
+    if (message.companyMappingId !== "") {
+      writer.uint32(18).string(message.companyMappingId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): RemoveUserCompanyMappingRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRemoveUserCompanyMappingRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.userId = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.companyMappingId = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RemoveUserCompanyMappingRequest {
+    return {
+      userId: isSet(object.userId)
+        ? globalThis.String(object.userId)
+        : isSet(object.user_id)
+        ? globalThis.String(object.user_id)
+        : "",
+      companyMappingId: isSet(object.companyMappingId)
+        ? globalThis.String(object.companyMappingId)
+        : isSet(object.company_mapping_id)
+        ? globalThis.String(object.company_mapping_id)
+        : "",
+    };
+  },
+
+  toJSON(message: RemoveUserCompanyMappingRequest): unknown {
+    const obj: any = {};
+    if (message.userId !== "") {
+      obj.userId = message.userId;
+    }
+    if (message.companyMappingId !== "") {
+      obj.companyMappingId = message.companyMappingId;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<RemoveUserCompanyMappingRequest>): RemoveUserCompanyMappingRequest {
+    return RemoveUserCompanyMappingRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<RemoveUserCompanyMappingRequest>): RemoveUserCompanyMappingRequest {
+    const message = createBaseRemoveUserCompanyMappingRequest();
+    message.userId = object.userId ?? "";
+    message.companyMappingId = object.companyMappingId ?? "";
+    return message;
+  },
+};
+
+function createBaseRemoveUserCompanyMappingResponse(): RemoveUserCompanyMappingResponse {
+  return { base: undefined };
+}
+
+export const RemoveUserCompanyMappingResponse: MessageFns<RemoveUserCompanyMappingResponse> = {
+  encode(message: RemoveUserCompanyMappingResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): RemoveUserCompanyMappingResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRemoveUserCompanyMappingResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RemoveUserCompanyMappingResponse {
+    return { base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined };
+  },
+
+  toJSON(message: RemoveUserCompanyMappingResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<RemoveUserCompanyMappingResponse>): RemoveUserCompanyMappingResponse {
+    return RemoveUserCompanyMappingResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<RemoveUserCompanyMappingResponse>): RemoveUserCompanyMappingResponse {
+    const message = createBaseRemoveUserCompanyMappingResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseGetUserCompanyMappingsRequest(): GetUserCompanyMappingsRequest {
+  return { userId: "" };
+}
+
+export const GetUserCompanyMappingsRequest: MessageFns<GetUserCompanyMappingsRequest> = {
+  encode(message: GetUserCompanyMappingsRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.userId !== "") {
+      writer.uint32(10).string(message.userId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetUserCompanyMappingsRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetUserCompanyMappingsRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.userId = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetUserCompanyMappingsRequest {
+    return {
+      userId: isSet(object.userId)
+        ? globalThis.String(object.userId)
+        : isSet(object.user_id)
+        ? globalThis.String(object.user_id)
+        : "",
+    };
+  },
+
+  toJSON(message: GetUserCompanyMappingsRequest): unknown {
+    const obj: any = {};
+    if (message.userId !== "") {
+      obj.userId = message.userId;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetUserCompanyMappingsRequest>): GetUserCompanyMappingsRequest {
+    return GetUserCompanyMappingsRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GetUserCompanyMappingsRequest>): GetUserCompanyMappingsRequest {
+    const message = createBaseGetUserCompanyMappingsRequest();
+    message.userId = object.userId ?? "";
+    return message;
+  },
+};
+
+function createBaseGetUserCompanyMappingsResponse(): GetUserCompanyMappingsResponse {
+  return { base: undefined, data: [], primaryCompanyMappingId: "" };
+}
+
+export const GetUserCompanyMappingsResponse: MessageFns<GetUserCompanyMappingsResponse> = {
+  encode(message: GetUserCompanyMappingsResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    for (const v of message.data) {
+      UserCompanyMappingRef.encode(v!, writer.uint32(18).fork()).join();
+    }
+    if (message.primaryCompanyMappingId !== "") {
+      writer.uint32(26).string(message.primaryCompanyMappingId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetUserCompanyMappingsResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetUserCompanyMappingsResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.data.push(UserCompanyMappingRef.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.primaryCompanyMappingId = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetUserCompanyMappingsResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      data: globalThis.Array.isArray(object?.data)
+        ? object.data.map((e: any) => UserCompanyMappingRef.fromJSON(e))
+        : [],
+      primaryCompanyMappingId: isSet(object.primaryCompanyMappingId)
+        ? globalThis.String(object.primaryCompanyMappingId)
+        : isSet(object.primary_company_mapping_id)
+        ? globalThis.String(object.primary_company_mapping_id)
+        : "",
+    };
+  },
+
+  toJSON(message: GetUserCompanyMappingsResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.data?.length) {
+      obj.data = message.data.map((e) => UserCompanyMappingRef.toJSON(e));
+    }
+    if (message.primaryCompanyMappingId !== "") {
+      obj.primaryCompanyMappingId = message.primaryCompanyMappingId;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetUserCompanyMappingsResponse>): GetUserCompanyMappingsResponse {
+    return GetUserCompanyMappingsResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GetUserCompanyMappingsResponse>): GetUserCompanyMappingsResponse {
+    const message = createBaseGetUserCompanyMappingsResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.data = object.data?.map((e) => UserCompanyMappingRef.fromPartial(e)) || [];
+    message.primaryCompanyMappingId = object.primaryCompanyMappingId ?? "";
+    return message;
+  },
+};
+
 /** UserService provides CRUD operations for user/employee management. */
 export type UserServiceDefinition = typeof UserServiceDefinition;
 export const UserServiceDefinition = {
@@ -6094,6 +7188,208 @@ export const UserServiceDefinition = {
               116,
               97,
               114,
+            ]),
+          ],
+        },
+      },
+    },
+    /** AssignUserCompanyMapping assigns a company mapping to a user. */
+    assignUserCompanyMapping: {
+      name: "AssignUserCompanyMapping",
+      requestType: AssignUserCompanyMappingRequest,
+      requestStream: false,
+      responseType: AssignUserCompanyMappingResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              49,
+              58,
+              1,
+              42,
+              34,
+              44,
+              47,
+              97,
+              112,
+              105,
+              47,
+              118,
+              49,
+              47,
+              105,
+              97,
+              109,
+              47,
+              117,
+              115,
+              101,
+              114,
+              115,
+              47,
+              123,
+              117,
+              115,
+              101,
+              114,
+              95,
+              105,
+              100,
+              125,
+              47,
+              99,
+              111,
+              109,
+              112,
+              97,
+              110,
+              121,
+              45,
+              109,
+              97,
+              112,
+              112,
+              105,
+              110,
+              103,
+              115,
+            ]),
+          ],
+        },
+      },
+    },
+    /** RemoveUserCompanyMapping removes a company mapping from a user. */
+    removeUserCompanyMapping: {
+      name: "RemoveUserCompanyMapping",
+      requestType: RemoveUserCompanyMappingRequest,
+      requestStream: false,
+      responseType: RemoveUserCompanyMappingResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              56,
+              58,
+              1,
+              42,
+              34,
+              51,
+              47,
+              97,
+              112,
+              105,
+              47,
+              118,
+              49,
+              47,
+              105,
+              97,
+              109,
+              47,
+              117,
+              115,
+              101,
+              114,
+              115,
+              47,
+              123,
+              117,
+              115,
+              101,
+              114,
+              95,
+              105,
+              100,
+              125,
+              47,
+              99,
+              111,
+              109,
+              112,
+              97,
+              110,
+              121,
+              45,
+              109,
+              97,
+              112,
+              112,
+              105,
+              110,
+              103,
+              115,
+              47,
+              114,
+              101,
+              109,
+              111,
+              118,
+              101,
+            ]),
+          ],
+        },
+      },
+    },
+    /** GetUserCompanyMappings lists all company mappings assigned to a user. */
+    getUserCompanyMappings: {
+      name: "GetUserCompanyMappings",
+      requestType: GetUserCompanyMappingsRequest,
+      requestStream: false,
+      responseType: GetUserCompanyMappingsResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              46,
+              18,
+              44,
+              47,
+              97,
+              112,
+              105,
+              47,
+              118,
+              49,
+              47,
+              105,
+              97,
+              109,
+              47,
+              117,
+              115,
+              101,
+              114,
+              115,
+              47,
+              123,
+              117,
+              115,
+              101,
+              114,
+              95,
+              105,
+              100,
+              125,
+              47,
+              99,
+              111,
+              109,
+              112,
+              97,
+              110,
+              121,
+              45,
+              109,
+              97,
+              112,
+              112,
+              105,
+              110,
+              103,
+              115,
             ]),
           ],
         },

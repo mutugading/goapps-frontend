@@ -39,11 +39,13 @@ export default function proxy(request: NextRequest) {
     }
 
     // Public routes (landing, login, forgot password, etc.)
+    // Note: We intentionally do NOT auto-redirect /login → /dashboard when
+    // cookies are present. Cookies (especially the refresh token) can outlive
+    // a usable session — if the access token has expired and the user state
+    // isn't loaded yet, the dashboard layout will bounce back to `/` causing
+    // a visible glitch. The LoginPage handles the redirect itself based on
+    // real client-side auth state once it mounts.
     if (isPublicRoute) {
-        // If already authenticated and trying to access login, redirect to dashboard
-        if (isAuthenticated && pathname === AUTH_ROUTES.LOGIN) {
-            return NextResponse.redirect(new URL(AUTH_ROUTES.DASHBOARD, request.url))
-        }
         return NextResponse.next()
     }
 
