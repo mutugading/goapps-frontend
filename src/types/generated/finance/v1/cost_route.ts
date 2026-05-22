@@ -197,6 +197,18 @@ export interface ListLinkedRequestsResponse {
   data: LinkedRequest[];
 }
 
+export interface CreateRouteFromProductRequest {
+  productSysId: number;
+  /** optional, atomically links the request on success. */
+  linkedRequestId: number;
+  cylTypeId: number;
+}
+
+export interface CreateRouteFromProductResponse {
+  base: BaseResponse | undefined;
+  headId: number;
+}
+
 function createBaseCostRouteHead(): CostRouteHead {
   return {
     headId: 0,
@@ -3083,6 +3095,192 @@ export const ListLinkedRequestsResponse: MessageFns<ListLinkedRequestsResponse> 
   },
 };
 
+function createBaseCreateRouteFromProductRequest(): CreateRouteFromProductRequest {
+  return { productSysId: 0, linkedRequestId: 0, cylTypeId: 0 };
+}
+
+export const CreateRouteFromProductRequest: MessageFns<CreateRouteFromProductRequest> = {
+  encode(message: CreateRouteFromProductRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.productSysId !== 0) {
+      writer.uint32(8).int64(message.productSysId);
+    }
+    if (message.linkedRequestId !== 0) {
+      writer.uint32(16).int64(message.linkedRequestId);
+    }
+    if (message.cylTypeId !== 0) {
+      writer.uint32(24).int32(message.cylTypeId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CreateRouteFromProductRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCreateRouteFromProductRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.productSysId = longToNumber(reader.int64());
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.linkedRequestId = longToNumber(reader.int64());
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.cylTypeId = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CreateRouteFromProductRequest {
+    return {
+      productSysId: isSet(object.productSysId)
+        ? globalThis.Number(object.productSysId)
+        : isSet(object.product_sys_id)
+        ? globalThis.Number(object.product_sys_id)
+        : 0,
+      linkedRequestId: isSet(object.linkedRequestId)
+        ? globalThis.Number(object.linkedRequestId)
+        : isSet(object.linked_request_id)
+        ? globalThis.Number(object.linked_request_id)
+        : 0,
+      cylTypeId: isSet(object.cylTypeId)
+        ? globalThis.Number(object.cylTypeId)
+        : isSet(object.cyl_type_id)
+        ? globalThis.Number(object.cyl_type_id)
+        : 0,
+    };
+  },
+
+  toJSON(message: CreateRouteFromProductRequest): unknown {
+    const obj: any = {};
+    if (message.productSysId !== 0) {
+      obj.productSysId = Math.round(message.productSysId);
+    }
+    if (message.linkedRequestId !== 0) {
+      obj.linkedRequestId = Math.round(message.linkedRequestId);
+    }
+    if (message.cylTypeId !== 0) {
+      obj.cylTypeId = Math.round(message.cylTypeId);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<CreateRouteFromProductRequest>): CreateRouteFromProductRequest {
+    return CreateRouteFromProductRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<CreateRouteFromProductRequest>): CreateRouteFromProductRequest {
+    const message = createBaseCreateRouteFromProductRequest();
+    message.productSysId = object.productSysId ?? 0;
+    message.linkedRequestId = object.linkedRequestId ?? 0;
+    message.cylTypeId = object.cylTypeId ?? 0;
+    return message;
+  },
+};
+
+function createBaseCreateRouteFromProductResponse(): CreateRouteFromProductResponse {
+  return { base: undefined, headId: 0 };
+}
+
+export const CreateRouteFromProductResponse: MessageFns<CreateRouteFromProductResponse> = {
+  encode(message: CreateRouteFromProductResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    if (message.headId !== 0) {
+      writer.uint32(16).int64(message.headId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CreateRouteFromProductResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCreateRouteFromProductResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.headId = longToNumber(reader.int64());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CreateRouteFromProductResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      headId: isSet(object.headId)
+        ? globalThis.Number(object.headId)
+        : isSet(object.head_id)
+        ? globalThis.Number(object.head_id)
+        : 0,
+    };
+  },
+
+  toJSON(message: CreateRouteFromProductResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.headId !== 0) {
+      obj.headId = Math.round(message.headId);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<CreateRouteFromProductResponse>): CreateRouteFromProductResponse {
+    return CreateRouteFromProductResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<CreateRouteFromProductResponse>): CreateRouteFromProductResponse {
+    const message = createBaseCreateRouteFromProductResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.headId = object.headId ?? 0;
+    return message;
+  },
+};
+
 /** CostRouteService manages persisted routings (replaces CostProductOrderService). */
 export type CostRouteServiceDefinition = typeof CostRouteServiceDefinition;
 export const CostRouteServiceDefinition = {
@@ -3666,6 +3864,62 @@ export const CostRouteServiceDefinition = {
               115,
               116,
               115,
+            ]),
+          ],
+        },
+      },
+    },
+    createRouteFromProduct: {
+      name: "CreateRouteFromProduct",
+      requestType: CreateRouteFromProductRequest,
+      requestStream: false,
+      responseType: CreateRouteFromProductResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              40,
+              58,
+              1,
+              42,
+              34,
+              35,
+              47,
+              97,
+              112,
+              105,
+              47,
+              118,
+              49,
+              47,
+              102,
+              105,
+              110,
+              97,
+              110,
+              99,
+              101,
+              47,
+              114,
+              111,
+              117,
+              116,
+              101,
+              115,
+              47,
+              102,
+              114,
+              111,
+              109,
+              45,
+              112,
+              114,
+              111,
+              100,
+              117,
+              99,
+              116,
             ]),
           ],
         },

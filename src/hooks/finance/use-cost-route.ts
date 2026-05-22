@@ -176,3 +176,29 @@ export function useDeleteRoute() {
 }
 
 export const costRouteKeys = KEYS
+
+export function useCreateRouteFromProduct() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: { productSysId: number; linkedRequestId?: number; cylTypeId?: number }) => {
+      const res = await fetch(`/api/v1/finance/routes/from-product`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          productSysId: input.productSysId,
+          linkedRequestId: input.linkedRequestId ?? 0,
+          cylTypeId: input.cylTypeId ?? 0,
+        }),
+      })
+      const json = await res.json()
+      if (!json.base?.isSuccess) throw new Error(json.base?.message || "Create route failed")
+      return Number(json.headId ?? 0)
+    },
+    onSuccess: () => {
+      toast.success("Route created")
+      qc.invalidateQueries({ queryKey: ["finance", "cost-route"] })
+      qc.invalidateQueries({ queryKey: ["finance", "cost-product-request"] })
+    },
+    onError: (err: Error) => toast.error(err.message),
+  })
+}
