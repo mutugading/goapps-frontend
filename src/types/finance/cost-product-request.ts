@@ -59,6 +59,7 @@ export interface CostProductRequest {
   cancelReason?: string
   assignedToUserId?: string
   requesterUserId: string
+  linkedRouteHeadId?: number
   createdAt?: string
   updatedAt?: string
   spec?: CostProductSpec
@@ -166,6 +167,7 @@ export function normalizeCostProductRequest(raw: Raw): CostProductRequest {
     cancelReason: str(raw.cancelReason ?? raw.cancel_reason) || undefined,
     assignedToUserId: str(raw.assignedToUserId ?? raw.assigned_to_user_id) || undefined,
     requesterUserId: str(raw.requesterUserId ?? raw.requester_user_id),
+    linkedRouteHeadId: numOpt(raw.linkedRouteHeadId ?? raw.linked_route_head_id),
     createdAt: raw.audit?.createdAt ?? raw.audit?.created_at,
     updatedAt: raw.audit?.updatedAt ?? raw.audit?.updated_at,
     spec: raw.spec ? normalizeSpec(raw.spec, requestId) : undefined,
