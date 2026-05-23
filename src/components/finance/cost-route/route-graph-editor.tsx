@@ -22,6 +22,7 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 
+import { CalculateButton } from "@/components/finance/calc-jobs/calculate-button"
 import { ErpItemCombobox } from "@/components/finance/comboboxes/erp-item-combobox"
 import { ProductMasterCombobox } from "@/components/finance/comboboxes/product-master-combobox"
 import { DuplicateRouteDialog } from "@/components/finance/cost-route/duplicate-route-dialog"
@@ -220,6 +221,12 @@ export function RouteGraphEditor({ headId }: Props) {
         </div>
         <div className="flex flex-wrap gap-2">
           <LinkedRequestsPopover headId={headId} />
+          <CalculateButton
+            routeHeadId={headId}
+            size="sm"
+            disabled={head?.routingStatus === "DRAFT"}
+            disabledReason="Mark route COMPLETE before calculating"
+          />
           <Button variant="outline" size="sm" onClick={() => setForkOpen(true)}>
             🔱 Fork
           </Button>

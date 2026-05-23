@@ -9,7 +9,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { PageHeader } from "@/components/common/page-header"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useCostProductMaster } from "@/hooks/finance/use-cost-product-master"
+import { CalculateButton } from "@/components/finance/calc-jobs/calculate-button"
 import { ProductParametersTab } from "@/components/finance/cost-product-master/parameters-tab"
+import { CostHistoryTab } from "@/components/finance/cost-results/cost-history-tab"
 import { ProductTypeName } from "@/components/common/product-type-name"
 
 interface Props {
@@ -28,20 +30,23 @@ export default function ProductMasterDetailClient({ productSysId }: Props) {
         </Link>
       </Button>
 
-      <PageHeader
-        title={
-          isLoading
-            ? "Loading…"
-            : product
-              ? `${product.productCode} — ${product.productName}`
-              : "Product not found"
-        }
-        subtitle={
-          product
-            ? `${product.productTypeName || product.productTypeCode || ""} · ${product.shadeCode || "—"} / ${product.gradeCode || "—"}`
-            : undefined
-        }
-      />
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <PageHeader
+          title={
+            isLoading
+              ? "Loading…"
+              : product
+                ? `${product.productCode} — ${product.productName}`
+                : "Product not found"
+          }
+          subtitle={
+            product
+              ? `${product.productTypeName || product.productTypeCode || ""} · ${product.shadeCode || "—"} / ${product.gradeCode || "—"}`
+              : undefined
+          }
+        />
+        {product && <CalculateButton productSysId={productSysId} label="Calculate cost" />}
+      </div>
 
       {product && (
         <Card>
@@ -82,6 +87,7 @@ export default function ProductMasterDetailClient({ productSysId }: Props) {
       <Tabs defaultValue="parameters">
         <TabsList>
           <TabsTrigger value="parameters">Parameters</TabsTrigger>
+          <TabsTrigger value="cost-history">Cost history</TabsTrigger>
           <TabsTrigger value="bom" disabled>
             BOM / Routing (S7.5+)
           </TabsTrigger>
@@ -91,6 +97,9 @@ export default function ProductMasterDetailClient({ productSysId }: Props) {
         </TabsList>
         <TabsContent value="parameters" className="mt-4">
           <ProductParametersTab productSysId={productSysId} />
+        </TabsContent>
+        <TabsContent value="cost-history" className="mt-4">
+          <CostHistoryTab productSysId={productSysId} />
         </TabsContent>
       </Tabs>
     </div>

@@ -17,6 +17,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
+import { CalculateButton } from "@/components/finance/calc-jobs/calculate-button"
 import { UserName } from "@/components/common/user-name"
 import { PaperTubeName } from "@/components/common/paper-tube-name"
 import {
@@ -131,6 +132,12 @@ export function RequestDetailPanel({ request, onEdit }: Props) {
             <RotateCcw className="mr-2 h-4 w-4" /> Revise & resubmit
           </Button>
         )}
+        {request.linkedRouteHeadId ? (
+          <CalculateButton
+            routeHeadId={request.linkedRouteHeadId}
+            label="Calculate for linked route"
+          />
+        ) : null}
         {!isTerminal && (
           <>
             <div className="flex-1" />
