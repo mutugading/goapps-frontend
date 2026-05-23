@@ -213,8 +213,14 @@ function buildFlow(graph: RouteGraph): { nodes: Node[]; edges: Edge[] } {
             kind: rm.rmType === "GROUP" ? "GROUP" : "ITEM",
           } satisfies RmNodeData,
         })
+        // Edge id must be unique even when multiple new (rmId === 0) RMs of the
+        // same type exist on the same stage — fall back to rmIdx + ref code.
+        const edgeId =
+          rm.rmId > 0
+            ? `e-${rm.rmType.toLowerCase()}-rm-${rm.rmId}`
+            : `e-${rm.rmType.toLowerCase()}-rm-new-${id}-${rm.rmItemCode || rm.rmGroupCode || "x"}-${rmIdx}`
         edges.push({
-          id: `e-${rmId}-${id}`,
+          id: edgeId,
           source: rmId,
           target: id,
           label: `×${rm.routeRmRatio}`,
@@ -227,11 +233,17 @@ function buildFlow(graph: RouteGraph): { nodes: Node[]; edges: Edge[] } {
       // PRODUCT rms become edges from the upstream stage that produces them
       // down to this stage.
       const productRms = (s.rms ?? []).filter((r) => r.rmType === "PRODUCT")
-      productRms.forEach((rm) => {
+      productRms.forEach((rm, rmIdx) => {
         const upstreamId = rm.rmProductSysId ? stageIdByProduct.get(rm.rmProductSysId) : undefined
         if (!upstreamId) return // dangling — validator should have caught
+        // Edge id must be unique even when multiple new (rmId === 0) PRODUCT-RMs
+        // exist on the same stage — fall back to upstreamProductSysId + rmIdx.
+        const edgeId =
+          rm.rmId > 0
+            ? `e-product-rm-${rm.rmId}`
+            : `e-product-rm-new-${id}-${rm.rmProductSysId}-${rmIdx}`
         edges.push({
-          id: `e-${upstreamId}-${id}-rm${rm.rmId}`,
+          id: edgeId,
           source: upstreamId,
           target: id,
           label: `×${rm.routeRmRatio}`,

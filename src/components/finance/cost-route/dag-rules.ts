@@ -51,34 +51,46 @@ export function isValidProductRmEdge(
 }
 
 /** wouldCreateCycle — true iff adding an edge upstream→downstream would
- * create a directed cycle in the PRODUCT-RM dependency graph. */
+ * create a directed cycle in the PRODUCT-RM dependency graph.
+ *
+ * Adding edge: downstream consumes upstream as PRODUCT-RM.
+ * Cycle forms iff upstream (or any of its transitive upstreams via existing
+ * PRODUCT-RM links) can reach downstream — that would close the loop. */
 export function wouldCreateCycle(
   graph: RouteGraph,
   upstream: CostRouteSeq,
   downstream: CostRouteSeq,
 ): boolean {
-  // Build product→consumers index: for each seq, the upstream seqs it depends
-  // on (i.e. seqs whose product is a PRODUCT-RM of this seq).
-  const seqByProduct = new Map<number, CostRouteSeq>()
-  for (const s of graph.seqs) {
-    if (!seqByProduct.has(s.productSysId)) seqByProduct.set(s.productSysId, s)
-  }
+  // Special case: if upstream IS downstream, that's a self-loop, but
+  // isValidProductRmEdge already rejected this before we got here.
+  if (upstream.seqId !== 0 && upstream.seqId === downstream.seqId) return true
 
-  // BFS upstream from `upstream`. If we ever land on `downstream`, the new
-  // edge (which adds downstream→upstream in dependency terms — downstream
-  // depends on upstream) would close a cycle.
+  // BFS over seq ids (more robust than productSysId-keyed BFS — even though
+  // seeds keep products unique per seq, hand-built routes can repeat).
   const visited = new Set<number>()
   const queue: CostRouteSeq[] = [upstream]
   while (queue.length > 0) {
-    const cur = queue.shift()!
-    const key = cur.productSysId
-    if (visited.has(key)) continue
-    visited.add(key)
-    if (cur.productSysId === downstream.productSysId) return true
-    for (const rm of cur.rms ?? []) {
+    const current = queue.shift()!
+    // We treat seqId === 0 (unsaved) seqs by visiting them at most once via
+    // object identity — a Set<CostRouteSeq> would do that, but in practice
+    // unsaved nodes have no inbound RMs yet so the BFS terminates quickly.
+    if (current.seqId !== 0) {
+      if (visited.has(current.seqId)) continue
+      visited.add(current.seqId)
+    }
+    // Did we reach downstream? Then adding the edge would close a cycle.
+    if (
+      current === downstream ||
+      (downstream.seqId !== 0 && current.seqId === downstream.seqId)
+    ) {
+      return true
+    }
+    // Walk upstream via PRODUCT-RM links: for each rm, find the seq whose
+    // productSysId matches and enqueue it.
+    for (const rm of current.rms ?? []) {
       if (rm.rmType !== "PRODUCT" || !rm.rmProductSysId) continue
-      const parent = seqByProduct.get(rm.rmProductSysId)
-      if (parent) queue.push(parent)
+      const upstreamSeq = graph.seqs.find((s) => s.productSysId === rm.rmProductSysId)
+      if (upstreamSeq) queue.push(upstreamSeq)
     }
   }
   return false
