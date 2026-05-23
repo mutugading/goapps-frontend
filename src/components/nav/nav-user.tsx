@@ -117,7 +117,7 @@ export function NavUser({ user }: NavUserProps) {
                                 <Settings />
                                 Settings
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => router.push("/notifications")}>
                                 <Bell />
                                 Notifications
                             </DropdownMenuItem>
