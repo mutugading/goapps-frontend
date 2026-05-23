@@ -20,7 +20,7 @@
 //   • Click stage node → onStageClick(seqId)
 //   • Click edge (PRODUCT/ITEM/GROUP RM) → onEdgeClick(rmId)
 
-import { useCallback, useMemo } from "react"
+import { useCallback, useMemo, useRef } from "react"
 import {
   Background,
   Controls,
@@ -35,6 +35,8 @@ import {
   type NodeMouseHandler,
   type NodeProps,
   type EdgeMouseHandler,
+  type OnConnectEnd,
+  type OnConnectStart,
 } from "@xyflow/react"
 import "@xyflow/react/dist/style.css"
 import { Plus } from "lucide-react"
@@ -55,6 +57,13 @@ interface Props {
   onStageClick?: (seqId: number) => void
   /** User clicked an edge that maps to a CostRouteRm (PRODUCT / ITEM / GROUP). */
   onEdgeClick?: (rmId: number) => void
+  /**
+   * User started dragging from a node handle and dropped on the empty React
+   * Flow pane (not on another node). Source seq + which handle was used.
+   * `handleType === "source"` = bottom handle (downstream side).
+   * `handleType === "target"` = top handle (upstream side).
+   */
+  onDropOnPane?: (sourceSeqId: number, handleType: "source" | "target") => void
 }
 
 // ============================================================================
@@ -286,8 +295,15 @@ export function RouteGraphFlow({
   onConnectStages,
   onStageClick,
   onEdgeClick,
+  onDropOnPane,
 }: Props) {
   const { nodes, edges } = useMemo(() => buildFlow(graph), [graph])
+
+  // Pending connect state — captured on onConnectStart, consumed on
+  // onConnectEnd if the drop landed on the empty pane (not on another node).
+  const pendingConnectRef = useRef<
+    null | { sourceSeqId: number; handleType: "source" | "target" }
+  >(null)
 
   const handleNodeDragStop = useCallback<NodeMouseHandler>(
     (_event, node) => {
@@ -330,6 +346,34 @@ export function RouteGraphFlow({
     [onStageClick],
   )
 
+  const handleConnectStart = useCallback<OnConnectStart>(
+    (_event, params) => {
+      if (locked || !onDropOnPane) return
+      if (!params.nodeId || !params.nodeId.startsWith("seq-")) return
+      const seqId = parseSeqIdFromNodeId(params.nodeId)
+      if (seqId === 0) return
+      pendingConnectRef.current = {
+        sourceSeqId: seqId,
+        handleType: params.handleType ?? "source",
+      }
+    },
+    [locked, onDropOnPane, pendingConnectRef],
+  )
+
+  const handleConnectEnd = useCallback<OnConnectEnd>(
+    (event) => {
+      const pending = pendingConnectRef.current
+      pendingConnectRef.current = null
+      if (locked || !onDropOnPane || !pending) return
+      const target = event.target as HTMLElement | null
+      // React Flow tags the empty canvas element with .react-flow__pane.
+      const droppedOnPane = !!target?.classList?.contains("react-flow__pane")
+      if (!droppedOnPane) return
+      onDropOnPane(pending.sourceSeqId, pending.handleType)
+    },
+    [locked, onDropOnPane, pendingConnectRef],
+  )
+
   const handleEdgeClick = useCallback<EdgeMouseHandler>(
     (_event, edge) => {
       if (!onEdgeClick) return
@@ -353,6 +397,8 @@ export function RouteGraphFlow({
         nodesConnectable={!locked}
         onNodeDragStop={handleNodeDragStop}
         onConnect={handleConnect}
+        onConnectStart={handleConnectStart}
+        onConnectEnd={handleConnectEnd}
         onNodeClick={handleNodeClick}
         onEdgeClick={handleEdgeClick}
       >

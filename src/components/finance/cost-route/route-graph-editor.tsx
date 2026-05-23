@@ -8,7 +8,7 @@
 // **UX rule (enforced):** users NEVER see or type a UUID / sys_id. Every
 // reference is picked via a combobox keyed on human-readable code/name.
 
-import { useCallback, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { toast } from "sonner"
 
 import { isValidProductRmEdge } from "@/components/finance/cost-route/dag-rules"
@@ -78,14 +78,24 @@ interface Props {
 export function RouteGraphEditor({ headId }: Props) {
   const { data: persisted, isLoading } = useRouteGraph(headId)
   const [working, setWorking] = useState<RouteGraph | null>(null)
+  // Mirror `working` into a ref so F3's deferred link callback can read the
+  // freshly-mutated graph without re-rendering.
+  const workingRef = useRef<RouteGraph | null>(null)
   const [dirty, setDirty] = useState(false)
-  const [stageDialogOpen, setStageDialogOpen] = useState(false)
+  const [stageDialogState, setStageDialogState] = useState<
+    | { open: false }
+    | { open: true; defaultLevel?: number; linkToSeqId?: number; linkDirection?: "upstream" | "downstream" }
+  >({ open: false })
   const [forkOpen, setForkOpen] = useState(false)
   const [rmDialog, setRmDialog] = useState<{ seqIdx: number } | null>(null)
   const [view, setView] = useState<"visual" | "cards">("visual")
   // Inline edit-panel selection — only one of these is set at a time.
   const [selectedSeqId, setSelectedSeqId] = useState<number | null>(null)
   const [selectedRmId, setSelectedRmId] = useState<number | null>(null)
+
+  useEffect(() => {
+    workingRef.current = working
+  }, [working])
 
   const saveM = useSaveRouteGraph()
   const completeM = useCompleteRoute()
@@ -141,7 +151,19 @@ export function RouteGraphEditor({ headId }: Props) {
   }, [working, persisted])
 
   // ---------- stage actions ----------
-  const addStage = (level: number, productSysId: number, productCode?: string, productName?: string) => {
+  // addStage returns the index of the newly-pushed seq in the next graph's
+  // seqs array, so callers (e.g. F3 drop-on-pane) can immediately link it.
+  // Because setState is async, we resolve the next index via a promise-like
+  // callback pattern — actually we just append + return its index via a
+  // synchronous read of the existing length BEFORE the setter runs. This
+  // works because we always append at the end.
+  const addStage = (
+    level: number,
+    productSysId: number,
+    productCode?: string,
+    productName?: string,
+  ): { newSeqIdx: number } => {
+    let newSeqIdx = -1
     setWorking((prev) => {
       const base = prev ?? (persisted ? (JSON.parse(JSON.stringify(persisted)) as RouteGraph) : null)
       if (!base) return prev
@@ -158,9 +180,11 @@ export function RouteGraphEditor({ headId }: Props) {
         positionY: 0,
         rms: [],
       })
+      newSeqIdx = base.seqs.length - 1
       return { ...base, seqs: [...base.seqs] }
     })
     setDirty(true)
+    return { newSeqIdx }
   }
 
   const deleteStage = (seqIdx: number) => {
@@ -249,23 +273,23 @@ export function RouteGraphEditor({ headId }: Props) {
     [locked, working, persisted, addRm],
   )
 
-  // Click stage node → open inline edit panel (stay on the React Flow view).
+  // Click stage node → open inline edit panel (stays on React Flow view).
   // We still keep stageCardRefs so the "Open in Cards view" escape hatch can
-  // scroll to the right card after switching tabs.
+  // scroll to the right card.
   const stageCardRefs = useRef<Map<number, HTMLDivElement | null>>(new Map())
   const handleStageClick = useCallback((seqId: number) => {
     setSelectedRmId(null)
     setSelectedSeqId(seqId)
   }, [])
 
-  // Click edge → open inline edit panel for that RM (replaces window.prompt).
+  // Click edge → open inline edit panel for that RM.
   const handleEdgeClick = useCallback((rmId: number) => {
-    if (rmId === 0) return // unsaved RM — wait until persisted
+    if (rmId === 0) return // unsaved RM — wait until save
     setSelectedSeqId(null)
     setSelectedRmId(rmId)
   }, [])
 
-  // Shared mutator used by both panels — clamp + dirty.
+  // Update a single RM's ratio (used by both seq-panel rows + rm-panel).
   const updateRmRatio = useCallback(
     (seqIdx: number, rmIdx: number, next: number) => {
       if (!Number.isFinite(next) || next <= 0) return
@@ -282,6 +306,36 @@ export function RouteGraphEditor({ headId }: Props) {
       setDirty(true)
     },
     [persisted],
+  )
+
+  // F3 — user drew from a node handle and dropped on the empty canvas. Open
+  // AddStageDialog pre-filled with a level hint and a "link back to source"
+  // intent. The dialog's onAdd callback will append the new stage and link.
+  const handleDropOnPane = useCallback(
+    (sourceSeqId: number, handleType: "source" | "target") => {
+      if (locked) return
+      const current = working ?? persisted
+      if (!current) return
+      const sourceSeq = current.seqs.find((s) => s.seqId === sourceSeqId)
+      if (!sourceSeq) return
+      // handleType === "source" = dragged from the BOTTOM handle = adding a
+      // DOWNSTREAM stage (one level shallower than source).
+      // handleType === "target" = dragged from the TOP handle = adding an
+      // UPSTREAM stage (one level deeper than source).
+      const linkDirection: "upstream" | "downstream" =
+        handleType === "target" ? "upstream" : "downstream"
+      const defaultLevel =
+        linkDirection === "upstream"
+          ? sourceSeq.routeLevel + 1
+          : Math.max(1, sourceSeq.routeLevel - 1)
+      setStageDialogState({
+        open: true,
+        defaultLevel,
+        linkToSeqId: sourceSeqId,
+        linkDirection,
+      })
+    },
+    [locked, working, persisted],
   )
 
   if (isLoading || !graph) {
@@ -324,7 +378,7 @@ export function RouteGraphEditor({ headId }: Props) {
             🔱 Fork
           </Button>
           {!locked && (
-            <Button onClick={() => setStageDialogOpen(true)} variant="outline">
+            <Button onClick={() => setStageDialogState({ open: true })} variant="outline">
               <Plus className="mr-1 h-4 w-4" /> Add stage
             </Button>
           )}
@@ -405,13 +459,14 @@ export function RouteGraphEditor({ headId }: Props) {
           <RouteGraphFlow
             graph={graph}
             locked={locked}
-            onAddStage={!locked ? () => setStageDialogOpen(true) : undefined}
+            onAddStage={!locked ? () => setStageDialogState({ open: true }) : undefined}
             onNodePositionChange={updateSeqPosition}
             onConnectStages={addProductRmFromEdge}
             onStageClick={handleStageClick}
             onEdgeClick={handleEdgeClick}
+            onDropOnPane={!locked ? handleDropOnPane : undefined}
           />
-          {/* Inline edit panel — Bug 2 (stage click) + Bug 5 (RM edge click). */}
+          {/* Inline edit panel — Bug 2 (stage) + Bug 5 (RM edge). */}
           <EditPanelHost
             graph={graph}
             locked={locked}
@@ -546,15 +601,59 @@ export function RouteGraphEditor({ headId }: Props) {
         </div>
       ))}
 
+      {stageDialogState.open && (
       <AddStageDialog
-        open={stageDialogOpen}
-        onClose={() => setStageDialogOpen(false)}
+        open
+        onClose={() => setStageDialogState({ open: false })}
         existingLevels={seqsByLevel.map((g) => g.level)}
+        defaultLevel={stageDialogState.defaultLevel}
         onAdd={(level, productSysId, productCode, productName) => {
-          addStage(level, productSysId, productCode, productName)
-          setStageDialogOpen(false)
+          const { newSeqIdx } = addStage(level, productSysId, productCode, productName)
+          // F3 link-after-add: if we opened the dialog by dropping on the pane,
+          // wire a PRODUCT-RM between the source seq and the newly-created seq.
+          if (stageDialogState.open && stageDialogState.linkToSeqId !== undefined && newSeqIdx >= 0) {
+            const sourceSeqId = stageDialogState.linkToSeqId
+            const direction = stageDialogState.linkDirection ?? "upstream"
+            // Defer one frame so the working state setter has flushed.
+            requestAnimationFrame(() => {
+              const current = (workingRef.current ?? persisted) as RouteGraph | null
+              if (!current) return
+              const newSeq = current.seqs[newSeqIdx]
+              const sourceSeq = current.seqs.find((s) => s.seqId === sourceSeqId)
+              if (!newSeq || !sourceSeq) return
+              // Newly-added seq has seqId === 0 (unsaved). PRODUCT-RM expects
+              // both ends to exist; we add it by indexing into the seqs array.
+              // The dag-rules validator accepts unsaved seqs (seqId !== 0 check
+              // is guarded). Pick upstream vs downstream based on direction.
+              const [upstream, downstream] =
+                direction === "upstream"
+                  ? [newSeq, sourceSeq]
+                  : [sourceSeq, newSeq]
+              const verdict = isValidProductRmEdge(current, upstream, downstream)
+              if (!verdict.ok) {
+                toast.error(verdict.reason)
+                return
+              }
+              const downstreamIdx = current.seqs.indexOf(downstream)
+              if (downstreamIdx < 0) return
+              addRm(downstreamIdx, {
+                rmId: 0,
+                seqId: downstream.seqId,
+                parentProductSysId: downstream.productSysId,
+                rmType: "PRODUCT",
+                rmProductSysId: upstream.productSysId,
+                routeRmName: upstream.productCode
+                  ? `${upstream.productCode}${upstream.productName ? " — " + upstream.productName : ""}`
+                  : upstream.productName,
+                routeRmRatio: 1,
+              })
+              toast.success("Stage added and linked.")
+            })
+          }
+          setStageDialogState({ open: false })
         }}
       />
+      )}
 
       <DuplicateRouteDialog
         open={forkOpen}
@@ -582,9 +681,8 @@ export function RouteGraphEditor({ headId }: Props) {
 }
 
 // ============================================================================
-// EditPanelHost — chooses between seq-panel and rm-panel based on selection,
-// or renders nothing if neither is set. Powers Bug 2 (stage click) and Bug 5
-// (RM edge click) without leaving the React Flow canvas.
+// Edit-panel render helper — Bug 2 (stage click) + Bug 5 (RM edge click).
+// Picks the right panel mode based on selectedSeqId / selectedRmId.
 // ============================================================================
 
 function EditPanelHost({
@@ -658,19 +756,19 @@ function AddStageDialog({
   open,
   onClose,
   existingLevels,
+  defaultLevel,
   onAdd,
 }: {
   open: boolean
   onClose: () => void
   existingLevels: number[]
+  defaultLevel?: number
   onAdd: (level: number, productSysId: number, productCode?: string, productName?: string) => void
 }) {
-  const nextLevel = existingLevels.length === 0 ? 1 : Math.max(...existingLevels) + 1
+  const nextLevel =
+    defaultLevel ?? (existingLevels.length === 0 ? 1 : Math.max(...existingLevels) + 1)
   const [level, setLevel] = useState<number>(nextLevel)
   const [picked, setPicked] = useState<{ id: number; code: string; name: string } | null>(null)
-
-  // Reset when re-opening:
-  if (!open && picked) setTimeout(() => setPicked(null), 0)
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
