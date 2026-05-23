@@ -30,6 +30,7 @@ import { ErpItemCombobox } from "@/components/finance/comboboxes/erp-item-combob
 import { ProductMasterCombobox } from "@/components/finance/comboboxes/product-master-combobox"
 import { DuplicateRouteDialog } from "@/components/finance/cost-route/duplicate-route-dialog"
 import { LinkedRequestsPopover } from "@/components/finance/cost-route/linked-requests-popover"
+import { RouteGraphEditPanel } from "@/components/finance/cost-route/route-graph-edit-panel"
 import { RouteGraphFlow } from "@/components/finance/cost-route/route-graph-flow"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -82,6 +83,9 @@ export function RouteGraphEditor({ headId }: Props) {
   const [forkOpen, setForkOpen] = useState(false)
   const [rmDialog, setRmDialog] = useState<{ seqIdx: number } | null>(null)
   const [view, setView] = useState<"visual" | "cards">("visual")
+  // Inline edit-panel selection — only one of these is set at a time.
+  const [selectedSeqId, setSelectedSeqId] = useState<number | null>(null)
+  const [selectedRmId, setSelectedRmId] = useState<number | null>(null)
 
   const saveM = useSaveRouteGraph()
   const completeM = useCompleteRoute()
@@ -245,58 +249,26 @@ export function RouteGraphEditor({ headId }: Props) {
     [locked, working, persisted, addRm],
   )
 
-  // Click stage node → switch to Cards view + scroll to that card.
+  // Click stage node → open inline edit panel (stay on the React Flow view).
+  // We still keep stageCardRefs so the "Open in Cards view" escape hatch can
+  // scroll to the right card after switching tabs.
   const stageCardRefs = useRef<Map<number, HTMLDivElement | null>>(new Map())
   const handleStageClick = useCallback((seqId: number) => {
-    setView("cards")
-    // Defer scroll one frame so the Cards view mounts.
-    requestAnimationFrame(() => {
-      const el = stageCardRefs.current.get(seqId)
-      if (el) {
-        el.scrollIntoView({ behavior: "smooth", block: "center" })
-        el.classList.add("ring-2", "ring-primary")
-        setTimeout(() => el.classList.remove("ring-2", "ring-primary"), 1500)
-      }
-    })
+    setSelectedRmId(null)
+    setSelectedSeqId(seqId)
   }, [])
 
-  // Click edge → prompt for new ratio (v1 pragmatic; upgrade later).
-  const handleEdgeClick = useCallback(
-    (rmId: number) => {
-      const current = working ?? persisted
-      if (!current) return
-      // Find which seq + rm index owns this rmId.
-      let seqIdx = -1
-      let rmIdx = -1
-      for (let i = 0; i < current.seqs.length; i += 1) {
-        const j = current.seqs[i].rms.findIndex((r) => r.rmId === rmId)
-        if (j >= 0) {
-          seqIdx = i
-          rmIdx = j
-          break
-        }
-      }
-      if (seqIdx < 0) return
-      if (locked) {
-        toast.info("Route is LOCKED — unlock to edit.")
-        return
-      }
-      const rm = current.seqs[seqIdx].rms[rmIdx]
-      const input = window.prompt(
-        `Edit ratio for "${rm.routeRmName || rm.rmItemCode || rm.rmGroupCode || "RM"}"\n(Type "remove" to delete this input.)`,
-        String(rm.routeRmRatio),
-      )
-      if (input === null) return
-      if (input.trim().toLowerCase() === "remove") {
-        deleteRm(seqIdx, rmIdx)
-        toast.success("RM removed.")
-        return
-      }
-      const next = Number(input)
-      if (!Number.isFinite(next) || next <= 0) {
-        toast.error("Ratio must be a positive number.")
-        return
-      }
+  // Click edge → open inline edit panel for that RM (replaces window.prompt).
+  const handleEdgeClick = useCallback((rmId: number) => {
+    if (rmId === 0) return // unsaved RM — wait until persisted
+    setSelectedSeqId(null)
+    setSelectedRmId(rmId)
+  }, [])
+
+  // Shared mutator used by both panels — clamp + dirty.
+  const updateRmRatio = useCallback(
+    (seqIdx: number, rmIdx: number, next: number) => {
+      if (!Number.isFinite(next) || next <= 0) return
       setWorking((prev) => {
         const base = prev ?? (persisted ? (JSON.parse(JSON.stringify(persisted)) as RouteGraph) : null)
         if (!base) return prev
@@ -309,7 +281,7 @@ export function RouteGraphEditor({ headId }: Props) {
       })
       setDirty(true)
     },
-    [working, persisted, locked, deleteRm],
+    [persisted],
   )
 
   if (isLoading || !graph) {
@@ -429,15 +401,51 @@ export function RouteGraphEditor({ headId }: Props) {
       )}
 
       {view === "visual" && seqsByLevel.length > 0 && graph && (
-        <RouteGraphFlow
-          graph={graph}
-          locked={locked}
-          onAddStage={!locked ? () => setStageDialogOpen(true) : undefined}
-          onNodePositionChange={updateSeqPosition}
-          onConnectStages={addProductRmFromEdge}
-          onStageClick={handleStageClick}
-          onEdgeClick={handleEdgeClick}
-        />
+        <div className="relative">
+          <RouteGraphFlow
+            graph={graph}
+            locked={locked}
+            onAddStage={!locked ? () => setStageDialogOpen(true) : undefined}
+            onNodePositionChange={updateSeqPosition}
+            onConnectStages={addProductRmFromEdge}
+            onStageClick={handleStageClick}
+            onEdgeClick={handleEdgeClick}
+          />
+          {/* Inline edit panel — Bug 2 (stage click) + Bug 5 (RM edge click). */}
+          <EditPanelHost
+            graph={graph}
+            locked={locked}
+            selectedSeqId={selectedSeqId}
+            selectedRmId={selectedRmId}
+            onClose={() => {
+              setSelectedSeqId(null)
+              setSelectedRmId(null)
+            }}
+            onChangeRmRatio={updateRmRatio}
+            onRemoveRm={(seqIdx, rmIdx) => {
+              deleteRm(seqIdx, rmIdx)
+              setSelectedRmId(null)
+            }}
+            onAddRm={(seqIdx) => setRmDialog({ seqIdx })}
+            onRemoveStage={(seqIdx) => {
+              deleteStage(seqIdx)
+              setSelectedSeqId(null)
+            }}
+            onOpenInCards={(seqId) => {
+              setView("cards")
+              requestAnimationFrame(() => {
+                const el = stageCardRefs.current.get(seqId)
+                if (el) {
+                  el.scrollIntoView({ behavior: "smooth", block: "center" })
+                  el.classList.add("ring-2", "ring-primary")
+                  setTimeout(() => el.classList.remove("ring-2", "ring-primary"), 1500)
+                }
+              })
+              setSelectedSeqId(null)
+              setSelectedRmId(null)
+            }}
+          />
+        </div>
       )}
 
       {view === "cards" && seqsByLevel.map(({ level, list }) => (
@@ -571,6 +579,75 @@ export function RouteGraphEditor({ headId }: Props) {
       )}
     </div>
   )
+}
+
+// ============================================================================
+// EditPanelHost — chooses between seq-panel and rm-panel based on selection,
+// or renders nothing if neither is set. Powers Bug 2 (stage click) and Bug 5
+// (RM edge click) without leaving the React Flow canvas.
+// ============================================================================
+
+function EditPanelHost({
+  graph,
+  locked,
+  selectedSeqId,
+  selectedRmId,
+  onClose,
+  onChangeRmRatio,
+  onRemoveRm,
+  onAddRm,
+  onRemoveStage,
+  onOpenInCards,
+}: {
+  graph: RouteGraph
+  locked: boolean
+  selectedSeqId: number | null
+  selectedRmId: number | null
+  onClose: () => void
+  onChangeRmRatio: (seqIdx: number, rmIdx: number, next: number) => void
+  onRemoveRm: (seqIdx: number, rmIdx: number) => void
+  onAddRm: (seqIdx: number) => void
+  onRemoveStage: (seqIdx: number) => void
+  onOpenInCards: (seqId: number) => void
+}) {
+  if (selectedSeqId !== null) {
+    const seqIdx = graph.seqs.findIndex((s) => s.seqId === selectedSeqId)
+    if (seqIdx < 0) return null
+    const seq = graph.seqs[seqIdx]
+    return (
+      <RouteGraphEditPanel
+        mode="seq"
+        seq={seq}
+        locked={locked}
+        onClose={onClose}
+        onChangeRmRatio={(rmIdx, ratio) => onChangeRmRatio(seqIdx, rmIdx, ratio)}
+        onRemoveRm={(rmIdx) => onRemoveRm(seqIdx, rmIdx)}
+        onAddRm={() => onAddRm(seqIdx)}
+        onRemoveStage={() => onRemoveStage(seqIdx)}
+        onOpenInCards={() => onOpenInCards(selectedSeqId)}
+      />
+    )
+  }
+  if (selectedRmId !== null) {
+    for (let i = 0; i < graph.seqs.length; i += 1) {
+      const j = graph.seqs[i].rms.findIndex((r) => r.rmId === selectedRmId)
+      if (j >= 0) {
+        return (
+          <RouteGraphEditPanel
+            mode="rm"
+            seq={graph.seqs[i]}
+            rm={graph.seqs[i].rms[j]}
+            rmIdx={j}
+            locked={locked}
+            onClose={onClose}
+            onChangeRatio={(ratio) => onChangeRmRatio(i, j, ratio)}
+            onRemove={() => onRemoveRm(i, j)}
+          />
+        )
+      }
+    }
+  }
+  return null
 }
 
 // ============================================================================
