@@ -41,7 +41,15 @@ export function CalcJobHeader({ job }: Props) {
       : 0
 
   async function confirm() {
-    await cancel.mutateAsync({ jobId: job.jobId, reason: reason.trim() || undefined })
+    // Race-safe: job may transition to terminal state (SUCCESS / PARTIAL_FAILED /
+    // FAILED) between user clicking Cancel and the request hitting the backend.
+    // useCancelCalcJob's onError toast already surfaces the message; swallow
+    // the re-throw to avoid Next.js's unhandled-rejection runtime error.
+    try {
+      await cancel.mutateAsync({ jobId: job.jobId, reason: reason.trim() || undefined })
+    } catch {
+      // toast already shown by mutation onError
+    }
     setReason("")
     setOpen(false)
   }

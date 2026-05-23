@@ -74,7 +74,14 @@ export function CalcJobsTable({
 
   const confirmCancel = async () => {
     if (!cancelTarget) return
-    await cancelMutation.mutateAsync({ jobId: cancelTarget.jobId })
+    // Race-safe: see calc-job-header.tsx — backend may reject if job already
+    // reached a terminal state between user click + request. onError toast in
+    // the mutation surfaces the message; swallow re-throw here.
+    try {
+      await cancelMutation.mutateAsync({ jobId: cancelTarget.jobId })
+    } catch {
+      // toast already shown by mutation onError
+    }
     setCancelTarget(null)
   }
 

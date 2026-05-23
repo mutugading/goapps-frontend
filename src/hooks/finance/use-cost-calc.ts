@@ -181,7 +181,15 @@ export function useCancelCalcJob() {
       qc.invalidateQueries({ queryKey: KEYS.job(jobId) })
       qc.invalidateQueries({ queryKey: KEYS.all })
     },
-    onError: (err: Error) => toast.error(err.message),
+    onError: (err: Error, { jobId }) => {
+      // Likely race: job reached terminal status before cancel hit backend.
+      // Refresh job state so UI hides the now-stale Cancel button.
+      const msg = err.message.includes("state transition")
+        ? "Job already finished — refresh to see latest status"
+        : err.message
+      toast.error(msg)
+      qc.invalidateQueries({ queryKey: KEYS.job(jobId) })
+    },
   })
 }
 
