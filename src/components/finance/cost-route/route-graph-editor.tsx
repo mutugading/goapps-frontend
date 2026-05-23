@@ -8,7 +8,10 @@
 // **UX rule (enforced):** users NEVER see or type a UUID / sys_id. Every
 // reference is picked via a combobox keyed on human-readable code/name.
 
-import { useCallback, useMemo, useState } from "react"
+import { useCallback, useMemo, useRef, useState } from "react"
+import { toast } from "sonner"
+
+import { isValidProductRmEdge } from "@/components/finance/cost-route/dag-rules"
 import {
   ArrowLeft,
   CheckCircle2,
@@ -191,6 +194,124 @@ export function RouteGraphEditor({ headId }: Props) {
     setDirty(true)
   }
 
+  // ---------- React Flow native actions ----------
+
+  // Persist a stage's drag position.
+  const updateSeqPosition = useCallback(
+    (seqId: number, x: number, y: number) => {
+      setWorking((prev) => {
+        const base = prev ?? (persisted ? (JSON.parse(JSON.stringify(persisted)) as RouteGraph) : null)
+        if (!base) return prev
+        const seq = base.seqs.find((s) => s.seqId === seqId)
+        if (!seq) return base
+        if (seq.positionX === x && seq.positionY === y) return base
+        seq.positionX = x
+        seq.positionY = y
+        return { ...base, seqs: [...base.seqs] }
+      })
+      setDirty(true)
+    },
+    [persisted],
+  )
+
+  // Add a PRODUCT-RM by drawing an edge from upstream → downstream stage.
+  const addProductRmFromEdge = useCallback(
+    (upstreamSeqId: number, downstreamSeqId: number) => {
+      if (locked) return
+      const current = working ?? persisted
+      if (!current) return
+      const upstream = current.seqs.find((s) => s.seqId === upstreamSeqId)
+      const downstream = current.seqs.find((s) => s.seqId === downstreamSeqId)
+      if (!upstream || !downstream) return
+      const verdict = isValidProductRmEdge(current, upstream, downstream)
+      if (!verdict.ok) {
+        toast.error(verdict.reason)
+        return
+      }
+      const downstreamIdx = current.seqs.indexOf(downstream)
+      addRm(downstreamIdx, {
+        rmId: 0,
+        seqId: downstream.seqId,
+        parentProductSysId: downstream.productSysId,
+        rmType: "PRODUCT",
+        rmProductSysId: upstream.productSysId,
+        routeRmName: upstream.productCode
+          ? `${upstream.productCode}${upstream.productName ? " — " + upstream.productName : ""}`
+          : upstream.productName,
+        routeRmRatio: 1,
+      })
+      toast.success("Linked stages — saved as PRODUCT input.")
+    },
+    [locked, working, persisted, addRm],
+  )
+
+  // Click stage node → switch to Cards view + scroll to that card.
+  const stageCardRefs = useRef<Map<number, HTMLDivElement | null>>(new Map())
+  const handleStageClick = useCallback((seqId: number) => {
+    setView("cards")
+    // Defer scroll one frame so the Cards view mounts.
+    requestAnimationFrame(() => {
+      const el = stageCardRefs.current.get(seqId)
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" })
+        el.classList.add("ring-2", "ring-primary")
+        setTimeout(() => el.classList.remove("ring-2", "ring-primary"), 1500)
+      }
+    })
+  }, [])
+
+  // Click edge → prompt for new ratio (v1 pragmatic; upgrade later).
+  const handleEdgeClick = useCallback(
+    (rmId: number) => {
+      const current = working ?? persisted
+      if (!current) return
+      // Find which seq + rm index owns this rmId.
+      let seqIdx = -1
+      let rmIdx = -1
+      for (let i = 0; i < current.seqs.length; i += 1) {
+        const j = current.seqs[i].rms.findIndex((r) => r.rmId === rmId)
+        if (j >= 0) {
+          seqIdx = i
+          rmIdx = j
+          break
+        }
+      }
+      if (seqIdx < 0) return
+      if (locked) {
+        toast.info("Route is LOCKED — unlock to edit.")
+        return
+      }
+      const rm = current.seqs[seqIdx].rms[rmIdx]
+      const input = window.prompt(
+        `Edit ratio for "${rm.routeRmName || rm.rmItemCode || rm.rmGroupCode || "RM"}"\n(Type "remove" to delete this input.)`,
+        String(rm.routeRmRatio),
+      )
+      if (input === null) return
+      if (input.trim().toLowerCase() === "remove") {
+        deleteRm(seqIdx, rmIdx)
+        toast.success("RM removed.")
+        return
+      }
+      const next = Number(input)
+      if (!Number.isFinite(next) || next <= 0) {
+        toast.error("Ratio must be a positive number.")
+        return
+      }
+      setWorking((prev) => {
+        const base = prev ?? (persisted ? (JSON.parse(JSON.stringify(persisted)) as RouteGraph) : null)
+        if (!base) return prev
+        const seq = base.seqs[seqIdx]
+        if (!seq) return base
+        const targetRm = seq.rms[rmIdx]
+        if (!targetRm) return base
+        targetRm.routeRmRatio = next
+        return { ...base, seqs: [...base.seqs] }
+      })
+      setDirty(true)
+    },
+    [working, persisted, locked, deleteRm],
+  )
+
   if (isLoading || !graph) {
     return (
       <div className="flex h-96 items-center justify-center text-muted-foreground">
@@ -310,7 +431,12 @@ export function RouteGraphEditor({ headId }: Props) {
       {view === "visual" && seqsByLevel.length > 0 && graph && (
         <RouteGraphFlow
           graph={graph}
+          locked={locked}
           onAddStage={!locked ? () => setStageDialogOpen(true) : undefined}
+          onNodePositionChange={updateSeqPosition}
+          onConnectStages={addProductRmFromEdge}
+          onStageClick={handleStageClick}
+          onEdgeClick={handleEdgeClick}
         />
       )}
 
@@ -324,7 +450,16 @@ export function RouteGraphEditor({ headId }: Props) {
             {list.map((s) => {
               const idx = seqs.indexOf(s)
               return (
-                <Card key={`${s.seqId}-${s.routeLevel}-${s.routeSeq}-${idx}`} className="p-3">
+                <Card
+                  key={`${s.seqId}-${s.routeLevel}-${s.routeSeq}-${idx}`}
+                  className="p-3 transition-shadow"
+                  ref={(el: HTMLDivElement | null) => {
+                    if (s.seqId > 0) {
+                      if (el) stageCardRefs.current.set(s.seqId, el)
+                      else stageCardRefs.current.delete(s.seqId)
+                    }
+                  }}
+                >
                   <div className="flex items-start justify-between gap-2">
                     <div>
                       <div className="font-mono text-xs text-muted-foreground">
