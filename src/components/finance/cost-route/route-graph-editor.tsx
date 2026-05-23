@@ -277,6 +277,12 @@ export function RouteGraphEditor({ headId }: Props) {
         </Card>
       )}
 
+      {complete && (
+        <Card className="border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">
+          Status: COMPLETE. Edits are still allowed — Lock the route to freeze it for calculation.
+        </Card>
+      )}
+
       {/* View toggle */}
       <div className="flex items-center gap-2">
         <Button
@@ -301,7 +307,12 @@ export function RouteGraphEditor({ headId }: Props) {
         </Card>
       )}
 
-      {view === "visual" && seqsByLevel.length > 0 && graph && <RouteGraphFlow graph={graph} />}
+      {view === "visual" && seqsByLevel.length > 0 && graph && (
+        <RouteGraphFlow
+          graph={graph}
+          onAddStage={!locked ? () => setStageDialogOpen(true) : undefined}
+        />
+      )}
 
       {view === "cards" && seqsByLevel.map(({ level, list }) => (
         <div key={level} className="space-y-2">

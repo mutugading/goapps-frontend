@@ -23,6 +23,7 @@ import {
   Controls,
   Handle,
   MiniMap,
+  Panel,
   Position,
   ReactFlow,
   type Edge,
@@ -30,12 +31,15 @@ import {
   type NodeProps,
 } from "@xyflow/react"
 import "@xyflow/react/dist/style.css"
+import { Plus } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import type { CostRouteRm, CostRouteSeq, RouteGraph } from "@/types/finance/cost-route"
 
 interface Props {
   graph: RouteGraph
+  onAddStage?: () => void
 }
 
 // ============================================================================
@@ -220,7 +224,7 @@ function rmLabel(rm: CostRouteRm): string {
 // Public component
 // ============================================================================
 
-export function RouteGraphFlow({ graph }: Props) {
+export function RouteGraphFlow({ graph, onAddStage }: Props) {
   const { nodes, edges } = useMemo(() => buildFlow(graph), [graph])
 
   return (
@@ -235,6 +239,13 @@ export function RouteGraphFlow({ graph }: Props) {
         elementsSelectable
         nodesConnectable={false}
       >
+        {onAddStage && (
+          <Panel position="top-right">
+            <Button onClick={onAddStage} size="sm">
+              <Plus className="mr-1 h-4 w-4" /> Add stage
+            </Button>
+          </Panel>
+        )}
         <Background gap={24} />
         <Controls showInteractive={false} />
         <MiniMap pannable zoomable />

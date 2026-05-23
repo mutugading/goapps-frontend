@@ -59,18 +59,24 @@ export function PermissionProvider({
         return user?.roles || []
     }, [user])
 
+    const isSuperAdmin = useMemo(
+        () => roles.includes("SUPER_ADMIN"),
+        [roles]
+    )
+
     const value = useMemo<PermissionContextValue>(
         () => ({
             permissions,
             roles,
-            hasPermission: (code: string) => permissions.has(code),
+            hasPermission: (code: string) =>
+                isSuperAdmin || permissions.has(code),
             hasAnyPermission: (...codes: string[]) =>
-                codes.some((code) => permissions.has(code)),
+                isSuperAdmin || codes.some((code) => permissions.has(code)),
             hasRole: (role: string) => roles.includes(role),
             hasAnyRole: (...roleList: string[]) =>
                 roleList.some((role) => roles.includes(role)),
         }),
-        [permissions, roles]
+        [permissions, roles, isSuperAdmin]
     )
 
     return (
