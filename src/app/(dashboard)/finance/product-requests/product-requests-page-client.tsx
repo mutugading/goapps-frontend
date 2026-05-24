@@ -2,10 +2,11 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Plus } from "lucide-react"
+import { Ban, FileText, Inbox, Plus, XCircle } from "lucide-react"
 
 import { PageHeader } from "@/components/common/page-header"
 import { DebouncedSearchInput } from "@/components/common/debounced-search-input"
+import { KpiCard, KpiGrid } from "@/components/common"
 import { Button } from "@/components/ui/button"
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -15,7 +16,7 @@ import {
   RequestFormDialog,
   RequestTable,
 } from "@/components/finance/cost-product-request"
-import { useCostProductRequests } from "@/hooks/finance/use-cost-product-request"
+import { useCostProductRequestCounts, useCostProductRequests } from "@/hooks/finance/use-cost-product-request"
 import { useUrlState } from "@/lib/hooks"
 import type { ListCostProductRequestsParams, RequestStatus } from "@/types/finance/cost-product-request"
 
@@ -38,6 +39,7 @@ export default function ProductRequestsPageClient() {
   const [formOpen, setFormOpen] = useState(false)
 
   const { data: list, isLoading } = useCostProductRequests(filters)
+  const { data: counts, isLoading: countsLoading } = useCostProductRequestCounts()
 
   function openCreate() {
     setFormOpen(true)
@@ -54,6 +56,13 @@ export default function ProductRequestsPageClient() {
           <Plus className="mr-2 h-4 w-4" /> New request
         </Button>
       </PageHeader>
+
+      <KpiGrid>
+        <KpiCard title="Total requests" value={counts?.total ?? 0} icon={FileText} loading={countsLoading} />
+        <KpiCard title="Open" value={counts?.open ?? 0} icon={Inbox} variant="warning" loading={countsLoading} />
+        <KpiCard title="Rejected" value={counts?.rejected ?? 0} icon={XCircle} variant="destructive" loading={countsLoading} />
+        <KpiCard title="Closed" value={counts?.closed ?? 0} icon={Ban} loading={countsLoading} />
+      </KpiGrid>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <DebouncedSearchInput

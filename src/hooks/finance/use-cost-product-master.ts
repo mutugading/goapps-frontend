@@ -46,6 +46,33 @@ export function useCostProductMasters(params: ListCostProductMastersParams) {
   })
 }
 
+async function fetchPMCount(activeFilter: "" | "active" | "inactive"): Promise<number> {
+  const res = await fetchList({ page: 1, pageSize: 1, activeFilter } as ListCostProductMastersParams)
+  return Number(res.pagination?.totalItems ?? 0)
+}
+
+export interface ProductMasterCounts {
+  total: number
+  active: number
+  inactive: number
+}
+
+// useCostProductMasterCounts powers the list-page KPI widgets.
+export function useCostProductMasterCounts() {
+  return useQuery({
+    queryKey: [...KEYS.all, "counts"] as const,
+    queryFn: async (): Promise<ProductMasterCounts> => {
+      const [total, active, inactive] = await Promise.all([
+        fetchPMCount(""),
+        fetchPMCount("active"),
+        fetchPMCount("inactive"),
+      ])
+      return { total, active, inactive }
+    },
+    staleTime: 30_000,
+  })
+}
+
 export function useCostProductMaster(productSysId: number | undefined) {
   return useQuery({
     queryKey: KEYS.detail(productSysId ?? 0),

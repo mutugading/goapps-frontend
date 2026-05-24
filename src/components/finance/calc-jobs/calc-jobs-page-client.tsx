@@ -1,13 +1,14 @@
 "use client"
 
 import { useState } from "react"
-import { Plus } from "lucide-react"
+import { Layers, Loader2, Plus, XCircle, Clock } from "lucide-react"
 
 import { PageHeader } from "@/components/common/page-header"
+import { KpiCard, KpiGrid } from "@/components/common"
 import { Button } from "@/components/ui/button"
 import { usePermissionContext } from "@/providers/permission-provider"
 import { useUrlState } from "@/lib/hooks"
-import { useCalcJobs } from "@/hooks/finance/use-cost-calc"
+import { useCalcJobCounts, useCalcJobs } from "@/hooks/finance/use-cost-calc"
 import type {
   CalcJobStatus,
   CalculationType,
@@ -43,6 +44,7 @@ export function CalcJobsPageClient() {
     page: filters.page ?? 1,
     pageSize: filters.pageSize ?? 20,
   })
+  const { data: counts, isLoading: countsLoading } = useCalcJobCounts()
 
   return (
     <div className="space-y-6">
@@ -56,6 +58,13 @@ export function CalcJobsPageClient() {
           </Button>
         )}
       </PageHeader>
+
+      <KpiGrid>
+        <KpiCard title="Total jobs" value={counts?.total ?? 0} icon={Layers} loading={countsLoading} />
+        <KpiCard title="Queued" value={counts?.queued ?? 0} icon={Clock} variant="warning" loading={countsLoading} />
+        <KpiCard title="Processing" value={counts?.processing ?? 0} icon={Loader2} variant="warning" loading={countsLoading} />
+        <KpiCard title="Failed" value={counts?.failed ?? 0} icon={XCircle} variant="destructive" loading={countsLoading} />
+      </KpiGrid>
 
       <CalcJobsFilters
         value={{

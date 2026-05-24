@@ -55,6 +55,40 @@ export function useCostProductRequests(params: ListCostProductRequestsParams) {
   })
 }
 
+// fetchCount returns just the pagination.totalItems for a given status filter
+// (pageSize=1 keeps the payload tiny — we only read the count).
+async function fetchCount(status: string): Promise<number> {
+  const qs = new URLSearchParams({ page: "1", pageSize: "1" })
+  if (status) qs.set("status", status)
+  const res = await fetch(`/api/v1/finance/cost-product-requests?${qs.toString()}`)
+  const json = await res.json()
+  return Number(json.pagination?.totalItems ?? 0)
+}
+
+export interface RequestStatusCounts {
+  total: number
+  open: number
+  rejected: number
+  closed: number
+}
+
+// useCostProductRequestCounts powers the list-page KPI widgets. Open = total
+// minus the two terminal states.
+export function useCostProductRequestCounts() {
+  return useQuery({
+    queryKey: [...KEYS.all, "counts"] as const,
+    queryFn: async (): Promise<RequestStatusCounts> => {
+      const [total, rejected, closed] = await Promise.all([
+        fetchCount(""),
+        fetchCount("REJECTED"),
+        fetchCount("CLOSED"),
+      ])
+      return { total, rejected, closed, open: Math.max(0, total - rejected - closed) }
+    },
+    staleTime: 30_000,
+  })
+}
+
 export function useCostProductRequest(requestId: number | undefined) {
   return useQuery({
     queryKey: KEYS.detail(requestId ?? 0),

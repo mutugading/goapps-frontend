@@ -1,9 +1,10 @@
 "use client"
 
-import { Plus } from "lucide-react"
+import { CheckCircle2, Package, PauseCircle, Plus } from "lucide-react"
 import { useState } from "react"
 
 import { PageHeader } from "@/components/common/page-header"
+import { KpiCard, KpiGrid } from "@/components/common"
 import { DebouncedSearchInput } from "@/components/common/debounced-search-input"
 import { Button } from "@/components/ui/button"
 import {
@@ -17,7 +18,7 @@ import {
 } from "@/components/finance/cost-product-master"
 import { ProductTypeCombobox } from "@/components/finance/comboboxes"
 import { DataTablePagination } from "@/components/shared"
-import { useCostProductMasters } from "@/hooks/finance/use-cost-product-master"
+import { useCostProductMasterCounts, useCostProductMasters } from "@/hooks/finance/use-cost-product-master"
 import { useUrlState } from "@/lib/hooks"
 import type { CostProductMaster, ListCostProductMastersParams } from "@/types/finance/cost-product-master"
 
@@ -32,6 +33,7 @@ const defaultFilters: ListCostProductMastersParams = {
 export default function ProductMasterPageClient() {
   const [filters, setFilters] = useUrlState<ListCostProductMastersParams>({ defaultValues: defaultFilters })
   const { data, isLoading } = useCostProductMasters(filters)
+  const { data: counts, isLoading: countsLoading } = useCostProductMasterCounts()
 
   const [formOpen, setFormOpen] = useState(false)
   const [erpOpen, setErpOpen] = useState(false)
@@ -69,6 +71,12 @@ export default function ProductMasterPageClient() {
           <Plus className="mr-2 h-4 w-4" /> New product
         </Button>
       </PageHeader>
+
+      <KpiGrid cols={3}>
+        <KpiCard title="Total products" value={counts?.total ?? 0} icon={Package} loading={countsLoading} />
+        <KpiCard title="Active" value={counts?.active ?? 0} icon={CheckCircle2} variant="success" loading={countsLoading} />
+        <KpiCard title="Inactive" value={counts?.inactive ?? 0} icon={PauseCircle} loading={countsLoading} />
+      </KpiGrid>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <DebouncedSearchInput

@@ -75,6 +75,39 @@ export function useRoutes(params: ListRoutesParams = {}) {
   })
 }
 
+// ---------- counts (list KPIs) ----------
+
+async function fetchRouteCount(status: string): Promise<number> {
+  const qs = new URLSearchParams({ page: "1", pageSize: "1" })
+  if (status) qs.set("status", status)
+  const res = await fetch(`/api/v1/finance/routes?${qs.toString()}`)
+  const json = (await res.json()) as BFFResponse<unknown[]>
+  return Number(json.pagination?.totalItems ?? 0)
+}
+
+export interface RouteCounts {
+  total: number
+  draft: number
+  complete: number
+  locked: number
+}
+
+export function useRouteCounts() {
+  return useQuery({
+    queryKey: [...KEYS.all, "counts"] as const,
+    queryFn: async (): Promise<RouteCounts> => {
+      const [total, draft, complete, locked] = await Promise.all([
+        fetchRouteCount(""),
+        fetchRouteCount("DRAFT"),
+        fetchRouteCount("COMPLETE"),
+        fetchRouteCount("LOCKED"),
+      ])
+      return { total, draft, complete, locked }
+    },
+    staleTime: 30_000,
+  })
+}
+
 // ---------- graph ----------
 
 export function useRouteGraph(headId: number | undefined) {

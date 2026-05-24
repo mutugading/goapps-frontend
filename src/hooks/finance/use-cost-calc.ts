@@ -300,6 +300,39 @@ export function useCostResult(
   })
 }
 
+// ---------- job counts (list KPIs) ----------
+
+async function fetchJobCount(status: string): Promise<number> {
+  const qs = new URLSearchParams({ page: "1", pageSize: "1" })
+  if (status) qs.set("status", status)
+  const res = await fetch(`/api/v1/finance/calc-jobs?${qs.toString()}`)
+  const json = await res.json()
+  return Number(json.pagination?.totalItems ?? 0)
+}
+
+export interface CalcJobCounts {
+  total: number
+  queued: number
+  processing: number
+  failed: number
+}
+
+export function useCalcJobCounts() {
+  return useQuery({
+    queryKey: [...KEYS.all, "job-counts"] as const,
+    queryFn: async (): Promise<CalcJobCounts> => {
+      const [total, queued, processing, failed] = await Promise.all([
+        fetchJobCount(""),
+        fetchJobCount("QUEUED"),
+        fetchJobCount("PROCESSING"),
+        fetchJobCount("FAILED"),
+      ])
+      return { total, queued, processing, failed }
+    },
+    staleTime: 15_000,
+  })
+}
+
 // ---------- cross-product list ----------
 
 export interface ListCostResultsParams {

@@ -2,11 +2,11 @@
 
 import Link from "next/link"
 import { useState } from "react"
-import { Loader2 } from "lucide-react"
+import { CheckCircle2, FileStack, Loader2, Lock, PencilRuler } from "lucide-react"
 
-import { DebouncedSearchInput } from "@/components/common"
+import { DebouncedSearchInput, KpiCard, KpiGrid, PageHeader } from "@/components/common"
+import { StatusBadge } from "@/components/common/status-badge"
 import { CreateRoutingWizard } from "@/components/finance/cost-product-request/create-routing-wizard"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import {
@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { useRoutes } from "@/hooks/finance/use-cost-route"
+import { useRouteCounts, useRoutes } from "@/hooks/finance/use-cost-route"
 import type { RouteStatus } from "@/types/finance/cost-route"
 
 export default function RoutesListPage() {
@@ -28,16 +28,14 @@ export default function RoutesListPage() {
   const pageSize = 20
 
   const { data, isLoading } = useRoutes({ search, status, page, pageSize })
+  const { data: counts, isLoading: countsLoading } = useRouteCounts()
 
   return (
     <div className="space-y-6 p-6">
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">Product Routes</h1>
-          <p className="text-sm text-muted-foreground">
-            Multi-stage routings (DAG): one head per product, each stage produces an intermediate or FG product.
-          </p>
-        </div>
+      <PageHeader
+        title="Product Routes"
+        subtitle="Multi-stage routings (DAG): one head per product, each stage produces an intermediate or FG product."
+      >
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button>+ New route ▾</Button>
@@ -49,7 +47,14 @@ export default function RoutesListPage() {
             {/* "From template (duplicate)" deferred — user opens an existing route then Fork. */}
           </DropdownMenuContent>
         </DropdownMenu>
-      </div>
+      </PageHeader>
+
+      <KpiGrid>
+        <KpiCard title="Total routes" value={counts?.total ?? 0} icon={FileStack} loading={countsLoading} />
+        <KpiCard title="Draft" value={counts?.draft ?? 0} icon={PencilRuler} variant="warning" loading={countsLoading} />
+        <KpiCard title="Complete" value={counts?.complete ?? 0} icon={CheckCircle2} variant="success" loading={countsLoading} />
+        <KpiCard title="Locked" value={counts?.locked ?? 0} icon={Lock} loading={countsLoading} />
+      </KpiGrid>
 
       <CreateRoutingWizard
         open={wizardOpen}
@@ -125,7 +130,7 @@ export default function RoutesListPage() {
                   <div className="text-xs text-muted-foreground">{h.productName || ""}</div>
                 </TableCell>
                 <TableCell>
-                  <StatusBadge status={h.routingStatus} />
+                  <StatusBadge status={h.routingStatus} type="route" />
                 </TableCell>
                 <TableCell>v{h.version}</TableCell>
                 <TableCell>{h.promotedFromDraftId ? `#${h.promotedFromDraftId}` : "—"}</TableCell>
@@ -164,11 +169,3 @@ export default function RoutesListPage() {
   )
 }
 
-function StatusBadge({ status }: { status: RouteStatus }) {
-  const styles: Record<RouteStatus, string> = {
-    DRAFT: "bg-slate-100 text-slate-700",
-    COMPLETE: "bg-emerald-100 text-emerald-700",
-    LOCKED: "bg-amber-100 text-amber-700",
-  }
-  return <Badge className={styles[status] || ""}>{status}</Badge>
-}
