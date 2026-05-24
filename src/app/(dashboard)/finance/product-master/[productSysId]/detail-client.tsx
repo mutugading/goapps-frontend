@@ -11,6 +11,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useCostProductMaster } from "@/hooks/finance/use-cost-product-master"
 import { CalculateButton } from "@/components/finance/calc-jobs/calculate-button"
 import { ProductParametersTab } from "@/components/finance/cost-product-master/parameters-tab"
+import { ProductRoutingTab } from "@/components/finance/cost-product-master/routing-tab"
+import { ProductAuditTab } from "@/components/finance/cost-product-master/audit-tab"
 import { CostHistoryTab } from "@/components/finance/cost-results/cost-history-tab"
 import { ProductTypeName } from "@/components/common/product-type-name"
 
@@ -87,19 +89,21 @@ export default function ProductMasterDetailClient({ productSysId }: Props) {
       <Tabs defaultValue="parameters">
         <TabsList>
           <TabsTrigger value="parameters">Parameters</TabsTrigger>
+          <TabsTrigger value="routing">Routing</TabsTrigger>
           <TabsTrigger value="cost-history">Cost history</TabsTrigger>
-          <TabsTrigger value="bom" disabled>
-            BOM / Routing (S7.5+)
-          </TabsTrigger>
-          <TabsTrigger value="audit" disabled>
-            Audit (S7.5+)
-          </TabsTrigger>
+          <TabsTrigger value="audit">Audit</TabsTrigger>
         </TabsList>
         <TabsContent value="parameters" className="mt-4">
           <ProductParametersTab productSysId={productSysId} />
         </TabsContent>
+        <TabsContent value="routing" className="mt-4">
+          <ProductRoutingTab productSysId={productSysId} />
+        </TabsContent>
         <TabsContent value="cost-history" className="mt-4">
           <CostHistoryTab productSysId={productSysId} />
+        </TabsContent>
+        <TabsContent value="audit" className="mt-4">
+          <ProductAuditTab productSysId={productSysId} />
         </TabsContent>
       </Tabs>
     </div>
