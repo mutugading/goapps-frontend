@@ -1,7 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { ArrowLeft, Plus } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { Plus } from "lucide-react"
 
 import { PageHeader } from "@/components/common/page-header"
 import { DebouncedSearchInput } from "@/components/common/debounced-search-input"
@@ -11,13 +12,12 @@ import {
 } from "@/components/ui/select"
 import { DataTablePagination } from "@/components/shared"
 import {
-  RequestDetailPanel,
   RequestFormDialog,
   RequestTable,
 } from "@/components/finance/cost-product-request"
-import { useCostProductRequest, useCostProductRequests } from "@/hooks/finance/use-cost-product-request"
+import { useCostProductRequests } from "@/hooks/finance/use-cost-product-request"
 import { useUrlState } from "@/lib/hooks"
-import type { CostProductRequest, ListCostProductRequestsParams, RequestStatus } from "@/types/finance/cost-product-request"
+import type { ListCostProductRequestsParams, RequestStatus } from "@/types/finance/cost-product-request"
 
 const STATUSES: RequestStatus[] = [
   "DRAFT", "SUBMITTED", "UNDER_REVIEW", "ROUTING_DEFINED",
@@ -33,40 +33,19 @@ const defaultFilters: ListCostProductRequestsParams = {
 }
 
 export default function ProductRequestsPageClient() {
+  const router = useRouter()
   const [filters, setFilters] = useUrlState<ListCostProductRequestsParams>({ defaultValues: defaultFilters })
   const [formOpen, setFormOpen] = useState(false)
-  const [editing, setEditing] = useState<CostProductRequest | null>(null)
-  const [selectedId, setSelectedId] = useState<number | undefined>()
 
   const { data: list, isLoading } = useCostProductRequests(filters)
-  const { data: selected } = useCostProductRequest(selectedId)
 
   function openCreate() {
-    setEditing(null)
-    setFormOpen(true)
-  }
-  function openEdit(r: CostProductRequest) {
-    setEditing(r)
     setFormOpen(true)
   }
 
   const items = list?.items ?? []
   const pagination = list?.pagination
   const totalItems = Number(pagination?.totalItems ?? 0)
-
-  if (selected) {
-    return (
-      <div className="space-y-6">
-        <PageHeader title={selected.requestNo} subtitle={selected.title}>
-          <Button variant="outline" onClick={() => setSelectedId(undefined)}>
-            <ArrowLeft className="mr-2 h-4 w-4" /> Back to list
-          </Button>
-        </PageHeader>
-        <RequestDetailPanel request={selected} onEdit={() => openEdit(selected)} />
-        <RequestFormDialog open={formOpen} onOpenChange={setFormOpen} request={editing} />
-      </div>
-    )
-  }
 
   return (
     <div className="space-y-6">
@@ -105,7 +84,7 @@ export default function ProductRequestsPageClient() {
       <RequestTable
         items={items}
         isLoading={isLoading}
-        onOpen={(r) => setSelectedId(r.requestId)}
+        onOpen={(r) => router.push(`/finance/product-requests/${r.requestId}`)}
       />
 
       {totalItems > 0 && (
@@ -119,7 +98,7 @@ export default function ProductRequestsPageClient() {
         />
       )}
 
-      <RequestFormDialog open={formOpen} onOpenChange={setFormOpen} request={editing} />
+      <RequestFormDialog open={formOpen} onOpenChange={setFormOpen} request={null} />
     </div>
   )
 }
