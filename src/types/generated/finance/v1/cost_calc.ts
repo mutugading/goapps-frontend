@@ -854,6 +854,42 @@ export interface GetCostResultResponse {
   result: CostResult | undefined;
 }
 
+/**
+ * ListCostResultsRequest lists active (non-superseded) cost results across
+ * products for a period + calc type, with optional product search + status.
+ * All filters are optional: empty period means "latest available period".
+ */
+export interface ListCostResultsRequest {
+  /** Pagination params. */
+  pagination:
+    | PaginationRequest
+    | undefined;
+  /** Period in YYYYMM (empty = latest period present in cst_product_cost). */
+  period: string;
+  /** Calculation type filter (UNSPECIFIED = no filter). */
+  calculationType: CalculationType;
+  /** Product code/name search (case-insensitive, optional). */
+  search: string;
+  /** Result status filter (UNSPECIFIED = active only, i.e. exclude SUPERSEDED). */
+  status: CostResultStatus;
+}
+
+/** ListCostResultsResponse returns a page of cost results across products. */
+export interface ListCostResultsResponse {
+  /** Standard response envelope. */
+  base:
+    | BaseResponse
+    | undefined;
+  /** Page of cost result rows (resolved product code/name/uom; no UUIDs). */
+  items: CostResult[];
+  /** Pagination metadata. */
+  pagination:
+    | PaginationResponse
+    | undefined;
+  /** The period actually used (resolved when request period was empty). */
+  resolvedPeriod: string;
+}
+
 /** GetCostBreakdownRequest fetches the full drill-down for a cost. */
 export interface GetCostBreakdownRequest {
   /** Product sys id; must be > 0. */
@@ -928,6 +964,39 @@ export interface ApproveCostResultResponse {
     | undefined;
   /** Updated cost result. */
   result: CostResult | undefined;
+}
+
+/**
+ * ProcessChunkInternalRequest carries the data the worker needs to compute
+ * one chunk of products. Internal RPC: only finance-cost-worker invokes it.
+ */
+export interface ProcessChunkInternalRequest {
+  /** Job id this chunk belongs to; must be > 0. */
+  jobId: number;
+  /** Chunk id (cal_job_chunk.cjc_chunk_id) -- the row this chunk updates. */
+  chunkId: number;
+  /** Period in YYYYMM format (e.g., 202604). */
+  period: string;
+  /** Calculation flavor; cannot be UNSPECIFIED. */
+  calculationType: CalculationType;
+  /** Product sys ids to compute; at least one required. */
+  productIds: number[];
+  /** Actor (worker id) recorded in audit + result rows. */
+  actor: string;
+}
+
+/** ProcessChunkInternalResponse summarizes per-status counts. */
+export interface ProcessChunkInternalResponse {
+  /** Standard response envelope. */
+  base:
+    | BaseResponse
+    | undefined;
+  /** Number of products that computed + persisted successfully. */
+  successCount: number;
+  /** Number of products that failed with non-recoverable errors. */
+  failedCount: number;
+  /** Number of products that were BLOCKED (missing CAPP, missing RM cost, etc.). */
+  blockedCount: number;
 }
 
 function createBaseCalJob(): CalJob {
@@ -5134,6 +5203,252 @@ export const GetCostResultResponse: MessageFns<GetCostResultResponse> = {
   },
 };
 
+function createBaseListCostResultsRequest(): ListCostResultsRequest {
+  return { pagination: undefined, period: "", calculationType: 0, search: "", status: 0 };
+}
+
+export const ListCostResultsRequest: MessageFns<ListCostResultsRequest> = {
+  encode(message: ListCostResultsRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.pagination !== undefined) {
+      PaginationRequest.encode(message.pagination, writer.uint32(10).fork()).join();
+    }
+    if (message.period !== "") {
+      writer.uint32(18).string(message.period);
+    }
+    if (message.calculationType !== 0) {
+      writer.uint32(24).int32(message.calculationType);
+    }
+    if (message.search !== "") {
+      writer.uint32(34).string(message.search);
+    }
+    if (message.status !== 0) {
+      writer.uint32(40).int32(message.status);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ListCostResultsRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListCostResultsRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.pagination = PaginationRequest.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.period = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.calculationType = reader.int32() as any;
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.search = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.status = reader.int32() as any;
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListCostResultsRequest {
+    return {
+      pagination: isSet(object.pagination) ? PaginationRequest.fromJSON(object.pagination) : undefined,
+      period: isSet(object.period) ? globalThis.String(object.period) : "",
+      calculationType: isSet(object.calculationType)
+        ? calculationTypeFromJSON(object.calculationType)
+        : isSet(object.calculation_type)
+        ? calculationTypeFromJSON(object.calculation_type)
+        : 0,
+      search: isSet(object.search) ? globalThis.String(object.search) : "",
+      status: isSet(object.status) ? costResultStatusFromJSON(object.status) : 0,
+    };
+  },
+
+  toJSON(message: ListCostResultsRequest): unknown {
+    const obj: any = {};
+    if (message.pagination !== undefined) {
+      obj.pagination = PaginationRequest.toJSON(message.pagination);
+    }
+    if (message.period !== "") {
+      obj.period = message.period;
+    }
+    if (message.calculationType !== 0) {
+      obj.calculationType = calculationTypeToJSON(message.calculationType);
+    }
+    if (message.search !== "") {
+      obj.search = message.search;
+    }
+    if (message.status !== 0) {
+      obj.status = costResultStatusToJSON(message.status);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListCostResultsRequest>): ListCostResultsRequest {
+    return ListCostResultsRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ListCostResultsRequest>): ListCostResultsRequest {
+    const message = createBaseListCostResultsRequest();
+    message.pagination = (object.pagination !== undefined && object.pagination !== null)
+      ? PaginationRequest.fromPartial(object.pagination)
+      : undefined;
+    message.period = object.period ?? "";
+    message.calculationType = object.calculationType ?? 0;
+    message.search = object.search ?? "";
+    message.status = object.status ?? 0;
+    return message;
+  },
+};
+
+function createBaseListCostResultsResponse(): ListCostResultsResponse {
+  return { base: undefined, items: [], pagination: undefined, resolvedPeriod: "" };
+}
+
+export const ListCostResultsResponse: MessageFns<ListCostResultsResponse> = {
+  encode(message: ListCostResultsResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    for (const v of message.items) {
+      CostResult.encode(v!, writer.uint32(18).fork()).join();
+    }
+    if (message.pagination !== undefined) {
+      PaginationResponse.encode(message.pagination, writer.uint32(26).fork()).join();
+    }
+    if (message.resolvedPeriod !== "") {
+      writer.uint32(34).string(message.resolvedPeriod);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ListCostResultsResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListCostResultsResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.items.push(CostResult.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.pagination = PaginationResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.resolvedPeriod = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListCostResultsResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      items: globalThis.Array.isArray(object?.items) ? object.items.map((e: any) => CostResult.fromJSON(e)) : [],
+      pagination: isSet(object.pagination) ? PaginationResponse.fromJSON(object.pagination) : undefined,
+      resolvedPeriod: isSet(object.resolvedPeriod)
+        ? globalThis.String(object.resolvedPeriod)
+        : isSet(object.resolved_period)
+        ? globalThis.String(object.resolved_period)
+        : "",
+    };
+  },
+
+  toJSON(message: ListCostResultsResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.items?.length) {
+      obj.items = message.items.map((e) => CostResult.toJSON(e));
+    }
+    if (message.pagination !== undefined) {
+      obj.pagination = PaginationResponse.toJSON(message.pagination);
+    }
+    if (message.resolvedPeriod !== "") {
+      obj.resolvedPeriod = message.resolvedPeriod;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListCostResultsResponse>): ListCostResultsResponse {
+    return ListCostResultsResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ListCostResultsResponse>): ListCostResultsResponse {
+    const message = createBaseListCostResultsResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.items = object.items?.map((e) => CostResult.fromPartial(e)) || [];
+    message.pagination = (object.pagination !== undefined && object.pagination !== null)
+      ? PaginationResponse.fromPartial(object.pagination)
+      : undefined;
+    message.resolvedPeriod = object.resolvedPeriod ?? "";
+    return message;
+  },
+};
+
 function createBaseGetCostBreakdownRequest(): GetCostBreakdownRequest {
   return { productSysId: 0, period: "", calculationType: 0 };
 }
@@ -5800,6 +6115,294 @@ export const ApproveCostResultResponse: MessageFns<ApproveCostResultResponse> = 
   },
 };
 
+function createBaseProcessChunkInternalRequest(): ProcessChunkInternalRequest {
+  return { jobId: 0, chunkId: 0, period: "", calculationType: 0, productIds: [], actor: "" };
+}
+
+export const ProcessChunkInternalRequest: MessageFns<ProcessChunkInternalRequest> = {
+  encode(message: ProcessChunkInternalRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.jobId !== 0) {
+      writer.uint32(8).int64(message.jobId);
+    }
+    if (message.chunkId !== 0) {
+      writer.uint32(16).int64(message.chunkId);
+    }
+    if (message.period !== "") {
+      writer.uint32(26).string(message.period);
+    }
+    if (message.calculationType !== 0) {
+      writer.uint32(32).int32(message.calculationType);
+    }
+    for (const v of message.productIds) {
+      writer.uint32(40).int64(v!);
+    }
+    if (message.actor !== "") {
+      writer.uint32(50).string(message.actor);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ProcessChunkInternalRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseProcessChunkInternalRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.jobId = longToNumber(reader.int64());
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.chunkId = longToNumber(reader.int64());
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.period = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.calculationType = reader.int32() as any;
+          continue;
+        }
+        case 5: {
+          if (tag === 40) {
+            message.productIds.push(longToNumber(reader.int64()));
+
+            continue;
+          }
+
+          if (tag === 42) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.productIds.push(longToNumber(reader.int64()));
+            }
+
+            continue;
+          }
+
+          break;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.actor = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ProcessChunkInternalRequest {
+    return {
+      jobId: isSet(object.jobId)
+        ? globalThis.Number(object.jobId)
+        : isSet(object.job_id)
+        ? globalThis.Number(object.job_id)
+        : 0,
+      chunkId: isSet(object.chunkId)
+        ? globalThis.Number(object.chunkId)
+        : isSet(object.chunk_id)
+        ? globalThis.Number(object.chunk_id)
+        : 0,
+      period: isSet(object.period) ? globalThis.String(object.period) : "",
+      calculationType: isSet(object.calculationType)
+        ? calculationTypeFromJSON(object.calculationType)
+        : isSet(object.calculation_type)
+        ? calculationTypeFromJSON(object.calculation_type)
+        : 0,
+      productIds: globalThis.Array.isArray(object?.productIds)
+        ? object.productIds.map((e: any) => globalThis.Number(e))
+        : globalThis.Array.isArray(object?.product_ids)
+        ? object.product_ids.map((e: any) => globalThis.Number(e))
+        : [],
+      actor: isSet(object.actor) ? globalThis.String(object.actor) : "",
+    };
+  },
+
+  toJSON(message: ProcessChunkInternalRequest): unknown {
+    const obj: any = {};
+    if (message.jobId !== 0) {
+      obj.jobId = Math.round(message.jobId);
+    }
+    if (message.chunkId !== 0) {
+      obj.chunkId = Math.round(message.chunkId);
+    }
+    if (message.period !== "") {
+      obj.period = message.period;
+    }
+    if (message.calculationType !== 0) {
+      obj.calculationType = calculationTypeToJSON(message.calculationType);
+    }
+    if (message.productIds?.length) {
+      obj.productIds = message.productIds.map((e) => Math.round(e));
+    }
+    if (message.actor !== "") {
+      obj.actor = message.actor;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ProcessChunkInternalRequest>): ProcessChunkInternalRequest {
+    return ProcessChunkInternalRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ProcessChunkInternalRequest>): ProcessChunkInternalRequest {
+    const message = createBaseProcessChunkInternalRequest();
+    message.jobId = object.jobId ?? 0;
+    message.chunkId = object.chunkId ?? 0;
+    message.period = object.period ?? "";
+    message.calculationType = object.calculationType ?? 0;
+    message.productIds = object.productIds?.map((e) => e) || [];
+    message.actor = object.actor ?? "";
+    return message;
+  },
+};
+
+function createBaseProcessChunkInternalResponse(): ProcessChunkInternalResponse {
+  return { base: undefined, successCount: 0, failedCount: 0, blockedCount: 0 };
+}
+
+export const ProcessChunkInternalResponse: MessageFns<ProcessChunkInternalResponse> = {
+  encode(message: ProcessChunkInternalResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    if (message.successCount !== 0) {
+      writer.uint32(16).int32(message.successCount);
+    }
+    if (message.failedCount !== 0) {
+      writer.uint32(24).int32(message.failedCount);
+    }
+    if (message.blockedCount !== 0) {
+      writer.uint32(32).int32(message.blockedCount);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ProcessChunkInternalResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseProcessChunkInternalResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.successCount = reader.int32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.failedCount = reader.int32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.blockedCount = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ProcessChunkInternalResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      successCount: isSet(object.successCount)
+        ? globalThis.Number(object.successCount)
+        : isSet(object.success_count)
+        ? globalThis.Number(object.success_count)
+        : 0,
+      failedCount: isSet(object.failedCount)
+        ? globalThis.Number(object.failedCount)
+        : isSet(object.failed_count)
+        ? globalThis.Number(object.failed_count)
+        : 0,
+      blockedCount: isSet(object.blockedCount)
+        ? globalThis.Number(object.blockedCount)
+        : isSet(object.blocked_count)
+        ? globalThis.Number(object.blocked_count)
+        : 0,
+    };
+  },
+
+  toJSON(message: ProcessChunkInternalResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.successCount !== 0) {
+      obj.successCount = Math.round(message.successCount);
+    }
+    if (message.failedCount !== 0) {
+      obj.failedCount = Math.round(message.failedCount);
+    }
+    if (message.blockedCount !== 0) {
+      obj.blockedCount = Math.round(message.blockedCount);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ProcessChunkInternalResponse>): ProcessChunkInternalResponse {
+    return ProcessChunkInternalResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ProcessChunkInternalResponse>): ProcessChunkInternalResponse {
+    const message = createBaseProcessChunkInternalResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.successCount = object.successCount ?? 0;
+    message.failedCount = object.failedCount ?? 0;
+    message.blockedCount = object.blockedCount ?? 0;
+    return message;
+  },
+};
+
 /** CostCalcService runs the cost calculation engine and exposes results. */
 export type CostCalcServiceDefinition = typeof CostCalcServiceDefinition;
 export const CostCalcServiceDefinition = {
@@ -6258,6 +6861,56 @@ export const CostCalcServiceDefinition = {
       },
     },
     /**
+     * ListCostResults lists active cost results across products for a period.
+     * Required permission: finance.cost.result.view.
+     */
+    listCostResults: {
+      name: "ListCostResults",
+      requestType: ListCostResultsRequest,
+      requestStream: false,
+      responseType: ListCostResultsResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              30,
+              18,
+              28,
+              47,
+              97,
+              112,
+              105,
+              47,
+              118,
+              49,
+              47,
+              102,
+              105,
+              110,
+              97,
+              110,
+              99,
+              101,
+              47,
+              99,
+              111,
+              115,
+              116,
+              45,
+              114,
+              101,
+              115,
+              117,
+              108,
+              116,
+              115,
+            ]),
+          ],
+        },
+      },
+    },
+    /**
      * GetCostBreakdown returns by-level + rm-details + formula-trace for a cost.
      * Required permission: finance.cost.result.view.
      */
@@ -6577,6 +7230,20 @@ export const CostCalcServiceDefinition = {
           ],
         },
       },
+    },
+    /**
+     * ProcessChunkInternal computes one chunk of products synchronously.
+     * Invoked by finance-cost-worker after consuming a chunk message from RMQ.
+     * NOT exposed via REST gateway; intended for service-to-service traffic only.
+     * Required permission: finance.cost.caljob.trigger.
+     */
+    processChunkInternal: {
+      name: "ProcessChunkInternal",
+      requestType: ProcessChunkInternalRequest,
+      requestStream: false,
+      responseType: ProcessChunkInternalResponse,
+      responseStream: false,
+      options: {},
     },
   },
 } as const;

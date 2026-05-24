@@ -8,8 +8,24 @@ import {
   CalcJobScope,
   CalcJobStatus,
   ChunkStatus,
+  CostResultStatus,
   JobProductStatus,
 } from "@/types/generated/finance/v1/cost_calc"
+
+export function toCostResultStatus(s: string | undefined | null): CostResultStatus {
+  switch ((s || "").toUpperCase()) {
+    case "CALCULATED":
+      return CostResultStatus.COST_RESULT_STATUS_CALCULATED
+    case "VERIFIED":
+      return CostResultStatus.COST_RESULT_STATUS_VERIFIED
+    case "APPROVED":
+      return CostResultStatus.COST_RESULT_STATUS_APPROVED
+    case "SUPERSEDED":
+      return CostResultStatus.COST_RESULT_STATUS_SUPERSEDED
+    default:
+      return CostResultStatus.COST_RESULT_STATUS_UNSPECIFIED
+  }
+}
 
 export function toCalcType(s: string | undefined | null): CalculationType {
   switch ((s || "").toUpperCase()) {

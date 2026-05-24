@@ -39,6 +39,8 @@ const KEYS = {
     ["finance", "cost-calc", "breakdown", pid, period, type] as const,
   history: (pid: number, p: ListCostHistoryParams) =>
     ["finance", "cost-calc", "history", pid, p] as const,
+  resultsList: (p: object) =>
+    ["finance", "cost-calc", "results-list", p] as const,
 }
 
 interface BFFResponse<T> {
@@ -295,6 +297,53 @@ export function useCostResult(
       if (!json.base?.isSuccess) throw new Error(json.base?.message || "get cost result failed")
       return normalizeCostResult(json.data ?? {})
     },
+  })
+}
+
+// ---------- cross-product list ----------
+
+export interface ListCostResultsParams {
+  period?: string
+  calculationType?: string
+  status?: string
+  search?: string
+  page?: number
+  pageSize?: number
+}
+
+export interface CostResultsListPage {
+  items: CostResult[]
+  resolvedPeriod: string
+  pagination?: {
+    currentPage: number
+    pageSize: number
+    totalItems: string
+    totalPages: number
+  }
+}
+
+export function useCostResultsList(params: ListCostResultsParams = {}) {
+  return useQuery({
+    queryKey: KEYS.resultsList(params),
+    queryFn: async (): Promise<CostResultsListPage> => {
+      const qs = new URLSearchParams()
+      if (params.period) qs.set("period", params.period)
+      if (params.calculationType) qs.set("calculationType", params.calculationType)
+      if (params.status) qs.set("status", params.status)
+      if (params.search) qs.set("search", params.search)
+      qs.set("page", String(params.page ?? 1))
+      qs.set("pageSize", String(params.pageSize ?? 50))
+      const res = await fetch(`/api/v1/finance/cost-results?${qs.toString()}`)
+      const json = await res.json()
+      return {
+        items: ((json.data as unknown[]) || []).map((r) =>
+          normalizeCostResult(r as Record<string, unknown>),
+        ),
+        resolvedPeriod: (json.resolvedPeriod as string) || params.period || "",
+        pagination: json.pagination,
+      }
+    },
+    staleTime: 30_000,
   })
 }
 
