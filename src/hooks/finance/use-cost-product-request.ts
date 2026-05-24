@@ -136,6 +136,7 @@ export const useSubmitRequest = makeTransition("submit", "Submitted")
 export const useStartReview = makeTransition("start-review", "Review started")
 export const useUseExistingCosting = makeTransition("use-existing-costing", "Marked quote-ready")
 export const useReviseRequest = makeTransition("revise", "Revised; back to SUBMITTED")
+export const useReopenRequest = makeTransition("reopen", "Reopened; back to DRAFT")
 export const useRejectRequest = makeTransition("reject", "Rejected")
 export const useCancelRequest = makeTransition("cancel", "Cancelled")
 export const useMarkParameterComplete = makeTransition(

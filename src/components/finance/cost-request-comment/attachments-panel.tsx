@@ -12,9 +12,11 @@ import { AttachmentUploader } from "./attachment-uploader"
 
 interface Props {
   requestId: number
+  /** When true the request is terminal: hide the uploader + delete actions. */
+  readOnly?: boolean
 }
 
-export function AttachmentsPanel({ requestId }: Props) {
+export function AttachmentsPanel({ requestId, readOnly = false }: Props) {
   const { data, isLoading } = useAttachmentsByRequest(requestId)
   return (
     <Card>
@@ -23,9 +25,11 @@ export function AttachmentsPanel({ requestId }: Props) {
           <CardTitle className="text-sm uppercase tracking-wide text-muted-foreground">
             Attachments
           </CardTitle>
-          <div className="text-xs text-muted-foreground">Max 25 MB per file.</div>
+          <div className="text-xs text-muted-foreground">
+            {readOnly ? "Request is read-only." : "Max 25 MB per file."}
+          </div>
         </div>
-        <AttachmentUploader requestId={requestId} label="Upload" />
+        {!readOnly && <AttachmentUploader requestId={requestId} label="Upload" />}
       </CardHeader>
       <CardContent>
         {isLoading && (
@@ -33,7 +37,7 @@ export function AttachmentsPanel({ requestId }: Props) {
             <Loader2 className="h-4 w-4 animate-spin" /> Loading…
           </div>
         )}
-        {!isLoading && <AttachmentList attachments={data ?? []} canDelete />}
+        {!isLoading && <AttachmentList attachments={data ?? []} canDelete={!readOnly} />}
       </CardContent>
     </Card>
   )

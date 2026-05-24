@@ -38,6 +38,7 @@ import {
   useDecideFeasibility,
   useMarkParameterComplete,
   useReviseRequest,
+  useReopenRequest,
   useRejectRequest,
   useStartReview,
   useSubmitRequest,
@@ -60,6 +61,7 @@ export function RequestDetailPanel({ request, onEdit }: Props) {
   const submitM = useSubmitRequest()
   const startM = useStartReview()
   const reviseM = useReviseRequest()
+  const reopenM = useReopenRequest()
   const useExistingM = useUseExistingCosting()
   const verifyM = useVerifyClassification()
   const feasibilityM = useDecideFeasibility()
@@ -76,12 +78,40 @@ export function RequestDetailPanel({ request, onEdit }: Props) {
   const isUnderReview = status === "UNDER_REVIEW"
   const isParameterPending = status === "PARAMETER_PENDING"
   const isRejected = status === "REJECTED"
-  const isTerminal = status === "CLOSED"
+  const isClosed = status === "CLOSED"
+  // Terminal = the request lifecycle has stopped. Both REJECTED and CLOSED are
+  // read-only: the only thing allowed is to reopen/revise. Everything else
+  // (forward transitions, comments, uploads, route changes) is disabled.
+  const isTerminal = isRejected || isClosed
+  const readOnly = isTerminal
 
   return (
     <div className="space-y-6">
-      {/* Action toolbar — gated by status */}
+      {/* Read-only notice when the request has stopped. */}
+      {isTerminal && (
+        <div className="flex items-center gap-2 rounded-md border border-dashed bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+          <Ban className="h-4 w-4 shrink-0" />
+          <span>
+            This request is <strong>{isRejected ? "rejected" : "closed"}</strong> and read-only.
+            {isRejected
+              ? " You can revise & resubmit to continue."
+              : " Reopen it to make further changes."}
+          </span>
+        </div>
+      )}
+
+      {/* Action toolbar — gated by status. Terminal states show only reopen. */}
       <div className="flex flex-wrap items-center gap-2">
+        {isRejected && (
+          <Button onClick={() => reviseM.mutate({ requestId })} disabled={reviseM.isPending}>
+            <RotateCcw className="mr-2 h-4 w-4" /> Revise &amp; resubmit
+          </Button>
+        )}
+        {isClosed && (
+          <Button onClick={() => reopenM.mutate({ requestId })} disabled={reopenM.isPending}>
+            <RotateCcw className="mr-2 h-4 w-4" /> Reopen request
+          </Button>
+        )}
         {isDraft && (
           <>
             <Button onClick={onEdit} variant="outline">
@@ -127,12 +157,7 @@ export function RequestDetailPanel({ request, onEdit }: Props) {
             <CheckCircle2 className="mr-2 h-4 w-4" /> Mark parameters complete
           </Button>
         )}
-        {isRejected && (
-          <Button onClick={() => reviseM.mutate({ requestId })} disabled={reviseM.isPending}>
-            <RotateCcw className="mr-2 h-4 w-4" /> Revise & resubmit
-          </Button>
-        )}
-        {request.linkedRouteHeadId ? (
+        {!isTerminal && request.linkedRouteHeadId ? (
           <CalculateButton
             routeHeadId={request.linkedRouteHeadId}
             label="Calculate for linked route"
@@ -284,11 +309,12 @@ export function RequestDetailPanel({ request, onEdit }: Props) {
       <RoutingPanel
         requestId={request.requestId}
         linkedRouteHeadId={request.linkedRouteHeadId}
+        readOnly={readOnly}
       />
 
       {/* Comments + attachments (Phase A §7.1.7–10) */}
-      <AttachmentsPanel requestId={request.requestId} />
-      <CommentsPanel requestId={request.requestId} />
+      <AttachmentsPanel requestId={request.requestId} readOnly={readOnly} />
+      <CommentsPanel requestId={request.requestId} readOnly={readOnly} />
 
       {/* Dialogs */}
       <ReasonDialog

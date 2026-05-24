@@ -17,6 +17,8 @@ import { CommentItem } from "./comment-item"
 
 interface Props {
   requestId: number
+  /** When true the request is terminal: hide the composer (read-only thread). */
+  readOnly?: boolean
 }
 
 function wrapRichtext(plain: string): string {
@@ -42,7 +44,7 @@ function extractMentions(text: string): string[] {
 
 const MAX_ATTACH_BYTES = 25 * 1024 * 1024 // FR-5 hard cap
 
-export function CommentsPanel({ requestId }: Props) {
+export function CommentsPanel({ requestId, readOnly = false }: Props) {
   const { user } = useAuth()
   const { data: comments, isLoading } = useRequestComments(requestId)
   const [body, setBody] = useState("")
@@ -126,6 +128,11 @@ export function CommentsPanel({ requestId }: Props) {
           <CommentItem key={c.commentId} comment={c} currentUserId={currentUserId} />
         ))}
 
+        {readOnly ? (
+          <div className="rounded-md border border-dashed py-3 text-center text-xs text-muted-foreground">
+            Request is read-only — commenting is disabled.
+          </div>
+        ) : (
         <div className="space-y-2 pt-2 border-t">
           <Textarea
             rows={3}
@@ -184,6 +191,7 @@ export function CommentsPanel({ requestId }: Props) {
             </Button>
           </div>
         </div>
+        )}
       </CardContent>
     </Card>
   )

@@ -17,9 +17,11 @@ import { useLinkExistingRoute, useUnlinkRoute } from "@/hooks/finance/use-link-r
 interface Props {
   requestId: number
   linkedRouteHeadId?: number
+  /** When true the request is terminal: routing is view-only (no link/create/unlink/duplicate). */
+  readOnly?: boolean
 }
 
-export function RoutingPanel({ requestId, linkedRouteHeadId }: Props) {
+export function RoutingPanel({ requestId, linkedRouteHeadId, readOnly = false }: Props) {
   const [pickOpen, setPickOpen] = useState(false)
   const [wizardOpen, setWizardOpen] = useState(false)
   const [dupOpen, setDupOpen] = useState(false)
@@ -34,17 +36,25 @@ export function RoutingPanel({ requestId, linkedRouteHeadId }: Props) {
       <>
         <Card className="space-y-3 p-4">
           <div className="font-semibold">Routing</div>
-          <p className="text-sm text-muted-foreground">
-            No routing defined yet. Choose how to build the cost basis:
-          </p>
-          <div className="grid gap-2 md:grid-cols-2">
-            <Button variant="outline" onClick={() => setPickOpen(true)}>
-              📋 Pick existing product
-            </Button>
-            <Button variant="default" onClick={() => setWizardOpen(true)}>
-              🆕 Create new routing
-            </Button>
-          </div>
+          {readOnly ? (
+            <p className="text-sm text-muted-foreground">
+              No routing was defined. The request is read-only.
+            </p>
+          ) : (
+            <>
+              <p className="text-sm text-muted-foreground">
+                No routing defined yet. Choose how to build the cost basis:
+              </p>
+              <div className="grid gap-2 md:grid-cols-2">
+                <Button variant="outline" onClick={() => setPickOpen(true)}>
+                  📋 Pick existing product
+                </Button>
+                <Button variant="default" onClick={() => setWizardOpen(true)}>
+                  🆕 Create new routing
+                </Button>
+              </div>
+            </>
+          )}
         </Card>
         <PickExistingRouteDialog
           open={pickOpen}
@@ -100,12 +110,14 @@ export function RoutingPanel({ requestId, linkedRouteHeadId }: Props) {
         </div>
         <div className="flex flex-wrap gap-2">
           <Button asChild variant="outline" size="sm">
-            <Link href={`/finance/routes/${head.headId}`}>Open route ↗</Link>
+            <Link href={`/finance/routes/${head.headId}?from=request:${requestId}`}>Open route ↗</Link>
           </Button>
-          <Button variant="outline" size="sm" onClick={() => setDupOpen(true)}>
-            Duplicate & adjust
-          </Button>
-          {!isOwnFresh && (
+          {!readOnly && (
+            <Button variant="outline" size="sm" onClick={() => setDupOpen(true)}>
+              Duplicate & adjust
+            </Button>
+          )}
+          {!readOnly && !isOwnFresh && (
             <Button variant="ghost" size="sm" onClick={() => unlinkM.mutate({ requestId })}>
               Unlink
             </Button>
