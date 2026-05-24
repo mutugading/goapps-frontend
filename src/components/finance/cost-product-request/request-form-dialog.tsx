@@ -10,9 +10,13 @@ import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 
 import { Button } from "@/components/ui/button"
+import { Dialog, DialogDescription, DialogTitle } from "@/components/ui/dialog"
 import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
-} from "@/components/ui/dialog"
+  ScrollableDialogBody,
+  ScrollableDialogContent,
+  ScrollableDialogFooter,
+  ScrollableDialogHeader,
+} from "@/components/common/scrollable-dialog"
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -191,22 +195,23 @@ export function RequestFormDialog({ open, onOpenChange, request }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <ScrollableDialogContent className="max-w-3xl lg:max-w-4xl">
+        <ScrollableDialogHeader>
           <DialogTitle>{isEditing ? `Edit ${request?.requestNo}` : "New product request"}</DialogTitle>
           <DialogDescription>
             Section 2 (Product specification) becomes required when classification = new. DEVELOPMENT
             requests are forced to new.
           </DialogDescription>
-        </DialogHeader>
+        </ScrollableDialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-1 flex-col overflow-hidden">
+            <ScrollableDialogBody className="space-y-6">
             {/* SECTION 1 — Request Info */}
             <section className="space-y-4">
               <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                 Section 1 — Request info
               </h3>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <FormField
                   control={form.control}
                   name="requestTypeId"
@@ -259,7 +264,7 @@ export function RequestFormDialog({ open, onOpenChange, request }: Props) {
                   </FormItem>
                 )}
               />
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <FormField
                   control={form.control}
                   name="customerName"
@@ -318,7 +323,7 @@ export function RequestFormDialog({ open, onOpenChange, request }: Props) {
                   </FormItem>
                 )}
               />
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <FormField
                   control={form.control}
                   name="neededByDate"
@@ -407,7 +412,7 @@ export function RequestFormDialog({ open, onOpenChange, request }: Props) {
                     </FormItem>
                   )}
                 />
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <FormField
                     control={form.control}
                     name="specPaperTubeTypeId"
@@ -468,7 +473,7 @@ export function RequestFormDialog({ open, onOpenChange, request }: Props) {
               <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                 Section 3 — Pricing context
               </h3>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <FormField
                   control={form.control}
                   name="targetVolume"
@@ -497,8 +502,9 @@ export function RequestFormDialog({ open, onOpenChange, request }: Props) {
                 />
               </div>
             </section>
+            </ScrollableDialogBody>
 
-            <DialogFooter>
+            <ScrollableDialogFooter>
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 Cancel
               </Button>
@@ -506,10 +512,10 @@ export function RequestFormDialog({ open, onOpenChange, request }: Props) {
                 {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {isEditing ? "Save draft" : "Create request"}
               </Button>
-            </DialogFooter>
+            </ScrollableDialogFooter>
           </form>
         </Form>
-      </DialogContent>
+      </ScrollableDialogContent>
     </Dialog>
   )
 }
