@@ -1,7 +1,7 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -36,10 +36,8 @@ export function DuplicateRouteDialog({
   const [newCodePrefix, setNewCodePrefix] = useState("")
   const dupM = useDuplicateRoute()
 
-  // Enforce: values toggle requires applicability ON.
-  useEffect(() => {
-    if (!includeApplicability && includeValues) setIncludeValues(false)
-  }, [includeApplicability, includeValues])
+  // Values require applicability ON — derive instead of syncing via an effect.
+  const effectiveIncludeValues = includeApplicability && includeValues
 
   const handleSubmit = async () => {
     const res = await dupM.mutateAsync({
@@ -47,7 +45,7 @@ export function DuplicateRouteDialog({
       includeRouting,
       includeUpstream,
       includeApplicability,
-      includeValues,
+      includeValues: effectiveIncludeValues,
       newCodePrefix: newCodePrefix || undefined,
       linkedRequestId,
     })
@@ -110,7 +108,7 @@ export function DuplicateRouteDialog({
           <div className="flex items-start gap-2">
             <Checkbox
               id="t-values"
-              checked={includeValues}
+              checked={effectiveIncludeValues}
               onCheckedChange={(v) => setIncludeValues(!!v)}
               disabled={!includeApplicability}
             />
