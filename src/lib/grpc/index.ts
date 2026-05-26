@@ -15,4 +15,8 @@ export {
   getSectionClient,
   getOrganizationClient,
   getUomClient,
+  getBiDashboardClient,
+  getBiChartDataClient,
+  getBiDataSourceClient,
+  getBiJobClient,
 } from "./clients"

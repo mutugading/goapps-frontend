@@ -18,6 +18,12 @@ import {
   OrganizationServiceDefinition,
 } from "@/types/generated/iam/v1/organization"
 import { UOMServiceDefinition } from "@/types/generated/finance/v1/uom"
+import {
+  DashboardServiceDefinition,
+  ChartDataServiceDefinition,
+  DataSourceServiceDefinition,
+  BiJobServiceDefinition,
+} from "@/types/generated/finance/v1/bi"
 
 const CHANNEL_OPTIONS = {
   "grpc.keepalive_time_ms": 10000,
@@ -129,5 +135,30 @@ export function getOrganizationClient() {
 export function getUomClient() {
   return getOrCreate("uom", () =>
     createServiceClient(UOMServiceDefinition, SERVICE_ADDRESSES.finance, insecure, CHANNEL_OPTIONS)
+  )
+}
+
+// BI service clients (Executive Dashboard module — hosted in services/finance).
+export function getBiDashboardClient() {
+  return getOrCreate("bi-dashboard", () =>
+    createServiceClient(DashboardServiceDefinition, SERVICE_ADDRESSES.finance, insecure, CHANNEL_OPTIONS)
+  )
+}
+
+export function getBiChartDataClient() {
+  return getOrCreate("bi-chart-data", () =>
+    createServiceClient(ChartDataServiceDefinition, SERVICE_ADDRESSES.finance, insecure, CHANNEL_OPTIONS)
+  )
+}
+
+export function getBiDataSourceClient() {
+  return getOrCreate("bi-data-source", () =>
+    createServiceClient(DataSourceServiceDefinition, SERVICE_ADDRESSES.finance, insecure, CHANNEL_OPTIONS)
+  )
+}
+
+export function getBiJobClient() {
+  return getOrCreate("bi-job", () =>
+    createServiceClient(BiJobServiceDefinition, SERVICE_ADDRESSES.finance, insecure, CHANNEL_OPTIONS)
   )
 }
