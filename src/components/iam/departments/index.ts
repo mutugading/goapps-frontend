@@ -1,0 +1,5 @@
+export { DepartmentFormDialog } from "./department-form-dialog"
+export { DepartmentDeleteDialog } from "./department-delete-dialog"
+export { DepartmentTable } from "./department-table"
+export { DepartmentFilters } from "./department-filters"
+export { DepartmentPagination } from "./department-pagination"

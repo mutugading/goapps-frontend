@@ -28,6 +28,8 @@ function parseAuthUser(data: unknown): AuthUser | null {
         permissions: Array.isArray(obj.permissions) ? obj.permissions : [],
         twoFactorEnabled: Boolean(obj.twoFactorEnabled ?? obj.two_factor_enabled ?? false),
         emailVerified: Boolean(obj.emailVerified ?? obj.email_verified ?? false),
+        sectionId: (obj.sectionId ?? obj.section_id ?? "") as string,
+        departmentId: (obj.departmentId ?? obj.department_id ?? "") as string,
     }
 }
 

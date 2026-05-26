@@ -2,7 +2,15 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Fragment } from "react"
+import {
+    Fragment,
+    createContext,
+    useCallback,
+    useContext,
+    useEffect,
+    useMemo,
+    useState,
+} from "react"
 import {
     Breadcrumb,
     BreadcrumbEllipsis,
@@ -25,6 +33,65 @@ import { buildBreadcrumbTrail, breadcrumbConfig } from "@/config/navigation"
 export interface BreadcrumbItemType {
     label: string
     href?: string
+}
+
+// ------------------------------------------------------------
+// Breadcrumb-tail override system
+// ------------------------------------------------------------
+// Detail pages (e.g. /finance/products/[id]) need to replace the trailing
+// segment of the auto-generated breadcrumb (a UUID) with a human-readable
+// label like a product code or ticket number. They register an override via
+// `useBreadcrumbOverride(label)` inside the page; the layout-level
+// <DynamicBreadcrumb /> consumes it.
+
+interface BreadcrumbOverrideContextValue {
+    tailLabel: string | null
+    setTailLabel: (label: string | null) => void
+}
+
+const BreadcrumbOverrideContext = createContext<BreadcrumbOverrideContextValue | null>(
+    null
+)
+
+export function BreadcrumbOverrideProvider({ children }: { children: React.ReactNode }) {
+    const [tailLabel, setTailLabel] = useState<string | null>(null)
+    const value = useMemo(
+        () => ({
+            tailLabel,
+            setTailLabel,
+        }),
+        [tailLabel]
+    )
+    return (
+        <BreadcrumbOverrideContext.Provider value={value}>
+            {children}
+        </BreadcrumbOverrideContext.Provider>
+    )
+}
+
+/**
+ * Replace the last breadcrumb item's label until this component unmounts or
+ * `label` becomes null. Safe to call when the provider is missing — it is a
+ * no-op in that case.
+ */
+export function useBreadcrumbOverride(label: string | null) {
+    const ctx = useContext(BreadcrumbOverrideContext)
+    const setTailLabel = useCallback(
+        (l: string | null) => {
+            ctx?.setTailLabel(l)
+        },
+        [ctx]
+    )
+    useEffect(() => {
+        if (!ctx) return
+        ctx.setTailLabel(label)
+        return () => {
+            ctx.setTailLabel(null)
+        }
+        // We intentionally re-run when label changes
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [label])
+    return setTailLabel
 }
 
 interface DynamicBreadcrumbProps {
@@ -84,8 +151,14 @@ function generateBreadcrumbsFromPath(pathname: string): BreadcrumbItemType[] {
 
 export function DynamicBreadcrumb({ items, maxVisibleItems = 4 }: DynamicBreadcrumbProps) {
     const pathname = usePathname()
+    const overrideCtx = useContext(BreadcrumbOverrideContext)
 
-    const breadcrumbs = items ?? generateBreadcrumbsFromPath(pathname)
+    let breadcrumbs = items ?? generateBreadcrumbsFromPath(pathname)
+    if (overrideCtx?.tailLabel && breadcrumbs.length > 0) {
+        breadcrumbs = breadcrumbs.map((b, i) =>
+            i === breadcrumbs.length - 1 ? { ...b, label: overrideCtx.tailLabel as string } : b
+        )
+    }
 
     if (breadcrumbs.length === 0) {
         return null

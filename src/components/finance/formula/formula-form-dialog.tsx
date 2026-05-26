@@ -161,21 +161,15 @@ export function FormulaFormDialog({
   })
 
   const calculatedParams = useMemo(() => calculatedParamData?.data || [], [calculatedParamData])
-  const inputAndRateParams = useMemo(() => [
+  // Input picker = INPUT + RATE + CALCULATED. A CALCULATED param IS a valid
+  // input to a *downstream* formula (formula chaining) — this is what enables
+  // multi-level calc engines (e.g. COST_CONVERSION uses COST_ELEC + COST_LABOR_FULL).
+  // We exclude the formula's own resultParamId at filter time to prevent self-loops.
+  const inputPool = useMemo(() => [
     ...(inputParamData?.data || []),
     ...(rateParamData?.data || []),
-  ].sort((a, b) => (a.paramCode || "").localeCompare(b.paramCode || "")), [inputParamData, rateParamData])
-
-  // Filter parameters for input param search
-  const filteredInputParams = useMemo(() => {
-    if (!inputParamSearch) return inputAndRateParams
-    const search = inputParamSearch.toLowerCase()
-    return inputAndRateParams.filter(
-      (p) =>
-        p.paramCode?.toLowerCase().includes(search) ||
-        p.paramName?.toLowerCase().includes(search)
-    )
-  }, [inputAndRateParams, inputParamSearch])
+    ...(calculatedParamData?.data || []),
+  ].sort((a, b) => (a.paramCode || "").localeCompare(b.paramCode || "")), [inputParamData, rateParamData, calculatedParamData])
 
   const form = useForm<FormulaFormValues>({
     resolver: zodResolver(formulaFormSchema) as never,
@@ -190,6 +184,17 @@ export function FormulaFormDialog({
       isActive: true,
     },
   })
+
+  // Watch resultParamId to exclude it from the input picker (no self-loop).
+  const watchedResultParamId = form.watch("resultParamId")
+  const filteredInputParams = useMemo(() => {
+    const pool = inputPool.filter((p) => p.paramId !== watchedResultParamId)
+    if (!inputParamSearch) return pool
+    const s = inputParamSearch.toLowerCase()
+    return pool.filter((p) =>
+      p.paramCode?.toLowerCase().includes(s) || p.paramName?.toLowerCase().includes(s)
+    )
+  }, [inputPool, inputParamSearch, watchedResultParamId])
 
   // Populate form when dialog opens or fullFormula loads
   useEffect(() => {
@@ -431,7 +436,7 @@ export function FormulaFormDialog({
                     {selectedInputIds.length > 0 && (
                       <div className="flex flex-wrap gap-1 pb-2">
                         {selectedInputIds.map((id) => {
-                          const p = inputAndRateParams.find((param) => param.paramId === id)
+                          const p = inputPool.find((param) => param.paramId === id)
                           return (
                             <Badge key={id} variant="secondary" className="text-xs">
                               {p?.paramCode || id}
@@ -487,8 +492,8 @@ export function FormulaFormDialog({
                       </ScrollArea>
                     </div>
                     <FormDescription>
-                      Only &quot;Input&quot; and &quot;Rate&quot; type parameters are shown.
-                      These are the parameters used in the expression above.
+                      Input, Rate, and Calculated parameters are all available — pick the ones referenced in the expression above.
+                      Calculated params enable formula chaining (e.g. COST_CONVERSION uses COST_LABOR_FULL which is itself produced by another formula).
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
