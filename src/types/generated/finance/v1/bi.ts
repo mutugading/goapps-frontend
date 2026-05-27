@@ -680,6 +680,109 @@ export interface TriggerJobResponse {
   data: BiJobLog | undefined;
 }
 
+export interface UploadRowError {
+  row: number;
+  column: string;
+  value: string;
+  issue: string;
+  expected: string;
+}
+
+export interface BiUpload {
+  uploadId: string;
+  /** FM_TYPE the file targets (e.g. MIS) */
+  targetType: string;
+  fileName: string;
+  fileSize: number;
+  /** PENDING|PREVIEW|COMMITTED|CANCELLED|FAILED */
+  status: string;
+  totalRows: number;
+  validRows: number;
+  invalidRows: number;
+  committedRows: number;
+  errors: UploadRowError[];
+  uploadedBy: string;
+  uploadedAt: Date | undefined;
+}
+
+export interface DownloadUploadTemplateRequest {
+  targetType: string;
+}
+
+export interface DownloadUploadTemplateResponse {
+  base: BaseResponse | undefined;
+  fileContent: Uint8Array;
+  fileName: string;
+}
+
+export interface ParseUploadRequest {
+  targetType: string;
+  fileName: string;
+  fileContent: Uint8Array;
+}
+
+export interface ParseUploadResponse {
+  base:
+    | BaseResponse
+    | undefined;
+  /** preview header + per-row errors */
+  data: BiUpload | undefined;
+}
+
+export interface CommitUploadRequest {
+  uploadId: string;
+}
+
+export interface CommitUploadResponse {
+  base: BaseResponse | undefined;
+  data: BiUpload | undefined;
+}
+
+export interface CancelUploadRequest {
+  uploadId: string;
+}
+
+export interface CancelUploadResponse {
+  base: BaseResponse | undefined;
+}
+
+export interface ListUploadsRequest {
+  page: number;
+  pageSize: number;
+}
+
+export interface ListUploadsResponse {
+  base: BaseResponse | undefined;
+  data: BiUpload[];
+  pagination: PaginationResponse | undefined;
+}
+
+export interface BiAuditEntry {
+  auditId: number;
+  /** dashboard|group */
+  entityType: string;
+  /** dashboard_code or group_code */
+  entityCode: string;
+  entityTitle: string;
+  /** CREATE|UPDATE|DELETE */
+  action: string;
+  changedBy: string;
+  changedAt: Date | undefined;
+  summary: string;
+}
+
+export interface ListConfigAuditRequest {
+  page: number;
+  pageSize: number;
+  entityType: string;
+}
+
+export interface ListConfigAuditResponse {
+  base: BaseResponse | undefined;
+  data: BiAuditEntry[];
+  pagination: PaginationResponse | undefined;
+}
+
 function createBaseDashboardGroup(): DashboardGroup {
   return {
     groupId: "",
@@ -7587,6 +7690,1612 @@ export const TriggerJobResponse: MessageFns<TriggerJobResponse> = {
   },
 };
 
+function createBaseUploadRowError(): UploadRowError {
+  return { row: 0, column: "", value: "", issue: "", expected: "" };
+}
+
+export const UploadRowError: MessageFns<UploadRowError> = {
+  encode(message: UploadRowError, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.row !== 0) {
+      writer.uint32(8).int32(message.row);
+    }
+    if (message.column !== "") {
+      writer.uint32(18).string(message.column);
+    }
+    if (message.value !== "") {
+      writer.uint32(26).string(message.value);
+    }
+    if (message.issue !== "") {
+      writer.uint32(34).string(message.issue);
+    }
+    if (message.expected !== "") {
+      writer.uint32(42).string(message.expected);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): UploadRowError {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUploadRowError();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.row = reader.int32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.column = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.value = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.issue = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.expected = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UploadRowError {
+    return {
+      row: isSet(object.row) ? globalThis.Number(object.row) : 0,
+      column: isSet(object.column) ? globalThis.String(object.column) : "",
+      value: isSet(object.value) ? globalThis.String(object.value) : "",
+      issue: isSet(object.issue) ? globalThis.String(object.issue) : "",
+      expected: isSet(object.expected) ? globalThis.String(object.expected) : "",
+    };
+  },
+
+  toJSON(message: UploadRowError): unknown {
+    const obj: any = {};
+    if (message.row !== 0) {
+      obj.row = Math.round(message.row);
+    }
+    if (message.column !== "") {
+      obj.column = message.column;
+    }
+    if (message.value !== "") {
+      obj.value = message.value;
+    }
+    if (message.issue !== "") {
+      obj.issue = message.issue;
+    }
+    if (message.expected !== "") {
+      obj.expected = message.expected;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<UploadRowError>): UploadRowError {
+    return UploadRowError.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<UploadRowError>): UploadRowError {
+    const message = createBaseUploadRowError();
+    message.row = object.row ?? 0;
+    message.column = object.column ?? "";
+    message.value = object.value ?? "";
+    message.issue = object.issue ?? "";
+    message.expected = object.expected ?? "";
+    return message;
+  },
+};
+
+function createBaseBiUpload(): BiUpload {
+  return {
+    uploadId: "",
+    targetType: "",
+    fileName: "",
+    fileSize: 0,
+    status: "",
+    totalRows: 0,
+    validRows: 0,
+    invalidRows: 0,
+    committedRows: 0,
+    errors: [],
+    uploadedBy: "",
+    uploadedAt: undefined,
+  };
+}
+
+export const BiUpload: MessageFns<BiUpload> = {
+  encode(message: BiUpload, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.uploadId !== "") {
+      writer.uint32(10).string(message.uploadId);
+    }
+    if (message.targetType !== "") {
+      writer.uint32(18).string(message.targetType);
+    }
+    if (message.fileName !== "") {
+      writer.uint32(26).string(message.fileName);
+    }
+    if (message.fileSize !== 0) {
+      writer.uint32(32).int64(message.fileSize);
+    }
+    if (message.status !== "") {
+      writer.uint32(42).string(message.status);
+    }
+    if (message.totalRows !== 0) {
+      writer.uint32(48).int32(message.totalRows);
+    }
+    if (message.validRows !== 0) {
+      writer.uint32(56).int32(message.validRows);
+    }
+    if (message.invalidRows !== 0) {
+      writer.uint32(64).int32(message.invalidRows);
+    }
+    if (message.committedRows !== 0) {
+      writer.uint32(72).int32(message.committedRows);
+    }
+    for (const v of message.errors) {
+      UploadRowError.encode(v!, writer.uint32(82).fork()).join();
+    }
+    if (message.uploadedBy !== "") {
+      writer.uint32(90).string(message.uploadedBy);
+    }
+    if (message.uploadedAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.uploadedAt), writer.uint32(98).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): BiUpload {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseBiUpload();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.uploadId = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.targetType = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.fileName = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.fileSize = longToNumber(reader.int64());
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.status = reader.string();
+          continue;
+        }
+        case 6: {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.totalRows = reader.int32();
+          continue;
+        }
+        case 7: {
+          if (tag !== 56) {
+            break;
+          }
+
+          message.validRows = reader.int32();
+          continue;
+        }
+        case 8: {
+          if (tag !== 64) {
+            break;
+          }
+
+          message.invalidRows = reader.int32();
+          continue;
+        }
+        case 9: {
+          if (tag !== 72) {
+            break;
+          }
+
+          message.committedRows = reader.int32();
+          continue;
+        }
+        case 10: {
+          if (tag !== 82) {
+            break;
+          }
+
+          message.errors.push(UploadRowError.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 11: {
+          if (tag !== 90) {
+            break;
+          }
+
+          message.uploadedBy = reader.string();
+          continue;
+        }
+        case 12: {
+          if (tag !== 98) {
+            break;
+          }
+
+          message.uploadedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): BiUpload {
+    return {
+      uploadId: isSet(object.uploadId)
+        ? globalThis.String(object.uploadId)
+        : isSet(object.upload_id)
+        ? globalThis.String(object.upload_id)
+        : "",
+      targetType: isSet(object.targetType)
+        ? globalThis.String(object.targetType)
+        : isSet(object.target_type)
+        ? globalThis.String(object.target_type)
+        : "",
+      fileName: isSet(object.fileName)
+        ? globalThis.String(object.fileName)
+        : isSet(object.file_name)
+        ? globalThis.String(object.file_name)
+        : "",
+      fileSize: isSet(object.fileSize)
+        ? globalThis.Number(object.fileSize)
+        : isSet(object.file_size)
+        ? globalThis.Number(object.file_size)
+        : 0,
+      status: isSet(object.status) ? globalThis.String(object.status) : "",
+      totalRows: isSet(object.totalRows)
+        ? globalThis.Number(object.totalRows)
+        : isSet(object.total_rows)
+        ? globalThis.Number(object.total_rows)
+        : 0,
+      validRows: isSet(object.validRows)
+        ? globalThis.Number(object.validRows)
+        : isSet(object.valid_rows)
+        ? globalThis.Number(object.valid_rows)
+        : 0,
+      invalidRows: isSet(object.invalidRows)
+        ? globalThis.Number(object.invalidRows)
+        : isSet(object.invalid_rows)
+        ? globalThis.Number(object.invalid_rows)
+        : 0,
+      committedRows: isSet(object.committedRows)
+        ? globalThis.Number(object.committedRows)
+        : isSet(object.committed_rows)
+        ? globalThis.Number(object.committed_rows)
+        : 0,
+      errors: globalThis.Array.isArray(object?.errors)
+        ? object.errors.map((e: any) => UploadRowError.fromJSON(e))
+        : [],
+      uploadedBy: isSet(object.uploadedBy)
+        ? globalThis.String(object.uploadedBy)
+        : isSet(object.uploaded_by)
+        ? globalThis.String(object.uploaded_by)
+        : "",
+      uploadedAt: isSet(object.uploadedAt)
+        ? fromJsonTimestamp(object.uploadedAt)
+        : isSet(object.uploaded_at)
+        ? fromJsonTimestamp(object.uploaded_at)
+        : undefined,
+    };
+  },
+
+  toJSON(message: BiUpload): unknown {
+    const obj: any = {};
+    if (message.uploadId !== "") {
+      obj.uploadId = message.uploadId;
+    }
+    if (message.targetType !== "") {
+      obj.targetType = message.targetType;
+    }
+    if (message.fileName !== "") {
+      obj.fileName = message.fileName;
+    }
+    if (message.fileSize !== 0) {
+      obj.fileSize = Math.round(message.fileSize);
+    }
+    if (message.status !== "") {
+      obj.status = message.status;
+    }
+    if (message.totalRows !== 0) {
+      obj.totalRows = Math.round(message.totalRows);
+    }
+    if (message.validRows !== 0) {
+      obj.validRows = Math.round(message.validRows);
+    }
+    if (message.invalidRows !== 0) {
+      obj.invalidRows = Math.round(message.invalidRows);
+    }
+    if (message.committedRows !== 0) {
+      obj.committedRows = Math.round(message.committedRows);
+    }
+    if (message.errors?.length) {
+      obj.errors = message.errors.map((e) => UploadRowError.toJSON(e));
+    }
+    if (message.uploadedBy !== "") {
+      obj.uploadedBy = message.uploadedBy;
+    }
+    if (message.uploadedAt !== undefined) {
+      obj.uploadedAt = message.uploadedAt.toISOString();
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<BiUpload>): BiUpload {
+    return BiUpload.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<BiUpload>): BiUpload {
+    const message = createBaseBiUpload();
+    message.uploadId = object.uploadId ?? "";
+    message.targetType = object.targetType ?? "";
+    message.fileName = object.fileName ?? "";
+    message.fileSize = object.fileSize ?? 0;
+    message.status = object.status ?? "";
+    message.totalRows = object.totalRows ?? 0;
+    message.validRows = object.validRows ?? 0;
+    message.invalidRows = object.invalidRows ?? 0;
+    message.committedRows = object.committedRows ?? 0;
+    message.errors = object.errors?.map((e) => UploadRowError.fromPartial(e)) || [];
+    message.uploadedBy = object.uploadedBy ?? "";
+    message.uploadedAt = object.uploadedAt ?? undefined;
+    return message;
+  },
+};
+
+function createBaseDownloadUploadTemplateRequest(): DownloadUploadTemplateRequest {
+  return { targetType: "" };
+}
+
+export const DownloadUploadTemplateRequest: MessageFns<DownloadUploadTemplateRequest> = {
+  encode(message: DownloadUploadTemplateRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.targetType !== "") {
+      writer.uint32(10).string(message.targetType);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): DownloadUploadTemplateRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDownloadUploadTemplateRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.targetType = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DownloadUploadTemplateRequest {
+    return {
+      targetType: isSet(object.targetType)
+        ? globalThis.String(object.targetType)
+        : isSet(object.target_type)
+        ? globalThis.String(object.target_type)
+        : "",
+    };
+  },
+
+  toJSON(message: DownloadUploadTemplateRequest): unknown {
+    const obj: any = {};
+    if (message.targetType !== "") {
+      obj.targetType = message.targetType;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<DownloadUploadTemplateRequest>): DownloadUploadTemplateRequest {
+    return DownloadUploadTemplateRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<DownloadUploadTemplateRequest>): DownloadUploadTemplateRequest {
+    const message = createBaseDownloadUploadTemplateRequest();
+    message.targetType = object.targetType ?? "";
+    return message;
+  },
+};
+
+function createBaseDownloadUploadTemplateResponse(): DownloadUploadTemplateResponse {
+  return { base: undefined, fileContent: new Uint8Array(0), fileName: "" };
+}
+
+export const DownloadUploadTemplateResponse: MessageFns<DownloadUploadTemplateResponse> = {
+  encode(message: DownloadUploadTemplateResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    if (message.fileContent.length !== 0) {
+      writer.uint32(18).bytes(message.fileContent);
+    }
+    if (message.fileName !== "") {
+      writer.uint32(26).string(message.fileName);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): DownloadUploadTemplateResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDownloadUploadTemplateResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.fileContent = reader.bytes();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.fileName = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DownloadUploadTemplateResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      fileContent: isSet(object.fileContent)
+        ? bytesFromBase64(object.fileContent)
+        : isSet(object.file_content)
+        ? bytesFromBase64(object.file_content)
+        : new Uint8Array(0),
+      fileName: isSet(object.fileName)
+        ? globalThis.String(object.fileName)
+        : isSet(object.file_name)
+        ? globalThis.String(object.file_name)
+        : "",
+    };
+  },
+
+  toJSON(message: DownloadUploadTemplateResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.fileContent.length !== 0) {
+      obj.fileContent = base64FromBytes(message.fileContent);
+    }
+    if (message.fileName !== "") {
+      obj.fileName = message.fileName;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<DownloadUploadTemplateResponse>): DownloadUploadTemplateResponse {
+    return DownloadUploadTemplateResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<DownloadUploadTemplateResponse>): DownloadUploadTemplateResponse {
+    const message = createBaseDownloadUploadTemplateResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.fileContent = object.fileContent ?? new Uint8Array(0);
+    message.fileName = object.fileName ?? "";
+    return message;
+  },
+};
+
+function createBaseParseUploadRequest(): ParseUploadRequest {
+  return { targetType: "", fileName: "", fileContent: new Uint8Array(0) };
+}
+
+export const ParseUploadRequest: MessageFns<ParseUploadRequest> = {
+  encode(message: ParseUploadRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.targetType !== "") {
+      writer.uint32(10).string(message.targetType);
+    }
+    if (message.fileName !== "") {
+      writer.uint32(18).string(message.fileName);
+    }
+    if (message.fileContent.length !== 0) {
+      writer.uint32(26).bytes(message.fileContent);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ParseUploadRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseParseUploadRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.targetType = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.fileName = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.fileContent = reader.bytes();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ParseUploadRequest {
+    return {
+      targetType: isSet(object.targetType)
+        ? globalThis.String(object.targetType)
+        : isSet(object.target_type)
+        ? globalThis.String(object.target_type)
+        : "",
+      fileName: isSet(object.fileName)
+        ? globalThis.String(object.fileName)
+        : isSet(object.file_name)
+        ? globalThis.String(object.file_name)
+        : "",
+      fileContent: isSet(object.fileContent)
+        ? bytesFromBase64(object.fileContent)
+        : isSet(object.file_content)
+        ? bytesFromBase64(object.file_content)
+        : new Uint8Array(0),
+    };
+  },
+
+  toJSON(message: ParseUploadRequest): unknown {
+    const obj: any = {};
+    if (message.targetType !== "") {
+      obj.targetType = message.targetType;
+    }
+    if (message.fileName !== "") {
+      obj.fileName = message.fileName;
+    }
+    if (message.fileContent.length !== 0) {
+      obj.fileContent = base64FromBytes(message.fileContent);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ParseUploadRequest>): ParseUploadRequest {
+    return ParseUploadRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ParseUploadRequest>): ParseUploadRequest {
+    const message = createBaseParseUploadRequest();
+    message.targetType = object.targetType ?? "";
+    message.fileName = object.fileName ?? "";
+    message.fileContent = object.fileContent ?? new Uint8Array(0);
+    return message;
+  },
+};
+
+function createBaseParseUploadResponse(): ParseUploadResponse {
+  return { base: undefined, data: undefined };
+}
+
+export const ParseUploadResponse: MessageFns<ParseUploadResponse> = {
+  encode(message: ParseUploadResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    if (message.data !== undefined) {
+      BiUpload.encode(message.data, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ParseUploadResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseParseUploadResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.data = BiUpload.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ParseUploadResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      data: isSet(object.data) ? BiUpload.fromJSON(object.data) : undefined,
+    };
+  },
+
+  toJSON(message: ParseUploadResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.data !== undefined) {
+      obj.data = BiUpload.toJSON(message.data);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ParseUploadResponse>): ParseUploadResponse {
+    return ParseUploadResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ParseUploadResponse>): ParseUploadResponse {
+    const message = createBaseParseUploadResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.data = (object.data !== undefined && object.data !== null) ? BiUpload.fromPartial(object.data) : undefined;
+    return message;
+  },
+};
+
+function createBaseCommitUploadRequest(): CommitUploadRequest {
+  return { uploadId: "" };
+}
+
+export const CommitUploadRequest: MessageFns<CommitUploadRequest> = {
+  encode(message: CommitUploadRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.uploadId !== "") {
+      writer.uint32(10).string(message.uploadId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CommitUploadRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCommitUploadRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.uploadId = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CommitUploadRequest {
+    return {
+      uploadId: isSet(object.uploadId)
+        ? globalThis.String(object.uploadId)
+        : isSet(object.upload_id)
+        ? globalThis.String(object.upload_id)
+        : "",
+    };
+  },
+
+  toJSON(message: CommitUploadRequest): unknown {
+    const obj: any = {};
+    if (message.uploadId !== "") {
+      obj.uploadId = message.uploadId;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<CommitUploadRequest>): CommitUploadRequest {
+    return CommitUploadRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<CommitUploadRequest>): CommitUploadRequest {
+    const message = createBaseCommitUploadRequest();
+    message.uploadId = object.uploadId ?? "";
+    return message;
+  },
+};
+
+function createBaseCommitUploadResponse(): CommitUploadResponse {
+  return { base: undefined, data: undefined };
+}
+
+export const CommitUploadResponse: MessageFns<CommitUploadResponse> = {
+  encode(message: CommitUploadResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    if (message.data !== undefined) {
+      BiUpload.encode(message.data, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CommitUploadResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCommitUploadResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.data = BiUpload.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CommitUploadResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      data: isSet(object.data) ? BiUpload.fromJSON(object.data) : undefined,
+    };
+  },
+
+  toJSON(message: CommitUploadResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.data !== undefined) {
+      obj.data = BiUpload.toJSON(message.data);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<CommitUploadResponse>): CommitUploadResponse {
+    return CommitUploadResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<CommitUploadResponse>): CommitUploadResponse {
+    const message = createBaseCommitUploadResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.data = (object.data !== undefined && object.data !== null) ? BiUpload.fromPartial(object.data) : undefined;
+    return message;
+  },
+};
+
+function createBaseCancelUploadRequest(): CancelUploadRequest {
+  return { uploadId: "" };
+}
+
+export const CancelUploadRequest: MessageFns<CancelUploadRequest> = {
+  encode(message: CancelUploadRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.uploadId !== "") {
+      writer.uint32(10).string(message.uploadId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CancelUploadRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCancelUploadRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.uploadId = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CancelUploadRequest {
+    return {
+      uploadId: isSet(object.uploadId)
+        ? globalThis.String(object.uploadId)
+        : isSet(object.upload_id)
+        ? globalThis.String(object.upload_id)
+        : "",
+    };
+  },
+
+  toJSON(message: CancelUploadRequest): unknown {
+    const obj: any = {};
+    if (message.uploadId !== "") {
+      obj.uploadId = message.uploadId;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<CancelUploadRequest>): CancelUploadRequest {
+    return CancelUploadRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<CancelUploadRequest>): CancelUploadRequest {
+    const message = createBaseCancelUploadRequest();
+    message.uploadId = object.uploadId ?? "";
+    return message;
+  },
+};
+
+function createBaseCancelUploadResponse(): CancelUploadResponse {
+  return { base: undefined };
+}
+
+export const CancelUploadResponse: MessageFns<CancelUploadResponse> = {
+  encode(message: CancelUploadResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CancelUploadResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCancelUploadResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CancelUploadResponse {
+    return { base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined };
+  },
+
+  toJSON(message: CancelUploadResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<CancelUploadResponse>): CancelUploadResponse {
+    return CancelUploadResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<CancelUploadResponse>): CancelUploadResponse {
+    const message = createBaseCancelUploadResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseListUploadsRequest(): ListUploadsRequest {
+  return { page: 0, pageSize: 0 };
+}
+
+export const ListUploadsRequest: MessageFns<ListUploadsRequest> = {
+  encode(message: ListUploadsRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.page !== 0) {
+      writer.uint32(8).int32(message.page);
+    }
+    if (message.pageSize !== 0) {
+      writer.uint32(16).int32(message.pageSize);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ListUploadsRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListUploadsRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.page = reader.int32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.pageSize = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListUploadsRequest {
+    return {
+      page: isSet(object.page) ? globalThis.Number(object.page) : 0,
+      pageSize: isSet(object.pageSize)
+        ? globalThis.Number(object.pageSize)
+        : isSet(object.page_size)
+        ? globalThis.Number(object.page_size)
+        : 0,
+    };
+  },
+
+  toJSON(message: ListUploadsRequest): unknown {
+    const obj: any = {};
+    if (message.page !== 0) {
+      obj.page = Math.round(message.page);
+    }
+    if (message.pageSize !== 0) {
+      obj.pageSize = Math.round(message.pageSize);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListUploadsRequest>): ListUploadsRequest {
+    return ListUploadsRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ListUploadsRequest>): ListUploadsRequest {
+    const message = createBaseListUploadsRequest();
+    message.page = object.page ?? 0;
+    message.pageSize = object.pageSize ?? 0;
+    return message;
+  },
+};
+
+function createBaseListUploadsResponse(): ListUploadsResponse {
+  return { base: undefined, data: [], pagination: undefined };
+}
+
+export const ListUploadsResponse: MessageFns<ListUploadsResponse> = {
+  encode(message: ListUploadsResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    for (const v of message.data) {
+      BiUpload.encode(v!, writer.uint32(18).fork()).join();
+    }
+    if (message.pagination !== undefined) {
+      PaginationResponse.encode(message.pagination, writer.uint32(26).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ListUploadsResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListUploadsResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.data.push(BiUpload.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.pagination = PaginationResponse.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListUploadsResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      data: globalThis.Array.isArray(object?.data) ? object.data.map((e: any) => BiUpload.fromJSON(e)) : [],
+      pagination: isSet(object.pagination) ? PaginationResponse.fromJSON(object.pagination) : undefined,
+    };
+  },
+
+  toJSON(message: ListUploadsResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.data?.length) {
+      obj.data = message.data.map((e) => BiUpload.toJSON(e));
+    }
+    if (message.pagination !== undefined) {
+      obj.pagination = PaginationResponse.toJSON(message.pagination);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListUploadsResponse>): ListUploadsResponse {
+    return ListUploadsResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ListUploadsResponse>): ListUploadsResponse {
+    const message = createBaseListUploadsResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.data = object.data?.map((e) => BiUpload.fromPartial(e)) || [];
+    message.pagination = (object.pagination !== undefined && object.pagination !== null)
+      ? PaginationResponse.fromPartial(object.pagination)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseBiAuditEntry(): BiAuditEntry {
+  return {
+    auditId: 0,
+    entityType: "",
+    entityCode: "",
+    entityTitle: "",
+    action: "",
+    changedBy: "",
+    changedAt: undefined,
+    summary: "",
+  };
+}
+
+export const BiAuditEntry: MessageFns<BiAuditEntry> = {
+  encode(message: BiAuditEntry, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.auditId !== 0) {
+      writer.uint32(8).int64(message.auditId);
+    }
+    if (message.entityType !== "") {
+      writer.uint32(18).string(message.entityType);
+    }
+    if (message.entityCode !== "") {
+      writer.uint32(26).string(message.entityCode);
+    }
+    if (message.entityTitle !== "") {
+      writer.uint32(34).string(message.entityTitle);
+    }
+    if (message.action !== "") {
+      writer.uint32(42).string(message.action);
+    }
+    if (message.changedBy !== "") {
+      writer.uint32(50).string(message.changedBy);
+    }
+    if (message.changedAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.changedAt), writer.uint32(58).fork()).join();
+    }
+    if (message.summary !== "") {
+      writer.uint32(66).string(message.summary);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): BiAuditEntry {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseBiAuditEntry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.auditId = longToNumber(reader.int64());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.entityType = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.entityCode = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.entityTitle = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.action = reader.string();
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.changedBy = reader.string();
+          continue;
+        }
+        case 7: {
+          if (tag !== 58) {
+            break;
+          }
+
+          message.changedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 8: {
+          if (tag !== 66) {
+            break;
+          }
+
+          message.summary = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): BiAuditEntry {
+    return {
+      auditId: isSet(object.auditId)
+        ? globalThis.Number(object.auditId)
+        : isSet(object.audit_id)
+        ? globalThis.Number(object.audit_id)
+        : 0,
+      entityType: isSet(object.entityType)
+        ? globalThis.String(object.entityType)
+        : isSet(object.entity_type)
+        ? globalThis.String(object.entity_type)
+        : "",
+      entityCode: isSet(object.entityCode)
+        ? globalThis.String(object.entityCode)
+        : isSet(object.entity_code)
+        ? globalThis.String(object.entity_code)
+        : "",
+      entityTitle: isSet(object.entityTitle)
+        ? globalThis.String(object.entityTitle)
+        : isSet(object.entity_title)
+        ? globalThis.String(object.entity_title)
+        : "",
+      action: isSet(object.action) ? globalThis.String(object.action) : "",
+      changedBy: isSet(object.changedBy)
+        ? globalThis.String(object.changedBy)
+        : isSet(object.changed_by)
+        ? globalThis.String(object.changed_by)
+        : "",
+      changedAt: isSet(object.changedAt)
+        ? fromJsonTimestamp(object.changedAt)
+        : isSet(object.changed_at)
+        ? fromJsonTimestamp(object.changed_at)
+        : undefined,
+      summary: isSet(object.summary) ? globalThis.String(object.summary) : "",
+    };
+  },
+
+  toJSON(message: BiAuditEntry): unknown {
+    const obj: any = {};
+    if (message.auditId !== 0) {
+      obj.auditId = Math.round(message.auditId);
+    }
+    if (message.entityType !== "") {
+      obj.entityType = message.entityType;
+    }
+    if (message.entityCode !== "") {
+      obj.entityCode = message.entityCode;
+    }
+    if (message.entityTitle !== "") {
+      obj.entityTitle = message.entityTitle;
+    }
+    if (message.action !== "") {
+      obj.action = message.action;
+    }
+    if (message.changedBy !== "") {
+      obj.changedBy = message.changedBy;
+    }
+    if (message.changedAt !== undefined) {
+      obj.changedAt = message.changedAt.toISOString();
+    }
+    if (message.summary !== "") {
+      obj.summary = message.summary;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<BiAuditEntry>): BiAuditEntry {
+    return BiAuditEntry.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<BiAuditEntry>): BiAuditEntry {
+    const message = createBaseBiAuditEntry();
+    message.auditId = object.auditId ?? 0;
+    message.entityType = object.entityType ?? "";
+    message.entityCode = object.entityCode ?? "";
+    message.entityTitle = object.entityTitle ?? "";
+    message.action = object.action ?? "";
+    message.changedBy = object.changedBy ?? "";
+    message.changedAt = object.changedAt ?? undefined;
+    message.summary = object.summary ?? "";
+    return message;
+  },
+};
+
+function createBaseListConfigAuditRequest(): ListConfigAuditRequest {
+  return { page: 0, pageSize: 0, entityType: "" };
+}
+
+export const ListConfigAuditRequest: MessageFns<ListConfigAuditRequest> = {
+  encode(message: ListConfigAuditRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.page !== 0) {
+      writer.uint32(8).int32(message.page);
+    }
+    if (message.pageSize !== 0) {
+      writer.uint32(16).int32(message.pageSize);
+    }
+    if (message.entityType !== "") {
+      writer.uint32(26).string(message.entityType);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ListConfigAuditRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListConfigAuditRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.page = reader.int32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.pageSize = reader.int32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.entityType = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListConfigAuditRequest {
+    return {
+      page: isSet(object.page) ? globalThis.Number(object.page) : 0,
+      pageSize: isSet(object.pageSize)
+        ? globalThis.Number(object.pageSize)
+        : isSet(object.page_size)
+        ? globalThis.Number(object.page_size)
+        : 0,
+      entityType: isSet(object.entityType)
+        ? globalThis.String(object.entityType)
+        : isSet(object.entity_type)
+        ? globalThis.String(object.entity_type)
+        : "",
+    };
+  },
+
+  toJSON(message: ListConfigAuditRequest): unknown {
+    const obj: any = {};
+    if (message.page !== 0) {
+      obj.page = Math.round(message.page);
+    }
+    if (message.pageSize !== 0) {
+      obj.pageSize = Math.round(message.pageSize);
+    }
+    if (message.entityType !== "") {
+      obj.entityType = message.entityType;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListConfigAuditRequest>): ListConfigAuditRequest {
+    return ListConfigAuditRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ListConfigAuditRequest>): ListConfigAuditRequest {
+    const message = createBaseListConfigAuditRequest();
+    message.page = object.page ?? 0;
+    message.pageSize = object.pageSize ?? 0;
+    message.entityType = object.entityType ?? "";
+    return message;
+  },
+};
+
+function createBaseListConfigAuditResponse(): ListConfigAuditResponse {
+  return { base: undefined, data: [], pagination: undefined };
+}
+
+export const ListConfigAuditResponse: MessageFns<ListConfigAuditResponse> = {
+  encode(message: ListConfigAuditResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    for (const v of message.data) {
+      BiAuditEntry.encode(v!, writer.uint32(18).fork()).join();
+    }
+    if (message.pagination !== undefined) {
+      PaginationResponse.encode(message.pagination, writer.uint32(26).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ListConfigAuditResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListConfigAuditResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.data.push(BiAuditEntry.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.pagination = PaginationResponse.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListConfigAuditResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      data: globalThis.Array.isArray(object?.data) ? object.data.map((e: any) => BiAuditEntry.fromJSON(e)) : [],
+      pagination: isSet(object.pagination) ? PaginationResponse.fromJSON(object.pagination) : undefined,
+    };
+  },
+
+  toJSON(message: ListConfigAuditResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.data?.length) {
+      obj.data = message.data.map((e) => BiAuditEntry.toJSON(e));
+    }
+    if (message.pagination !== undefined) {
+      obj.pagination = PaginationResponse.toJSON(message.pagination);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListConfigAuditResponse>): ListConfigAuditResponse {
+    return ListConfigAuditResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ListConfigAuditResponse>): ListConfigAuditResponse {
+    const message = createBaseListConfigAuditResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.data = object.data?.map((e) => BiAuditEntry.fromPartial(e)) || [];
+    message.pagination = (object.pagination !== undefined && object.pagination !== null)
+      ? PaginationResponse.fromPartial(object.pagination)
+      : undefined;
+    return message;
+  },
+};
+
 /** DashboardService manages BI dashboard definitions, groups, and per-dashboard role mappings. */
 export type DashboardServiceDefinition = typeof DashboardServiceDefinition;
 export const DashboardServiceDefinition = {
@@ -8368,6 +10077,49 @@ export const DashboardServiceDefinition = {
         },
       },
     },
+    /** ListConfigAudit returns the dashboard/group configuration change history. */
+    listConfigAudit: {
+      name: "ListConfigAudit",
+      requestType: ListConfigAuditRequest,
+      requestStream: false,
+      responseType: ListConfigAuditResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              26,
+              18,
+              24,
+              47,
+              97,
+              112,
+              105,
+              47,
+              118,
+              49,
+              47,
+              102,
+              105,
+              110,
+              97,
+              110,
+              99,
+              101,
+              47,
+              98,
+              105,
+              47,
+              97,
+              117,
+              100,
+              105,
+              116,
+            ]),
+          ],
+        },
+      },
+    },
   },
 } as const;
 
@@ -8777,6 +10529,330 @@ export const BiJobServiceDefinition = {
     },
   },
 } as const;
+
+/**
+ * BiUploadService handles Excel upload: template download, parse/preview into staging,
+ * commit (UPSERT to fact_metric), cancel, and upload session history.
+ */
+export type BiUploadServiceDefinition = typeof BiUploadServiceDefinition;
+export const BiUploadServiceDefinition = {
+  name: "BiUploadService",
+  fullName: "finance.v1.BiUploadService",
+  methods: {
+    /** DownloadUploadTemplate returns a blank .xlsx template matching the FACT_METRIC shape. */
+    downloadUploadTemplate: {
+      name: "DownloadUploadTemplate",
+      requestType: DownloadUploadTemplateRequest,
+      requestStream: false,
+      responseType: DownloadUploadTemplateResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              37,
+              18,
+              35,
+              47,
+              97,
+              112,
+              105,
+              47,
+              118,
+              49,
+              47,
+              102,
+              105,
+              110,
+              97,
+              110,
+              99,
+              101,
+              47,
+              98,
+              105,
+              47,
+              117,
+              112,
+              108,
+              111,
+              97,
+              100,
+              115,
+              47,
+              116,
+              101,
+              109,
+              112,
+              108,
+              97,
+              116,
+              101,
+            ]),
+          ],
+        },
+      },
+    },
+    /** ParseUpload parses an uploaded .xlsx, validates rows, writes to staging, returns a preview. */
+    parseUpload: {
+      name: "ParseUpload",
+      requestType: ParseUploadRequest,
+      requestStream: false,
+      responseType: ParseUploadResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              37,
+              58,
+              1,
+              42,
+              34,
+              32,
+              47,
+              97,
+              112,
+              105,
+              47,
+              118,
+              49,
+              47,
+              102,
+              105,
+              110,
+              97,
+              110,
+              99,
+              101,
+              47,
+              98,
+              105,
+              47,
+              117,
+              112,
+              108,
+              111,
+              97,
+              100,
+              115,
+              47,
+              112,
+              97,
+              114,
+              115,
+              101,
+            ]),
+          ],
+        },
+      },
+    },
+    /** CommitUpload UPSERTs the staged rows of a previewed session into fact_metric. */
+    commitUpload: {
+      name: "CommitUpload",
+      requestType: CommitUploadRequest,
+      requestStream: false,
+      responseType: CommitUploadResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              50,
+              58,
+              1,
+              42,
+              34,
+              45,
+              47,
+              97,
+              112,
+              105,
+              47,
+              118,
+              49,
+              47,
+              102,
+              105,
+              110,
+              97,
+              110,
+              99,
+              101,
+              47,
+              98,
+              105,
+              47,
+              117,
+              112,
+              108,
+              111,
+              97,
+              100,
+              115,
+              47,
+              123,
+              117,
+              112,
+              108,
+              111,
+              97,
+              100,
+              95,
+              105,
+              100,
+              125,
+              47,
+              99,
+              111,
+              109,
+              109,
+              105,
+              116,
+            ]),
+          ],
+        },
+      },
+    },
+    /** CancelUpload discards a previewed session without committing. */
+    cancelUpload: {
+      name: "CancelUpload",
+      requestType: CancelUploadRequest,
+      requestStream: false,
+      responseType: CancelUploadResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              50,
+              58,
+              1,
+              42,
+              34,
+              45,
+              47,
+              97,
+              112,
+              105,
+              47,
+              118,
+              49,
+              47,
+              102,
+              105,
+              110,
+              97,
+              110,
+              99,
+              101,
+              47,
+              98,
+              105,
+              47,
+              117,
+              112,
+              108,
+              111,
+              97,
+              100,
+              115,
+              47,
+              123,
+              117,
+              112,
+              108,
+              111,
+              97,
+              100,
+              95,
+              105,
+              100,
+              125,
+              47,
+              99,
+              97,
+              110,
+              99,
+              101,
+              108,
+            ]),
+          ],
+        },
+      },
+    },
+    /** ListUploads returns paginated upload session history. */
+    listUploads: {
+      name: "ListUploads",
+      requestType: ListUploadsRequest,
+      requestStream: false,
+      responseType: ListUploadsResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              28,
+              18,
+              26,
+              47,
+              97,
+              112,
+              105,
+              47,
+              118,
+              49,
+              47,
+              102,
+              105,
+              110,
+              97,
+              110,
+              99,
+              101,
+              47,
+              98,
+              105,
+              47,
+              117,
+              112,
+              108,
+              111,
+              97,
+              100,
+              115,
+            ]),
+          ],
+        },
+      },
+    },
+  },
+} as const;
+
+function bytesFromBase64(b64: string): Uint8Array {
+  if ((globalThis as any).Buffer) {
+    return Uint8Array.from(globalThis.Buffer.from(b64, "base64"));
+  } else {
+    const bin = globalThis.atob(b64);
+    const arr = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; ++i) {
+      arr[i] = bin.charCodeAt(i);
+    }
+    return arr;
+  }
+}
+
+function base64FromBytes(arr: Uint8Array): string {
+  if ((globalThis as any).Buffer) {
+    return globalThis.Buffer.from(arr).toString("base64");
+  } else {
+    const bin: string[] = [];
+    arr.forEach((byte) => {
+      bin.push(globalThis.String.fromCharCode(byte));
+    });
+    return globalThis.btoa(bin.join(""));
+  }
+}
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 

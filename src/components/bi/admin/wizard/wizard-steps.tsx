@@ -230,6 +230,17 @@ export function StepChartType({ form, setForm }: StepProps) {
 const AXIS_FIELDS = ["group_1", "group_2", "group_3", "period", "dimension_key"]
 const VALUE_FIELDS = ["value", "display_value"]
 
+// isMeasureField decides whether a chart's required field is a numeric measure (→ VALUE_FIELDS)
+// or a dimension (→ AXIS_FIELDS). The mapping is chart-type-aware because the y-axis is a measure
+// for cartesian charts (bar/line/area/waterfall/mixed/stacked) but a dimension for a heatmap, and
+// the x-axis is a measure only for a scatter plot.
+function isMeasureField(field: string, chartType: string): boolean {
+  if (field.includes("value")) return true // value_field
+  if (field === "y_axis_field") return chartType !== "heatmap"
+  if (field === "x_axis_field") return chartType === "scatter"
+  return false
+}
+
 export function StepFieldMapping({ form, setForm }: StepProps) {
   const typeStr = chartTypeToString(form.chartType)
   const reg = allChartTypes().find((r) => r.type === typeStr)
@@ -260,8 +271,7 @@ export function StepFieldMapping({ form, setForm }: StepProps) {
             </Field>
           )
         }
-        const isValueField = f.includes("value")
-        const opts = isValueField ? VALUE_FIELDS : AXIS_FIELDS
+        const opts = isMeasureField(f, typeStr) ? VALUE_FIELDS : AXIS_FIELDS
         return (
           <Field key={f} label={humanize(f)}>
             <Select value={(form.chartConfig[f] as string) ?? ""} onValueChange={(v) => setConfig(f, v)}>

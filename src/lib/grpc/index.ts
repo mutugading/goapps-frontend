@@ -19,6 +19,7 @@ export {
   getBiChartDataClient,
   getBiDataSourceClient,
   getBiJobClient,
+  getBiUploadClient,
   getUomCategoryClient,
   getRmCategoryClient,
   getParameterClient,

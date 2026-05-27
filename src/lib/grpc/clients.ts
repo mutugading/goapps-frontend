@@ -23,6 +23,7 @@ import {
   ChartDataServiceDefinition,
   DataSourceServiceDefinition,
   BiJobServiceDefinition,
+  BiUploadServiceDefinition,
 } from "@/types/generated/finance/v1/bi"
 import { UOMCategoryServiceDefinition } from "@/types/generated/finance/v1/uom_category"
 import { RMCategoryServiceDefinition } from "@/types/generated/finance/v1/rm_category"
@@ -195,6 +196,12 @@ export function getBiDataSourceClient() {
 export function getBiJobClient() {
   return getOrCreate("bi-job", () =>
     createServiceClient(BiJobServiceDefinition, SERVICE_ADDRESSES.finance, insecure, CHANNEL_OPTIONS)
+  )
+}
+
+export function getBiUploadClient() {
+  return getOrCreate("bi-upload", () =>
+    createServiceClient(BiUploadServiceDefinition, SERVICE_ADDRESSES.finance, insecure, CHANNEL_OPTIONS)
   )
 }
 

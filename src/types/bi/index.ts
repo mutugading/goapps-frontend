@@ -264,3 +264,26 @@ export function periodeGrainToString(g: PeriodeGrain): string {
 export function rolesToSet(d: Dashboard): Set<string> {
   return new Set(d.allowedRoleCodes ?? [])
 }
+
+// ============================================================================
+// Excel upload types
+// ============================================================================
+
+export { normalizeUpload } from "./upload"
+export type {
+  NormalizedUpload,
+  NormalizedUploadError,
+  UploadStatus,
+} from "./upload"
+
+// ============================================================================
+// Config-change audit types
+// ============================================================================
+
+export { normalizeAuditEntry } from "./audit"
+export type {
+  RawAuditEntry,
+  NormalizedAuditEntry,
+  AuditEntityType,
+  AuditAction,
+} from "./audit"

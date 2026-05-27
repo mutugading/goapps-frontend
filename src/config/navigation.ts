@@ -112,6 +112,12 @@ export const breadcrumbConfig: Record<string, BreadcrumbConfig> = {
   "/finance/transaction": { title: "Transaction", href: undefined }, // No page, category only
   "/finance/transaction/costing-process": { title: "Costing Process" },
 
+  // Executive Dashboard (BI)
+  "/finance/bi": { title: "Executive Dashboard", href: "/finance/bi" },
+  "/finance/bi/admin": { title: "Admin Panel", href: "/finance/bi/admin" },
+  "/finance/bi/admin/new": { title: "New Dashboard" },
+  "/finance/bi/upload": { title: "Upload Data" },
+
   // IT module
   "/it": { title: "IT", href: "/it/dashboard" },
   "/it/dashboard": { title: "IT", href: "/it/dashboard" },
