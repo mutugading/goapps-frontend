@@ -52,6 +52,7 @@ export function MenuPermissionDialog({
     // Sync selection to current menu permissions when dialog opens
     useEffect(() => {
         if (open && currentPermIds.length >= 0) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: sync selection state when dialog opens
             setSelected(new Set(currentPermIds))
         }
     }, [open, JSON.stringify(currentPermIds)]) // eslint-disable-line react-hooks/exhaustive-deps

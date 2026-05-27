@@ -14,6 +14,9 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Proto-generated files (DO NOT EDIT)
     "src/types/generated/**",
+    // Playwright E2E specs — @playwright/test not yet installed.
+    // See e2e/cost-calc/README.md for activation steps.
+    "e2e/**",
   ]),
 ]);
 

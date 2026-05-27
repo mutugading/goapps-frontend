@@ -5,7 +5,7 @@ import { Pencil, Trash2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { DataTable, type ColumnDef, type RowAction } from "@/components/shared"
 
-import { type UOM, UOM_CATEGORY_LABELS, UOMCategory } from "@/types/finance/uom"
+import type { UOM } from "@/types/finance/uom"
 
 interface UOMTableProps {
   data: UOM[]
@@ -37,11 +37,11 @@ export function UOMTable({ data, isLoading, onEdit, onDelete }: UOMTableProps) {
       cell: (row) => row.description || "-",
     },
     {
-      id: "uomCategory",
+      id: "uomCategoryName",
       header: "Category",
       cell: (row) => (
         <Badge variant="outline">
-          {UOM_CATEGORY_LABELS[row.uomCategory] || "Unknown"}
+          {row.uomCategoryName || row.uomCategoryCode || "-"}
         </Badge>
       ),
     },

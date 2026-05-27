@@ -17,7 +17,7 @@ describe("UOM Hooks", () => {
 
     it("should return list keys with params", () => {
       const params = { page: 1, pageSize: 10 }
-      expect(uomKeys.list(params)).toEqual(["finance", "uom", "list", params])
+      expect(uomKeys.list(params)).toEqual(["finance", "uom", "list", JSON.stringify(params)])
     })
 
     it("should return detail keys", () => {

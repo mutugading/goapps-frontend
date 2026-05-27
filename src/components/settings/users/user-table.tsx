@@ -67,6 +67,24 @@ export function UserTable({ data, isLoading, onEdit, onDelete, onManageRoles }: 
             ),
         },
         {
+            id: "organization",
+            header: "Organization",
+            hideOnMobile: true,
+            cell: (row) => {
+                const path = [
+                    row.user?.primaryCompanyName,
+                    row.user?.primaryDivisionName,
+                    row.user?.primaryDepartmentName,
+                    row.user?.primarySectionName,
+                ].filter(Boolean).join(" › ")
+                return (
+                    <span className="text-xs text-muted-foreground">
+                        {path || "—"}
+                    </span>
+                )
+            },
+        },
+        {
             id: "isActive",
             header: "Status",
             cell: (row) => (

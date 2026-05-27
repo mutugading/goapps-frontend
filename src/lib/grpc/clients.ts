@@ -24,10 +24,45 @@ import {
   DataSourceServiceDefinition,
   BiJobServiceDefinition,
 } from "@/types/generated/finance/v1/bi"
+import { UOMCategoryServiceDefinition } from "@/types/generated/finance/v1/uom_category"
+import { RMCategoryServiceDefinition } from "@/types/generated/finance/v1/rm_category"
+import { ParameterServiceDefinition } from "@/types/generated/finance/v1/parameter"
+import { FormulaServiceDefinition } from "@/types/generated/finance/v1/formula"
+import {
+  CMSPageServiceDefinition,
+  CMSSectionServiceDefinition,
+  CMSSettingServiceDefinition,
+} from "@/types/generated/iam/v1/cms"
+import { EmployeeLevelServiceDefinition } from "@/types/generated/iam/v1/employee_level"
+import { EmployeeGroupServiceDefinition } from "@/types/generated/iam/v1/employee_group"
+import { CompanyMappingServiceDefinition } from "@/types/generated/iam/v1/company_mapping"
+import { NotificationServiceDefinition } from "@/types/generated/iam/v1/notification"
+import {
+  WorkflowTemplateServiceDefinition,
+  WorkflowInstanceServiceDefinition,
+} from "@/types/generated/iam/v1/workflow"
+import { OracleSyncServiceDefinition } from "@/types/generated/finance/v1/oracle_sync"
+import { RMGroupServiceDefinition } from "@/types/generated/finance/v1/rm_group"
+import { RMCostServiceDefinition } from "@/types/generated/finance/v1/rm_cost"
+import { CostProductTypeServiceDefinition } from "@/types/generated/finance/v1/cost_product_type"
+import { CostRmTypeServiceDefinition } from "@/types/generated/finance/v1/cost_rm_type"
+import { CostErpLookupServiceDefinition } from "@/types/generated/finance/v1/cost_erp"
+import { CostProductMasterServiceDefinition } from "@/types/generated/finance/v1/cost_product_master"
+import { CostRouteServiceDefinition } from "@/types/generated/finance/v1/cost_route"
+import { CostRequestTypeServiceDefinition } from "@/types/generated/finance/v1/cost_request_type"
+import { CostPaperTubeTypeServiceDefinition } from "@/types/generated/finance/v1/cost_paper_tube_type"
+import { CostProductRequestServiceDefinition } from "@/types/generated/finance/v1/cost_product_request"
+import { CostRequestCommentServiceDefinition } from "@/types/generated/finance/v1/cost_request_comment"
+import { CostAttachmentServiceDefinition } from "@/types/generated/finance/v1/cost_attachment"
+import { CostRoutingRuleServiceDefinition } from "@/types/generated/finance/v1/cost_routing_rule"
+import { CostAuditLogServiceDefinition } from "@/types/generated/finance/v1/cost_audit_log"
+import { CostNotificationServiceDefinition } from "@/types/generated/finance/v1/cost_notification"
+import { CostProductParameterServiceDefinition } from "@/types/generated/finance/v1/cost_product_parameter"
+import { CostCalcServiceDefinition } from "@/types/generated/finance/v1/cost_calc"
 
 const CHANNEL_OPTIONS = {
-  "grpc.keepalive_time_ms": 10000,
-  "grpc.keepalive_timeout_ms": 5000,
+  "grpc.keepalive_time_ms": 120000,
+  "grpc.keepalive_timeout_ms": 20000,
   "grpc.keepalive_permit_without_calls": 1,
   "grpc.max_reconnect_backoff_ms": 10000,
   "grpc.initial_reconnect_backoff_ms": 1000,
@@ -162,3 +197,193 @@ export function getBiJobClient() {
     createServiceClient(BiJobServiceDefinition, SERVICE_ADDRESSES.finance, insecure, CHANNEL_OPTIONS)
   )
 }
+
+export function getUomCategoryClient() {
+  return getOrCreate("uomCategory", () =>
+    createServiceClient(UOMCategoryServiceDefinition, SERVICE_ADDRESSES.finance, insecure, CHANNEL_OPTIONS)
+  )
+}
+
+export function getRmCategoryClient() {
+  return getOrCreate("rmCategory", () =>
+    createServiceClient(RMCategoryServiceDefinition, SERVICE_ADDRESSES.finance, insecure, CHANNEL_OPTIONS)
+  )
+}
+
+export function getParameterClient() {
+  return getOrCreate("parameter", () =>
+    createServiceClient(ParameterServiceDefinition, SERVICE_ADDRESSES.finance, insecure, CHANNEL_OPTIONS)
+  )
+}
+
+export function getFormulaClient() {
+  return getOrCreate("formula", () =>
+    createServiceClient(FormulaServiceDefinition, SERVICE_ADDRESSES.finance, insecure, CHANNEL_OPTIONS)
+  )
+}
+
+// CMS service clients (IAM service)
+export function getCmsPageClient() {
+  return getOrCreate("cmsPage", () =>
+    createServiceClient(CMSPageServiceDefinition, SERVICE_ADDRESSES.iam, insecure, CHANNEL_OPTIONS)
+  )
+}
+
+export function getCmsSectionClient() {
+  return getOrCreate("cmsSection", () =>
+    createServiceClient(CMSSectionServiceDefinition, SERVICE_ADDRESSES.iam, insecure, CHANNEL_OPTIONS)
+  )
+}
+
+export function getCmsSettingClient() {
+  return getOrCreate("cmsSetting", () =>
+    createServiceClient(CMSSettingServiceDefinition, SERVICE_ADDRESSES.iam, insecure, CHANNEL_OPTIONS)
+  )
+}
+
+export function getEmployeeLevelClient() {
+  return getOrCreate("employeeLevel", () =>
+    createServiceClient(EmployeeLevelServiceDefinition, SERVICE_ADDRESSES.iam, insecure, CHANNEL_OPTIONS)
+  )
+}
+
+export function getEmployeeGroupClient() {
+  return getOrCreate("employeeGroup", () =>
+    createServiceClient(EmployeeGroupServiceDefinition, SERVICE_ADDRESSES.iam, insecure, CHANNEL_OPTIONS)
+  )
+}
+
+export function getCompanyMappingClient() {
+  return getOrCreate("companyMapping", () =>
+    createServiceClient(CompanyMappingServiceDefinition, SERVICE_ADDRESSES.iam, insecure, CHANNEL_OPTIONS)
+  )
+}
+
+export function getNotificationClient() {
+  return getOrCreate("notification", () =>
+    createServiceClient(NotificationServiceDefinition, SERVICE_ADDRESSES.iam, insecure, CHANNEL_OPTIONS)
+  )
+}
+
+export function getOracleSyncClient() {
+  return getOrCreate("oracleSync", () =>
+    createServiceClient(OracleSyncServiceDefinition, SERVICE_ADDRESSES.finance, insecure, CHANNEL_OPTIONS)
+  )
+}
+
+export function getRmGroupClient() {
+  return getOrCreate("rmGroup", () =>
+    createServiceClient(RMGroupServiceDefinition, SERVICE_ADDRESSES.finance, insecure, CHANNEL_OPTIONS)
+  )
+}
+
+export function getRmCostClient() {
+  return getOrCreate("rmCost", () =>
+    createServiceClient(RMCostServiceDefinition, SERVICE_ADDRESSES.finance, insecure, CHANNEL_OPTIONS)
+  )
+}
+
+// Canonical Phase B clients (PRD §7.2-§7.5).
+export function getCostProductTypeClient() {
+  return getOrCreate("costProductType", () =>
+    createServiceClient(CostProductTypeServiceDefinition, SERVICE_ADDRESSES.finance, insecure, CHANNEL_OPTIONS)
+  )
+}
+
+export function getCostRmTypeClient() {
+  return getOrCreate("costRmType", () =>
+    createServiceClient(CostRmTypeServiceDefinition, SERVICE_ADDRESSES.finance, insecure, CHANNEL_OPTIONS)
+  )
+}
+
+export function getCostErpClient() {
+  return getOrCreate("costErp", () =>
+    createServiceClient(CostErpLookupServiceDefinition, SERVICE_ADDRESSES.finance, insecure, CHANNEL_OPTIONS)
+  )
+}
+
+export function getCostProductMasterClient() {
+  return getOrCreate("costProductMaster", () =>
+    createServiceClient(CostProductMasterServiceDefinition, SERVICE_ADDRESSES.finance, insecure, CHANNEL_OPTIONS)
+  )
+}
+
+export function getCostRouteClient() {
+  return getOrCreate("costRoute", () =>
+    createServiceClient(CostRouteServiceDefinition, SERVICE_ADDRESSES.finance, insecure, CHANNEL_OPTIONS)
+  )
+}
+
+// Canonical Phase A clients (PRD §7.1).
+export function getCostRequestTypeClient() {
+  return getOrCreate("costRequestType", () =>
+    createServiceClient(CostRequestTypeServiceDefinition, SERVICE_ADDRESSES.finance, insecure, CHANNEL_OPTIONS)
+  )
+}
+
+export function getCostPaperTubeTypeClient() {
+  return getOrCreate("costPaperTubeType", () =>
+    createServiceClient(CostPaperTubeTypeServiceDefinition, SERVICE_ADDRESSES.finance, insecure, CHANNEL_OPTIONS)
+  )
+}
+
+export function getCostProductRequestClient() {
+  return getOrCreate("costProductRequest", () =>
+    createServiceClient(CostProductRequestServiceDefinition, SERVICE_ADDRESSES.finance, insecure, CHANNEL_OPTIONS)
+  )
+}
+
+export function getCostRequestCommentClient() {
+  return getOrCreate("costRequestComment", () =>
+    createServiceClient(CostRequestCommentServiceDefinition, SERVICE_ADDRESSES.finance, insecure, CHANNEL_OPTIONS)
+  )
+}
+
+export function getCostAttachmentClient() {
+  return getOrCreate("costAttachment", () =>
+    createServiceClient(CostAttachmentServiceDefinition, SERVICE_ADDRESSES.finance, insecure, CHANNEL_OPTIONS)
+  )
+}
+
+export function getCostRoutingRuleClient() {
+  return getOrCreate("costRoutingRule", () =>
+    createServiceClient(CostRoutingRuleServiceDefinition, SERVICE_ADDRESSES.finance, insecure, CHANNEL_OPTIONS)
+  )
+}
+
+export function getCostAuditLogClient() {
+  return getOrCreate("costAuditLog", () =>
+    createServiceClient(CostAuditLogServiceDefinition, SERVICE_ADDRESSES.finance, insecure, CHANNEL_OPTIONS)
+  )
+}
+
+export function getCostNotificationClient() {
+  return getOrCreate("costNotification", () =>
+    createServiceClient(CostNotificationServiceDefinition, SERVICE_ADDRESSES.finance, insecure, CHANNEL_OPTIONS)
+  )
+}
+
+export function getCostProductParameterClient() {
+  return getOrCreate("costProductParameter", () =>
+    createServiceClient(CostProductParameterServiceDefinition, SERVICE_ADDRESSES.finance, insecure, CHANNEL_OPTIONS)
+  )
+}
+
+export function getCostCalcClient() {
+  return getOrCreate("costCalc", () =>
+    createServiceClient(CostCalcServiceDefinition, SERVICE_ADDRESSES.finance, insecure, CHANNEL_OPTIONS)
+  )
+}
+
+export function getWorkflowTemplateClient() {
+  return getOrCreate("workflowTemplate", () =>
+    createServiceClient(WorkflowTemplateServiceDefinition, SERVICE_ADDRESSES.iam, insecure, CHANNEL_OPTIONS)
+  )
+}
+
+export function getWorkflowInstanceClient() {
+  return getOrCreate("workflowInstance", () =>
+    createServiceClient(WorkflowInstanceServiceDefinition, SERVICE_ADDRESSES.iam, insecure, CHANNEL_OPTIONS)
+  )
+}
+

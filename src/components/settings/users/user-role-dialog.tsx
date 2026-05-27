@@ -40,6 +40,7 @@ export function UserRoleDialog({ open, onOpenChange, user }: UserRoleDialogProps
     useEffect(() => {
         if (open && userAccess?.data) {
             const roleIds = new Set((userAccess.data.roles || []).map((r) => r.roleId))
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: sync state from fetched data when dialog opens
             setSelectedRoleIds(roleIds)
             setOriginalRoleIds(roleIds)
         }

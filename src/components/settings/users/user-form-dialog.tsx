@@ -7,14 +7,13 @@ import { z } from "zod"
 import { Loader2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { Dialog, DialogDescription, DialogTitle } from "@/components/ui/dialog"
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog"
+    ScrollableDialogContent,
+    ScrollableDialogHeader,
+    ScrollableDialogBody,
+    ScrollableDialogFooter,
+} from "@/components/common/scrollable-dialog"
 import {
     Form,
     FormControl,
@@ -31,6 +30,10 @@ import { Separator } from "@/components/ui/separator"
 
 import type { UserWithDetail } from "@/types/iam/user"
 import { useCreateUser, useUpdateUser, useUpdateUserDetail } from "@/hooks/iam/use-users"
+import { EmployeeLevelCombobox } from "@/components/iam/employee-level-combobox"
+import { EmployeeGroupCombobox } from "@/components/iam/employee-group-combobox"
+import { CompanyMappingCombobox } from "@/components/iam/company-mapping-combobox"
+import { UserCompanyMappingsCard } from "./user-company-mappings-card"
 
 // Form validation schemas
 const createUserSchema = z.object({
@@ -49,6 +52,9 @@ const createUserSchema = z.object({
     position: z.string().max(50).optional(),
     address: z.string().max(500).optional(),
     isActive: z.boolean().optional(),
+    employeeLevelId: z.string().optional(),
+    employeeGroupId: z.string().optional(),
+    companyMappingId: z.string().optional(),
 })
 
 const editUserSchema = z.object({
@@ -69,6 +75,9 @@ const editUserSchema = z.object({
     phone: z.string().max(20).optional(),
     position: z.string().max(50).optional(),
     address: z.string().max(500).optional(),
+    employeeLevelId: z.string().optional(),
+    employeeGroupId: z.string().optional(),
+    companyMappingId: z.string().optional(),
 })
 
 type CreateUserFormValues = z.infer<typeof createUserSchema>
@@ -105,6 +114,9 @@ export function UserFormDialog({
             phone: "",
             position: "",
             address: "",
+            employeeLevelId: "",
+            employeeGroupId: "",
+            companyMappingId: "",
         },
     })
 
@@ -121,10 +133,11 @@ export function UserFormDialog({
             phone: "",
             position: "",
             address: "",
+            employeeLevelId: "",
+            employeeGroupId: "",
+            companyMappingId: "",
         },
     })
-
-    const form = isEditing ? editForm : createForm
 
     useEffect(() => {
         if (open) {
@@ -140,6 +153,9 @@ export function UserFormDialog({
                     phone: user.detail?.phone || "",
                     position: user.detail?.position || "",
                     address: user.detail?.address || "",
+                    employeeLevelId: user.user?.employeeLevelId || "",
+                    employeeGroupId: user.user?.employeeGroupId || "",
+                    companyMappingId: user.user?.primaryCompanyMappingId || "",
                 })
             } else {
                 createForm.reset({
@@ -153,6 +169,9 @@ export function UserFormDialog({
                     phone: "",
                     position: "",
                     address: "",
+                    employeeLevelId: "",
+                    employeeGroupId: "",
+                    companyMappingId: "",
                 })
             }
         }
@@ -172,6 +191,9 @@ export function UserFormDialog({
                 position: values.position,
                 address: values.address,
                 roleIds: [],
+                employeeLevelId: values.employeeLevelId || undefined,
+                employeeGroupId: values.employeeGroupId || undefined,
+                companyMappingId: values.companyMappingId || undefined,
             })
             onOpenChange(false)
             onSuccess?.()
@@ -191,6 +213,9 @@ export function UserFormDialog({
                     username: values.username,
                     email: values.email,
                     isActive: values.isActive,
+                    employeeLevelId: values.employeeLevelId || undefined,
+                    employeeGroupId: values.employeeGroupId || undefined,
+                    companyMappingId: values.companyMappingId || undefined,
                 },
             })
 
@@ -219,19 +244,20 @@ export function UserFormDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
+            <ScrollableDialogContent className="sm:max-w-[600px]">
+                <ScrollableDialogHeader>
                     <DialogTitle>{isEditing ? "Edit User" : "Create New User"}</DialogTitle>
                     <DialogDescription>
                         {isEditing
                             ? "Update user credentials and employee details."
                             : "Create a new user account with employee details."}
                     </DialogDescription>
-                </DialogHeader>
+                </ScrollableDialogHeader>
 
                 {isEditing ? (
                     <Form {...editForm}>
-                        <form onSubmit={editForm.handleSubmit(onSubmitEdit)} className="space-y-4">
+                        <form onSubmit={editForm.handleSubmit(onSubmitEdit)} className="flex flex-1 flex-col min-h-0">
+                            <ScrollableDialogBody className="space-y-4">
                             {/* Credentials Section */}
                             <div className="space-y-1">
                                 <h4 className="text-sm font-medium text-muted-foreground">Account Credentials</h4>
@@ -394,7 +420,80 @@ export function UserFormDialog({
                                 )}
                             />
 
-                            <DialogFooter>
+                            {/* Organization Section */}
+                            <div className="space-y-1 pt-2">
+                                <h4 className="text-sm font-medium text-muted-foreground">Organization</h4>
+                                <Separator />
+                            </div>
+                            <FormField
+                                control={editForm.control}
+                                name="employeeLevelId"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Employee Level</FormLabel>
+                                        <FormControl>
+                                            <EmployeeLevelCombobox
+                                                value={field.value || ""}
+                                                onValueChange={field.onChange}
+                                                initialLabel={user?.user?.employeeLevelCode ? user.user.employeeLevelCode : undefined}
+                                                disabled={isPending}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={editForm.control}
+                                name="employeeGroupId"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Employee Group</FormLabel>
+                                        <FormControl>
+                                            <EmployeeGroupCombobox
+                                                value={field.value || ""}
+                                                onValueChange={field.onChange}
+                                                initialLabel={user?.user?.employeeGroupCode ? user.user.employeeGroupCode : undefined}
+                                                disabled={isPending}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={editForm.control}
+                                name="companyMappingId"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Primary Company Mapping</FormLabel>
+                                        <FormControl>
+                                            <CompanyMappingCombobox
+                                                value={field.value || ""}
+                                                onValueChange={field.onChange}
+                                                initialLabel={
+                                                    user?.user?.primaryCompanyName
+                                                        ? [user.user.primaryCompanyName, user.user.primaryDivisionName, user.user.primaryDepartmentName, user.user.primarySectionName].filter(Boolean).join(" › ")
+                                                        : undefined
+                                                }
+                                                disabled={isPending}
+                                            />
+                                        </FormControl>
+                                        <FormDescription>The user&apos;s primary organizational position</FormDescription>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
+                            {user?.user?.userId && (
+                                <div className="space-y-2">
+                                    <h5 className="text-xs font-medium text-muted-foreground">Assigned Mappings</h5>
+                                    <UserCompanyMappingsCard userId={user.user.userId} />
+                                </div>
+                            )}
+
+                            </ScrollableDialogBody>
+                            <ScrollableDialogFooter>
                                 <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isPending}>
                                     Cancel
                                 </Button>
@@ -402,12 +501,13 @@ export function UserFormDialog({
                                     {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                     Update
                                 </Button>
-                            </DialogFooter>
+                            </ScrollableDialogFooter>
                         </form>
                     </Form>
                 ) : (
                     <Form {...createForm}>
-                        <form onSubmit={createForm.handleSubmit(onSubmitCreate)} className="space-y-4">
+                        <form onSubmit={createForm.handleSubmit(onSubmitCreate)} className="flex flex-1 flex-col min-h-0">
+                            <ScrollableDialogBody className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <FormField
                                     control={createForm.control}
@@ -552,7 +652,54 @@ export function UserFormDialog({
                                 )}
                             />
 
-                            <DialogFooter>
+                            {/* Organization Section */}
+                            <div className="space-y-1 pt-2">
+                                <h4 className="text-sm font-medium text-muted-foreground">Organization</h4>
+                                <Separator />
+                            </div>
+                            <FormField
+                                control={createForm.control}
+                                name="employeeLevelId"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Employee Level</FormLabel>
+                                        <FormControl>
+                                            <EmployeeLevelCombobox value={field.value || ""} onValueChange={field.onChange} disabled={isPending} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={createForm.control}
+                                name="employeeGroupId"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Employee Group</FormLabel>
+                                        <FormControl>
+                                            <EmployeeGroupCombobox value={field.value || ""} onValueChange={field.onChange} disabled={isPending} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={createForm.control}
+                                name="companyMappingId"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Primary Company Mapping</FormLabel>
+                                        <FormControl>
+                                            <CompanyMappingCombobox value={field.value || ""} onValueChange={field.onChange} disabled={isPending} />
+                                        </FormControl>
+                                        <FormDescription>Optional. The user&apos;s primary organizational position.</FormDescription>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
+                            </ScrollableDialogBody>
+                            <ScrollableDialogFooter>
                                 <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isPending}>
                                     Cancel
                                 </Button>
@@ -560,11 +707,11 @@ export function UserFormDialog({
                                     {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                     Create
                                 </Button>
-                            </DialogFooter>
+                            </ScrollableDialogFooter>
                         </form>
                     </Form>
                 )}
-            </DialogContent>
+            </ScrollableDialogContent>
         </Dialog>
     )
 }

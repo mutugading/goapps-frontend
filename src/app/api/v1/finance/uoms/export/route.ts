@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
 
         const response = await client.exportUOMs(
             {
-                category: Number(searchParams.get("category")) || 0,
+                uomCategoryId: searchParams.get("uomCategoryId") || searchParams.get("uom_category_id") || "",
                 activeFilter: Number(searchParams.get("activeFilter") || searchParams.get("active_filter")) || 0,
             },
             metadata

@@ -5,7 +5,7 @@
 import { useQuery } from "@tanstack/react-query"
 
 import { createCrudHooks } from "@/lib/hooks"
-import { apiClient, buildQueryString } from "@/lib/api"
+import { apiClient } from "@/lib/api"
 import {
     type PermissionDetail,
     type ListPermissionsParams,

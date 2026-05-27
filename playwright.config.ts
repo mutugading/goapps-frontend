@@ -1,15 +1,17 @@
 import { defineConfig, devices } from "@playwright/test"
 
 /**
- * Playwright config for BI Executive Dashboard e2e.
+ * Playwright config for the frontend e2e suite (cost-calc + BI Executive Dashboard).
+ *
+ * Specs log in per-test via e2e/helpers/login.ts (loginAs(page, "superadmin")), so no
+ * global-setup/storageState is used.
  *
  * Prerequisites (full stack must be running):
- *   - finance gRPC :50051 + IAM gRPC :50052 (with migrations applied incl. bi_* + IAM 000015)
- *   - frontend dev/prod server on E2E_BASE_URL (default http://localhost:3000)
- *   - a seeded admin user; credentials via E2E_USER / E2E_PASSWORD env vars
+ *   - finance gRPC :50051 + IAM gRPC :50052 (migrations applied; BI needs finance 000300–000314
+ *     + IAM 000044), Redis, frontend on E2E_BASE_URL (default http://localhost:3000).
+ *   - seeded users (superadmin = admin@goapps.dev / admin123) per e2e/helpers/login.ts.
  *
- * First-time only: `npx playwright install chromium` (downloads the browser binary).
- *
+ * First-time only: `npx playwright install chromium`.
  * Run: `npm run test:e2e`
  */
 export default defineConfig({
@@ -22,10 +24,7 @@ export default defineConfig({
   use: {
     baseURL: process.env.E2E_BASE_URL ?? "http://localhost:3000",
     trace: "on-first-retry",
-    storageState: "e2e/.auth/state.json",
   },
-  // Logs in once and saves the authenticated storage state for all specs.
-  globalSetup: "./e2e/global-setup.ts",
   projects: [
     {
       name: "chromium",

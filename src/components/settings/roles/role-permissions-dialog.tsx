@@ -45,6 +45,7 @@ function RolePermissionsDialog({ open, onOpenChange, role }: RolePermissionsDial
     useEffect(() => {
         if (open && rolePermsData?.data) {
             const ids = new Set((rolePermsData.data || []).map((p) => p.permissionId))
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: sync state from fetched data when dialog opens
             setSelectedIds(ids)
             setOriginalIds(ids)
         }
@@ -53,6 +54,7 @@ function RolePermissionsDialog({ open, onOpenChange, role }: RolePermissionsDial
     // Expand all services by default
     useEffect(() => {
         if (permissionsData?.data) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: sync expanded state from fetched data
             setExpandedServices(new Set(permissionsData.data.map((s) => s.serviceName)))
         }
     }, [permissionsData])

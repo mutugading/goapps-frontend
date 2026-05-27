@@ -35,30 +35,19 @@ import {
 } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 
-import {
-  type UOM,
-  UOMCategory,
-  UOM_CATEGORY_FORM_OPTIONS,
-  uOMCategoryFromJSON,
-} from "@/types/finance/uom"
+import type { UOM } from "@/types/finance/uom"
+import { ActiveFilter } from "@/types/finance/uom"
 import { useCreateUOM, useUpdateUOM } from "@/hooks/finance/use-uom"
+import { useUOMCategories } from "@/hooks/finance/use-uom-category"
 
 // Form values interface
 interface UOMFormValues {
   uomCode: string
   uomName: string
-  uomCategory: number
+  uomCategoryId: string
   description: string
   isActive: boolean
 }
-
-// Valid category values (numeric enums from proto)
-const validCategoryValues = [
-  UOMCategory.UOM_CATEGORY_WEIGHT,
-  UOMCategory.UOM_CATEGORY_LENGTH,
-  UOMCategory.UOM_CATEGORY_VOLUME,
-  UOMCategory.UOM_CATEGORY_QUANTITY,
-]
 
 // Form validation schema
 const uomFormSchema = z.object({
@@ -74,12 +63,9 @@ const uomFormSchema = z.object({
     .string()
     .min(1, "Name is required")
     .max(100, "Name must be at most 100 characters"),
-  uomCategory: z
-    .number()
-    .refine(
-      (val) => validCategoryValues.includes(val),
-      "Please select a valid category"
-    ),
+  uomCategoryId: z
+    .string()
+    .min(1, "Please select a category"),
   description: z.string().max(500, "Description must be at most 500 characters"),
   isActive: z.boolean(),
 })
@@ -101,12 +87,24 @@ export function UOMFormDialog({
   const createMutation = useCreateUOM()
   const updateMutation = useUpdateUOM()
 
+  // Fetch active categories for create mode, but include inactive categories in edit mode
+  // so an existing UOM can still display and retain its currently selected category.
+  const { data: categoriesData } = useUOMCategories({
+    page: 1,
+    pageSize: 100,
+    ...(!isEditing ? { activeFilter: ActiveFilter.ACTIVE_FILTER_ACTIVE } : {}),
+    sortBy: "name",
+    sortOrder: "asc",
+  })
+
+  const categoryOptions = categoriesData?.data || []
+
   const form = useForm<UOMFormValues>({
     resolver: zodResolver(uomFormSchema) as never,
     defaultValues: {
       uomCode: "",
       uomName: "",
-      uomCategory: UOMCategory.UOM_CATEGORY_WEIGHT,
+      uomCategoryId: "",
       description: "",
       isActive: true,
     },
@@ -116,20 +114,18 @@ export function UOMFormDialog({
   useEffect(() => {
     if (open) {
       if (uom) {
-        // Editing mode - populate with existing values
         form.reset({
           uomCode: uom.uomCode || "",
           uomName: uom.uomName || "",
-          uomCategory: uom.uomCategory,
+          uomCategoryId: uom.uomCategoryId || "",
           description: uom.description || "",
           isActive: uom.isActive ?? true,
         })
       } else {
-        // Create mode - reset to empty
         form.reset({
           uomCode: "",
           uomName: "",
-          uomCategory: UOMCategory.UOM_CATEGORY_WEIGHT,
+          uomCategoryId: "",
           description: "",
           isActive: true,
         })
@@ -145,7 +141,7 @@ export function UOMFormDialog({
           data: {
             uomId: uom.uomId,
             uomName: values.uomName,
-            uomCategory: values.uomCategory,
+            uomCategoryId: values.uomCategoryId,
             description: values.description || "",
             isActive: values.isActive,
           },
@@ -154,7 +150,7 @@ export function UOMFormDialog({
         await createMutation.mutateAsync({
           uomCode: values.uomCode,
           uomName: values.uomName,
-          uomCategory: values.uomCategory,
+          uomCategoryId: values.uomCategoryId,
           description: values.description || "",
         })
       }
@@ -229,13 +225,13 @@ export function UOMFormDialog({
 
             <FormField
               control={form.control}
-              name="uomCategory"
+              name="uomCategoryId"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Category</FormLabel>
                   <Select
-                    onValueChange={(val) => field.onChange(Number(val))}
-                    value={String(field.value)}
+                    onValueChange={field.onChange}
+                    value={field.value}
                     disabled={isPending}
                   >
                     <FormControl>
@@ -244,9 +240,9 @@ export function UOMFormDialog({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {UOM_CATEGORY_FORM_OPTIONS.map((option) => (
-                        <SelectItem key={option.value} value={String(option.value)}>
-                          {option.label}
+                      {categoryOptions.map((cat) => (
+                        <SelectItem key={cat.uomCategoryId} value={cat.uomCategoryId}>
+                          {cat.categoryName} ({cat.categoryCode})
                         </SelectItem>
                       ))}
                     </SelectContent>

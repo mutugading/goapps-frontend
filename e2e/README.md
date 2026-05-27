@@ -15,22 +15,21 @@ These specs drive the **real, running stack** — they are NOT hermetic.
    - Redis + (optionally) RabbitMQ from `docker compose up -d`.
 2. **Frontend up** on `E2E_BASE_URL` (default `http://localhost:3000`): `npm run dev` or
    `npm run build && npm start`.
-3. **A seeded admin login.** Credentials via env:
-   - `E2E_USER` (default `admin`)
-   - `E2E_PASSWORD` (falls back to `SEED_ADMIN_PASSWORD`, else `admin`)
+3. **Seeded users** matching `e2e/helpers/login.ts` (superadmin = `admin@goapps.dev` /
+   `admin123`). Specs log in per-test via `loginAs(page, "superadmin")` in `beforeEach`.
 4. **Browser binary (first run only):** `npx playwright install chromium`.
 
 ## Run
 
 ```bash
 # from goapps-frontend/
-E2E_USER=admin E2E_PASSWORD=<seed-admin-pw> npm run test:e2e
+npm run test:e2e
 # interactive:
 npm run test:e2e:ui
 ```
 
-`e2e/global-setup.ts` logs in once via the login form and saves the authenticated session
-to `e2e/.auth/state.json` (git-ignored); every spec reuses it.
+Login is per-test via `e2e/helpers/login.ts` (shared with the cost-calc specs) — no
+global storage state.
 
 ## Specs
 

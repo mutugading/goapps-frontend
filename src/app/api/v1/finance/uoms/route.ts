@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
                 page: Number(searchParams.get("page")) || 1,
                 pageSize: Number(searchParams.get("pageSize") || searchParams.get("page_size")) || 10,
                 search: searchParams.get("search") || "",
-                category: Number(searchParams.get("category")) || 0,
+                uomCategoryId: searchParams.get("uomCategoryId") || searchParams.get("uom_category_id") || "",
                 activeFilter: Number(searchParams.get("activeFilter") || searchParams.get("active_filter")) || 0,
                 sortBy: searchParams.get("sortBy") || searchParams.get("sort_by") || "",
                 sortOrder: searchParams.get("sortOrder") || searchParams.get("sort_order") || "",

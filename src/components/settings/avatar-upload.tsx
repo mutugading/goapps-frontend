@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback } from "react"
 import { toast } from "sonner"
-import { Loader2, Camera, X, Upload } from "lucide-react"
+import { Loader2, Camera, Upload } from "lucide-react"
 import { useQueryClient } from "@tanstack/react-query"
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"

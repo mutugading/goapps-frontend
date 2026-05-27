@@ -4,7 +4,11 @@ import { useAuth } from "@/providers/auth-provider"
 import { useRouter } from "next/navigation"
 import { useEffect } from "react"
 import { AppSidebar } from "@/components/app-sidebar"
-import { DynamicBreadcrumb } from "@/components/common/dynamic-breadcrumb"
+import {
+    BreadcrumbOverrideProvider,
+    DynamicBreadcrumb,
+} from "@/components/common/dynamic-breadcrumb"
+import { NotificationBell } from "@/components/iam/notifications/notification-bell"
 import { Footer } from "@/components/common/footer"
 import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -51,7 +55,7 @@ export default function DashboardLayout({
 }: {
     children: React.ReactNode
 }) {
-    const { isAuthenticated, isLoading } = useAuth()
+    const { isAuthenticated, isLoading, user } = useAuth()
     const router = useRouter()
 
     useEffect(() => {
@@ -59,6 +63,13 @@ export default function DashboardLayout({
             router.push("/")
         }
     }, [isLoading, isAuthenticated, router])
+
+    // Redirect to email verification if authenticated but email not verified
+    useEffect(() => {
+        if (!isLoading && isAuthenticated && user && user.emailVerified === false) {
+            router.push("/verify-email")
+        }
+    }, [isLoading, isAuthenticated, user, router])
 
     // Show skeleton while checking auth
     if (isLoading) {
@@ -72,27 +83,34 @@ export default function DashboardLayout({
 
     return (
         <SidebarProvider>
+            <BreadcrumbOverrideProvider>
             <AppSidebar />
             <SidebarInset>
                 {/* Sticky header with breadcrumbs */}
                 <header className="sticky top-0 z-50 flex h-16 shrink-0 items-center gap-2 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
-                    <div className="flex items-center gap-2 px-4">
-                        <SidebarTrigger className="-ml-1" />
+                    <div className="flex flex-1 items-center gap-2 px-4 min-w-0">
+                        <SidebarTrigger className="-ml-1 shrink-0" />
                         <Separator
                             orientation="vertical"
-                            className="mr-2 data-[orientation=vertical]:h-4"
+                            className="mr-2 shrink-0 data-[orientation=vertical]:h-4"
                         />
-                        <DynamicBreadcrumb />
+                        <div className="min-w-0 flex-1 truncate">
+                            <DynamicBreadcrumb />
+                        </div>
+                        <div className="flex shrink-0 items-center gap-2">
+                            <NotificationBell />
+                        </div>
                     </div>
                 </header>
                 {/* Main content */}
-                <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-                    <main className="flex-1 pt-4">
+                <div className="flex flex-1 flex-col gap-4 p-4 pt-0 min-w-0">
+                    <main className="flex-1 pt-4 min-w-0 w-full">
                         {children}
                     </main>
                     <Footer />
                 </div>
             </SidebarInset>
+            </BreadcrumbOverrideProvider>
         </SidebarProvider>
     )
 }

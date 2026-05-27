@@ -1,8 +1,8 @@
 "use client"
 
-import { Bell, Search } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Search } from "lucide-react"
 import { Input } from "@/components/ui/input"
+import { NotificationBell } from "./notification-bell"
 import { ThemeToggle } from "./theme-toggle"
 import { UserNav } from "./user-nav"
 import { SidebarTrigger } from "@/components/ui/sidebar"
@@ -28,12 +28,7 @@ export function Header() {
 
             <div className="flex items-center gap-2 ml-auto">
                 {/* Notifications */}
-                <Button variant="ghost" size="icon" className="relative">
-                    <Bell className="h-5 w-5" />
-                    <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-500 text-[10px] font-medium text-white flex items-center justify-center">
-                        3
-                    </span>
-                </Button>
+                <NotificationBell />
 
                 {/* Theme Toggle */}
                 <ThemeToggle />

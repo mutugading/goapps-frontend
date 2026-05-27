@@ -109,7 +109,7 @@ function writeFile(filePath: string, content: string): void {
 
 // Generate types file
 function generateTypes(config: ReturnType<typeof parseArgs>): string {
-  const { service, entity, name, idField } = config
+  const { service, entity, name } = config
   const Pascal = toPascalCase(entity)
   const Camel = toCamelCase(entity)
 
@@ -233,7 +233,6 @@ function generateHooks(config: ReturnType<typeof parseArgs>): string {
   const { service, entity, name, idField } = config
   const Pascal = toPascalCase(entity)
   const Camel = toCamelCase(entity)
-  const kebab = toKebabCase(entity)
 
   return `"use client"
 
@@ -1069,7 +1068,6 @@ function main() {
 
   const config = parseArgs()
   const { service, entity, idField } = config
-  const kebab = toKebabCase(entity)
 
   console.log(`Generating feature: ${config.name}`)
   console.log(`  Service: ${service}`)

@@ -462,11 +462,6 @@ export function buildBreadcrumbTrail(
 
   function search(items: MenuItem[], ancestors: BreadcrumbTrailItem[]): boolean {
     for (const item of items) {
-      const current: BreadcrumbTrailItem = {
-        label: item.title,
-        href: item.url,
-      }
-
       if (item.url === targetPath) {
         // Found the target — build trail
         trail.push({ label: "Home", href: "/dashboard" })

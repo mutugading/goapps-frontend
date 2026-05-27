@@ -33,7 +33,6 @@ import { useUrlState } from "@/lib/hooks"
 import {
   type UOM,
   type ListUOMsParams,
-  UOMCategory,
   ActiveFilter,
 } from "@/types/finance/uom"
 
@@ -42,7 +41,6 @@ const defaultFilters: ListUOMsParams = {
   page: 1,
   pageSize: 10,
   search: "",
-  category: UOMCategory.UOM_CATEGORY_UNSPECIFIED,
   activeFilter: ActiveFilter.ACTIVE_FILTER_UNSPECIFIED,
   sortBy: "code",
   sortOrder: "asc",
@@ -82,7 +80,7 @@ function UOMPageContent() {
 
   const handleExport = async () => {
     await exportMutation.mutateAsync({
-      category: filters.category,
+      uomCategoryId: filters.uomCategoryId,
       activeFilter: filters.activeFilter,
     })
   }

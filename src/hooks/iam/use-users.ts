@@ -14,7 +14,6 @@ import {
     type ListUsersParams,
     type ListUsersResponse,
     type CreateUserResponse,
-    type UpdateUserResponse,
     type DeleteUserResponse,
     type GetUserDetailResponse,
     ListUsersResponseParser,

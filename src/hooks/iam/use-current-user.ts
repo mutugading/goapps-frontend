@@ -5,7 +5,7 @@
 
 import { useQuery } from "@tanstack/react-query"
 import { apiClient } from "@/lib/api"
-import { AuthUser, GetCurrentUserResponse } from "@/types/generated/iam/v1/auth"
+import { AuthUser } from "@/types/generated/iam/v1/auth"
 import { useUserProfile } from "./use-user-profile"
 
 // Query keys for current user
@@ -27,6 +27,9 @@ function parseAuthUser(data: unknown): AuthUser | null {
         roles: Array.isArray(obj.roles) ? obj.roles : [],
         permissions: Array.isArray(obj.permissions) ? obj.permissions : [],
         twoFactorEnabled: Boolean(obj.twoFactorEnabled ?? obj.two_factor_enabled ?? false),
+        emailVerified: Boolean(obj.emailVerified ?? obj.email_verified ?? false),
+        sectionId: (obj.sectionId ?? obj.section_id ?? "") as string,
+        departmentId: (obj.departmentId ?? obj.department_id ?? "") as string,
     }
 }
 

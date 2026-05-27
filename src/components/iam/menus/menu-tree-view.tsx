@@ -8,7 +8,6 @@ import {
     Trash2,
     Shield,
     Plus,
-    Eye,
     EyeOff,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"

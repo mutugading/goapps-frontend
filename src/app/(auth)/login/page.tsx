@@ -3,13 +3,13 @@
 // Login page with split-layout AuthCard
 // Handles login flow with optional 2FA
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { LoginForm } from "@/components/auth/login-form"
 import { AuthCard, AuthHeader, AuthFooter } from "@/components/auth/auth-card"
 import { useAuth } from "@/providers/auth-provider"
-import { AUTH_API, AUTH_ROUTES } from "@/lib/auth/config"
+import { AUTH_ROUTES } from "@/lib/auth/config"
 
 interface LoginData {
     username: string
@@ -19,11 +19,20 @@ interface LoginData {
 
 export default function LoginPage() {
     const router = useRouter()
-    const { login } = useAuth()
+    const { login, isAuthenticated, isLoading: authLoading } = useAuth()
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [requires2FA, setRequires2FA] = useState(false)
     const [credentials, setCredentials] = useState<{ username: string; password: string } | null>(null)
+
+    // If the user is already authenticated (real client-side state, not just stale
+    // cookies), skip showing the form and go straight to the dashboard. The proxy
+    // intentionally no longer does this redirect to avoid stale-cookie glitches.
+    useEffect(() => {
+        if (!authLoading && isAuthenticated) {
+            router.replace(AUTH_ROUTES.DASHBOARD)
+        }
+    }, [authLoading, isAuthenticated, router])
 
     const handleLogin = async (data: LoginData) => {
         setIsLoading(true)
@@ -48,6 +57,12 @@ export default function LoginPage() {
 
             if (!result.success) {
                 setError(result.error || "Login failed. Please try again.")
+                return
+            }
+
+            // If email verification is required, redirect to verification page
+            if (result.requiresEmailVerification) {
+                router.push("/verify-email")
                 return
             }
 

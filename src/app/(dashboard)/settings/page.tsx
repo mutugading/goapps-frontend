@@ -11,7 +11,6 @@ import { useTheme } from "next-themes"
 import { useState, useEffect } from "react"
 import { toast } from "sonner"
 import {
-    Monitor,
     Bell,
     Globe,
     Palette,
@@ -27,6 +26,7 @@ export default function SettingsPage() {
     })
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: prevent hydration mismatch for theme-dependent UI
         setMounted(true)
     }, [])
 

@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test"
+import { loginAs } from "./helpers/login"
 
 // Admin wizard: walk the 7 steps and create a new dashboard end-to-end (zero-JSON).
 // Requires demo fact data so the Data-Binding dropdowns are populated (type=MIS).
@@ -6,6 +7,11 @@ import { test, expect } from "@playwright/test"
 const CODE = `E2E_DASH_${Date.now()}`
 
 test.describe("BI admin wizard", () => {
+  test.beforeEach(async ({ page }) => {
+    await loginAs(page, "superadmin")
+  })
+
+
   test("admin panel tabs render", async ({ page }) => {
     await page.goto("/finance/bi/admin")
     await expect(page.getByText("Dashboard Administration")).toBeVisible()

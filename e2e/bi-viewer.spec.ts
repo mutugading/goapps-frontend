@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test"
+import { loginAs } from "./helpers/login"
 
 // Viewer flow: landing → open seeded EBITDA dashboard → KPIs + chart render →
 // change compare mode → drill into a waterfall segment → breadcrumb back.
@@ -7,6 +8,10 @@ import { test, expect } from "@playwright/test"
 // and demo fact data exists (000314).
 
 test.describe("BI viewer", () => {
+  test.beforeEach(async ({ page }) => {
+    await loginAs(page, "superadmin")
+  })
+
   test("landing lists dashboards and links to the viewer", async ({ page }) => {
     await page.goto("/finance/bi")
     await expect(page.getByText("Executive Dashboards")).toBeVisible()
