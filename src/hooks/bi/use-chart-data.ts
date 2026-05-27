@@ -35,7 +35,7 @@ export function useDashboardData(code: string | undefined, state: ViewerState, r
     queryKey: [...dashboardKeys.all, "data", code, state] as const,
     queryFn: async () => {
       const qs = buildDataQuery(state)
-      const raw = await apiClient.get<unknown>(`/api/v1/finance/bi/dashboards/${code}/data?${qs}`)
+      const raw = await apiClient.get<unknown>(`/api/v1/finance/bi/dashboards/by-code/${code}/data?${qs}`)
       const parsed: GetDashboardDataResponse = GetDashboardDataResponseParser.fromJSON(raw)
       if (!parsed.base?.isSuccess) throw new Error(parsed.base?.message ?? "Failed to load chart data")
       return parsed.data
