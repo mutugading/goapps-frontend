@@ -20,6 +20,8 @@ function buildDataQuery(state: ViewerState): string {
   }
   params.set("compare", state.compare)
   if (state.drillPath.length > 0) params.set("drill_path", state.drillPath.join(","))
+  if (state.group1Filter?.length) params.set("group1_filter", state.group1Filter.join(","))
+  if (state.group2Filter?.length) params.set("group2_filter", state.group2Filter.join(","))
   return params.toString()
 }
 

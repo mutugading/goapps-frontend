@@ -2,7 +2,7 @@
 
 // ViewerPage — composes the full executive-dashboard viewer for one dashboard code.
 
-import { useRef, useState, useCallback } from "react"
+import { useRef, useCallback } from "react"
 import { RefreshCw } from "lucide-react"
 
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
@@ -31,11 +31,16 @@ export function ViewerPage({ code }: { code: string }) {
   const chartCardRef = useRef<HTMLDivElement>(null)
   const { hasPermission } = usePermission()
 
-  const [state, setState] = useUrlState<ViewerState>({ defaultValues: DEFAULT_VIEWER_STATE })
-
-  // Filter chip state (group_1 = Delivery Type, group_2 = Category)
-  const [group1Filter, setGroup1Filter] = useState<string[]>([])
-  const [group2Filter, setGroup2Filter] = useState<string[]>([])
+  const [state, setState] = useUrlState<ViewerState>({
+    defaultValues: DEFAULT_VIEWER_STATE,
+    serialize: (key, value) => {
+      // Suppress empty arrays so they don't pollute the URL.
+      if (Array.isArray(value)) return value.length > 0 ? JSON.stringify(value) : undefined
+      if (value === undefined || value === null || value === "") return undefined
+      if (typeof value === "string") return value || undefined
+      return JSON.stringify(value)
+    },
+  })
 
   const { data: dashboard, isLoading: dashLoading, isError: dashError } = useDashboardByCode(code)
 
@@ -56,18 +61,26 @@ export function ViewerPage({ code }: { code: string }) {
     refetch,
   } = useDashboardData(code, state, refreshMs)
 
-  // Toggle helpers
+  // Toggle helpers — mutate URL state so the data query refetches automatically.
   const toggleGroup1 = useCallback((v: string) => {
-    setGroup1Filter((prev) =>
-      prev.includes(v) ? prev.filter((x) => x !== v) : [...prev, v]
-    )
-  }, [])
+    setState((prev) => {
+      const current = prev.group1Filter ?? []
+      return {
+        ...prev,
+        group1Filter: current.includes(v) ? current.filter((x) => x !== v) : [...current, v],
+      }
+    })
+  }, [setState])
 
   const toggleGroup2 = useCallback((v: string) => {
-    setGroup2Filter((prev) =>
-      prev.includes(v) ? prev.filter((x) => x !== v) : [...prev, v]
-    )
-  }, [])
+    setState((prev) => {
+      const current = prev.group2Filter ?? []
+      return {
+        ...prev,
+        group2Filter: current.includes(v) ? current.filter((x) => x !== v) : [...current, v],
+      }
+    })
+  }, [setState])
 
   if (dashLoading) return <ViewerSkeleton />
   if (dashError || !dashboard) return <ViewerErrorState message="Dashboard not found" />
@@ -80,6 +93,8 @@ export function ViewerPage({ code }: { code: string }) {
 
   const group1Values = distincts?.group1s ?? []
   const group2Values = distincts?.group2s ?? []
+  const group1Filter = state.group1Filter ?? []
+  const group2Filter = state.group2Filter ?? []
 
   return (
     <div className="space-y-6">
@@ -103,7 +118,7 @@ export function ViewerPage({ code }: { code: string }) {
               values={group1Values}
               selected={group1Filter}
               onToggle={toggleGroup1}
-              onSelectAll={() => setGroup1Filter([])}
+              onSelectAll={() => setState({ ...state, group1Filter: [] })}
             />
           )}
           {filterChipFields.includes("group_2") && group2Values.length > 0 && (
@@ -112,7 +127,7 @@ export function ViewerPage({ code }: { code: string }) {
               values={group2Values}
               selected={group2Filter}
               onToggle={toggleGroup2}
-              onSelectAll={() => setGroup2Filter([])}
+              onSelectAll={() => setState({ ...state, group2Filter: [] })}
             />
           )}
         </div>

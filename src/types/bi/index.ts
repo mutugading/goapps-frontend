@@ -158,6 +158,10 @@ export interface ViewerState {
   drillPath: string[]
   /** Active chart type override selected by the viewer. Empty string = use dashboard primary. */
   chartType?: string
+  /** Selected group_1 values from filter chips (Delivery Type). Empty = show all. */
+  group1Filter: string[]
+  /** Selected group_2 values from filter chips (Category). Empty = show all. */
+  group2Filter: string[]
 }
 
 export const DEFAULT_VIEWER_STATE: ViewerState = {
@@ -165,6 +169,8 @@ export const DEFAULT_VIEWER_STATE: ViewerState = {
   compare: "NONE",
   drillPath: [],
   chartType: "",
+  group1Filter: [],
+  group2Filter: [],
 }
 
 /** Simplified list params for hooks. */
