@@ -10,7 +10,8 @@ import type { ChartDataResponse, GetDashboardDataResponse, ViewerState } from "@
 import { GetDashboardDataResponseParser } from "@/types/bi"
 import { dashboardKeys } from "./use-dashboard"
 
-/** Build the query string for the chart-data BFF route from viewer state. */
+/** Build the query string for the chart-data BFF route from viewer state.
+ *  NOTE: selectedPeriod is a client-side filter — it is intentionally excluded here. */
 function buildDataQuery(state: ViewerState): string {
   const params = new URLSearchParams()
   params.set("period", state.period)
@@ -24,6 +25,9 @@ function buildDataQuery(state: ViewerState): string {
   if (state.group2Filter?.length) params.set("group2_filter", state.group2Filter.join(","))
   return params.toString()
 }
+
+/** Chart types that represent a trend over time — month selector is hidden for these. */
+export const TREND_CHART_TYPES = new Set(["line", "area", "multi_line"])
 
 /**
  * useDashboardData fetches the shaped chart payload for the viewer.

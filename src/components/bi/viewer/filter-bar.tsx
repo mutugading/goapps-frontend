@@ -1,6 +1,6 @@
 "use client"
 
-// Viewer filter bar — period preset dropdown + custom range + compare toggle.
+// Viewer filter bar — period preset dropdown + custom range + compare toggle + month selector.
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
@@ -13,6 +13,7 @@ import {
   PERIOD_PRESET_LABELS,
   COMPARE_LABELS,
 } from "@/types/bi"
+import { TREND_CHART_TYPES } from "@/hooks/bi/use-chart-data"
 
 interface FilterBarProps {
   state: ViewerState
@@ -23,6 +24,11 @@ interface FilterBarProps {
   primaryChartType?: string
   /** Alternative chart types the viewer can switch to (from chart_config.available_chart_types). */
   availableChartTypes?: string[]
+  /**
+   * Period labels returned by the main chart query (e.g. ["202404", "202405", ...]).
+   * Used to populate the Month selector when the active chart is categorical.
+   */
+  categories?: string[]
 }
 
 /** Human-readable label for a chart type string. */
@@ -46,9 +52,22 @@ function humanizeChartType(t: string): string {
   return labels[t] ?? t.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
-export function FilterBar({ state, onChange, compareModes, primaryChartType = "", availableChartTypes = [] }: FilterBarProps) {
+export function FilterBar({
+  state,
+  onChange,
+  compareModes,
+  primaryChartType = "",
+  availableChartTypes = [],
+  categories = [],
+}: FilterBarProps) {
   const availableCompares: CompareKey[] = ["NONE", ...compareModes.filter((c) => c !== "NONE")]
   const activeChartType = state.chartType || primaryChartType
+
+  // Show month selector when chart is categorical (not a trend type) and data has loaded.
+  const showMonthSelector = !TREND_CHART_TYPES.has(activeChartType) && categories.length > 0
+
+  // Default to latest category when selectedPeriod is unset.
+  const effectivePeriod = state.selectedPeriod ?? categories[categories.length - 1] ?? ""
 
   return (
     <div className="flex flex-wrap items-center gap-4 rounded-lg border bg-card p-4">
@@ -71,6 +90,22 @@ export function FilterBar({ state, onChange, compareModes, primaryChartType = ""
           </SelectContent>
         </Select>
       </div>
+
+      {/* Month selector — visible for categorical chart types once data is loaded */}
+      {showMonthSelector && (
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Month</span>
+          <select
+            value={effectivePeriod}
+            onChange={(e) => onChange({ ...state, selectedPeriod: e.target.value })}
+            className="rounded border border-border bg-background px-2 py-1 text-xs"
+          >
+            {[...categories].reverse().map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {/* Custom date range */}
       {state.period === "CUSTOM" && (

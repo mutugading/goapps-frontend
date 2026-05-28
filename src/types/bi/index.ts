@@ -162,6 +162,12 @@ export interface ViewerState {
   group1Filter: string[]
   /** Selected group_2 values from filter chips (Category). Empty = show all. */
   group2Filter: string[]
+  /**
+   * Selected period (YYYYMM) for waterfall/bar breakdown and secondary data_table filtering.
+   * Defaults to the latest available period in the loaded chart data.
+   * Hidden when the active chart type is a trend type (line/area/multi_line).
+   */
+  selectedPeriod?: string
 }
 
 export const DEFAULT_VIEWER_STATE: ViewerState = {
@@ -171,6 +177,7 @@ export const DEFAULT_VIEWER_STATE: ViewerState = {
   chartType: "",
   group1Filter: [],
   group2Filter: [],
+  selectedPeriod: undefined,
 }
 
 /** Simplified list params for hooks. */

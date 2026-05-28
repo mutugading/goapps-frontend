@@ -96,6 +96,12 @@ export function ViewerPage({ code }: { code: string }) {
   const group1Filter = state.group1Filter ?? []
   const group2Filter = state.group2Filter ?? []
 
+  // Categories from chart data — used to drive the month selector in FilterBar.
+  const categories = chartData?.categories ?? []
+
+  // Effective selected period: use URL state if set, otherwise default to latest available.
+  const effectiveSelectedPeriod = state.selectedPeriod ?? categories[categories.length - 1]
+
   return (
     <div className="space-y-6">
       <PageHeader title={dashboard.dashboardTitle} subtitle={dashboard.description}>
@@ -108,6 +114,7 @@ export function ViewerPage({ code }: { code: string }) {
         compareModes={compareModes}
         primaryChartType={primaryChartType}
         availableChartTypes={availableChartTypes}
+        categories={categories}
       />
 
       {hasFilterChips && (group1Values.length > 0 || group2Values.length > 0) && (
@@ -171,7 +178,11 @@ export function ViewerPage({ code }: { code: string }) {
       </Card>
 
       {chartData && dashboard.layoutConfig && (
-        <SecondaryGrid layoutConfig={dashboard.layoutConfig as Record<string, unknown>} data={chartData} />
+        <SecondaryGrid
+          layoutConfig={dashboard.layoutConfig as Record<string, unknown>}
+          data={chartData}
+          selectedPeriod={effectiveSelectedPeriod}
+        />
       )}
     </div>
   )
