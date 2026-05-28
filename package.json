@@ -12,7 +12,9 @@
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
     "generate:feature": "npx tsx scripts/generate-feature.ts",
-    "generate:proto": "cd ../goapps-shared-proto && buf generate --template buf.gen.ts.yaml"
+    "generate:proto": "cd ../goapps-shared-proto && buf generate --template buf.gen.ts.yaml",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
     "@bufbuild/protobuf": "^2.11.0",
@@ -37,6 +39,9 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "date-fns": "^4.1.0",
+    "echarts": "^6.1.0",
+    "echarts-for-react": "^3.0.6",
+    "html-to-image": "^1.11.13",
     "jwt-decode": "^4.0.0",
     "lucide-react": "^0.563.0",
     "next": "^16.2.1",
@@ -44,6 +49,7 @@
     "qrcode.react": "^4.2.0",
     "radix-ui": "^1.4.3",
     "react": "19.2.3",
+    "react-colorful": "^5.7.0",
     "react-dom": "19.2.3",
     "react-hook-form": "^7.71.1",
     "recharts": "^2.15.4",
@@ -54,6 +60,7 @@
   },
   "devDependencies": {
     "@bufbuild/buf": "^1.65.0",
+    "@playwright/test": "^1.60.0",
     "@tailwindcss/postcss": "^4",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.3",

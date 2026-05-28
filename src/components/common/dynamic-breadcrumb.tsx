@@ -116,6 +116,13 @@ function generateBreadcrumbsFromPath(pathname: string): BreadcrumbItemType[] {
         return [{ label: "Home" }]
     }
 
+    // Pure UUID route params (e.g. /finance/bi/admin/{id}/edit) are not navigable on their
+    // own and render as an unreadable hash that 404s when clicked. Drop them from the trail
+    // unless they are the final segment (detail pages, whose tail label is overridden via
+    // useBreadcrumbOverride and which render non-clickably as the current page anyway).
+    const isUuid = (s: string) =>
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s)
+
     const breadcrumbs: BreadcrumbItemType[] = []
     let currentPath = ""
 
@@ -125,6 +132,10 @@ function generateBreadcrumbsFromPath(pathname: string): BreadcrumbItemType[] {
         const segment = segments[i]
         currentPath += `/${segment}`
         const isLast = i === segments.length - 1
+
+        if (isUuid(segment) && !isLast) {
+            continue
+        }
 
         const config = breadcrumbConfig[currentPath]
 
