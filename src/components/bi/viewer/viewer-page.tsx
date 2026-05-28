@@ -2,7 +2,7 @@
 
 // ViewerPage — composes the full executive-dashboard viewer for one dashboard code.
 
-import { useRef } from "react"
+import { useRef, useState, useCallback } from "react"
 import { RefreshCw } from "lucide-react"
 
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
@@ -13,6 +13,7 @@ import { useUrlState } from "@/lib/hooks"
 import { usePermission } from "@/lib/hooks/use-permission"
 import { useDashboardByCode } from "@/hooks/bi/use-dashboard"
 import { useDashboardData } from "@/hooks/bi/use-chart-data"
+import { useFactDistincts } from "@/hooks/bi/use-fact-distincts"
 import { chartTypeToString, periodeGrainToString, type ViewerState, DEFAULT_VIEWER_STATE, type CompareKey } from "@/types/bi"
 import { isEmpty } from "@/lib/bi/data-adapter"
 
@@ -20,6 +21,7 @@ import { ChartEngine } from "@/components/bi/chart-engine/chart-engine"
 import { ExportPngButton } from "@/components/bi/chart-engine/export-png-button"
 import { FullscreenButton } from "@/components/bi/chart-engine/fullscreen-button"
 import { FilterBar } from "./filter-bar"
+import { FilterChips } from "./filter-chips"
 import { KpiGrid } from "./kpi-grid"
 import { DrillBreadcrumb } from "./drill-breadcrumb"
 import { SecondaryGrid } from "./secondary-grid"
@@ -31,7 +33,16 @@ export function ViewerPage({ code }: { code: string }) {
 
   const [state, setState] = useUrlState<ViewerState>({ defaultValues: DEFAULT_VIEWER_STATE })
 
+  // Filter chip state (group_1 = Delivery Type, group_2 = Category)
+  const [group1Filter, setGroup1Filter] = useState<string[]>([])
+  const [group2Filter, setGroup2Filter] = useState<string[]>([])
+
   const { data: dashboard, isLoading: dashLoading, isError: dashError } = useDashboardByCode(code)
+
+  // Load distinct group values when the dashboard has filter_chips configured
+  const filterChipFields = (dashboard?.chartConfig?.["filter_chips"] as string[] | undefined) ?? []
+  const hasFilterChips = filterChipFields.length > 0
+  const { data: distincts } = useFactDistincts(hasFilterChips ? (dashboard?.filterType ?? "") : "")
 
   const refreshMs = dashboard
     ? (dashboard.refreshIntervalSec || dashboard.cacheTtlSec || 0) * 1000
@@ -45,11 +56,27 @@ export function ViewerPage({ code }: { code: string }) {
     refetch,
   } = useDashboardData(code, state, refreshMs)
 
+  // Toggle helpers
+  const toggleGroup1 = useCallback((v: string) => {
+    setGroup1Filter((prev) =>
+      prev.includes(v) ? prev.filter((x) => x !== v) : [...prev, v]
+    )
+  }, [])
+
+  const toggleGroup2 = useCallback((v: string) => {
+    setGroup2Filter((prev) =>
+      prev.includes(v) ? prev.filter((x) => x !== v) : [...prev, v]
+    )
+  }, [])
+
   if (dashLoading) return <ViewerSkeleton />
   if (dashError || !dashboard) return <ViewerErrorState message="Dashboard not found" />
 
   const compareModes = (dashboard.compareModes ?? []).map(compareEnumToKey).filter(Boolean) as CompareKey[]
   const chartType = chartTypeToString(dashboard.chartType)
+
+  const group1Values = distincts?.group1s ?? []
+  const group2Values = distincts?.group2s ?? []
 
   return (
     <div className="space-y-6">
@@ -58,6 +85,29 @@ export function ViewerPage({ code }: { code: string }) {
       </PageHeader>
 
       <FilterBar state={state} onChange={setState} compareModes={compareModes} />
+
+      {hasFilterChips && (group1Values.length > 0 || group2Values.length > 0) && (
+        <div className="flex flex-col gap-2 rounded-lg border bg-card px-4 py-3">
+          {filterChipFields.includes("group_1") && group1Values.length > 0 && (
+            <FilterChips
+              label="Delivery Type"
+              values={group1Values}
+              selected={group1Filter}
+              onToggle={toggleGroup1}
+              onSelectAll={() => setGroup1Filter([])}
+            />
+          )}
+          {filterChipFields.includes("group_2") && group2Values.length > 0 && (
+            <FilterChips
+              label="Category"
+              values={group2Values}
+              selected={group2Filter}
+              onToggle={toggleGroup2}
+              onSelectAll={() => setGroup2Filter([])}
+            />
+          )}
+        </div>
+      )}
 
       {chartData && <KpiGrid kpis={chartData.kpis ?? []} />}
 
