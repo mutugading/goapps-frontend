@@ -156,12 +156,15 @@ export interface ViewerState {
   periodTo?: string
   compare: CompareKey
   drillPath: string[]
+  /** Active chart type override selected by the viewer. Empty string = use dashboard primary. */
+  chartType?: string
 }
 
 export const DEFAULT_VIEWER_STATE: ViewerState = {
   period: "L12M",
   compare: "NONE",
   drillPath: [],
+  chartType: "",
 }
 
 /** Simplified list params for hooks. */

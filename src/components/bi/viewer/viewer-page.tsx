@@ -73,7 +73,10 @@ export function ViewerPage({ code }: { code: string }) {
   if (dashError || !dashboard) return <ViewerErrorState message="Dashboard not found" />
 
   const compareModes = (dashboard.compareModes ?? []).map(compareEnumToKey).filter(Boolean) as CompareKey[]
-  const chartType = chartTypeToString(dashboard.chartType)
+  const primaryChartType = chartTypeToString(dashboard.chartType)
+  const availableChartTypes = (dashboard.chartConfig?.["available_chart_types"] as string[] | undefined) ?? []
+  // Use the viewer-selected chart type if set, otherwise fall back to the dashboard primary.
+  const chartType = state.chartType || primaryChartType
 
   const group1Values = distincts?.group1s ?? []
   const group2Values = distincts?.group2s ?? []
@@ -84,7 +87,13 @@ export function ViewerPage({ code }: { code: string }) {
         <DataFreshnessBadge timestamp={chartData?.meta?.asOf} />
       </PageHeader>
 
-      <FilterBar state={state} onChange={setState} compareModes={compareModes} />
+      <FilterBar
+        state={state}
+        onChange={setState}
+        compareModes={compareModes}
+        primaryChartType={primaryChartType}
+        availableChartTypes={availableChartTypes}
+      />
 
       {hasFilterChips && (group1Values.length > 0 || group2Values.length > 0) && (
         <div className="flex flex-col gap-2 rounded-lg border bg-card px-4 py-3">

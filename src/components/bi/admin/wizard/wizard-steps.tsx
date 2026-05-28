@@ -190,35 +190,90 @@ export function StepDataBinding({ form, setForm }: StepProps) {
 // Step 3 — Chart type gallery
 // =========================================================================
 
+/** Compatible alternative chart types a viewer can switch to, keyed by primary chart type. */
+const COMPATIBLE_TYPES: Record<string, string[]> = {
+  waterfall:    ["bar", "line", "data_table"],
+  bar:          ["line", "area", "horizontal_bar", "data_table"],
+  line:         ["bar", "area", "data_table"],
+  multi_line:   ["bar", "area", "data_table"],
+  area:         ["bar", "line", "data_table"],
+  mixed:        ["line", "bar", "data_table"],
+  donut:        ["bar", "data_table"],
+  stacked_bar:  ["bar", "line", "data_table"],
+  kpi_card:     [],
+  data_table:   [],
+  treemap:      [],
+  heatmap:      [],
+  scatter:      [],
+}
+
 export function StepChartType({ form, setForm }: StepProps) {
   const registrations = allChartTypes()
   const selectedStr = chartTypeToString(form.chartType)
+  const compatibles = COMPATIBLE_TYPES[selectedStr] ?? []
+  const selectedAlts = (form.chartConfig.available_chart_types as string[] | undefined) ?? []
+
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-      {registrations.map((reg) => {
-        const selected = reg.type === selectedStr
-        return (
-          <button
-            key={reg.type}
-            type="button"
-            onClick={() =>
-              setForm((p) => ({
-                ...p,
-                chartType: stringToChartTypeEnum(reg.type),
-                // Reset chart_config to the registry defaults when switching type.
-                chartConfig: { ...reg.defaultConfig },
-              }))
-            }
-            className={cn(
-              "rounded-lg border p-3 text-left text-sm transition-colors hover:border-primary",
-              selected && "border-primary bg-primary/5 ring-1 ring-primary"
-            )}
-          >
-            <div className="font-semibold">{reg.label}</div>
-            <div className="mt-1 text-xs text-muted-foreground">{reg.lib === "echarts" ? "Advanced" : "Standard"}</div>
-          </button>
-        )
-      })}
+    <div>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        {registrations.map((reg) => {
+          const selected = reg.type === selectedStr
+          return (
+            <button
+              key={reg.type}
+              type="button"
+              onClick={() =>
+                setForm((p) => ({
+                  ...p,
+                  chartType: stringToChartTypeEnum(reg.type),
+                  // Reset chart_config to the registry defaults when switching type,
+                  // and clear available_chart_types since compatible types change.
+                  chartConfig: { ...reg.defaultConfig, available_chart_types: [] },
+                }))
+              }
+              className={cn(
+                "rounded-lg border p-3 text-left text-sm transition-colors hover:border-primary",
+                selected && "border-primary bg-primary/5 ring-1 ring-primary"
+              )}
+            >
+              <div className="font-semibold">{reg.label}</div>
+              <div className="mt-1 text-xs text-muted-foreground">{reg.lib === "echarts" ? "Advanced" : "Standard"}</div>
+            </button>
+          )
+        })}
+      </div>
+
+      {/* Compatible viewer chart types */}
+      {compatibles.length > 0 && (
+        <div className="mt-4 space-y-2 border-t pt-4">
+          <p className="text-sm font-medium text-foreground">Viewer can also display as:</p>
+          <div className="flex flex-wrap gap-3">
+            {compatibles.map((alt) => {
+              const checked = selectedAlts.includes(alt)
+              const reg = allChartTypes().find((r) => r.type === alt)
+              return (
+                <label key={alt} className="flex cursor-pointer items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 rounded border-border"
+                    checked={checked}
+                    onChange={() => {
+                      const next = checked
+                        ? selectedAlts.filter((t) => t !== alt)
+                        : [...selectedAlts, alt]
+                      setForm((p) => ({
+                        ...p,
+                        chartConfig: { ...p.chartConfig, available_chart_types: next },
+                      }))
+                    }}
+                  />
+                  {reg?.label ?? humanize(alt)}
+                </label>
+              )
+            })}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -19,10 +19,36 @@ interface FilterBarProps {
   onChange: (next: ViewerState) => void
   /** Compare modes the dashboard enables (subset of COMPARE_KEYS). NONE is always available. */
   compareModes: CompareKey[]
+  /** Primary chart type from the dashboard config. */
+  primaryChartType?: string
+  /** Alternative chart types the viewer can switch to (from chart_config.available_chart_types). */
+  availableChartTypes?: string[]
 }
 
-export function FilterBar({ state, onChange, compareModes }: FilterBarProps) {
+/** Human-readable label for a chart type string. */
+function humanizeChartType(t: string): string {
+  const labels: Record<string, string> = {
+    waterfall: "Waterfall",
+    bar: "Bar",
+    line: "Line",
+    area: "Area",
+    multi_line: "Multi-Line",
+    data_table: "Table",
+    horizontal_bar: "Horiz. Bar",
+    donut: "Donut",
+    mixed: "Mixed",
+    stacked_bar: "Stacked Bar",
+    kpi_card: "KPI Card",
+    treemap: "Treemap",
+    heatmap: "Heatmap",
+    scatter: "Scatter",
+  }
+  return labels[t] ?? t.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+}
+
+export function FilterBar({ state, onChange, compareModes, primaryChartType = "", availableChartTypes = [] }: FilterBarProps) {
   const availableCompares: CompareKey[] = ["NONE", ...compareModes.filter((c) => c !== "NONE")]
+  const activeChartType = state.chartType || primaryChartType
 
   return (
     <div className="flex flex-wrap items-center gap-4 rounded-lg border bg-card p-4">
@@ -86,6 +112,25 @@ export function FilterBar({ state, onChange, compareModes }: FilterBarProps) {
               </Button>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Chart type switcher — only shown when available_chart_types is configured */}
+      {availableChartTypes.length > 0 && (
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold uppercase text-muted-foreground">View as</span>
+          <select
+            value={activeChartType}
+            onChange={(e) => onChange({ ...state, chartType: e.target.value === primaryChartType ? "" : e.target.value })}
+            className="rounded border border-border bg-background px-2 py-1 text-xs font-medium"
+          >
+            <option value={primaryChartType}>{humanizeChartType(primaryChartType)}</option>
+            {availableChartTypes.map((t) => (
+              <option key={t} value={t}>
+                {humanizeChartType(t)}
+              </option>
+            ))}
+          </select>
         </div>
       )}
     </div>
