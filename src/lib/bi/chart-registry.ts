@@ -173,6 +173,17 @@ export const chartRegistry: Record<string, ChartRegistration> = {
     defaultConfig: { number_format: "thousands", legend_position: "bottom" },
     Component: lazy(() => import("@/components/bi/chart-engine/echarts/mixed")),
   },
+  multi_line: {
+    type: "multi_line",
+    lib: "echarts",
+    label: "Multi-Series Line",
+    requiredFields: ["x_axis_field"],
+    optionalFields: ["series_colors", "number_format", "decimals"],
+    supportsDrill: false,
+    supportsCompare: false,
+    defaultConfig: { number_format: "currency_thousands", decimals: 1 },
+    Component: lazy(() => import("@/components/bi/chart-engine/echarts/multi-line-chart")),
+  },
 }
 
 /** Lookup with a typed fallback of undefined. */
