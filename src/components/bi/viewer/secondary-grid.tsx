@@ -296,6 +296,7 @@ export function SecondaryGrid({ layoutConfig, data, dashboardCode, selectedPerio
                   dashboardCode={dashboardCode ?? ""}
                   compareCode={cfg.compare_code as string | undefined}
                   compareLabel={cfg.compare_label as string | undefined}
+                  metricName={cfg.metric_name as string | undefined}
                   numberFormat={cfg.number_format as string | undefined}
                   decimals={cfg.decimals as number | undefined}
                 />

@@ -1,7 +1,12 @@
 // BI Monthly Detail — fetches L24M data for the primary dashboard and an optional
 // compare dashboard, then returns the last 12 months with YoY and vs-compare columns.
 // GET /api/v1/finance/bi/dashboards/by-code/[code]/monthly-detail
-// Query: ?period=L12M&compare_code=EBITDA
+// Query: ?period=L12M&compare_code=EBITDA&metric_name=MARGIN
+//
+// metric_name (optional): when the primary dashboard is multi-metric (e.g. DELIVERY_MARGIN
+// with MARGIN/NETT_SALES/GROSS_SALES), filter the series to the named metric before
+// computing YoY. When omitted, the first series is used (single-metric dashboards).
+//
 // Returns: { rows: [{period, value, yoyValue, yoyDiff, yoyPct, vsCompare, vsComparePct}] }
 
 import { NextRequest, NextResponse } from "next/server"
@@ -23,6 +28,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const { code } = await params
     const sp = request.nextUrl.searchParams
     const compareCode = sp.get("compare_code")
+    const metricName = sp.get("metric_name") ?? null
     const metadata = createMetadataFromRequest(request)
     const client = getBiChartDataClient()
 
@@ -39,7 +45,14 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       metadata,
     )
 
-    const mainPoints = (mainResp.data?.series?.[0]?.points ?? [])
+    // For multi-metric dashboards, find the series matching metricName (by name).
+    // Fall back to first series when metricName is not provided or not found.
+    const allSeries = mainResp.data?.series ?? []
+    const targetSeries = metricName
+      ? (allSeries.find((s) => s.name === metricName) ?? allSeries[0])
+      : allSeries[0]
+
+    const mainPoints = (targetSeries?.points ?? [])
       .map((p) => ({ category: p.category, value: p.value }))
       .filter((p) => /^\d{6}$/.test(p.category))
 

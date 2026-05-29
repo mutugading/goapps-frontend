@@ -2,13 +2,12 @@
 //
 // Fetches a computed-ratio secondary chart payload. Passes a ComputedRatioConfig
 // JSON blob to the backend via the x-computed-ratio gRPC metadata header so the
-// query planner can execute planComputedRatio (group by group_2) instead of the
-// standard multi-metric / MV path.
+// query planner can execute planComputedRatio grouped by the configured column.
 //
 // Query params:
 //   numerator   - metric_name for the dividend  (default: MARGIN)
-//   denominator - metric_name for the divisor   (default: NETT_SALES)
-//   scale       - multiplier for the ratio       (default: 100 → percent)
+//   denominator - metric_name for the divisor   (default: ""; empty = SUM(numerator) only)
+//   scale       - multiplier for the ratio/sum   (default: 100 for ratio, 1 for sum)
 //   group_by    - grouping column                (default: group_2)
 //   period      - period preset forwarded to the backend (default: L12M)
 
@@ -24,9 +23,12 @@ export async function GET(
     const { code } = await params
     const sp = request.nextUrl.searchParams
 
+    // denominator may be "" (empty string) for single-metric SUM aggregation.
+    // Use null-check rather than ?? to preserve explicit empty string from caller.
+    const denominator = sp.get("denominator")
     const cr = {
       numerator: sp.get("numerator") ?? "MARGIN",
-      denominator: sp.get("denominator") ?? "NETT_SALES",
+      denominator: denominator !== null ? denominator : "",
       scale: parseFloat(sp.get("scale") ?? "100"),
       group_by: sp.get("group_by") ?? "group_2",
     }

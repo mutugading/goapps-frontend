@@ -23,6 +23,11 @@ interface MonthlyDetailTableProps {
   compareCode?: string
   /** Column header label for the compare column (e.g. "EBITDA"). */
   compareLabel?: string
+  /**
+   * For multi-metric dashboards, filter the monthly detail to this metric_name.
+   * When omitted the first series is used (default for single-metric dashboards).
+   */
+  metricName?: string
   periodPreset?: string
   numberFormat?: string
   decimals?: number
@@ -43,6 +48,7 @@ export function MonthlyDetailTable({
   dashboardCode,
   compareCode,
   compareLabel,
+  metricName,
   periodPreset = "L12M",
   numberFormat = "currency_thousands",
   decimals = 1,
@@ -53,6 +59,7 @@ export function MonthlyDetailTable({
   useEffect(() => {
     const qs = new URLSearchParams({ period: periodPreset })
     if (compareCode) qs.set("compare_code", compareCode)
+    if (metricName) qs.set("metric_name", metricName)
     let cancelled = false
     fetch(
       `/api/v1/finance/bi/dashboards/by-code/${dashboardCode}/monthly-detail?${qs.toString()}`,
@@ -68,7 +75,7 @@ export function MonthlyDetailTable({
     return () => {
       cancelled = true
     }
-  }, [dashboardCode, compareCode, periodPreset])
+  }, [dashboardCode, compareCode, metricName, periodPreset])
 
   if (rows === null) {
     return (
@@ -91,7 +98,7 @@ export function MonthlyDetailTable({
         <thead>
           <tr className="border-b text-muted-foreground">
             <th className="py-2 pr-3 text-left font-semibold">Month</th>
-            <th className="px-2 py-2 text-right font-semibold">Net Profit</th>
+            <th className="px-2 py-2 text-right font-semibold">{metricName ?? "Value"}</th>
             <th className="px-2 py-2 text-right font-semibold">YoY %</th>
             {compareCode && (
               <th className="py-2 pl-2 text-right font-semibold">
