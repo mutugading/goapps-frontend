@@ -12,6 +12,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import type { ChartDataResponse } from "@/types/bi"
 import { ChartEngine } from "@/components/bi/chart-engine/chart-engine"
+import { ComponentDetailTable } from "./component-detail-table"
+import { MonthlyDetailTable } from "./monthly-detail-table"
 
 interface ComputedRatioDef {
   numerator: string
@@ -260,6 +262,48 @@ export function SecondaryGrid({ layoutConfig, data, dashboardCode, selectedPerio
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
       {secondary.map((s, i) => {
+        // Component Detail table — 6-column MoM/YoY breakdown for a categorical dashboard.
+        if (s.chart_type === "component_detail_table") {
+          const cfg = (s.chart_config ?? {}) as Record<string, unknown>
+          return (
+            <Card key={`${s.title ?? "component-detail"}-${i}`} className={cn(s.span === "full" && "lg:col-span-2")}>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-semibold">{s.title ?? "Component Detail"}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ComponentDetailTable
+                  dashboardCode={dashboardCode ?? ""}
+                  period={selectedPeriod}
+                  group1={cfg.group1 as string | undefined}
+                  numberFormat={cfg.number_format as string | undefined}
+                  decimals={cfg.decimals as number | undefined}
+                />
+              </CardContent>
+            </Card>
+          )
+        }
+
+        // Monthly Detail table — 4-column month/YoY/vs-compare breakdown.
+        if (s.chart_type === "monthly_detail_table") {
+          const cfg = (s.chart_config ?? {}) as Record<string, unknown>
+          return (
+            <Card key={`${s.title ?? "monthly-detail"}-${i}`} className={cn(s.span === "full" && "lg:col-span-2")}>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-semibold">{s.title ?? "Monthly Detail"}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <MonthlyDetailTable
+                  dashboardCode={dashboardCode ?? ""}
+                  compareCode={cfg.compare_code as string | undefined}
+                  compareLabel={cfg.compare_label as string | undefined}
+                  numberFormat={cfg.number_format as string | undefined}
+                  decimals={cfg.decimals as number | undefined}
+                />
+              </CardContent>
+            </Card>
+          )
+        }
+
         // Cross-dashboard cards get their own component that fetches secondary data.
         if (s.source_dashboard_code) {
           return (
