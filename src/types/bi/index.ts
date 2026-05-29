@@ -82,6 +82,12 @@ export type {
   ListJobLogsResponse,
   TriggerJobRequest,
   TriggerJobResponse,
+  CreateBiJobRequest,
+  CreateBiJobResponse,
+  UpdateBiJobRequest,
+  UpdateBiJobResponse,
+  DeleteBiJobRequest,
+  DeleteBiJobResponse,
 } from "@/types/generated/finance/v1/bi"
 
 // Re-export proto Parsers for response decoding.
