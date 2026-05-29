@@ -60,8 +60,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     mainPoints.sort((a, b) => a.category.localeCompare(b.category))
 
     // Fetch compare dashboard L24M if requested.
+    // x-force-trend forces isTrend=true server-side so categorical dashboards (e.g. EBITDA
+    // waterfall with x_axis_field="group_2") return period-grouped time-series data instead
+    // of their normal group_2 breakdown — which has no per-period points to compare against.
     const compareByPeriod = new Map<string, number>()
     if (compareCode) {
+      const cmpMetadata = createMetadataFromRequest(request)
+      cmpMetadata.add("x-force-trend", "true")
       const cmpResp = await client.getDashboardData(
         {
           dashboardCode: compareCode,
@@ -71,7 +76,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           compare: CompareMode.COMPARE_MODE_NONE,
           drillPath: [],
         },
-        metadata,
+        cmpMetadata,
       )
       for (const pt of cmpResp.data?.series?.[0]?.points ?? []) {
         if (/^\d{6}$/.test(pt.category)) {
