@@ -63,11 +63,15 @@ export function FilterBar({
   const availableCompares: CompareKey[] = ["NONE", ...compareModes.filter((c) => c !== "NONE")]
   const activeChartType = state.chartType || primaryChartType
 
-  // Show month selector when chart is categorical (not a trend type) and data has loaded.
-  const showMonthSelector = !TREND_CHART_TYPES.has(activeChartType) && categories.length > 0
+  // Period categories are YYYYMM 6-digit strings — filter out group-name categories
+  // that come from categorical charts (waterfall/bar at group_2 level).
+  const periodCategories = categories.filter(c => /^\d{6}$/.test(c))
 
-  // Default to latest category when selectedPeriod is unset.
-  const effectivePeriod = state.selectedPeriod ?? categories[categories.length - 1] ?? ""
+  // Show month selector when categorical chart type AND we have actual period labels to select.
+  const showMonthSelector = !TREND_CHART_TYPES.has(activeChartType) && periodCategories.length > 0
+
+  // Default to latest period category when selectedPeriod is unset.
+  const effectivePeriod = state.selectedPeriod ?? periodCategories[periodCategories.length - 1] ?? ""
 
   return (
     <div className="flex flex-wrap items-center gap-4 rounded-lg border bg-card p-4">
@@ -100,7 +104,7 @@ export function FilterBar({
             onChange={(e) => onChange({ ...state, selectedPeriod: e.target.value })}
             className="rounded border border-border bg-background px-2 py-1 text-xs"
           >
-            {[...categories].reverse().map((c) => (
+            {[...periodCategories].reverse().map((c) => (
               <option key={c} value={c}>{c}</option>
             ))}
           </select>

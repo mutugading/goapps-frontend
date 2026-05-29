@@ -99,8 +99,11 @@ export function ViewerPage({ code }: { code: string }) {
   // Categories from chart data — used to drive the month selector in FilterBar.
   const categories = chartData?.categories ?? []
 
-  // Effective selected period: use URL state if set, otherwise default to latest available.
-  const effectiveSelectedPeriod = state.selectedPeriod ?? categories[categories.length - 1]
+  // Effective selected period: use URL state only when it's a valid YYYYMM string.
+  // Ignore stale non-period values (e.g. group_2 names from a previous navigation).
+  const periodCategories = categories.filter(c => /^\d{6}$/.test(c))
+  const validSelectedPeriod = /^\d{6}$/.test(state.selectedPeriod ?? "") ? state.selectedPeriod : undefined
+  const effectiveSelectedPeriod = validSelectedPeriod ?? periodCategories[periodCategories.length - 1]
 
   // Read view_configs from chart_config (set per chart type by admin).
   const rawViewConfigs = dashboard.chartConfig as Record<string, unknown> | undefined
@@ -109,23 +112,32 @@ export function ViewerPage({ code }: { code: string }) {
   )
 
   // Active view config for the currently displayed chart type.
-  const activeViewConfig: ViewModeConfig = viewConfigsMap[chartType] ?? {
-    titleTemplate: dashboard.dashboardTitle ?? "",
-    drillEnabled: !["line", "area", "multi_line", "scatter", "heatmap", "kpi_card", "data_table"].includes(chartType),
-    hint: undefined,
-  }
+  // The nested ViewModeConfig objects in view_configs JSONB use snake_case keys
+  // (title_template, drill_enabled) — not converted by ts-proto. Normalise both.
+  const rawVc = viewConfigsMap[chartType] as unknown as Record<string, unknown> | undefined
+  const activeViewConfig: ViewModeConfig = rawVc
+    ? {
+        titleTemplate: (rawVc.titleTemplate ?? rawVc.title_template ?? dashboard.dashboardTitle ?? "") as string,
+        drillEnabled: (rawVc.drillEnabled ?? rawVc.drill_enabled ?? !["line","area","multi_line","scatter","heatmap","kpi_card","data_table"].includes(chartType)) as boolean,
+        hint: (rawVc.hint ?? undefined) as string | undefined,
+      }
+    : {
+        titleTemplate: dashboard.dashboardTitle ?? "",
+        drillEnabled: !["line","area","multi_line","scatter","heatmap","kpi_card","data_table"].includes(chartType),
+        hint: undefined,
+      }
 
   // Resolve chart card title — replace {period} with human-readable month label.
   function formatPeriodLabel(yyyymm: string): string {
     if (!yyyymm || yyyymm.length !== 6) return yyyymm ?? ""
-    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
     const m = parseInt(yyyymm.slice(4, 6), 10)
     return `${months[m - 1] ?? ""} ${yyyymm.slice(0, 4)}`
   }
 
   const chartTitle = (activeViewConfig.titleTemplate
-    .replace("{period}", formatPeriodLabel(effectiveSelectedPeriod ?? ""))
-    .trim()) || (dashboard.dashboardTitle ?? "")
+    ? activeViewConfig.titleTemplate.replace("{period}", formatPeriodLabel(effectiveSelectedPeriod ?? "")).trim()
+    : "") || (dashboard.dashboardTitle ?? "")
 
   return (
     <div className="space-y-6">
