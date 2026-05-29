@@ -105,8 +105,12 @@ export function ViewerPage({ code }: { code: string }) {
   const validSelectedPeriod = /^\d{6}$/.test(state.selectedPeriod ?? "") ? state.selectedPeriod : undefined
   const effectiveSelectedPeriod = validSelectedPeriod ?? periodCategories[periodCategories.length - 1]
 
-  // Read view_configs from chart_config (set per chart type by admin).
-  const rawViewConfigs = dashboard.chartConfig as Record<string, unknown> | undefined
+  // Read view_configs from the chart data response config (data endpoint returns the full JSONB config).
+  // The dashboard config endpoint often omits chartConfig when the Struct is complex;
+  // the data endpoint always returns the full config so we prefer it.
+  const dataConfig = chartData?.config as Record<string, unknown> | undefined
+  const dashConfig = dashboard.chartConfig as Record<string, unknown> | undefined
+  const rawViewConfigs = dataConfig ?? dashConfig
   const viewConfigsMap = (
     (rawViewConfigs?.viewConfigs ?? rawViewConfigs?.view_configs ?? {}) as Record<string, ViewModeConfig>
   )
