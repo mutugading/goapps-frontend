@@ -87,7 +87,6 @@ export function ViewerPage({ code }: { code: string }) {
 
   const compareModes = (dashboard.compareModes ?? []).map(compareEnumToKey).filter(Boolean) as CompareKey[]
   const primaryChartType = chartTypeToString(dashboard.chartType)
-  const availableChartTypes = (dashboard.chartConfig?.["available_chart_types"] as string[] | undefined) ?? []
   // Use the viewer-selected chart type if set, otherwise fall back to the dashboard primary.
   const chartType = state.chartType || primaryChartType
 
@@ -110,6 +109,12 @@ export function ViewerPage({ code }: { code: string }) {
   // the data endpoint always returns the full config so we prefer it.
   const dataConfig = chartData?.config as Record<string, unknown> | undefined
   const dashConfig = dashboard.chartConfig as Record<string, unknown> | undefined
+
+  // available_chart_types: prefer data endpoint config (always has full JSONB).
+  const availableChartTypes = (
+    (dataConfig?.availableChartTypes ?? dataConfig?.available_chart_types ??
+     dashConfig?.availableChartTypes ?? dashConfig?.available_chart_types ?? []) as string[]
+  )
   const rawViewConfigs = dataConfig ?? dashConfig
   const viewConfigsMap = (
     (rawViewConfigs?.viewConfigs ?? rawViewConfigs?.view_configs ?? {}) as Record<string, ViewModeConfig>
