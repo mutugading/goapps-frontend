@@ -184,6 +184,17 @@ export const chartRegistry: Record<string, ChartRegistration> = {
     defaultConfig: { number_format: "currency_thousands", decimals: 1 },
     Component: lazy(() => import("@/components/bi/chart-engine/echarts/multi-line-chart")),
   },
+  dual_line: {
+    type: "dual_line",
+    lib: "echarts",
+    label: "Dual-Line (Cross-Dashboard)",
+    requiredFields: ["x_axis_field"],
+    optionalFields: ["colors", "number_format", "decimals"],
+    supportsDrill: false,
+    supportsCompare: false,
+    defaultConfig: { number_format: "currency_thousands", decimals: 1 },
+    Component: lazy(() => import("@/components/bi/chart-engine/echarts/dual-line-chart")),
+  },
 }
 
 /** Lookup with a typed fallback of undefined. */
