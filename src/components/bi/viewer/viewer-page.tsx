@@ -5,7 +5,7 @@
 import { useRef, useCallback } from "react"
 import { RefreshCw } from "lucide-react"
 
-import { Card, CardContent, CardFooter } from "@/components/ui/card"
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { PageHeader } from "@/components/common/page-header"
@@ -14,7 +14,7 @@ import { usePermission } from "@/lib/hooks/use-permission"
 import { useDashboardByCode } from "@/hooks/bi/use-dashboard"
 import { useDashboardData } from "@/hooks/bi/use-chart-data"
 import { useFactDistincts } from "@/hooks/bi/use-fact-distincts"
-import { chartTypeToString, periodeGrainToString, type ViewerState, DEFAULT_VIEWER_STATE, type CompareKey } from "@/types/bi"
+import { chartTypeToString, periodeGrainToString, type ViewerState, DEFAULT_VIEWER_STATE, type CompareKey, type ViewModeConfig } from "@/types/bi"
 import { isEmpty } from "@/lib/bi/data-adapter"
 
 import { ChartEngine } from "@/components/bi/chart-engine/chart-engine"
@@ -102,6 +102,31 @@ export function ViewerPage({ code }: { code: string }) {
   // Effective selected period: use URL state if set, otherwise default to latest available.
   const effectiveSelectedPeriod = state.selectedPeriod ?? categories[categories.length - 1]
 
+  // Read view_configs from chart_config (set per chart type by admin).
+  const rawViewConfigs = dashboard.chartConfig as Record<string, unknown> | undefined
+  const viewConfigsMap = (
+    (rawViewConfigs?.viewConfigs ?? rawViewConfigs?.view_configs ?? {}) as Record<string, ViewModeConfig>
+  )
+
+  // Active view config for the currently displayed chart type.
+  const activeViewConfig: ViewModeConfig = viewConfigsMap[chartType] ?? {
+    titleTemplate: dashboard.dashboardTitle ?? "",
+    drillEnabled: !["line", "area", "multi_line", "scatter", "heatmap", "kpi_card", "data_table"].includes(chartType),
+    hint: undefined,
+  }
+
+  // Resolve chart card title — replace {period} with human-readable month label.
+  function formatPeriodLabel(yyyymm: string): string {
+    if (!yyyymm || yyyymm.length !== 6) return yyyymm ?? ""
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    const m = parseInt(yyyymm.slice(4, 6), 10)
+    return `${months[m - 1] ?? ""} ${yyyymm.slice(0, 4)}`
+  }
+
+  const chartTitle = (activeViewConfig.titleTemplate
+    .replace("{period}", formatPeriodLabel(effectiveSelectedPeriod ?? ""))
+    .trim()) || (dashboard.dashboardTitle ?? "")
+
   return (
     <div className="space-y-6">
       <PageHeader title={dashboard.dashboardTitle} subtitle={dashboard.description}>
@@ -143,7 +168,15 @@ export function ViewerPage({ code }: { code: string }) {
       <KpiGrid kpis={chartData?.kpis ?? []} />
 
       <Card ref={chartCardRef}>
-        <CardContent className="space-y-4 pt-6">
+        <CardHeader className="pb-2">
+          <div>
+            <h3 className="text-base font-semibold leading-tight">{chartTitle}</h3>
+            {activeViewConfig.hint && (
+              <p className="mt-0.5 text-xs text-muted-foreground">{activeViewConfig.hint}</p>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4 pt-0">
           <DrillBreadcrumb
             rootLabel={dashboard.dashboardTitle}
             path={state.drillPath}
@@ -159,7 +192,7 @@ export function ViewerPage({ code }: { code: string }) {
               chartType={chartType}
               config={(chartData.config ?? dashboard.chartConfig ?? {}) as Record<string, unknown>}
               data={chartData}
-              onDrill={(nextPath) => setState({ ...state, drillPath: nextPath })}
+              onDrill={activeViewConfig.drillEnabled ? (nextPath) => setState({ ...state, drillPath: nextPath }) : undefined}
             />
           ) : (
             <Skeleton className="h-[360px] w-full rounded-md" />
@@ -181,6 +214,8 @@ export function ViewerPage({ code }: { code: string }) {
           data={chartData}
           dashboardCode={code}
           selectedPeriod={effectiveSelectedPeriod}
+          drillEnabled={activeViewConfig.drillEnabled}
+          onDrill={(nextPath) => setState({ ...state, drillPath: nextPath })}
         />
       )}
     </div>

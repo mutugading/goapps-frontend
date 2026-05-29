@@ -287,6 +287,20 @@ export function rolesToSet(d: Dashboard): Set<string> {
   return new Set(d.allowedRoleCodes ?? [])
 }
 
+/**
+ * Per-chart-type viewer configuration stored in dashboard.chart_config.view_configs.
+ * Keys are chart type strings (e.g. "bar", "data_table").
+ * Proto Struct maps snake_case JSON keys to camelCase via snakeToCamel.
+ */
+export interface ViewModeConfig {
+  /** Template string for the chart card title; supports {period} placeholder. */
+  titleTemplate: string
+  /** Whether drill-down is enabled for this chart type. */
+  drillEnabled: boolean
+  /** Optional subtitle hint shown below the chart title. */
+  hint?: string
+}
+
 // ============================================================================
 // Excel upload types
 // ============================================================================

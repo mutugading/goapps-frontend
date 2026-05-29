@@ -44,6 +44,10 @@ interface SecondaryGridProps {
    * whose category matches this period (YYYYMM). Other chart types are unaffected.
    */
   selectedPeriod?: string
+  /** When true, data_table rows are clickable and trigger onDrill. */
+  drillEnabled?: boolean
+  /** Called when a data_table row is clicked; receives the new full drill path. */
+  onDrill?: (path: string[]) => void
 }
 
 function humanizeType(t: string): string {
@@ -237,7 +241,7 @@ function ComputedRatioCard({
   )
 }
 
-export function SecondaryGrid({ layoutConfig, data, dashboardCode, selectedPeriod }: SecondaryGridProps) {
+export function SecondaryGrid({ layoutConfig, data, dashboardCode, selectedPeriod, drillEnabled, onDrill }: SecondaryGridProps) {
   const secondary = (layoutConfig?.secondary_charts as SecondaryChartDef[] | undefined) ?? []
   const [cardTypes, setCardTypes] = useState<Record<number, string>>({})
 
@@ -330,6 +334,11 @@ export function SecondaryGrid({ layoutConfig, data, dashboardCode, selectedPerio
                 chartType={activeType}
                 config={s.chart_config ?? {}}
                 data={filteredData}
+                onDrill={
+                  activeType === "data_table" && drillEnabled && onDrill
+                    ? (path) => onDrill(path)
+                    : undefined
+                }
                 height={280}
               />
             </CardContent>
