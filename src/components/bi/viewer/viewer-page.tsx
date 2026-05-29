@@ -4,6 +4,7 @@
 
 import { useRef, useCallback } from "react"
 import { RefreshCw } from "lucide-react"
+import { TREND_CHART_TYPES } from "@/hooks/bi/use-chart-data"
 
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -102,7 +103,26 @@ export function ViewerPage({ code }: { code: string }) {
   // Ignore stale non-period values (e.g. group_2 names from a previous navigation).
   const periodCategories = categories.filter(c => /^\d{6}$/.test(c))
   const validSelectedPeriod = /^\d{6}$/.test(state.selectedPeriod ?? "") ? state.selectedPeriod : undefined
-  const effectiveSelectedPeriod = validSelectedPeriod ?? periodCategories[periodCategories.length - 1]
+
+  // For categorical charts (waterfall, bar, donut, data_table), chart categories contain
+  // group names (e.g. "INCOME", "PRODUCTION COST"), not YYYYMM strings.
+  // Derive available period options from the as-of date and period preset instead.
+  const isTrendChart = TREND_CHART_TYPES.has(chartType)
+  const derivedPeriodOptions = !isTrendChart
+    ? derivePeriodOptions(
+        chartData?.meta?.asOf ? new Date(chartData.meta.asOf) : undefined,
+        state.period ?? "L12M"
+      )
+    : []
+
+  // Pass period list to FilterBar: trend charts use period-labelled categories from data;
+  // categorical charts use the derived month list.
+  const monthSelectorCategories = isTrendChart ? periodCategories : derivedPeriodOptions
+
+  const effectiveSelectedPeriod = validSelectedPeriod ??
+    (isTrendChart
+      ? periodCategories[periodCategories.length - 1]
+      : derivedPeriodOptions[derivedPeriodOptions.length - 1])
 
   // Read view_configs from the chart data response config (data endpoint returns the full JSONB config).
   // The dashboard config endpoint often omits chartConfig when the Struct is complex;
@@ -160,7 +180,7 @@ export function ViewerPage({ code }: { code: string }) {
         compareModes={compareModes}
         primaryChartType={primaryChartType}
         availableChartTypes={availableChartTypes}
-        categories={categories}
+        categories={monthSelectorCategories}
       />
 
       {hasFilterChips && (group1Values.length > 0 || group2Values.length > 0) && (
@@ -245,6 +265,25 @@ export function ViewerPage({ code }: { code: string }) {
       )}
     </div>
   )
+}
+
+/**
+ * Derives YYYYMM period options for categorical charts (waterfall, bar, etc.) where
+ * chart categories are group names, not period strings. Builds a list of the last N
+ * months anchored at the data's as-of date (or today), oldest-first.
+ */
+function derivePeriodOptions(asOfDate: Date | undefined, periodPreset: string): string[] {
+  const anchor = asOfDate ?? new Date()
+  const year = anchor.getFullYear()
+  const month = anchor.getMonth() // 0-indexed
+  const count = periodPreset === "L24M" ? 24 : 12 // default L12M
+  const result: string[] = []
+  for (let i = 0; i < count; i++) {
+    const d = new Date(year, month - i, 1)
+    const yyyymm = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}`
+    result.push(yyyymm)
+  }
+  return result.reverse() // oldest first
 }
 
 /** Maps the proto CompareMode enum value to the FE CompareKey string. */
