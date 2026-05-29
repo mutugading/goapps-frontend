@@ -21,6 +21,7 @@ import type {
   DuplicateDashboardResponse,
   SetDashboardRolesResponse,
   ListAccessibleDashboardsResponse,
+  ListFeaturedDashboardsResponse,
 } from "@/types/bi"
 import {
   ListDashboardsResponseParser,
@@ -32,6 +33,7 @@ import {
   DuplicateDashboardResponseParser,
   SetDashboardRolesResponseParser,
   ListAccessibleDashboardsResponseParser,
+  ListFeaturedDashboardsResponseParser,
 } from "@/types/bi"
 
 // =========================================================================
@@ -142,6 +144,38 @@ export function useAccessibleDashboards() {
       return parsed.data
     },
     staleTime: 30_000,
+  })
+}
+
+/** Featured dashboards pinned to the Executive Dashboard landing page. */
+export function useFeaturedDashboards() {
+  return useQuery({
+    queryKey: [...dashboardKeys.all, "featured"] as const,
+    queryFn: async () => {
+      const raw = await apiClient.get<unknown>("/api/v1/finance/bi/dashboards/featured")
+      const parsed: ListFeaturedDashboardsResponse = ListFeaturedDashboardsResponseParser.fromJSON(raw)
+      if (!parsed.base?.isSuccess) throw new Error(parsed.base?.message ?? "Failed to list featured dashboards")
+      return parsed.data ?? []
+    },
+    staleTime: 30_000,
+  })
+}
+
+/** Pin or unpin a dashboard from the Executive Dashboard landing page. */
+export function usePinDashboard() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, pin }: { id: string; pin: boolean }) => {
+      await apiClient.post<unknown>(
+        `/api/v1/finance/bi/dashboards/${id}/${pin ? "pin" : "unpin"}`,
+        {}
+      )
+    },
+    onSuccess: (_, { pin }) => {
+      toast.success(pin ? "Dashboard pinned" : "Dashboard unpinned")
+      void qc.invalidateQueries({ queryKey: dashboardKeys.all })
+    },
+    onError: (err: Error) => toast.error(err.message),
   })
 }
 
