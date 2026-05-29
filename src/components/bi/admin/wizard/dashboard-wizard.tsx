@@ -54,7 +54,7 @@ export function DashboardWizard({ mode, dashboardId, initial }: DashboardWizardP
     if (mode === "create") {
       await createMut.mutateAsync(buildCreateRequest(form))
     } else if (dashboardId) {
-      await updateMut.mutateAsync({ dashboardId, ...buildUpdateRequest(form) } as never)
+      await updateMut.mutateAsync({ id: dashboardId, data: buildUpdateRequest(form) as never })
     }
     router.push("/finance/bi/admin")
   }
