@@ -29,6 +29,8 @@ interface SecondaryChartDef {
   source_dashboard_code?: string
   source_series_label?: string
   primary_series_label?: string
+  /** When explicitly false, rows in this card are never drillable regardless of global drillEnabled. */
+  drill_enabled?: boolean
 }
 
 interface SecondaryGridProps {
@@ -44,8 +46,13 @@ interface SecondaryGridProps {
    * whose category matches this period (YYYYMM). Other chart types are unaffected.
    */
   selectedPeriod?: string
-  /** When true, data_table rows are clickable and trigger onDrill. */
+  /** When true, the primary view config has drill enabled. */
   drillEnabled?: boolean
+  /**
+   * When false, we are already at terminal drill depth — no card should fire onDrill
+   * even if drillEnabled=true and the card's own drill_enabled=true.
+   */
+  canDrillDeeper?: boolean
   /** Called when a data_table row is clicked; receives the new full drill path. */
   onDrill?: (path: string[]) => void
 }
@@ -241,7 +248,7 @@ function ComputedRatioCard({
   )
 }
 
-export function SecondaryGrid({ layoutConfig, data, dashboardCode, selectedPeriod, drillEnabled, onDrill }: SecondaryGridProps) {
+export function SecondaryGrid({ layoutConfig, data, dashboardCode, selectedPeriod, drillEnabled, canDrillDeeper, onDrill }: SecondaryGridProps) {
   const secondary = (layoutConfig?.secondary_charts as SecondaryChartDef[] | undefined) ?? []
   const [cardTypes, setCardTypes] = useState<Record<number, string>>({})
 
@@ -335,7 +342,11 @@ export function SecondaryGrid({ layoutConfig, data, dashboardCode, selectedPerio
                 config={s.chart_config ?? {}}
                 data={filteredData}
                 onDrill={
-                  activeType === "data_table" && drillEnabled && onDrill
+                  activeType === "data_table" &&
+                  drillEnabled &&
+                  canDrillDeeper &&
+                  s.drill_enabled !== false &&
+                  onDrill
                     ? (path) => onDrill(path)
                     : undefined
                 }

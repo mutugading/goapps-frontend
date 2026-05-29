@@ -236,6 +236,10 @@ export function ViewerPage({ code }: { code: string }) {
           dashboardCode={code}
           selectedPeriod={effectiveSelectedPeriod}
           drillEnabled={activeViewConfig.drillEnabled}
+          canDrillDeeper={
+            activeViewConfig.drillEnabled &&
+            (state.drillPath?.length ?? 0) < ((dashboard.maxDrillLevel ?? 3) - (dashboard.filterGroup1 ? 1 : 0))
+          }
           onDrill={(nextPath) => setState({ ...state, drillPath: nextPath })}
         />
       )}
