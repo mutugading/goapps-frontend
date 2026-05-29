@@ -24,6 +24,7 @@ import {
   PERIOD_PRESET_LABELS,
   type DashboardFormData,
   type KpiEntry,
+  type ViewModeConfig,
   chartTypeToString,
 } from "@/types/bi"
 import { allChartTypes } from "@/lib/bi/chart-registry"
@@ -274,6 +275,97 @@ export function StepChartType({ form, setForm }: StepProps) {
           </div>
         </div>
       )}
+
+      {/* Per-view-type configuration */}
+      {(() => {
+        const primaryStr = chartTypeToString(form.chartType as ChartType) || ""
+        const alts = (form.chartConfig.available_chart_types as string[] | undefined) ?? []
+        const allTypes = primaryStr ? [primaryStr, ...alts.filter((t) => t !== primaryStr)] : alts
+        if (allTypes.length === 0) return null
+
+        const currentViewConfigs = (form.chartConfig.view_configs as Record<string, ViewModeConfig> | undefined) ?? {}
+
+        return (
+          <div className="mt-4 space-y-2 border-t pt-4">
+            <p className="text-sm font-medium">Configure per-view display</p>
+            <p className="text-xs text-muted-foreground">Set the title and behavior for each chart type in the viewer.</p>
+            <div className="space-y-2">
+              {allTypes.map((ct) => {
+                const existing = currentViewConfigs[ct]
+                const defaultConfig: ViewModeConfig = {
+                  titleTemplate: ct.replace(/_/g, " "),
+                  drillEnabled: !["line", "area", "multi_line", "scatter", "heatmap", "kpi_card", "data_table"].includes(ct),
+                  hint: "",
+                }
+                const cfg: ViewModeConfig = existing ?? defaultConfig
+                return (
+                  <ViewConfigEditor
+                    key={ct}
+                    chartType={ct}
+                    config={cfg}
+                    onChange={(updated) => {
+                      setForm((p) => ({
+                        ...p,
+                        chartConfig: {
+                          ...p.chartConfig,
+                          view_configs: { ...currentViewConfigs, [ct]: updated },
+                        },
+                      }))
+                    }}
+                  />
+                )
+              })}
+            </div>
+          </div>
+        )
+      })()}
+    </div>
+  )
+}
+
+// =========================================================================
+// ViewConfigEditor — per-chart-type viewer configuration panel
+// =========================================================================
+
+interface ViewConfigEditorProps {
+  chartType: string
+  config: ViewModeConfig
+  onChange: (updated: ViewModeConfig) => void
+}
+
+function ViewConfigEditor({ chartType, config, onChange }: ViewConfigEditorProps) {
+  return (
+    <div className="rounded border border-border/60 bg-muted/20 p-3 space-y-2">
+      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        {chartType.replace(/_/g, " ")}
+      </p>
+      <div className="space-y-1">
+        <label className="text-xs text-muted-foreground">
+          Title template <span className="font-mono">{"{period}"}</span> = formatted month
+        </label>
+        <Input
+          value={config.titleTemplate}
+          onChange={(e) => onChange({ ...config, titleTemplate: e.target.value })}
+          placeholder={`${chartType.replace(/_/g, " ")} — {period}`}
+          className="h-7 text-xs"
+        />
+      </div>
+      <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
+        <Checkbox
+          checked={config.drillEnabled}
+          onCheckedChange={(v) => onChange({ ...config, drillEnabled: Boolean(v) })}
+        />
+        Enable drill-down on click
+      </label>
+      <div className="space-y-1">
+        <label className="text-xs text-muted-foreground">Hint text (shown below chart title)</label>
+        <Input
+          value={config.hint ?? ""}
+          onChange={(e) => onChange({ ...config, hint: e.target.value })}
+          placeholder="Click any bar to drill down…"
+          className="h-7 text-xs"
+        />
+      </div>
     </div>
   )
 }
