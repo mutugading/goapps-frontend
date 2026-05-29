@@ -140,7 +140,7 @@ export function ViewerPage({ code }: { code: string }) {
         </div>
       )}
 
-      {chartData && <KpiGrid kpis={chartData.kpis ?? []} />}
+      <KpiGrid kpis={chartData?.kpis ?? []} />
 
       <Card ref={chartCardRef}>
         <CardContent className="space-y-4 pt-6">
@@ -150,21 +150,19 @@ export function ViewerPage({ code }: { code: string }) {
             onJump={(newPath) => setState({ ...state, drillPath: newPath })}
           />
 
-          {dataLoading ? (
-            <Skeleton className="h-[360px] w-full rounded-md" />
-          ) : dataError ? (
+          {dataError ? (
             <ViewerErrorState message={error?.message} onRetry={() => void refetch()} />
-          ) : isEmpty(chartData) ? (
+          ) : isEmpty(chartData) && !dataLoading ? (
             <ViewerEmptyState showUploadCta={hasPermission("finance.bi.upload.create")} />
+          ) : chartData ? (
+            <ChartEngine
+              chartType={chartType}
+              config={(chartData.config ?? dashboard.chartConfig ?? {}) as Record<string, unknown>}
+              data={chartData}
+              onDrill={(nextPath) => setState({ ...state, drillPath: nextPath })}
+            />
           ) : (
-            chartData && (
-              <ChartEngine
-                chartType={chartType}
-                config={(chartData.config ?? dashboard.chartConfig ?? {}) as Record<string, unknown>}
-                data={chartData}
-                onDrill={(nextPath) => setState({ ...state, drillPath: nextPath })}
-              />
-            )
+            <Skeleton className="h-[360px] w-full rounded-md" />
           )}
         </CardContent>
         <CardFooter className="justify-end gap-2">

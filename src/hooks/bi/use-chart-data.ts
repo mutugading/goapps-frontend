@@ -3,7 +3,7 @@
 // BI chart-data hook — drives the viewer page. Polling interval comes from the
 // dashboard's refresh_interval_sec (or cache_ttl_sec fallback).
 
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, keepPreviousData } from "@tanstack/react-query"
 
 import { apiClient } from "@/lib/api"
 import type { ChartDataResponse, GetDashboardDataResponse, ViewerState } from "@/types/bi"
@@ -50,5 +50,6 @@ export function useDashboardData(code: string | undefined, state: ViewerState, r
     refetchInterval: refreshIntervalMs > 0 ? refreshIntervalMs : false,
     refetchOnWindowFocus: false,
     staleTime: 30_000,
+    placeholderData: keepPreviousData,
   })
 }
