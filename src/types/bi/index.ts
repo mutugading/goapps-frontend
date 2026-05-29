@@ -237,6 +237,12 @@ export interface DashboardFormData {
   groupId: string
   isActive: boolean
   allowedRoleCodes: string[]
+  /** Whether to add this dashboard to the sidebar after creation. */
+  addToSidebar?: boolean
+  /** Override menu title (defaults to dashboardTitle). */
+  sidebarTitle?: string
+  /** Lucide icon name for the sidebar entry. */
+  sidebarIcon?: string
 }
 
 /** KPI entry shape used by the admin form (typed mirror of backend KpiEntry). */

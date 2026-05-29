@@ -666,6 +666,44 @@ export function StepAccess({ form, setForm }: StepProps) {
 }
 
 // =========================================================================
+// Step 8 — Sidebar (create mode only)
+// =========================================================================
+
+export function StepSidebar({ form, setForm }: StepProps) {
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-muted-foreground">
+        Optionally add this dashboard to the sidebar navigation under &quot;Executive Dashboard&quot;.
+        This creates an IAM menu entry visible to all users with access to the BI module.
+      </p>
+      <ToggleRow
+        label="Add to Sidebar"
+        checked={form.addToSidebar ?? false}
+        onChange={(v) => setForm((p) => ({ ...p, addToSidebar: v }))}
+      />
+      {(form.addToSidebar) && (
+        <>
+          <Field label="Menu Title">
+            <Input
+              value={form.sidebarTitle ?? form.dashboardTitle}
+              onChange={(e) => setForm((p) => ({ ...p, sidebarTitle: e.target.value }))}
+              placeholder="Dashboard Title"
+            />
+          </Field>
+          <Field label="Icon (lucide-react name)">
+            <Input
+              value={form.sidebarIcon ?? "BarChart2"}
+              onChange={(e) => setForm((p) => ({ ...p, sidebarIcon: e.target.value }))}
+              placeholder="BarChart2"
+            />
+          </Field>
+        </>
+      )}
+    </div>
+  )
+}
+
+// =========================================================================
 // Shared small UI helpers
 // =========================================================================
 

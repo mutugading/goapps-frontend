@@ -59,6 +59,12 @@ interface SecondaryGridProps {
   onDrill?: (path: string[]) => void
   /** Current drill path — used to build onRowClick for component_detail_table cards. */
   drillPath?: string[]
+  /**
+   * Active compare mode (e.g. "MoM", "YoY"). When non-empty and a secondary card is
+   * chart_type==="line", a TrendCompareCard re-fetches with this compare to render both
+   * the current period series and the comparison period series (dashed line).
+   */
+  compare?: string
 }
 
 function humanizeType(t: string): string {
@@ -258,7 +264,85 @@ function ComputedRatioCard({
   )
 }
 
-export function SecondaryGrid({ layoutConfig, data, dashboardCode, selectedPeriod, drillEnabled, canDrillDeeper, onDrill, drillPath }: SecondaryGridProps) {
+// TrendCompareCard: for line-type secondary cards, re-fetches the dashboard trend data
+// with the active compare mode so both current + comparison period series are shown.
+// The line chart already renders series index>0 as a dashed line (strokeDasharray="4 4").
+function TrendCompareCard({
+  s,
+  dashboardCode,
+  compare,
+  cardIndex,
+  cardTypes,
+  setCardTypes,
+  height,
+}: {
+  s: SecondaryChartDef
+  dashboardCode: string
+  compare: string
+  cardIndex: number
+  cardTypes: Record<number, string>
+  setCardTypes: React.Dispatch<React.SetStateAction<Record<number, string>>>
+  height: number
+}) {
+  const [trendData, setTrendData] = useState<ChartDataResponse | null>(null)
+
+  useEffect(() => {
+    const params = new URLSearchParams({ period: "L24M", force_trend: "true" })
+    if (compare && compare !== "NONE" && compare !== "none") {
+      params.set("compare", compare)
+    }
+    fetch(`/api/v1/finance/bi/dashboards/by-code/${dashboardCode}/data?${params.toString()}`, {
+      credentials: "include",
+    })
+      .then((r) => r.json())
+      .then((j: { data?: ChartDataResponse }) => {
+        if (j.data) setTrendData(j.data)
+      })
+      .catch(() => {})
+  }, [dashboardCode, compare])
+
+  const activeType = cardTypes[cardIndex] ?? s.chart_type ?? "line"
+
+  return (
+    <Card className={cn(s.span === "full" && "lg:col-span-2")}>
+      <CardHeader className="pb-2">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-sm font-semibold">{s.title ?? "Trend"}</CardTitle>
+          {(s.available_chart_types ?? []).length > 0 && (
+            <select
+              value={activeType}
+              onChange={(e) => setCardTypes((prev) => ({ ...prev, [cardIndex]: e.target.value }))}
+              className="rounded border border-border bg-background px-2 py-0.5 text-xs"
+            >
+              <option value={s.chart_type ?? "line"}>{humanizeType(s.chart_type ?? "line")}</option>
+              {(s.available_chart_types ?? []).map((t) => (
+                <option key={t} value={t}>
+                  {humanizeType(t)}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
+      </CardHeader>
+      <CardContent>
+        {trendData === null ? (
+          <div className="flex items-center justify-center text-sm text-muted-foreground" style={{ height }}>
+            Loading…
+          </div>
+        ) : (
+          <ChartEngine
+            chartType={activeType}
+            config={(s.chart_config ?? {}) as Record<string, unknown>}
+            data={trendData}
+            height={height}
+          />
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+export function SecondaryGrid({ layoutConfig, data, dashboardCode, selectedPeriod, drillEnabled, canDrillDeeper, onDrill, drillPath, compare }: SecondaryGridProps) {
   const secondary = (layoutConfig?.secondary_charts as SecondaryChartDef[] | undefined) ?? []
   const [cardTypes, setCardTypes] = useState<Record<number, string>>({})
 
@@ -342,6 +426,30 @@ export function SecondaryGrid({ layoutConfig, data, dashboardCode, selectedPerio
               s={s}
               dashboardCode={dashboardCode}
               selectedPeriod={selectedPeriod}
+              cardIndex={i}
+              cardTypes={cardTypes}
+              setCardTypes={setCardTypes}
+              height={280}
+            />
+          )
+        }
+
+        // Line-type cards with an active compare: use TrendCompareCard so the card
+        // independently fetches trend data with the comparison series, resulting in
+        // both the current period line and a dashed comparison line on the same chart.
+        if (
+          s.chart_type === "line" &&
+          dashboardCode &&
+          compare &&
+          compare !== "NONE" &&
+          compare !== "none"
+        ) {
+          return (
+            <TrendCompareCard
+              key={`${s.title ?? "trend"}-${i}`}
+              s={s}
+              dashboardCode={dashboardCode}
+              compare={compare}
               cardIndex={i}
               cardTypes={cardTypes}
               setCardTypes={setCardTypes}
