@@ -13,11 +13,18 @@ import { cn } from "@/lib/utils"
 import type { ChartDataResponse } from "@/types/bi"
 import { ChartEngine } from "@/components/bi/chart-engine/chart-engine"
 
+interface ComputedRatioDef {
+  numerator: string
+  denominator: string
+  scale: number
+  group_by: string
+}
+
 interface SecondaryChartDef {
   title?: string
   chart_type?: string
   available_chart_types?: string[]
-  chart_config?: Record<string, unknown>
+  chart_config?: Record<string, unknown> & { computed_ratio?: ComputedRatioDef }
   span?: "full" | "half" | "third"
   source_dashboard_code?: string
   source_series_label?: string
@@ -27,6 +34,11 @@ interface SecondaryChartDef {
 interface SecondaryGridProps {
   layoutConfig: Record<string, unknown> | null
   data: ChartDataResponse
+  /**
+   * The dashboard code used to build the /computed BFF URL for computed_ratio cards.
+   * When omitted, computed_ratio secondary charts will not render.
+   */
+  dashboardCode?: string
   /**
    * When set, data_table secondary charts are filtered to show only the points
    * whose category matches this period (YYYYMM). Other chart types are unaffected.
@@ -130,7 +142,102 @@ function CrossDashboardCard({
   )
 }
 
-export function SecondaryGrid({ layoutConfig, data, selectedPeriod }: SecondaryGridProps) {
+// ComputedRatioCard fetches a computed-ratio payload from the /computed BFF endpoint
+// and renders it as a horizontal_bar chart. The computation (e.g. Margin % by Category)
+// is performed in the backend via planComputedRatio — no client-side arithmetic needed.
+function ComputedRatioCard({
+  s,
+  dashboardCode,
+  cardIndex,
+  cardTypes,
+  setCardTypes,
+  height,
+}: {
+  s: SecondaryChartDef
+  dashboardCode: string
+  cardIndex: number
+  cardTypes: Record<number, string>
+  setCardTypes: React.Dispatch<React.SetStateAction<Record<number, string>>>
+  height: number
+}) {
+  const [computedData, setComputedData] = useState<ChartDataResponse | null>(null)
+  const cr = s.chart_config?.computed_ratio
+
+  useEffect(() => {
+    if (!cr) return
+    const url = new URL(
+      `/api/v1/finance/bi/dashboards/by-code/${dashboardCode}/computed`,
+      window.location.origin,
+    )
+    url.searchParams.set("numerator", cr.numerator)
+    url.searchParams.set("denominator", cr.denominator)
+    url.searchParams.set("scale", String(cr.scale))
+    url.searchParams.set("group_by", cr.group_by)
+
+    fetch(url.toString(), { credentials: "include" })
+      .then((r) => r.json())
+      .then((j: { data?: ChartDataResponse }) => {
+        if (j.data) setComputedData(j.data)
+      })
+      .catch(() => {})
+  }, [dashboardCode, cr])
+
+  const activeType = cardTypes[cardIndex] ?? s.chart_type ?? "horizontal_bar"
+
+  // Build a synthetic ChartDataResponse shaped for horizontal_bar:
+  // one series whose points are the group_2 categories with their ratio values.
+  const emptyChart: ChartDataResponse = {
+    config: undefined,
+    series: [],
+    categories: [],
+    kpis: [],
+    drillContext: undefined,
+    meta: undefined,
+  }
+  const chartData: ChartDataResponse = computedData ?? emptyChart
+
+  return (
+    <Card className={cn(s.span === "full" && "lg:col-span-2")}>
+      <CardHeader className="pb-2">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-sm font-semibold">{s.title ?? "Margin %"}</CardTitle>
+          {(s.available_chart_types ?? []).length > 0 && (
+            <select
+              value={activeType}
+              onChange={(e) => setCardTypes((prev) => ({ ...prev, [cardIndex]: e.target.value }))}
+              className="rounded border border-border bg-background px-2 py-0.5 text-xs"
+            >
+              <option value={s.chart_type ?? "horizontal_bar"}>
+                {humanizeType(s.chart_type ?? "horizontal_bar")}
+              </option>
+              {(s.available_chart_types ?? []).map((t) => (
+                <option key={t} value={t}>
+                  {humanizeType(t)}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
+      </CardHeader>
+      <CardContent>
+        {computedData === null ? (
+          <div className="flex h-[200px] items-center justify-center text-sm text-muted-foreground">
+            Loading…
+          </div>
+        ) : (
+          <ChartEngine
+            chartType={activeType}
+            config={(s.chart_config ?? {}) as Record<string, unknown>}
+            data={chartData}
+            height={height}
+          />
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+export function SecondaryGrid({ layoutConfig, data, dashboardCode, selectedPeriod }: SecondaryGridProps) {
   const secondary = (layoutConfig?.secondary_charts as SecondaryChartDef[] | undefined) ?? []
   const [cardTypes, setCardTypes] = useState<Record<number, string>>({})
 
@@ -149,6 +256,21 @@ export function SecondaryGrid({ layoutConfig, data, selectedPeriod }: SecondaryG
               key={`${s.title ?? "chart"}-${i}`}
               s={s}
               primaryData={data}
+              cardIndex={i}
+              cardTypes={cardTypes}
+              setCardTypes={setCardTypes}
+              height={280}
+            />
+          )
+        }
+
+        // Computed-ratio cards fetch from the /computed BFF endpoint (backend planComputedRatio).
+        if (s.chart_config?.computed_ratio && dashboardCode) {
+          return (
+            <ComputedRatioCard
+              key={`${s.title ?? "computed"}-${i}`}
+              s={s}
+              dashboardCode={dashboardCode}
               cardIndex={i}
               cardTypes={cardTypes}
               setCardTypes={setCardTypes}

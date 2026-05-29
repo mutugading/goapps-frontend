@@ -181,6 +181,7 @@ export function ViewerPage({ code }: { code: string }) {
         <SecondaryGrid
           layoutConfig={dashboard.layoutConfig as Record<string, unknown>}
           data={chartData}
+          dashboardCode={code}
           selectedPeriod={effectiveSelectedPeriod}
         />
       )}
