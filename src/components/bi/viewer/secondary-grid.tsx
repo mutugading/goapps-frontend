@@ -57,6 +57,8 @@ interface SecondaryGridProps {
   canDrillDeeper?: boolean
   /** Called when a data_table row is clicked; receives the new full drill path. */
   onDrill?: (path: string[]) => void
+  /** Current drill path — used to build onRowClick for component_detail_table cards. */
+  drillPath?: string[]
 }
 
 function humanizeType(t: string): string {
@@ -93,7 +95,9 @@ function CrossDashboardCard({
   const code = s.source_dashboard_code!
 
   useEffect(() => {
-    fetch(`/api/v1/finance/bi/dashboards/by-code/${code}/data?period=L24M`, {
+    // force_trend=true instructs the BFF to add x-force-trend gRPC metadata, so the
+    // backend returns a time-series (trend) payload instead of a waterfall/categorical one.
+    fetch(`/api/v1/finance/bi/dashboards/by-code/${code}/data?period=L24M&force_trend=true`, {
       credentials: "include",
     })
       .then((r) => r.json())
@@ -161,6 +165,7 @@ function CrossDashboardCard({
 function ComputedRatioCard({
   s,
   dashboardCode,
+  selectedPeriod,
   cardIndex,
   cardTypes,
   setCardTypes,
@@ -168,6 +173,7 @@ function ComputedRatioCard({
 }: {
   s: SecondaryChartDef
   dashboardCode: string
+  selectedPeriod?: string
   cardIndex: number
   cardTypes: Record<number, string>
   setCardTypes: React.Dispatch<React.SetStateAction<Record<number, string>>>
@@ -186,6 +192,8 @@ function ComputedRatioCard({
     url.searchParams.set("denominator", cr.denominator)
     url.searchParams.set("scale", String(cr.scale))
     url.searchParams.set("group_by", cr.group_by)
+    // Pass the selected period so the backend resolves the correct YYYYMM window.
+    if (selectedPeriod) url.searchParams.set("period", selectedPeriod)
 
     fetch(url.toString(), { credentials: "include" })
       .then((r) => r.json())
@@ -193,7 +201,7 @@ function ComputedRatioCard({
         if (j.data) setComputedData(j.data)
       })
       .catch(() => {})
-  }, [dashboardCode, cr])
+  }, [dashboardCode, cr, selectedPeriod])
 
   const activeType = cardTypes[cardIndex] ?? s.chart_type ?? "horizontal_bar"
 
@@ -250,7 +258,7 @@ function ComputedRatioCard({
   )
 }
 
-export function SecondaryGrid({ layoutConfig, data, dashboardCode, selectedPeriod, drillEnabled, canDrillDeeper, onDrill }: SecondaryGridProps) {
+export function SecondaryGrid({ layoutConfig, data, dashboardCode, selectedPeriod, drillEnabled, canDrillDeeper, onDrill, drillPath }: SecondaryGridProps) {
   const secondary = (layoutConfig?.secondary_charts as SecondaryChartDef[] | undefined) ?? []
   const [cardTypes, setCardTypes] = useState<Record<number, string>>({})
 
@@ -265,6 +273,11 @@ export function SecondaryGrid({ layoutConfig, data, dashboardCode, selectedPerio
         // Component Detail table — 6-column MoM/YoY breakdown for a categorical dashboard.
         if (s.chart_type === "component_detail_table") {
           const cfg = (s.chart_config ?? {}) as Record<string, unknown>
+          const sCardDrillEnabled = s.drill_enabled !== false
+          const canClick = drillEnabled && canDrillDeeper && sCardDrillEnabled && !!onDrill
+          const handleRowClick = canClick
+            ? (category: string) => onDrill([...(drillPath ?? []), category])
+            : undefined
           return (
             <Card key={`${s.title ?? "component-detail"}-${i}`} className={cn(s.span === "full" && "lg:col-span-2")}>
               <CardHeader className="pb-2">
@@ -277,6 +290,7 @@ export function SecondaryGrid({ layoutConfig, data, dashboardCode, selectedPerio
                   group1={cfg.group1 as string | undefined}
                   numberFormat={cfg.number_format as string | undefined}
                   decimals={cfg.decimals as number | undefined}
+                  onRowClick={handleRowClick}
                 />
               </CardContent>
             </Card>
@@ -327,6 +341,7 @@ export function SecondaryGrid({ layoutConfig, data, dashboardCode, selectedPerio
               key={`${s.title ?? "computed"}-${i}`}
               s={s}
               dashboardCode={dashboardCode}
+              selectedPeriod={selectedPeriod}
               cardIndex={i}
               cardTypes={cardTypes}
               setCardTypes={setCardTypes}

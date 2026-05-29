@@ -39,6 +39,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     if (group1Filter.length > 0) metadata.set("x-group1-filter", group1Filter.join(","))
     if (group2Filter.length > 0) metadata.set("x-group2-filter", group2Filter.join(","))
 
+    // force_trend=true: instructs the backend to override x_axis_field and return a
+    // time-series payload instead of a categorical/waterfall one. Used by CrossDashboardCard
+    // to merge a secondary trend line (e.g. EBITDA) with the primary NP series.
+    if (sp.get("force_trend") === "true") metadata.set("x-force-trend", "true")
+
     const response = await client.getDashboardData(
       {
         dashboardCode: code,

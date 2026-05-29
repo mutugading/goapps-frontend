@@ -26,6 +26,8 @@ interface ComponentDetailTableProps {
   group1?: string
   numberFormat?: string
   decimals?: number
+  /** When provided, rows become clickable and this callback is called with the row's category. */
+  onRowClick?: (category: string) => void
 }
 
 function fmtPct(v: number): string {
@@ -38,6 +40,7 @@ export function ComponentDetailTable({
   group1,
   numberFormat = "currency_thousands",
   decimals = 1,
+  onRowClick,
 }: ComponentDetailTableProps) {
   // null = still loading; [] = loaded but empty; non-empty = data ready.
   const [rows, setRows] = useState<ComponentDetailRow[] | null>(null)
@@ -95,7 +98,11 @@ export function ComponentDetailTable({
           {rows.map((r) => (
             <tr
               key={r.category}
-              className="border-b border-border/50 hover:bg-muted/20"
+              className={cn(
+                "border-b border-border/50",
+                onRowClick ? "cursor-pointer hover:bg-muted/50" : "hover:bg-muted/20",
+              )}
+              onClick={onRowClick ? () => onRowClick(r.category) : undefined}
             >
               <td className="py-1.5 pr-3 font-medium">{r.category}</td>
               <td className="px-2 py-1.5 text-right tabular-nums">

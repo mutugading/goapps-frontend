@@ -9,11 +9,25 @@
 //   denominator - metric_name for the divisor   (default: ""; empty = SUM(numerator) only)
 //   scale       - multiplier for the ratio/sum   (default: 100 for ratio, 1 for sum)
 //   group_by    - grouping column                (default: group_2)
-//   period      - period preset forwarded to the backend (default: L12M)
+//   period      - YYYYMM string OR preset (L12M, L24M, THIS_YEAR, etc.; default: L12M)
+//                 A YYYYMM string is converted to a CUSTOM range (first→last day of that month).
 
 import { NextRequest, NextResponse } from "next/server"
 import { getBiChartDataClient, createMetadataFromRequest, isGrpcError, handleGrpcError } from "@/lib/grpc"
 import { CompareMode } from "@/types/generated/finance/v1/bi"
+
+/**
+ * Converts a YYYYMM string to [firstDay, lastDay] of that month as Date objects.
+ * Returns undefined if the input is not a 6-digit string.
+ */
+function yyyymmToRange(s: string): [Date, Date] | undefined {
+  if (!/^\d{6}$/.test(s)) return undefined
+  const year = parseInt(s.slice(0, 4), 10)
+  const month = parseInt(s.slice(4, 6), 10) - 1 // 0-indexed
+  const from = new Date(Date.UTC(year, month, 1))
+  const to = new Date(Date.UTC(year, month + 1, 0, 23, 59, 59, 999))
+  return [from, to]
+}
 
 export async function GET(
   request: NextRequest,
@@ -39,13 +53,27 @@ export async function GET(
     // which routes Plan() to planComputedRatio (CASE-WHEN pivot grouped by group_2).
     metadata.set("x-computed-ratio", JSON.stringify(cr))
 
+    // Resolve period: if caller passes a YYYYMM string (e.g. "202604"), convert it to a
+    // CUSTOM range so ResolvePeriod on the backend applies the correct single-month filter.
+    // Otherwise forward the preset string (L12M, L24M, THIS_YEAR, etc.) verbatim.
+    const periodParam = sp.get("period") ?? "L12M"
+    const yyyymmRange = yyyymmToRange(periodParam)
+    let periodPreset = periodParam
+    let periodFrom: Date | undefined
+    let periodTo: Date | undefined
+    if (yyyymmRange) {
+      periodPreset = "CUSTOM"
+      periodFrom = yyyymmRange[0]
+      periodTo = yyyymmRange[1]
+    }
+
     const client = getBiChartDataClient()
     const response = await client.getDashboardData(
       {
         dashboardCode: code,
-        periodPreset: sp.get("period") ?? "L12M",
-        periodFrom: undefined,
-        periodTo: undefined,
+        periodPreset,
+        periodFrom,
+        periodTo,
         compare: CompareMode.COMPARE_MODE_NONE,
         drillPath: [],
       },

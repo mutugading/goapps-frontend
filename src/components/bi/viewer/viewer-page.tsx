@@ -45,9 +45,17 @@ export function ViewerPage({ code }: { code: string }) {
 
   const { data: dashboard, isLoading: dashLoading, isError: dashError } = useDashboardByCode(code)
 
-  // Load distinct group values when the dashboard has filter_chips configured
-  const filterChipFields = (dashboard?.chartConfig?.["filter_chips"] as string[] | undefined) ?? []
-  const hasFilterChips = filterChipFields.length > 0
+  // Load distinct group values when the dashboard has filter_chips configured.
+  // NOTE: dashboard.chartConfig (from the /by-code endpoint) may be a partial Struct and
+  // miss filter_chips. The data endpoint always returns the full JSONB config, so we also
+  // check chartData.config (dataConfig) which is resolved later — but chartData is loaded
+  // after this hook call. We therefore derive filterChipFields twice: once eagerly from
+  // the dashboard endpoint (to start the useFactDistincts call as early as possible), and
+  // once more after chartData loads so the UI renders chips even if dashboard omits them.
+  const dashChipFields = (
+    (dashboard?.chartConfig?.["filterChips"] ?? dashboard?.chartConfig?.["filter_chips"]) as string[] | undefined
+  ) ?? []
+  const hasFilterChips = dashChipFields.length > 0
   const { data: distincts } = useFactDistincts(hasFilterChips ? (dashboard?.filterType ?? "") : "")
 
   const refreshMs = dashboard
@@ -129,6 +137,12 @@ export function ViewerPage({ code }: { code: string }) {
   // the data endpoint always returns the full config so we prefer it.
   const dataConfig = chartData?.config as Record<string, unknown> | undefined
   const dashConfig = dashboard.chartConfig as Record<string, unknown> | undefined
+
+  // Resolved filter_chips — prefer dataConfig (always full JSONB) over dashConfig.
+  const filterChipFields = (
+    (dataConfig?.filterChips ?? dataConfig?.filter_chips ??
+     dashChipFields) as string[]
+  )
 
   // available_chart_types: prefer data endpoint config (always has full JSONB).
   const availableChartTypes = (
@@ -261,6 +275,7 @@ export function ViewerPage({ code }: { code: string }) {
             (state.drillPath?.length ?? 0) < ((dashboard.maxDrillLevel ?? 3) - (dashboard.filterGroup1 ? 1 : 0))
           }
           onDrill={(nextPath) => setState({ ...state, drillPath: nextPath })}
+          drillPath={state.drillPath}
         />
       )}
     </div>
