@@ -176,7 +176,7 @@ export function getUomClient() {
 
 // BI service clients (Executive Dashboard module — hosted in services/finance).
 export function getBiDashboardClient() {
-  return getOrCreate("bi-dashboard", () =>
+  return getOrCreate("bi-dashboard-v2", () =>
     createServiceClient(DashboardServiceDefinition, SERVICE_ADDRESSES.finance, insecure, CHANNEL_OPTIONS)
   )
 }
