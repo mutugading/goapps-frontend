@@ -108,12 +108,15 @@ export function ViewerPage({ code }: { code: string }) {
   const dashConfig = dashboard.chartConfig as Record<string, unknown> | undefined
 
   // Static chip values stored in chart_config (filter_chips_group1 / filter_chips_group2).
-  // Used as fallback when useFactDistincts returns no data (e.g. empty fact table).
+  // MarshalToMap() on the data endpoint omits these fields, so also read from dashConfig
+  // (dashboard endpoint returns raw JSONB which always includes them).
   const staticGroup1Values = (
-    (dataConfig?.filterChipsGroup1 ?? dataConfig?.filter_chips_group1) as string[] | undefined
+    (dataConfig?.filterChipsGroup1 ?? dataConfig?.filter_chips_group1 ??
+     dashConfig?.filterChipsGroup1 ?? dashConfig?.filter_chips_group1) as string[] | undefined
   ) ?? []
   const staticGroup2Values = (
-    (dataConfig?.filterChipsGroup2 ?? dataConfig?.filter_chips_group2) as string[] | undefined
+    (dataConfig?.filterChipsGroup2 ?? dataConfig?.filter_chips_group2 ??
+     dashConfig?.filterChipsGroup2 ?? dashConfig?.filter_chips_group2) as string[] | undefined
   ) ?? []
 
   const group1Values = distincts?.group1s?.length ? distincts.group1s : staticGroup1Values

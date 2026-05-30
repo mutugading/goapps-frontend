@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { PageHeader } from "@/components/common/page-header"
+import { cn } from "@/lib/utils"
 import {
   useAccessibleDashboards,
   useFeaturedDashboards,
@@ -39,7 +40,7 @@ function useDashboardChartData(dashboardCode: string) {
 
   useEffect(() => {
     setLoading(true)
-    const url = `/api/v1/finance/bi/dashboards/by-code/${dashboardCode}/data?period=L12M&compare=NONE`
+    const url = `/api/v1/finance/bi/dashboards/by-code/${dashboardCode}/data?period_preset=L12M&compare=NONE`
     fetch(url, { credentials: "include" })
       .then((r) => r.json())
       .then((d: { data?: ChartDataResponse }) => {
@@ -80,9 +81,9 @@ function DashboardSection({ dashboard, isAdmin }: DashboardSectionProps) {
   const chartConfig = (chartData?.config ?? dashboard.chartConfig ?? {}) as Record<string, unknown>
 
   return (
-    <section className="space-y-3">
+    <section className="flex flex-col gap-3">
       {/* Section header */}
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-wrap items-start justify-between gap-2 sm:flex-nowrap sm:items-center">
         <div className="min-w-0">
           <h2 className="truncate text-base font-semibold">{sectionTitle}</h2>
           {dashboard.description && (
@@ -114,9 +115,9 @@ function DashboardSection({ dashboard, isAdmin }: DashboardSectionProps) {
 
       {/* Chart */}
       {showMain && (
-        <div className="rounded-lg border bg-card p-4">
+        <div className="rounded-xl border bg-card p-4 shadow-sm md:p-5">
           {loading ? (
-            <div className="flex h-[280px] items-center justify-center">
+            <div className="flex h-[320px] items-center justify-center">
               <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
             </div>
           ) : chartData ? (
@@ -124,10 +125,10 @@ function DashboardSection({ dashboard, isAdmin }: DashboardSectionProps) {
               chartType={chartType}
               config={chartConfig}
               data={chartData}
-              height={280}
+              height={320}
             />
           ) : (
-            <div className="flex h-[280px] items-center justify-center text-sm text-muted-foreground">
+            <div className="flex h-[320px] items-center justify-center text-sm text-muted-foreground">
               No data available
             </div>
           )}
@@ -209,7 +210,10 @@ export default function BiLandingClient() {
         <>
           {/* Featured dashboard sections — one full chart section per pinned dashboard */}
           {featured.length > 0 && (
-            <div className="space-y-10">
+            <div className={cn(
+              "gap-6",
+              featured.length === 1 ? "flex flex-col" : "grid grid-cols-1 gap-6 lg:grid-cols-2 xl:grid-cols-3"
+            )}>
               {featured.map((d) => (
                 <DashboardSection key={d.dashboardId} dashboard={d} isAdmin={isAdmin} />
               ))}
