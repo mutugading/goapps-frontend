@@ -1,14 +1,13 @@
 "use client"
 
-// BI landing — Executive Dashboard with pinned cards + all-dashboards grid.
-// Featured (pinned) cards display live KPI previews fetched from each dashboard's
-// data endpoint so executives can see key metrics at a glance.
+// BI landing — Executive Dashboard with per-dashboard chart sections.
+// Featured (pinned) dashboards each get a section showing an embedded chart.
+// Non-featured dashboards appear in a compact directory grid below.
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { ExternalLink, Pin, PinOff, ArrowDown, ArrowUp } from "lucide-react"
+import { ExternalLink, Pin, PinOff } from "lucide-react"
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -19,15 +18,23 @@ import {
   usePinDashboard,
 } from "@/hooks/bi/use-dashboard"
 import { usePermission } from "@/lib/hooks/use-permission"
-import { chartTypeToString, CHART_TYPE_LABELS } from "@/types/bi"
+import { chartTypeToString } from "@/types/bi"
+import { ChartEngine } from "@/components/bi/chart-engine/chart-engine"
 import { ViewerEmptyState } from "@/components/bi/viewer/states"
-import { cn } from "@/lib/utils"
-import type { Dashboard, KpiResult } from "@/types/bi"
+import type { Dashboard, ChartDataResponse } from "@/types/bi"
 
-// ── KPI preview fetcher ───────────────────────────────────────────────────────
+// ── Types ─────────────────────────────────────────────────────────────────────
 
-function useDashboardKpis(dashboardCode: string) {
-  const [kpis, setKpis] = useState<KpiResult[]>([])
+interface LandingSection {
+  chart_id: string
+  title: string
+  show: boolean
+}
+
+// ── Chart data fetcher ────────────────────────────────────────────────────────
+
+function useDashboardChartData(dashboardCode: string) {
+  const [chartData, setChartData] = useState<ChartDataResponse | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -35,121 +42,102 @@ function useDashboardKpis(dashboardCode: string) {
     const url = `/api/v1/finance/bi/dashboards/by-code/${dashboardCode}/data?period=L12M&compare=NONE`
     fetch(url, { credentials: "include" })
       .then((r) => r.json())
-      .then((d: { data?: { kpis?: KpiResult[] } }) => {
-        setKpis(d.data?.kpis ?? [])
+      .then((d: { data?: ChartDataResponse }) => {
+        setChartData(d.data ?? null)
       })
       .catch(() => {
-        setKpis([])
+        setChartData(null)
       })
       .finally(() => {
         setLoading(false)
       })
   }, [dashboardCode])
 
-  return { kpis, loading }
+  return { chartData, loading }
 }
 
-// ── KPI chips row ─────────────────────────────────────────────────────────────
+// ── DashboardSection ──────────────────────────────────────────────────────────
 
-function KpiPreviewRow({ dashboardCode }: { dashboardCode: string }) {
-  const { kpis, loading } = useDashboardKpis(dashboardCode)
-
-  if (loading) {
-    return (
-      <div className="mt-2 flex gap-3">
-        {[1, 2, 3].map((i) => (
-          <Skeleton key={i} className="h-8 w-24" />
-        ))}
-      </div>
-    )
-  }
-  if (kpis.length === 0) return null
-
-  return (
-    <div className="mt-3 flex flex-wrap gap-3">
-      {kpis.slice(0, 4).map((k, i) => (
-        <div key={`${k.label}-${i}`} className="flex flex-col gap-0.5 rounded-md bg-muted/60 px-3 py-1.5">
-          <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-            {k.label}
-          </span>
-          <span className="text-sm font-bold tabular-nums leading-tight">{k.valueFormatted}</span>
-          {k.comparePeriodLabel !== "" && (
-            <span
-              className={cn(
-                "flex items-center gap-0.5 text-[10px] leading-none",
-                k.improving ? "text-emerald-600" : "text-red-500",
-              )}
-            >
-              {k.improving ? <ArrowUp className="h-2.5 w-2.5" /> : <ArrowDown className="h-2.5 w-2.5" />}
-              {k.deltaPct >= 0 ? "+" : ""}
-              {k.deltaPct.toFixed(1)}%
-            </span>
-          )}
-        </div>
-      ))}
-    </div>
-  )
-}
-
-// ── FeaturedCard ──────────────────────────────────────────────────────────────
-
-interface FeaturedCardProps {
+interface DashboardSectionProps {
   dashboard: Dashboard
   isAdmin: boolean
 }
 
-function FeaturedCard({ dashboard, isAdmin }: FeaturedCardProps) {
+function DashboardSection({ dashboard, isAdmin }: DashboardSectionProps) {
   const { mutate: togglePin, isPending } = usePinDashboard()
+  const { chartData, loading } = useDashboardChartData(dashboard.dashboardCode)
+
+  // Read landing_sections from layout_config; default to showing the main chart.
+  const rawSections = (dashboard.layoutConfig as Record<string, unknown> | undefined)?.landing_sections
+  const landingSections: LandingSection[] = Array.isArray(rawSections)
+    ? (rawSections as LandingSection[])
+    : [{ chart_id: "main", title: dashboard.dashboardTitle, show: true }]
+  const showMain = landingSections.find((s) => s.chart_id === "main")?.show !== false
+  const sectionTitle =
+    landingSections.find((s) => s.chart_id === "main")?.title || dashboard.dashboardTitle
+
+  const chartType = chartTypeToString(dashboard.chartType)
+  const chartConfig = (chartData?.config ?? dashboard.chartConfig ?? {}) as Record<string, unknown>
 
   return (
-    <Link href={`/finance/bi/${dashboard.dashboardCode}`} className="block h-full">
-      <Card className="group h-full transition-shadow hover:shadow-md">
-        <CardHeader className="pb-2">
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <CardTitle className="truncate text-base">{dashboard.dashboardTitle}</CardTitle>
-              {dashboard.description && (
-                <CardDescription className="mt-0.5 line-clamp-2 text-xs">
-                  {dashboard.description}
-                </CardDescription>
-              )}
-            </div>
-            {isAdmin && (
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-7 w-7 shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
-                disabled={isPending}
-                title="Unpin from Executive Dashboard"
-                onClick={(e) => {
-                  e.preventDefault()
-                  togglePin({ id: dashboard.dashboardId, pin: false })
-                }}
-              >
-                <PinOff className="h-3.5 w-3.5" />
-              </Button>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent>
-          {/* Live KPI preview */}
-          <KpiPreviewRow dashboardCode={dashboard.dashboardCode} />
+    <section className="space-y-3">
+      {/* Section header */}
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h2 className="truncate text-base font-semibold">{sectionTitle}</h2>
+          {dashboard.description && (
+            <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">{dashboard.description}</p>
+          )}
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          {isAdmin && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs"
+              disabled={isPending}
+              title="Unpin from Executive Dashboard"
+              onClick={() => togglePin({ id: dashboard.dashboardId, pin: false })}
+            >
+              <PinOff className="mr-1 h-3 w-3" />
+              Unpin
+            </Button>
+          )}
+          <Link href={`/finance/bi/${dashboard.dashboardCode}`}>
+            <Button size="sm" variant="ghost" className="h-7 text-xs">
+              View Full
+              <ExternalLink className="ml-1 h-3 w-3" />
+            </Button>
+          </Link>
+        </div>
+      </div>
 
-          <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
-            <Badge variant="outline" className="text-[10px]">
-              {CHART_TYPE_LABELS[chartTypeToString(dashboard.chartType)] ?? "Chart"}
-            </Badge>
-            <span className="flex items-center gap-1">
-              View full dashboard <ExternalLink className="h-3 w-3" />
-            </span>
-          </div>
-        </CardContent>
-      </Card>
-    </Link>
+      {/* Chart */}
+      {showMain && (
+        <div className="rounded-lg border bg-card p-4">
+          {loading ? (
+            <div className="flex h-[280px] items-center justify-center">
+              <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            </div>
+          ) : chartData ? (
+            <ChartEngine
+              chartType={chartType}
+              config={chartConfig}
+              data={chartData}
+              height={280}
+            />
+          ) : (
+            <div className="flex h-[280px] items-center justify-center text-sm text-muted-foreground">
+              No data available
+            </div>
+          )}
+        </div>
+      )}
+    </section>
   )
 }
 
-// ── SmallCard ─────────────────────────────────────────────────────────────────
+// ── SmallCard (non-featured dashboards) ──────────────────────────────────────
 
 interface SmallCardProps {
   dashboard: Dashboard
@@ -161,33 +149,29 @@ function SmallCard({ dashboard, isAdmin }: SmallCardProps) {
 
   return (
     <Link href={`/finance/bi/${dashboard.dashboardCode}`}>
-      <Card className="group cursor-pointer transition-shadow hover:shadow-sm">
-        <CardHeader className="pb-3 pt-4">
-          <div className="flex items-start justify-between gap-1">
-            <CardTitle className="line-clamp-2 text-sm leading-snug">{dashboard.dashboardTitle}</CardTitle>
-            {isAdmin && (
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-6 w-6 shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
-                disabled={isPending}
-                title="Pin to Executive Dashboard"
-                onClick={(e) => {
-                  e.preventDefault()
-                  togglePin({ id: dashboard.dashboardId, pin: true })
-                }}
-              >
-                <Pin className="h-3 w-3" />
-              </Button>
-            )}
-          </div>
-          {dashboard.groupName && (
-            <Badge variant="secondary" className="mt-1 w-fit text-[10px]">
-              {dashboard.groupName}
-            </Badge>
+      <div className="group cursor-pointer rounded-lg border bg-card p-3 transition-shadow hover:shadow-sm">
+        <div className="flex items-start justify-between gap-1">
+          <p className="line-clamp-2 text-sm font-medium leading-snug">{dashboard.dashboardTitle}</p>
+          {isAdmin && (
+            <button
+              className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
+              disabled={isPending}
+              title="Pin to Executive Dashboard"
+              onClick={(e) => {
+                e.preventDefault()
+                togglePin({ id: dashboard.dashboardId, pin: true })
+              }}
+            >
+              <Pin className="h-3 w-3 text-muted-foreground" />
+            </button>
           )}
-        </CardHeader>
-      </Card>
+        </div>
+        {dashboard.groupName && (
+          <Badge variant="outline" className="mt-2 text-[10px]">
+            {dashboard.groupName}
+          </Badge>
+        )}
+      </div>
     </Link>
   )
 }
@@ -211,37 +195,28 @@ export default function BiLandingClient() {
       <PageHeader title="Executive Dashboard" subtitle="Key performance indicators and business metrics" />
 
       {isLoading ? (
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <Skeleton key={i} className="h-44 w-full" />
-            ))}
-          </div>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className="h-20 w-full" />
-            ))}
-          </div>
+        <div className="space-y-8">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="space-y-3">
+              <Skeleton className="h-6 w-48" />
+              <Skeleton className="h-[320px] w-full rounded-lg" />
+            </div>
+          ))}
         </div>
       ) : isError ? (
         <ViewerEmptyState message="Failed to load dashboards" />
       ) : (
         <>
-          {/* Pinned / Featured section */}
+          {/* Featured dashboard sections — one full chart section per pinned dashboard */}
           {featured.length > 0 && (
-            <section>
-              <h2 className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                Pinned
-              </h2>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {featured.map((d) => (
-                  <FeaturedCard key={d.dashboardId} dashboard={d} isAdmin={isAdmin} />
-                ))}
-              </div>
-            </section>
+            <div className="space-y-10">
+              {featured.map((d) => (
+                <DashboardSection key={d.dashboardId} dashboard={d} isAdmin={isAdmin} />
+              ))}
+            </div>
           )}
 
-          {/* All other dashboards */}
+          {/* Directory of all other accessible dashboards */}
           {others.length > 0 && (
             <section>
               <h2 className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
@@ -255,7 +230,7 @@ export default function BiLandingClient() {
             </section>
           )}
 
-          {/* Empty state: no dashboards at all */}
+          {/* Empty state */}
           {featured.length === 0 && others.length === 0 && (
             <ViewerEmptyState message="No dashboards available for your role" />
           )}
