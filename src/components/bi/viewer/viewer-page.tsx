@@ -48,14 +48,17 @@ export function ViewerPage({ code }: { code: string }) {
   // Load distinct group values when the dashboard has filter_chips configured.
   // NOTE: dashboard.chartConfig (from the /by-code endpoint) may be a partial Struct and
   // miss filter_chips. The data endpoint always returns the full JSONB config, so we also
-  // check chartData.config (dataConfig) which is resolved later — but chartData is loaded
-  // after this hook call. We therefore derive filterChipFields twice: once eagerly from
-  // the dashboard endpoint (to start the useFactDistincts call as early as possible), and
-  // once more after chartData loads so the UI renders chips even if dashboard omits them.
+  // check chartData.config (dataConfig) which is resolved later. We use the dashboard
+  // endpoint config eagerly here to start useFactDistincts as early as possible.
+  // Static group values (filter_chips_group1/2) stored in chart_config serve as fallback
+  // when useFactDistincts returns no data.
   const dashChipFields = (
     (dashboard?.chartConfig?.["filterChips"] ?? dashboard?.chartConfig?.["filter_chips"]) as string[] | undefined
   ) ?? []
-  const hasFilterChips = dashChipFields.length > 0
+  const dashHasStaticChips =
+    Boolean(dashboard?.chartConfig?.["filter_chips_group1"]) ||
+    Boolean(dashboard?.chartConfig?.["filterChipsGroup1"])
+  const hasFilterChips = dashChipFields.length > 0 || dashHasStaticChips
   const { data: distincts } = useFactDistincts(hasFilterChips ? (dashboard?.filterType ?? "") : "")
 
   const refreshMs = dashboard
@@ -99,8 +102,22 @@ export function ViewerPage({ code }: { code: string }) {
   // Use the viewer-selected chart type if set, otherwise fall back to the dashboard primary.
   const chartType = state.chartType || primaryChartType
 
-  const group1Values = distincts?.group1s ?? []
-  const group2Values = distincts?.group2s ?? []
+  // Resolve config objects early so both group-values and view-configs derivations can use them.
+  // The data endpoint always returns the full JSONB config; prefer it over the dashboard endpoint.
+  const dataConfig = chartData?.config as Record<string, unknown> | undefined
+  const dashConfig = dashboard.chartConfig as Record<string, unknown> | undefined
+
+  // Static chip values stored in chart_config (filter_chips_group1 / filter_chips_group2).
+  // Used as fallback when useFactDistincts returns no data (e.g. empty fact table).
+  const staticGroup1Values = (
+    (dataConfig?.filterChipsGroup1 ?? dataConfig?.filter_chips_group1) as string[] | undefined
+  ) ?? []
+  const staticGroup2Values = (
+    (dataConfig?.filterChipsGroup2 ?? dataConfig?.filter_chips_group2) as string[] | undefined
+  ) ?? []
+
+  const group1Values = distincts?.group1s?.length ? distincts.group1s : staticGroup1Values
+  const group2Values = distincts?.group2s?.length ? distincts.group2s : staticGroup2Values
   const group1Filter = state.group1Filter ?? []
   const group2Filter = state.group2Filter ?? []
 
@@ -131,18 +148,6 @@ export function ViewerPage({ code }: { code: string }) {
     (isTrendChart
       ? periodCategories[periodCategories.length - 1]
       : derivedPeriodOptions[derivedPeriodOptions.length - 1])
-
-  // Read view_configs from the chart data response config (data endpoint returns the full JSONB config).
-  // The dashboard config endpoint often omits chartConfig when the Struct is complex;
-  // the data endpoint always returns the full config so we prefer it.
-  const dataConfig = chartData?.config as Record<string, unknown> | undefined
-  const dashConfig = dashboard.chartConfig as Record<string, unknown> | undefined
-
-  // Resolved filter_chips — prefer dataConfig (always full JSONB) over dashConfig.
-  const filterChipFields = (
-    (dataConfig?.filterChips ?? dataConfig?.filter_chips ??
-     dashChipFields) as string[]
-  )
 
   // available_chart_types: prefer data endpoint config (always has full JSONB).
   const availableChartTypes = (
@@ -197,9 +202,9 @@ export function ViewerPage({ code }: { code: string }) {
         categories={monthSelectorCategories}
       />
 
-      {hasFilterChips && (group1Values.length > 0 || group2Values.length > 0) && (
+      {(group1Values.length > 0 || group2Values.length > 0) && (
         <div className="flex flex-col gap-2 rounded-lg border bg-card px-4 py-3">
-          {filterChipFields.includes("group_1") && group1Values.length > 0 && (
+          {group1Values.length > 0 && (
             <FilterChips
               label="Delivery Type"
               values={group1Values}
@@ -208,7 +213,7 @@ export function ViewerPage({ code }: { code: string }) {
               onSelectAll={() => setState({ ...state, group1Filter: [] })}
             />
           )}
-          {filterChipFields.includes("group_2") && group2Values.length > 0 && (
+          {group2Values.length > 0 && (
             <FilterChips
               label="Category"
               values={group2Values}
