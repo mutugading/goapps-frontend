@@ -277,6 +277,8 @@ export function ViewerPage({ code }: { code: string }) {
           onDrill={(nextPath) => setState({ ...state, drillPath: nextPath })}
           drillPath={state.drillPath}
           compare={state.compare}
+          group1Filter={group1Filter}
+          group2Filter={group2Filter}
         />
       )}
     </div>

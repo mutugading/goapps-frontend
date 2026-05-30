@@ -65,6 +65,15 @@ interface SecondaryGridProps {
    * the current period series and the comparison period series (dashed line).
    */
   compare?: string
+  /**
+   * Active group_1 filter values (e.g. ["Export", "Local"]). Forwarded to computed_ratio
+   * cards so their /computed BFF calls respect the current filter-chip selection.
+   */
+  group1Filter?: string[]
+  /**
+   * Active group_2 filter values (e.g. ["ACY", "ATY"]). Forwarded to computed_ratio cards.
+   */
+  group2Filter?: string[]
 }
 
 function humanizeType(t: string): string {
@@ -176,6 +185,8 @@ function ComputedRatioCard({
   cardTypes,
   setCardTypes,
   height,
+  group1Filter,
+  group2Filter,
 }: {
   s: SecondaryChartDef
   dashboardCode: string
@@ -184,9 +195,15 @@ function ComputedRatioCard({
   cardTypes: Record<number, string>
   setCardTypes: React.Dispatch<React.SetStateAction<Record<number, string>>>
   height: number
+  group1Filter?: string[]
+  group2Filter?: string[]
 }) {
   const [computedData, setComputedData] = useState<ChartDataResponse | null>(null)
   const cr = s.chart_config?.computed_ratio
+
+  // Stable serialised filter strings to avoid unnecessary effect re-runs.
+  const g1Key = (group1Filter ?? []).join(",")
+  const g2Key = (group2Filter ?? []).join(",")
 
   useEffect(() => {
     if (!cr) return
@@ -200,6 +217,9 @@ function ComputedRatioCard({
     url.searchParams.set("group_by", cr.group_by)
     // Pass the selected period so the backend resolves the correct YYYYMM window.
     if (selectedPeriod) url.searchParams.set("period", selectedPeriod)
+    // Forward active filter-chip selections so the ratio respects the current view.
+    if (g1Key) url.searchParams.set("group1_filter", g1Key)
+    if (g2Key) url.searchParams.set("group2_filter", g2Key)
 
     fetch(url.toString(), { credentials: "include" })
       .then((r) => r.json())
@@ -207,7 +227,7 @@ function ComputedRatioCard({
         if (j.data) setComputedData(j.data)
       })
       .catch(() => {})
-  }, [dashboardCode, cr, selectedPeriod])
+  }, [dashboardCode, cr, selectedPeriod, g1Key, g2Key])
 
   const activeType = cardTypes[cardIndex] ?? s.chart_type ?? "horizontal_bar"
 
@@ -342,7 +362,7 @@ function TrendCompareCard({
   )
 }
 
-export function SecondaryGrid({ layoutConfig, data, dashboardCode, selectedPeriod, drillEnabled, canDrillDeeper, onDrill, drillPath, compare }: SecondaryGridProps) {
+export function SecondaryGrid({ layoutConfig, data, dashboardCode, selectedPeriod, drillEnabled, canDrillDeeper, onDrill, drillPath, compare, group1Filter, group2Filter }: SecondaryGridProps) {
   const secondary = (layoutConfig?.secondary_charts as SecondaryChartDef[] | undefined) ?? []
   const [cardTypes, setCardTypes] = useState<Record<number, string>>({})
 
@@ -435,6 +455,8 @@ export function SecondaryGrid({ layoutConfig, data, dashboardCode, selectedPerio
               cardTypes={cardTypes}
               setCardTypes={setCardTypes}
               height={280}
+              group1Filter={group1Filter}
+              group2Filter={group2Filter}
             />
           )
         }

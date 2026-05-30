@@ -53,6 +53,12 @@ export async function GET(
     // which routes Plan() to planComputedRatio (CASE-WHEN pivot grouped by group_2).
     metadata.set("x-computed-ratio", JSON.stringify(cr))
 
+    // Forward group_1 / group_2 filter chip selections so planComputedRatio applies them.
+    const group1Filter = sp.get("group1_filter")
+    const group2Filter = sp.get("group2_filter")
+    if (group1Filter) metadata.set("x-group1-filter", group1Filter)
+    if (group2Filter) metadata.set("x-group2-filter", group2Filter)
+
     // Resolve period: if caller passes a YYYYMM string (e.g. "202604"), convert it to a
     // CUSTOM range so ResolvePeriod on the backend applies the correct single-month filter.
     // Otherwise forward the preset string (L12M, L24M, THIS_YEAR, etc.) verbatim.
