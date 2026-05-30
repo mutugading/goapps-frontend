@@ -2,7 +2,7 @@
 
 // ViewerPage — composes the full executive-dashboard viewer for one dashboard code.
 
-import { useRef, useCallback } from "react"
+import { useRef, useCallback, useState } from "react"
 import { RefreshCw } from "lucide-react"
 import { TREND_CHART_TYPES } from "@/hooks/bi/use-chart-data"
 
@@ -65,34 +65,34 @@ export function ViewerPage({ code }: { code: string }) {
     ? (dashboard.refreshIntervalSec || dashboard.cacheTtlSec || 0) * 1000
     : 0
 
+  // Filter-chip selections stored in local React state (not URL) so they trigger
+  // immediate TanStack Query refetch without depending on Next.js router.replace timing.
+  const [group1Filter, setGroup1Filter] = useState<string[]>([])
+  const [group2Filter, setGroup2Filter] = useState<string[]>([])
+
+  // Merge local chip filters into the state object passed to useDashboardData.
+  const stateWithFilters: ViewerState = { ...state, group1Filter, group2Filter }
+
   const {
     data: chartData,
     isLoading: dataLoading,
     isError: dataError,
     error,
     refetch,
-  } = useDashboardData(code, state, refreshMs)
+  } = useDashboardData(code, stateWithFilters, refreshMs)
 
-  // Toggle helpers — mutate URL state so the data query refetches automatically.
+  // Toggle helpers — use local state for immediate refetch.
   const toggleGroup1 = useCallback((v: string) => {
-    setState((prev) => {
-      const current = prev.group1Filter ?? []
-      return {
-        ...prev,
-        group1Filter: current.includes(v) ? current.filter((x) => x !== v) : [...current, v],
-      }
-    })
-  }, [setState])
+    setGroup1Filter((current) =>
+      current.includes(v) ? current.filter((x) => x !== v) : [...current, v]
+    )
+  }, [])
 
   const toggleGroup2 = useCallback((v: string) => {
-    setState((prev) => {
-      const current = prev.group2Filter ?? []
-      return {
-        ...prev,
-        group2Filter: current.includes(v) ? current.filter((x) => x !== v) : [...current, v],
-      }
-    })
-  }, [setState])
+    setGroup2Filter((current) =>
+      current.includes(v) ? current.filter((x) => x !== v) : [...current, v]
+    )
+  }, [])
 
   if (dashLoading) return <ViewerSkeleton />
   if (dashError || !dashboard) return <ViewerErrorState message="Dashboard not found" />
@@ -121,8 +121,7 @@ export function ViewerPage({ code }: { code: string }) {
 
   const group1Values = distincts?.group1s?.length ? distincts.group1s : staticGroup1Values
   const group2Values = distincts?.group2s?.length ? distincts.group2s : staticGroup2Values
-  const group1Filter = state.group1Filter ?? []
-  const group2Filter = state.group2Filter ?? []
+  // group1Filter and group2Filter are local useState (defined above) — no URL state needed.
 
   // Categories from chart data — used to drive the month selector in FilterBar.
   const categories = chartData?.categories ?? []
@@ -213,7 +212,7 @@ export function ViewerPage({ code }: { code: string }) {
               values={group1Values}
               selected={group1Filter}
               onToggle={toggleGroup1}
-              onSelectAll={() => setState({ ...state, group1Filter: [] })}
+              onSelectAll={() => setGroup1Filter([])}
             />
           )}
           {group2Values.length > 0 && (
@@ -222,7 +221,7 @@ export function ViewerPage({ code }: { code: string }) {
               values={group2Values}
               selected={group2Filter}
               onToggle={toggleGroup2}
-              onSelectAll={() => setState({ ...state, group2Filter: [] })}
+              onSelectAll={() => setGroup2Filter([])}
             />
           )}
         </div>
