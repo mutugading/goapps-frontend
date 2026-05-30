@@ -231,8 +231,6 @@ function ComputedRatioCard({
 
   const activeType = cardTypes[cardIndex] ?? s.chart_type ?? "horizontal_bar"
 
-  // Build a synthetic ChartDataResponse shaped for horizontal_bar:
-  // one series whose points are the group_2 categories with their ratio values.
   const emptyChart: ChartDataResponse = {
     config: undefined,
     series: [],
@@ -241,7 +239,23 @@ function ComputedRatioCard({
     drillContext: undefined,
     meta: undefined,
   }
-  const chartData: ChartDataResponse = computedData ?? emptyChart
+
+  // The computed endpoint returns N series × 1 point (one series per group_by bucket).
+  // Donut / horizontal_bar / data_table expect 1 series × N points (one point per bucket).
+  // Pivot here so all chart types receive the correct shape.
+  const chartData: ChartDataResponse = (() => {
+    if (!computedData?.series?.length) return computedData ?? emptyChart
+    const allSinglePoint = computedData.series.every((s) => (s.points?.length ?? 0) <= 1)
+    if (!allSinglePoint) return computedData
+    const mergedPoints = computedData.series
+      .filter((ser) => ser.name && ser.name !== "")
+      .map((ser) => ({ category: ser.name, value: ser.points?.[0]?.value ?? 0, label: "", meta: undefined }))
+    return {
+      ...computedData,
+      categories: mergedPoints.map((p) => p.category),
+      series: [{ name: cr?.numerator ?? "Value", libHint: "", points: mergedPoints }],
+    }
+  })()
 
   return (
     <Card className={cn(s.span === "full" && "lg:col-span-2")}>
