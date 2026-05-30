@@ -1,9 +1,12 @@
 "use client"
 
 // BI landing — Executive Dashboard with pinned cards + all-dashboards grid.
+// Featured (pinned) cards display live KPI previews fetched from each dashboard's
+// data endpoint so executives can see key metrics at a glance.
 
+import { useState, useEffect } from "react"
 import Link from "next/link"
-import { ExternalLink, Pin, PinOff } from "lucide-react"
+import { ExternalLink, Pin, PinOff, ArrowDown, ArrowUp } from "lucide-react"
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -18,7 +21,75 @@ import {
 import { usePermission } from "@/lib/hooks/use-permission"
 import { chartTypeToString, CHART_TYPE_LABELS } from "@/types/bi"
 import { ViewerEmptyState } from "@/components/bi/viewer/states"
-import type { Dashboard } from "@/types/bi"
+import { cn } from "@/lib/utils"
+import type { Dashboard, KpiResult } from "@/types/bi"
+
+// ── KPI preview fetcher ───────────────────────────────────────────────────────
+
+function useDashboardKpis(dashboardCode: string) {
+  const [kpis, setKpis] = useState<KpiResult[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    setLoading(true)
+    const url = `/api/v1/finance/bi/dashboards/by-code/${dashboardCode}/data?period=L12M&compare=NONE`
+    fetch(url, { credentials: "include" })
+      .then((r) => r.json())
+      .then((d: { data?: { kpis?: KpiResult[] } }) => {
+        setKpis(d.data?.kpis ?? [])
+      })
+      .catch(() => {
+        setKpis([])
+      })
+      .finally(() => {
+        setLoading(false)
+      })
+  }, [dashboardCode])
+
+  return { kpis, loading }
+}
+
+// ── KPI chips row ─────────────────────────────────────────────────────────────
+
+function KpiPreviewRow({ dashboardCode }: { dashboardCode: string }) {
+  const { kpis, loading } = useDashboardKpis(dashboardCode)
+
+  if (loading) {
+    return (
+      <div className="mt-2 flex gap-3">
+        {[1, 2, 3].map((i) => (
+          <Skeleton key={i} className="h-8 w-24" />
+        ))}
+      </div>
+    )
+  }
+  if (kpis.length === 0) return null
+
+  return (
+    <div className="mt-3 flex flex-wrap gap-3">
+      {kpis.slice(0, 4).map((k, i) => (
+        <div key={`${k.label}-${i}`} className="flex flex-col gap-0.5 rounded-md bg-muted/60 px-3 py-1.5">
+          <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            {k.label}
+          </span>
+          <span className="text-sm font-bold tabular-nums leading-tight">{k.valueFormatted}</span>
+          {k.comparePeriodLabel !== "" && (
+            <span
+              className={cn(
+                "flex items-center gap-0.5 text-[10px] leading-none",
+                k.improving ? "text-emerald-600" : "text-red-500",
+              )}
+            >
+              {k.improving ? <ArrowUp className="h-2.5 w-2.5" /> : <ArrowDown className="h-2.5 w-2.5" />}
+              {k.deltaPct >= 0 ? "+" : ""}
+              {k.deltaPct.toFixed(1)}%
+            </span>
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
 
 // ── FeaturedCard ──────────────────────────────────────────────────────────────
 
@@ -61,12 +132,15 @@ function FeaturedCard({ dashboard, isAdmin }: FeaturedCardProps) {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
+          {/* Live KPI preview */}
+          <KpiPreviewRow dashboardCode={dashboard.dashboardCode} />
+
+          <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
             <Badge variant="outline" className="text-[10px]">
               {CHART_TYPE_LABELS[chartTypeToString(dashboard.chartType)] ?? "Chart"}
             </Badge>
             <span className="flex items-center gap-1">
-              View <ExternalLink className="h-3 w-3" />
+              View full dashboard <ExternalLink className="h-3 w-3" />
             </span>
           </div>
         </CardContent>
@@ -140,7 +214,7 @@ export default function BiLandingClient() {
         <div className="space-y-6">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 3 }).map((_, i) => (
-              <Skeleton key={i} className="h-28 w-full" />
+              <Skeleton key={i} className="h-44 w-full" />
             ))}
           </div>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
