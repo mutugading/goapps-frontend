@@ -15,13 +15,27 @@ interface KpiGridProps {
 
 export function KpiGrid({ kpis }: KpiGridProps) {
   if (kpis.length === 0) return null
+
+  // Responsive grid columns: adapt to count so 5 KPIs don't wrap awkwardly.
+  const gridCols =
+    kpis.length === 5
+      ? "grid-cols-2 sm:grid-cols-3 lg:grid-cols-5"
+      : kpis.length === 4
+        ? "grid-cols-2 sm:grid-cols-2 lg:grid-cols-4"
+        : kpis.length === 3
+          ? "grid-cols-1 sm:grid-cols-3"
+          : "grid-cols-2 sm:grid-cols-2 xl:grid-cols-4"
+
+  // Compact padding when there are many widgets to keep them from overflowing.
+  const compactCard = kpis.length >= 5
+
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <div className={`grid gap-4 ${gridCols}`}>
       {kpis.map((k, i) => {
         const hasDelta = k.comparePeriodLabel !== ""
         return (
           <Card key={`${k.label}-${i}`}>
-            <CardContent className="p-4">
+            <CardContent className={compactCard ? "p-3" : "p-4"}>
               <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 {k.label}
               </div>
