@@ -358,7 +358,11 @@ export function SecondaryGrid({ layoutConfig, data, dashboardCode, selectedPerio
         if (s.chart_type === "component_detail_table") {
           const cfg = (s.chart_config ?? {}) as Record<string, unknown>
           const sCardDrillEnabled = s.drill_enabled !== false
-          const canClick = drillEnabled && canDrillDeeper && sCardDrillEnabled && !!onDrill
+          // Once drillPath has any element, the component-detail table shows group_3 data —
+          // that is the terminal level, so further drilling is not possible.
+          const drillDepth = drillPath?.length ?? 0
+          const isTerminalDrill = drillDepth > 0
+          const canClick = drillEnabled && canDrillDeeper && sCardDrillEnabled && !!onDrill && !isTerminalDrill
           const handleRowClick = canClick
             ? (category: string) => onDrill([...(drillPath ?? []), category])
             : undefined
@@ -375,6 +379,7 @@ export function SecondaryGrid({ layoutConfig, data, dashboardCode, selectedPerio
                   numberFormat={cfg.number_format as string | undefined}
                   decimals={cfg.decimals as number | undefined}
                   onRowClick={handleRowClick}
+                  drillPath={drillPath}
                 />
               </CardContent>
             </Card>

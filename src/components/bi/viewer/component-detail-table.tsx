@@ -28,6 +28,12 @@ interface ComponentDetailTableProps {
   decimals?: number
   /** When provided, rows become clickable and this callback is called with the row's category. */
   onRowClick?: (category: string) => void
+  /**
+   * Current drill path from the main chart. When drillPath has items, the component-detail
+   * table fetches group_3 data within the drilled group_2. The last element is passed as
+   * the `drill` query param to the BFF.
+   */
+  drillPath?: string[]
 }
 
 function fmtPct(v: number): string {
@@ -41,14 +47,20 @@ export function ComponentDetailTable({
   numberFormat = "currency_thousands",
   decimals = 1,
   onRowClick,
+  drillPath,
 }: ComponentDetailTableProps) {
   // null = still loading; [] = loaded but empty; non-empty = data ready.
   const [rows, setRows] = useState<ComponentDetailRow[] | null>(null)
+
+  // Last element in drillPath is the drilled group_2 segment (e.g. "INCOME").
+  // Passing it to the BFF causes the backend to return group_3 data within that bucket.
+  const drillSegment = drillPath && drillPath.length > 0 ? drillPath[drillPath.length - 1] : ""
 
   useEffect(() => {
     if (!period) return
     const qs = new URLSearchParams({ period })
     if (group1) qs.set("group1", group1)
+    if (drillSegment) qs.set("drill", drillSegment)
     let cancelled = false
     fetch(
       `/api/v1/finance/bi/dashboards/by-code/${dashboardCode}/component-detail?${qs.toString()}`,
@@ -64,7 +76,7 @@ export function ComponentDetailTable({
     return () => {
       cancelled = true
     }
-  }, [dashboardCode, period, group1])
+  }, [dashboardCode, period, group1, drillSegment])
 
   if (rows === null) {
     return (
@@ -100,7 +112,7 @@ export function ComponentDetailTable({
               key={r.category}
               className={cn(
                 "border-b border-border/50",
-                onRowClick ? "cursor-pointer hover:bg-muted/50" : "hover:bg-muted/20",
+                onRowClick ? "cursor-pointer hover:bg-muted/50" : "hover:bg-muted/20 cursor-default",
               )}
               onClick={onRowClick ? () => onRowClick(r.category) : undefined}
             >

@@ -31,6 +31,7 @@ async function fetchPeriodPoints(
   code: string,
   yyyymm: string,
   metadata: Metadata,
+  drillPath: string[] = [],
 ): Promise<Array<{ category: string; value: number }>> {
   const periodFrom = new Date(`${yyyymm.slice(0, 4)}-${yyyymm.slice(4, 6)}-01`)
   // periodTo = same day (backend treats month range inclusively)
@@ -42,7 +43,7 @@ async function fetchPeriodPoints(
       periodFrom,
       periodTo,
       compare: CompareMode.COMPARE_MODE_NONE,
-      drillPath: [],
+      drillPath,
     },
     metadata,
   )
@@ -74,13 +75,18 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const metadata = createMetadataFromRequest(request)
     const client = getBiChartDataClient()
 
+    // When a drill segment is provided (e.g. "INCOME"), pass it as the drillPath so the
+    // backend queries group_3 data within that group_2 bucket instead of group_2.
+    const drill = sp.get("drill") ?? ""
+    const drillPath = drill ? [drill] : []
+
     const mom = momPeriod(period)
     const yoy = yoyPeriod(period)
 
     const [curPts, momPts, yoyPts] = await Promise.all([
-      fetchPeriodPoints(client, code, period, metadata),
-      fetchPeriodPoints(client, code, mom, metadata),
-      fetchPeriodPoints(client, code, yoy, metadata),
+      fetchPeriodPoints(client, code, period, metadata, drillPath),
+      fetchPeriodPoints(client, code, mom, metadata, drillPath),
+      fetchPeriodPoints(client, code, yoy, metadata, drillPath),
     ])
 
     const byCategory = new Map<string, CategoryBucket>()
