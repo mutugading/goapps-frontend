@@ -1,15 +1,18 @@
 "use client"
 
-// Admin dashboard list — table with edit/duplicate/delete actions.
+// Admin dashboard list — table with edit/duplicate/delete/add-to-sidebar actions.
 
 import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Copy, Pencil, Trash2 } from "lucide-react"
+import { Copy, Pencil, PanelLeft, Trash2 } from "lucide-react"
+import { toast } from "sonner"
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   AlertDialog,
@@ -21,6 +24,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { DebouncedSearchInput } from "@/components/common"
 import { useDashboards, useDeleteDashboard, useDuplicateDashboard } from "@/hooks/bi/use-dashboard"
 import { CHART_TYPE_LABELS, chartTypeToString, type Dashboard } from "@/types/bi"
@@ -31,10 +41,51 @@ export function DashboardList() {
   const [deleteTarget, setDeleteTarget] = useState<Dashboard | null>(null)
   const [dupTarget, setDupTarget] = useState<Dashboard | null>(null)
   const [dupCode, setDupCode] = useState("")
+  const [sidebarTarget, setSidebarTarget] = useState<Dashboard | null>(null)
+  const [sidebarTitle, setSidebarTitle] = useState("")
+  const [sidebarIcon, setSidebarIcon] = useState("BarChart2")
+  const [sidebarSaving, setSidebarSaving] = useState(false)
 
   const { data, isLoading } = useDashboards({ page: 1, pageSize: 100, search, includeInactive: true })
   const deleteMut = useDeleteDashboard()
   const dupMut = useDuplicateDashboard()
+
+  function openSidebar(d: Dashboard) {
+    setSidebarTarget(d)
+    setSidebarTitle(d.dashboardTitle)
+    setSidebarIcon("BarChart2")
+  }
+
+  async function handleAddToSidebar() {
+    if (!sidebarTarget) return
+    setSidebarSaving(true)
+    try {
+      const res = await fetch(
+        `/api/v1/finance/bi/dashboards/${sidebarTarget.dashboardId}/add-to-sidebar`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            menuTitle: sidebarTitle,
+            menuIcon: sidebarIcon,
+            sortOrder: 50,
+          }),
+        },
+      )
+      const json = (await res.json()) as { base?: { isSuccess?: boolean; message?: string } }
+      if (json.base?.isSuccess) {
+        toast.success("Dashboard added to sidebar")
+        setSidebarTarget(null)
+      } else {
+        toast.error(json.base?.message ?? "Failed to add to sidebar")
+      }
+    } catch {
+      toast.error("Failed to add to sidebar")
+    } finally {
+      setSidebarSaving(false)
+    }
+  }
 
   const dashboards = data?.data ?? []
 
@@ -101,6 +152,14 @@ export function DashboardList() {
                       >
                         <Copy className="h-4 w-4" />
                       </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        title="Add to Sidebar"
+                        onClick={() => openSidebar(d)}
+                      >
+                        <PanelLeft className="h-4 w-4" />
+                      </Button>
                       <Button size="icon" variant="ghost" className="text-destructive" onClick={() => setDeleteTarget(d)}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -135,6 +194,43 @@ export function DashboardList() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Add to Sidebar dialog */}
+      <Dialog open={Boolean(sidebarTarget)} onOpenChange={(o) => !o && setSidebarTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add to Sidebar</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="sidebar-title">Menu Title</Label>
+              <Input
+                id="sidebar-title"
+                value={sidebarTitle}
+                onChange={(e) => setSidebarTitle(e.target.value)}
+                placeholder="Dashboard Title"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="sidebar-icon">Icon (lucide-react name)</Label>
+              <Input
+                id="sidebar-icon"
+                value={sidebarIcon}
+                onChange={(e) => setSidebarIcon(e.target.value)}
+                placeholder="BarChart2"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSidebarTarget(null)}>
+              Cancel
+            </Button>
+            <Button onClick={() => void handleAddToSidebar()} disabled={sidebarSaving || !sidebarTitle.trim()}>
+              {sidebarSaving ? "Adding…" : "Add to Sidebar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Duplicate confirm */}
       <AlertDialog open={Boolean(dupTarget)} onOpenChange={(o) => !o && setDupTarget(null)}>

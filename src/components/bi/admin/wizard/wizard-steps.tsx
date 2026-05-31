@@ -24,6 +24,7 @@ import {
   PERIOD_PRESET_LABELS,
   type DashboardFormData,
   type KpiEntry,
+  type ViewModeConfig,
   chartTypeToString,
 } from "@/types/bi"
 import { allChartTypes } from "@/lib/bi/chart-registry"
@@ -190,35 +191,181 @@ export function StepDataBinding({ form, setForm }: StepProps) {
 // Step 3 — Chart type gallery
 // =========================================================================
 
+/** Compatible alternative chart types a viewer can switch to, keyed by primary chart type. */
+const COMPATIBLE_TYPES: Record<string, string[]> = {
+  waterfall:    ["bar", "line", "data_table"],
+  bar:          ["line", "area", "horizontal_bar", "data_table"],
+  line:         ["bar", "area", "data_table"],
+  multi_line:   ["bar", "area", "data_table"],
+  area:         ["bar", "line", "data_table"],
+  mixed:        ["line", "bar", "data_table"],
+  donut:        ["bar", "data_table"],
+  stacked_bar:  ["bar", "line", "data_table"],
+  kpi_card:     [],
+  data_table:   [],
+  treemap:      [],
+  heatmap:      [],
+  scatter:      [],
+}
+
 export function StepChartType({ form, setForm }: StepProps) {
   const registrations = allChartTypes()
   const selectedStr = chartTypeToString(form.chartType)
+  const compatibles = COMPATIBLE_TYPES[selectedStr] ?? []
+  const selectedAlts = (form.chartConfig.available_chart_types as string[] | undefined) ?? []
+
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-      {registrations.map((reg) => {
-        const selected = reg.type === selectedStr
+    <div>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        {registrations.map((reg) => {
+          const selected = reg.type === selectedStr
+          return (
+            <button
+              key={reg.type}
+              type="button"
+              onClick={() =>
+                setForm((p) => ({
+                  ...p,
+                  chartType: stringToChartTypeEnum(reg.type),
+                  // Reset chart_config to the registry defaults when switching type,
+                  // and clear available_chart_types since compatible types change.
+                  chartConfig: { ...reg.defaultConfig, available_chart_types: [] },
+                }))
+              }
+              className={cn(
+                "rounded-lg border p-3 text-left text-sm transition-colors hover:border-primary",
+                selected && "border-primary bg-primary/5 ring-1 ring-primary"
+              )}
+            >
+              <div className="font-semibold">{reg.label}</div>
+              <div className="mt-1 text-xs text-muted-foreground">{reg.lib === "echarts" ? "Advanced" : "Standard"}</div>
+            </button>
+          )
+        })}
+      </div>
+
+      {/* Compatible viewer chart types */}
+      {compatibles.length > 0 && (
+        <div className="mt-4 space-y-2 border-t pt-4">
+          <p className="text-sm font-medium text-foreground">Viewer can also display as:</p>
+          <div className="flex flex-wrap gap-3">
+            {compatibles.map((alt) => {
+              const checked = selectedAlts.includes(alt)
+              const reg = allChartTypes().find((r) => r.type === alt)
+              return (
+                <label key={alt} className="flex cursor-pointer items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 rounded border-border"
+                    checked={checked}
+                    onChange={() => {
+                      const next = checked
+                        ? selectedAlts.filter((t) => t !== alt)
+                        : [...selectedAlts, alt]
+                      setForm((p) => ({
+                        ...p,
+                        chartConfig: { ...p.chartConfig, available_chart_types: next },
+                      }))
+                    }}
+                  />
+                  {reg?.label ?? humanize(alt)}
+                </label>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Per-view-type configuration */}
+      {(() => {
+        const primaryStr = chartTypeToString(form.chartType as ChartType) || ""
+        const alts = (form.chartConfig.available_chart_types as string[] | undefined) ?? []
+        const allTypes = primaryStr ? [primaryStr, ...alts.filter((t) => t !== primaryStr)] : alts
+        if (allTypes.length === 0) return null
+
+        const currentViewConfigs = (form.chartConfig.view_configs as Record<string, ViewModeConfig> | undefined) ?? {}
+
         return (
-          <button
-            key={reg.type}
-            type="button"
-            onClick={() =>
-              setForm((p) => ({
-                ...p,
-                chartType: stringToChartTypeEnum(reg.type),
-                // Reset chart_config to the registry defaults when switching type.
-                chartConfig: { ...reg.defaultConfig },
-              }))
-            }
-            className={cn(
-              "rounded-lg border p-3 text-left text-sm transition-colors hover:border-primary",
-              selected && "border-primary bg-primary/5 ring-1 ring-primary"
-            )}
-          >
-            <div className="font-semibold">{reg.label}</div>
-            <div className="mt-1 text-xs text-muted-foreground">{reg.lib === "echarts" ? "Advanced" : "Standard"}</div>
-          </button>
+          <div className="mt-4 space-y-2 border-t pt-4">
+            <p className="text-sm font-medium">Configure per-view display</p>
+            <p className="text-xs text-muted-foreground">Set the title and behavior for each chart type in the viewer.</p>
+            <div className="space-y-2">
+              {allTypes.map((ct) => {
+                const existing = currentViewConfigs[ct]
+                const defaultConfig: ViewModeConfig = {
+                  titleTemplate: ct.replace(/_/g, " "),
+                  drillEnabled: !["line", "area", "multi_line", "scatter", "heatmap", "kpi_card", "data_table"].includes(ct),
+                  hint: "",
+                }
+                const cfg: ViewModeConfig = existing ?? defaultConfig
+                return (
+                  <ViewConfigEditor
+                    key={ct}
+                    chartType={ct}
+                    config={cfg}
+                    onChange={(updated) => {
+                      setForm((p) => ({
+                        ...p,
+                        chartConfig: {
+                          ...p.chartConfig,
+                          view_configs: { ...currentViewConfigs, [ct]: updated },
+                        },
+                      }))
+                    }}
+                  />
+                )
+              })}
+            </div>
+          </div>
         )
-      })}
+      })()}
+    </div>
+  )
+}
+
+// =========================================================================
+// ViewConfigEditor — per-chart-type viewer configuration panel
+// =========================================================================
+
+interface ViewConfigEditorProps {
+  chartType: string
+  config: ViewModeConfig
+  onChange: (updated: ViewModeConfig) => void
+}
+
+function ViewConfigEditor({ chartType, config, onChange }: ViewConfigEditorProps) {
+  return (
+    <div className="rounded border border-border/60 bg-muted/20 p-3 space-y-2">
+      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        {chartType.replace(/_/g, " ")}
+      </p>
+      <div className="space-y-1">
+        <label className="text-xs text-muted-foreground">
+          Title template <span className="font-mono">{"{period}"}</span> = formatted month
+        </label>
+        <Input
+          value={config.titleTemplate}
+          onChange={(e) => onChange({ ...config, titleTemplate: e.target.value })}
+          placeholder={`${chartType.replace(/_/g, " ")} — {period}`}
+          className="h-7 text-xs"
+        />
+      </div>
+      <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
+        <Checkbox
+          checked={config.drillEnabled}
+          onCheckedChange={(v) => onChange({ ...config, drillEnabled: Boolean(v) })}
+        />
+        Enable drill-down on click
+      </label>
+      <div className="space-y-1">
+        <label className="text-xs text-muted-foreground">Hint text (shown below chart title)</label>
+        <Input
+          value={config.hint ?? ""}
+          onChange={(e) => onChange({ ...config, hint: e.target.value })}
+          placeholder="Click any bar to drill down…"
+          className="h-7 text-xs"
+        />
+      </div>
     </div>
   )
 }
@@ -514,6 +661,44 @@ export function StepAccess({ form, setForm }: StepProps) {
       <Field label="Auto-refresh Interval (seconds)">
         <ChipRow values={REFRESH_PRESETS} current={form.refreshIntervalSec} onPick={(v) => setForm((p) => ({ ...p, refreshIntervalSec: v }))} />
       </Field>
+    </div>
+  )
+}
+
+// =========================================================================
+// Step 8 — Sidebar (create mode only)
+// =========================================================================
+
+export function StepSidebar({ form, setForm }: StepProps) {
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-muted-foreground">
+        Optionally add this dashboard to the sidebar navigation under &quot;Executive Dashboard&quot;.
+        This creates an IAM menu entry visible to all users with access to the BI module.
+      </p>
+      <ToggleRow
+        label="Add to Sidebar"
+        checked={form.addToSidebar ?? false}
+        onChange={(v) => setForm((p) => ({ ...p, addToSidebar: v }))}
+      />
+      {(form.addToSidebar) && (
+        <>
+          <Field label="Menu Title">
+            <Input
+              value={form.sidebarTitle ?? form.dashboardTitle}
+              onChange={(e) => setForm((p) => ({ ...p, sidebarTitle: e.target.value }))}
+              placeholder="Dashboard Title"
+            />
+          </Field>
+          <Field label="Icon (lucide-react name)">
+            <Input
+              value={form.sidebarIcon ?? "BarChart2"}
+              onChange={(e) => setForm((p) => ({ ...p, sidebarIcon: e.target.value }))}
+              placeholder="BarChart2"
+            />
+          </Field>
+        </>
+      )}
     </div>
   )
 }

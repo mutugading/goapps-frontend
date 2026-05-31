@@ -10,6 +10,7 @@ import {
   type PreviewDashboardRequest,
   type DashboardFormData,
   type KpiEntry,
+  type ViewModeConfig,
 } from "@/types/bi"
 
 /** kpi_config travels as a Struct wrapping an "items" array (matches backend structListToMaps). */
@@ -28,6 +29,42 @@ function kpiConfigStruct(kpis: KpiEntry[]): Record<string, unknown> {
   }
 }
 
+/**
+ * Normalize chart_config before sending to the backend.
+ *
+ * Two transforms are applied:
+ * 1. view_configs entries are re-keyed from camelCase (TypeScript interface) to snake_case
+ *    (what parseViewConfigs on the backend reads: title_template, drill_enabled, hint).
+ * 2. available_chart_types is preserved as-is (the backend stores it in chart_config JSONB).
+ */
+function normalizeChartConfig(raw: Record<string, unknown>): Record<string, unknown> {
+  const out = { ...raw }
+
+  const vc = raw.view_configs as Record<string, unknown> | undefined
+  if (vc && typeof vc === "object") {
+    out.view_configs = Object.fromEntries(
+      Object.entries(vc).map(([ct, v]) => {
+        // v may be a camelCase ViewModeConfig (new entry from wizard) OR already
+        // a snake_case object (existing entry loaded from DB via Struct.unwrap).
+        const cfg = v as Record<string, unknown>
+        const titleTemplate =
+          (cfg.title_template as string | undefined) ??
+          (cfg.titleTemplate as ViewModeConfig["titleTemplate"] | undefined) ??
+          ""
+        const drillEnabled =
+          (cfg.drill_enabled as boolean | undefined) ??
+          (cfg.drillEnabled as ViewModeConfig["drillEnabled"] | undefined) ??
+          false
+        const hint =
+          (cfg.hint as string | undefined) ?? ""
+        return [ct, { title_template: titleTemplate, drill_enabled: drillEnabled, hint }]
+      })
+    )
+  }
+
+  return out
+}
+
 /** Convert the FE period preset string to the default_period field (same string keys). */
 function defaultPeriodString(form: DashboardFormData): string {
   return form.defaultPeriod
@@ -44,7 +81,7 @@ export function buildCreateRequest(form: DashboardFormData): CreateDashboardRequ
     periodeGrain: form.periodeGrain,
     defaultPeriod: defaultPeriodString(form),
     chartType: form.chartType,
-    chartConfig: form.chartConfig,
+    chartConfig: normalizeChartConfig(form.chartConfig),
     layoutConfig: form.layoutConfig ?? undefined,
     compareModes: form.compareModes,
     kpiConfig: kpiConfigStruct(form.kpiConfig),
@@ -69,7 +106,7 @@ export function buildUpdateRequest(form: DashboardFormData): Omit<UpdateDashboar
     periodeGrain: form.periodeGrain,
     defaultPeriod: defaultPeriodString(form),
     chartType: form.chartType,
-    chartConfig: form.chartConfig,
+    chartConfig: normalizeChartConfig(form.chartConfig),
     layoutConfig: form.layoutConfig ?? undefined,
     compareModes: form.compareModes,
     kpiConfig: kpiConfigStruct(form.kpiConfig),
@@ -90,7 +127,7 @@ export function buildPreviewRequest(form: DashboardFormData): PreviewDashboardRe
     filterGroup1: form.filterGroup1,
     periodeGrain: form.periodeGrain,
     chartType: form.chartType,
-    chartConfig: form.chartConfig,
+    chartConfig: normalizeChartConfig(form.chartConfig),
     kpiConfig: kpiConfigStruct(form.kpiConfig),
     compareModes: form.compareModes,
   } as PreviewDashboardRequest

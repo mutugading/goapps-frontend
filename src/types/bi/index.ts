@@ -60,6 +60,8 @@ export type {
   SetDashboardRolesResponse,
   ListAccessibleDashboardsRequest,
   ListAccessibleDashboardsResponse,
+  ListFeaturedDashboardsRequest,
+  ListFeaturedDashboardsResponse,
   CreateDashboardGroupRequest,
   CreateDashboardGroupResponse,
   ListDashboardGroupsRequest,
@@ -82,6 +84,12 @@ export type {
   ListJobLogsResponse,
   TriggerJobRequest,
   TriggerJobResponse,
+  CreateBiJobRequest,
+  CreateBiJobResponse,
+  UpdateBiJobRequest,
+  UpdateBiJobResponse,
+  DeleteBiJobRequest,
+  DeleteBiJobResponse,
 } from "@/types/generated/finance/v1/bi"
 
 // Re-export proto Parsers for response decoding.
@@ -100,6 +108,7 @@ export {
   DuplicateDashboardResponse as DuplicateDashboardResponseParser,
   SetDashboardRolesResponse as SetDashboardRolesResponseParser,
   ListAccessibleDashboardsResponse as ListAccessibleDashboardsResponseParser,
+  ListFeaturedDashboardsResponse as ListFeaturedDashboardsResponseParser,
   CreateDashboardGroupResponse as CreateDashboardGroupResponseParser,
   ListDashboardGroupsResponse as ListDashboardGroupsResponseParser,
   UpdateDashboardGroupResponse as UpdateDashboardGroupResponseParser,
@@ -156,12 +165,28 @@ export interface ViewerState {
   periodTo?: string
   compare: CompareKey
   drillPath: string[]
+  /** Active chart type override selected by the viewer. Empty string = use dashboard primary. */
+  chartType?: string
+  /** Selected group_1 values from filter chips (Delivery Type). Empty = show all. */
+  group1Filter: string[]
+  /** Selected group_2 values from filter chips (Category). Empty = show all. */
+  group2Filter: string[]
+  /**
+   * Selected period (YYYYMM) for waterfall/bar breakdown and secondary data_table filtering.
+   * Defaults to the latest available period in the loaded chart data.
+   * Hidden when the active chart type is a trend type (line/area/multi_line).
+   */
+  selectedPeriod?: string
 }
 
 export const DEFAULT_VIEWER_STATE: ViewerState = {
   period: "L12M",
   compare: "NONE",
   drillPath: [],
+  chartType: "",
+  group1Filter: [],
+  group2Filter: [],
+  selectedPeriod: undefined,
 }
 
 /** Simplified list params for hooks. */
@@ -215,6 +240,12 @@ export interface DashboardFormData {
   groupId: string
   isActive: boolean
   allowedRoleCodes: string[]
+  /** Whether to add this dashboard to the sidebar after creation. */
+  addToSidebar?: boolean
+  /** Override menu title (defaults to dashboardTitle). */
+  sidebarTitle?: string
+  /** Lucide icon name for the sidebar entry. */
+  sidebarIcon?: string
 }
 
 /** KPI entry shape used by the admin form (typed mirror of backend KpiEntry). */
@@ -263,6 +294,20 @@ export function periodeGrainToString(g: PeriodeGrain): string {
 /** Helper: convert a Dashboard's allowed_role_codes to a Set for membership checks. */
 export function rolesToSet(d: Dashboard): Set<string> {
   return new Set(d.allowedRoleCodes ?? [])
+}
+
+/**
+ * Per-chart-type viewer configuration stored in dashboard.chart_config.view_configs.
+ * Keys are chart type strings (e.g. "bar", "data_table").
+ * Proto Struct maps snake_case JSON keys to camelCase via snakeToCamel.
+ */
+export interface ViewModeConfig {
+  /** Template string for the chart card title; supports {period} placeholder. */
+  titleTemplate: string
+  /** Whether drill-down is enabled for this chart type. */
+  drillEnabled: boolean
+  /** Optional subtitle hint shown below the chart title. */
+  hint?: string
 }
 
 // ============================================================================

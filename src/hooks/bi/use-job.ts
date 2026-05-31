@@ -1,6 +1,6 @@
 "use client"
 
-// BI ETL job hooks — list jobs, list logs, trigger.
+// BI ETL job hooks — list jobs, list logs, trigger, create, update, delete.
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
@@ -66,6 +66,77 @@ export function useTriggerBiJob() {
     },
     onSuccess: () => {
       toast.success("Job triggered")
+      void qc.invalidateQueries({ queryKey: jobKeys.all })
+    },
+    onError: (err) => toast.error(err.message),
+  })
+}
+
+export interface CreateJobInput {
+  jobName: string
+  sourceCode: string
+  targetType: string
+  scheduleCron: string
+  oracleProcedure?: string
+  config?: Record<string, unknown>
+  isActive?: boolean
+}
+
+/** Create a new ETL job. */
+export function useCreateJob() {
+  const qc = useQueryClient()
+  return useMutation<BiJob | undefined, Error, CreateJobInput>({
+    mutationFn: async (data) => {
+      const raw = await apiClient.post<unknown>("/api/v1/finance/bi/jobs", data)
+      const parsed = raw as { base?: { isSuccess: boolean; message?: string }; data?: BiJob }
+      if (!parsed.base?.isSuccess) throw new Error(parsed.base?.message ?? "Failed to create job")
+      return parsed.data
+    },
+    onSuccess: () => {
+      toast.success("ETL job created")
+      void qc.invalidateQueries({ queryKey: jobKeys.all })
+    },
+    onError: (err) => toast.error(err.message),
+  })
+}
+
+export interface UpdateJobInput {
+  id: string
+  scheduleCron?: string
+  oracleProcedure?: string
+  config?: Record<string, unknown>
+  isActive?: boolean
+}
+
+/** Update an existing ETL job (schedule/procedure/active flag only). */
+export function useUpdateJob() {
+  const qc = useQueryClient()
+  return useMutation<BiJob | undefined, Error, UpdateJobInput>({
+    mutationFn: async ({ id, ...data }) => {
+      const raw = await apiClient.put<unknown>(`/api/v1/finance/bi/jobs/${id}`, data)
+      const parsed = raw as { base?: { isSuccess: boolean; message?: string }; data?: BiJob }
+      if (!parsed.base?.isSuccess) throw new Error(parsed.base?.message ?? "Failed to update job")
+      return parsed.data
+    },
+    onSuccess: () => {
+      toast.success("ETL job updated")
+      void qc.invalidateQueries({ queryKey: jobKeys.all })
+    },
+    onError: (err) => toast.error(err.message),
+  })
+}
+
+/** Soft-delete (disable) an ETL job. */
+export function useDeleteJob() {
+  const qc = useQueryClient()
+  return useMutation<void, Error, string>({
+    mutationFn: async (id) => {
+      const raw = await apiClient.delete<unknown>(`/api/v1/finance/bi/jobs/${id}`)
+      const parsed = raw as { base?: { isSuccess: boolean; message?: string } }
+      if (!parsed.base?.isSuccess) throw new Error(parsed.base?.message ?? "Failed to delete job")
+    },
+    onSuccess: () => {
+      toast.success("ETL job deleted")
       void qc.invalidateQueries({ queryKey: jobKeys.all })
     },
     onError: (err) => toast.error(err.message),

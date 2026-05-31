@@ -326,6 +326,8 @@ export interface Dashboard {
   isActive: boolean;
   allowedRoleCodes: string[];
   audit: AuditInfo | undefined;
+  isFeatured: boolean;
+  featureOrder: number;
 }
 
 export interface DataSource {
@@ -522,6 +524,8 @@ export interface UpdateDashboardRequest {
   displayOrder?: number | undefined;
   groupId?: string | undefined;
   isActive?: boolean | undefined;
+  isFeatured?: boolean | undefined;
+  featureOrder?: number | undefined;
 }
 
 export interface UpdateDashboardResponse {
@@ -562,6 +566,14 @@ export interface ListAccessibleDashboardsRequest {
 }
 
 export interface ListAccessibleDashboardsResponse {
+  base: BaseResponse | undefined;
+  data: Dashboard[];
+}
+
+export interface ListFeaturedDashboardsRequest {
+}
+
+export interface ListFeaturedDashboardsResponse {
   base: BaseResponse | undefined;
   data: Dashboard[];
 }
@@ -678,6 +690,42 @@ export interface TriggerJobRequest {
 export interface TriggerJobResponse {
   base: BaseResponse | undefined;
   data: BiJobLog | undefined;
+}
+
+export interface CreateBiJobRequest {
+  jobName: string;
+  sourceCode: string;
+  targetType: string;
+  scheduleCron: string;
+  oracleProcedure: string;
+  config: { [key: string]: any } | undefined;
+  isActive: boolean;
+}
+
+export interface CreateBiJobResponse {
+  base: BaseResponse | undefined;
+  data: BiJob | undefined;
+}
+
+export interface UpdateBiJobRequest {
+  jobId: string;
+  scheduleCron?: string | undefined;
+  oracleProcedure?: string | undefined;
+  config?: { [key: string]: any } | undefined;
+  isActive?: boolean | undefined;
+}
+
+export interface UpdateBiJobResponse {
+  base: BaseResponse | undefined;
+  data: BiJob | undefined;
+}
+
+export interface DeleteBiJobRequest {
+  jobId: string;
+}
+
+export interface DeleteBiJobResponse {
+  base: BaseResponse | undefined;
 }
 
 export interface UploadRowError {
@@ -1012,6 +1060,8 @@ function createBaseDashboard(): Dashboard {
     isActive: false,
     allowedRoleCodes: [],
     audit: undefined,
+    isFeatured: false,
+    featureOrder: 0,
   };
 }
 
@@ -1090,6 +1140,12 @@ export const Dashboard: MessageFns<Dashboard> = {
     }
     if (message.audit !== undefined) {
       AuditInfo.encode(message.audit, writer.uint32(194).fork()).join();
+    }
+    if (message.isFeatured !== false) {
+      writer.uint32(200).bool(message.isFeatured);
+    }
+    if (message.featureOrder !== 0) {
+      writer.uint32(208).int32(message.featureOrder);
     }
     return writer;
   },
@@ -1303,6 +1359,22 @@ export const Dashboard: MessageFns<Dashboard> = {
           message.audit = AuditInfo.decode(reader, reader.uint32());
           continue;
         }
+        case 25: {
+          if (tag !== 200) {
+            break;
+          }
+
+          message.isFeatured = reader.bool();
+          continue;
+        }
+        case 26: {
+          if (tag !== 208) {
+            break;
+          }
+
+          message.featureOrder = reader.int32();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1426,6 +1498,16 @@ export const Dashboard: MessageFns<Dashboard> = {
         ? object.allowed_role_codes.map((e: any) => globalThis.String(e))
         : [],
       audit: isSet(object.audit) ? AuditInfo.fromJSON(object.audit) : undefined,
+      isFeatured: isSet(object.isFeatured)
+        ? globalThis.Boolean(object.isFeatured)
+        : isSet(object.is_featured)
+        ? globalThis.Boolean(object.is_featured)
+        : false,
+      featureOrder: isSet(object.featureOrder)
+        ? globalThis.Number(object.featureOrder)
+        : isSet(object.feature_order)
+        ? globalThis.Number(object.feature_order)
+        : 0,
     };
   },
 
@@ -1503,6 +1585,12 @@ export const Dashboard: MessageFns<Dashboard> = {
     if (message.audit !== undefined) {
       obj.audit = AuditInfo.toJSON(message.audit);
     }
+    if (message.isFeatured !== false) {
+      obj.isFeatured = message.isFeatured;
+    }
+    if (message.featureOrder !== 0) {
+      obj.featureOrder = Math.round(message.featureOrder);
+    }
     return obj;
   },
 
@@ -1537,6 +1625,8 @@ export const Dashboard: MessageFns<Dashboard> = {
     message.audit = (object.audit !== undefined && object.audit !== null)
       ? AuditInfo.fromPartial(object.audit)
       : undefined;
+    message.isFeatured = object.isFeatured ?? false;
+    message.featureOrder = object.featureOrder ?? 0;
     return message;
   },
 };
@@ -4601,6 +4691,8 @@ function createBaseUpdateDashboardRequest(): UpdateDashboardRequest {
     displayOrder: undefined,
     groupId: undefined,
     isActive: undefined,
+    isFeatured: undefined,
+    featureOrder: undefined,
   };
 }
 
@@ -4664,6 +4756,12 @@ export const UpdateDashboardRequest: MessageFns<UpdateDashboardRequest> = {
     }
     if (message.isActive !== undefined) {
       writer.uint32(152).bool(message.isActive);
+    }
+    if (message.isFeatured !== undefined) {
+      writer.uint32(200).bool(message.isFeatured);
+    }
+    if (message.featureOrder !== undefined) {
+      writer.uint32(208).int32(message.featureOrder);
     }
     return writer;
   },
@@ -4837,6 +4935,22 @@ export const UpdateDashboardRequest: MessageFns<UpdateDashboardRequest> = {
           message.isActive = reader.bool();
           continue;
         }
+        case 25: {
+          if (tag !== 200) {
+            break;
+          }
+
+          message.isFeatured = reader.bool();
+          continue;
+        }
+        case 26: {
+          if (tag !== 208) {
+            break;
+          }
+
+          message.featureOrder = reader.int32();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -4939,6 +5053,16 @@ export const UpdateDashboardRequest: MessageFns<UpdateDashboardRequest> = {
         : isSet(object.is_active)
         ? globalThis.Boolean(object.is_active)
         : undefined,
+      isFeatured: isSet(object.isFeatured)
+        ? globalThis.Boolean(object.isFeatured)
+        : isSet(object.is_featured)
+        ? globalThis.Boolean(object.is_featured)
+        : undefined,
+      featureOrder: isSet(object.featureOrder)
+        ? globalThis.Number(object.featureOrder)
+        : isSet(object.feature_order)
+        ? globalThis.Number(object.feature_order)
+        : undefined,
     };
   },
 
@@ -5001,6 +5125,12 @@ export const UpdateDashboardRequest: MessageFns<UpdateDashboardRequest> = {
     if (message.isActive !== undefined) {
       obj.isActive = message.isActive;
     }
+    if (message.isFeatured !== undefined) {
+      obj.isFeatured = message.isFeatured;
+    }
+    if (message.featureOrder !== undefined) {
+      obj.featureOrder = Math.round(message.featureOrder);
+    }
     return obj;
   },
 
@@ -5028,6 +5158,8 @@ export const UpdateDashboardRequest: MessageFns<UpdateDashboardRequest> = {
     message.displayOrder = object.displayOrder ?? undefined;
     message.groupId = object.groupId ?? undefined;
     message.isActive = object.isActive ?? undefined;
+    message.isFeatured = object.isFeatured ?? undefined;
+    message.featureOrder = object.featureOrder ?? undefined;
     return message;
   },
 };
@@ -5695,6 +5827,127 @@ export const ListAccessibleDashboardsResponse: MessageFns<ListAccessibleDashboar
   },
   fromPartial(object: DeepPartial<ListAccessibleDashboardsResponse>): ListAccessibleDashboardsResponse {
     const message = createBaseListAccessibleDashboardsResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.data = object.data?.map((e) => Dashboard.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseListFeaturedDashboardsRequest(): ListFeaturedDashboardsRequest {
+  return {};
+}
+
+export const ListFeaturedDashboardsRequest: MessageFns<ListFeaturedDashboardsRequest> = {
+  encode(_: ListFeaturedDashboardsRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ListFeaturedDashboardsRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListFeaturedDashboardsRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): ListFeaturedDashboardsRequest {
+    return {};
+  },
+
+  toJSON(_: ListFeaturedDashboardsRequest): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListFeaturedDashboardsRequest>): ListFeaturedDashboardsRequest {
+    return ListFeaturedDashboardsRequest.fromPartial(base ?? {});
+  },
+  fromPartial(_: DeepPartial<ListFeaturedDashboardsRequest>): ListFeaturedDashboardsRequest {
+    const message = createBaseListFeaturedDashboardsRequest();
+    return message;
+  },
+};
+
+function createBaseListFeaturedDashboardsResponse(): ListFeaturedDashboardsResponse {
+  return { base: undefined, data: [] };
+}
+
+export const ListFeaturedDashboardsResponse: MessageFns<ListFeaturedDashboardsResponse> = {
+  encode(message: ListFeaturedDashboardsResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    for (const v of message.data) {
+      Dashboard.encode(v!, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ListFeaturedDashboardsResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListFeaturedDashboardsResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.data.push(Dashboard.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListFeaturedDashboardsResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      data: globalThis.Array.isArray(object?.data) ? object.data.map((e: any) => Dashboard.fromJSON(e)) : [],
+    };
+  },
+
+  toJSON(message: ListFeaturedDashboardsResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.data?.length) {
+      obj.data = message.data.map((e) => Dashboard.toJSON(e));
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListFeaturedDashboardsResponse>): ListFeaturedDashboardsResponse {
+    return ListFeaturedDashboardsResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ListFeaturedDashboardsResponse>): ListFeaturedDashboardsResponse {
+    const message = createBaseListFeaturedDashboardsResponse();
     message.base = (object.base !== undefined && object.base !== null)
       ? BaseResponse.fromPartial(object.base)
       : undefined;
@@ -7686,6 +7939,614 @@ export const TriggerJobResponse: MessageFns<TriggerJobResponse> = {
       ? BaseResponse.fromPartial(object.base)
       : undefined;
     message.data = (object.data !== undefined && object.data !== null) ? BiJobLog.fromPartial(object.data) : undefined;
+    return message;
+  },
+};
+
+function createBaseCreateBiJobRequest(): CreateBiJobRequest {
+  return {
+    jobName: "",
+    sourceCode: "",
+    targetType: "",
+    scheduleCron: "",
+    oracleProcedure: "",
+    config: undefined,
+    isActive: false,
+  };
+}
+
+export const CreateBiJobRequest: MessageFns<CreateBiJobRequest> = {
+  encode(message: CreateBiJobRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.jobName !== "") {
+      writer.uint32(10).string(message.jobName);
+    }
+    if (message.sourceCode !== "") {
+      writer.uint32(18).string(message.sourceCode);
+    }
+    if (message.targetType !== "") {
+      writer.uint32(26).string(message.targetType);
+    }
+    if (message.scheduleCron !== "") {
+      writer.uint32(34).string(message.scheduleCron);
+    }
+    if (message.oracleProcedure !== "") {
+      writer.uint32(42).string(message.oracleProcedure);
+    }
+    if (message.config !== undefined) {
+      Struct.encode(Struct.wrap(message.config), writer.uint32(50).fork()).join();
+    }
+    if (message.isActive !== false) {
+      writer.uint32(56).bool(message.isActive);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CreateBiJobRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCreateBiJobRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.jobName = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.sourceCode = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.targetType = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.scheduleCron = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.oracleProcedure = reader.string();
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.config = Struct.unwrap(Struct.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 7: {
+          if (tag !== 56) {
+            break;
+          }
+
+          message.isActive = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CreateBiJobRequest {
+    return {
+      jobName: isSet(object.jobName)
+        ? globalThis.String(object.jobName)
+        : isSet(object.job_name)
+        ? globalThis.String(object.job_name)
+        : "",
+      sourceCode: isSet(object.sourceCode)
+        ? globalThis.String(object.sourceCode)
+        : isSet(object.source_code)
+        ? globalThis.String(object.source_code)
+        : "",
+      targetType: isSet(object.targetType)
+        ? globalThis.String(object.targetType)
+        : isSet(object.target_type)
+        ? globalThis.String(object.target_type)
+        : "",
+      scheduleCron: isSet(object.scheduleCron)
+        ? globalThis.String(object.scheduleCron)
+        : isSet(object.schedule_cron)
+        ? globalThis.String(object.schedule_cron)
+        : "",
+      oracleProcedure: isSet(object.oracleProcedure)
+        ? globalThis.String(object.oracleProcedure)
+        : isSet(object.oracle_procedure)
+        ? globalThis.String(object.oracle_procedure)
+        : "",
+      config: isObject(object.config) ? object.config : undefined,
+      isActive: isSet(object.isActive)
+        ? globalThis.Boolean(object.isActive)
+        : isSet(object.is_active)
+        ? globalThis.Boolean(object.is_active)
+        : false,
+    };
+  },
+
+  toJSON(message: CreateBiJobRequest): unknown {
+    const obj: any = {};
+    if (message.jobName !== "") {
+      obj.jobName = message.jobName;
+    }
+    if (message.sourceCode !== "") {
+      obj.sourceCode = message.sourceCode;
+    }
+    if (message.targetType !== "") {
+      obj.targetType = message.targetType;
+    }
+    if (message.scheduleCron !== "") {
+      obj.scheduleCron = message.scheduleCron;
+    }
+    if (message.oracleProcedure !== "") {
+      obj.oracleProcedure = message.oracleProcedure;
+    }
+    if (message.config !== undefined) {
+      obj.config = message.config;
+    }
+    if (message.isActive !== false) {
+      obj.isActive = message.isActive;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<CreateBiJobRequest>): CreateBiJobRequest {
+    return CreateBiJobRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<CreateBiJobRequest>): CreateBiJobRequest {
+    const message = createBaseCreateBiJobRequest();
+    message.jobName = object.jobName ?? "";
+    message.sourceCode = object.sourceCode ?? "";
+    message.targetType = object.targetType ?? "";
+    message.scheduleCron = object.scheduleCron ?? "";
+    message.oracleProcedure = object.oracleProcedure ?? "";
+    message.config = object.config ?? undefined;
+    message.isActive = object.isActive ?? false;
+    return message;
+  },
+};
+
+function createBaseCreateBiJobResponse(): CreateBiJobResponse {
+  return { base: undefined, data: undefined };
+}
+
+export const CreateBiJobResponse: MessageFns<CreateBiJobResponse> = {
+  encode(message: CreateBiJobResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    if (message.data !== undefined) {
+      BiJob.encode(message.data, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CreateBiJobResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCreateBiJobResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.data = BiJob.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CreateBiJobResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      data: isSet(object.data) ? BiJob.fromJSON(object.data) : undefined,
+    };
+  },
+
+  toJSON(message: CreateBiJobResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.data !== undefined) {
+      obj.data = BiJob.toJSON(message.data);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<CreateBiJobResponse>): CreateBiJobResponse {
+    return CreateBiJobResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<CreateBiJobResponse>): CreateBiJobResponse {
+    const message = createBaseCreateBiJobResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.data = (object.data !== undefined && object.data !== null) ? BiJob.fromPartial(object.data) : undefined;
+    return message;
+  },
+};
+
+function createBaseUpdateBiJobRequest(): UpdateBiJobRequest {
+  return { jobId: "", scheduleCron: undefined, oracleProcedure: undefined, config: undefined, isActive: undefined };
+}
+
+export const UpdateBiJobRequest: MessageFns<UpdateBiJobRequest> = {
+  encode(message: UpdateBiJobRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.jobId !== "") {
+      writer.uint32(10).string(message.jobId);
+    }
+    if (message.scheduleCron !== undefined) {
+      writer.uint32(18).string(message.scheduleCron);
+    }
+    if (message.oracleProcedure !== undefined) {
+      writer.uint32(26).string(message.oracleProcedure);
+    }
+    if (message.config !== undefined) {
+      Struct.encode(Struct.wrap(message.config), writer.uint32(34).fork()).join();
+    }
+    if (message.isActive !== undefined) {
+      writer.uint32(40).bool(message.isActive);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): UpdateBiJobRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUpdateBiJobRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.jobId = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.scheduleCron = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.oracleProcedure = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.config = Struct.unwrap(Struct.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.isActive = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UpdateBiJobRequest {
+    return {
+      jobId: isSet(object.jobId)
+        ? globalThis.String(object.jobId)
+        : isSet(object.job_id)
+        ? globalThis.String(object.job_id)
+        : "",
+      scheduleCron: isSet(object.scheduleCron)
+        ? globalThis.String(object.scheduleCron)
+        : isSet(object.schedule_cron)
+        ? globalThis.String(object.schedule_cron)
+        : undefined,
+      oracleProcedure: isSet(object.oracleProcedure)
+        ? globalThis.String(object.oracleProcedure)
+        : isSet(object.oracle_procedure)
+        ? globalThis.String(object.oracle_procedure)
+        : undefined,
+      config: isObject(object.config) ? object.config : undefined,
+      isActive: isSet(object.isActive)
+        ? globalThis.Boolean(object.isActive)
+        : isSet(object.is_active)
+        ? globalThis.Boolean(object.is_active)
+        : undefined,
+    };
+  },
+
+  toJSON(message: UpdateBiJobRequest): unknown {
+    const obj: any = {};
+    if (message.jobId !== "") {
+      obj.jobId = message.jobId;
+    }
+    if (message.scheduleCron !== undefined) {
+      obj.scheduleCron = message.scheduleCron;
+    }
+    if (message.oracleProcedure !== undefined) {
+      obj.oracleProcedure = message.oracleProcedure;
+    }
+    if (message.config !== undefined) {
+      obj.config = message.config;
+    }
+    if (message.isActive !== undefined) {
+      obj.isActive = message.isActive;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<UpdateBiJobRequest>): UpdateBiJobRequest {
+    return UpdateBiJobRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<UpdateBiJobRequest>): UpdateBiJobRequest {
+    const message = createBaseUpdateBiJobRequest();
+    message.jobId = object.jobId ?? "";
+    message.scheduleCron = object.scheduleCron ?? undefined;
+    message.oracleProcedure = object.oracleProcedure ?? undefined;
+    message.config = object.config ?? undefined;
+    message.isActive = object.isActive ?? undefined;
+    return message;
+  },
+};
+
+function createBaseUpdateBiJobResponse(): UpdateBiJobResponse {
+  return { base: undefined, data: undefined };
+}
+
+export const UpdateBiJobResponse: MessageFns<UpdateBiJobResponse> = {
+  encode(message: UpdateBiJobResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    if (message.data !== undefined) {
+      BiJob.encode(message.data, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): UpdateBiJobResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUpdateBiJobResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.data = BiJob.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UpdateBiJobResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      data: isSet(object.data) ? BiJob.fromJSON(object.data) : undefined,
+    };
+  },
+
+  toJSON(message: UpdateBiJobResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.data !== undefined) {
+      obj.data = BiJob.toJSON(message.data);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<UpdateBiJobResponse>): UpdateBiJobResponse {
+    return UpdateBiJobResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<UpdateBiJobResponse>): UpdateBiJobResponse {
+    const message = createBaseUpdateBiJobResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.data = (object.data !== undefined && object.data !== null) ? BiJob.fromPartial(object.data) : undefined;
+    return message;
+  },
+};
+
+function createBaseDeleteBiJobRequest(): DeleteBiJobRequest {
+  return { jobId: "" };
+}
+
+export const DeleteBiJobRequest: MessageFns<DeleteBiJobRequest> = {
+  encode(message: DeleteBiJobRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.jobId !== "") {
+      writer.uint32(10).string(message.jobId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): DeleteBiJobRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDeleteBiJobRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.jobId = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DeleteBiJobRequest {
+    return {
+      jobId: isSet(object.jobId)
+        ? globalThis.String(object.jobId)
+        : isSet(object.job_id)
+        ? globalThis.String(object.job_id)
+        : "",
+    };
+  },
+
+  toJSON(message: DeleteBiJobRequest): unknown {
+    const obj: any = {};
+    if (message.jobId !== "") {
+      obj.jobId = message.jobId;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<DeleteBiJobRequest>): DeleteBiJobRequest {
+    return DeleteBiJobRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<DeleteBiJobRequest>): DeleteBiJobRequest {
+    const message = createBaseDeleteBiJobRequest();
+    message.jobId = object.jobId ?? "";
+    return message;
+  },
+};
+
+function createBaseDeleteBiJobResponse(): DeleteBiJobResponse {
+  return { base: undefined };
+}
+
+export const DeleteBiJobResponse: MessageFns<DeleteBiJobResponse> = {
+  encode(message: DeleteBiJobResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): DeleteBiJobResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDeleteBiJobResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DeleteBiJobResponse {
+    return { base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined };
+  },
+
+  toJSON(message: DeleteBiJobResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<DeleteBiJobResponse>): DeleteBiJobResponse {
+    return DeleteBiJobResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<DeleteBiJobResponse>): DeleteBiJobResponse {
+    const message = createBaseDeleteBiJobResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
     return message;
   },
 };
@@ -9873,6 +10734,63 @@ export const DashboardServiceDefinition = {
         },
       },
     },
+    /** ListFeaturedDashboards returns dashboards pinned to the Executive Dashboard landing page. */
+    listFeaturedDashboards: {
+      name: "ListFeaturedDashboards",
+      requestType: ListFeaturedDashboardsRequest,
+      requestStream: false,
+      responseType: ListFeaturedDashboardsResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              40,
+              18,
+              38,
+              47,
+              97,
+              112,
+              105,
+              47,
+              118,
+              49,
+              47,
+              102,
+              105,
+              110,
+              97,
+              110,
+              99,
+              101,
+              47,
+              98,
+              105,
+              47,
+              100,
+              97,
+              115,
+              104,
+              98,
+              111,
+              97,
+              114,
+              100,
+              115,
+              47,
+              102,
+              101,
+              97,
+              116,
+              117,
+              114,
+              101,
+              100,
+            ]),
+          ],
+        },
+      },
+    },
     /** CreateDashboardGroup creates a new dashboard group. */
     createDashboardGroup: {
       name: "CreateDashboardGroup",
@@ -10522,6 +11440,156 @@ export const BiJobServiceDefinition = {
               103,
               101,
               114,
+            ]),
+          ],
+        },
+      },
+    },
+    /** CreateBiJob registers a new ETL job in the bi_job registry. */
+    createBiJob: {
+      name: "CreateBiJob",
+      requestType: CreateBiJobRequest,
+      requestStream: false,
+      responseType: CreateBiJobResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              28,
+              58,
+              1,
+              42,
+              34,
+              23,
+              47,
+              97,
+              112,
+              105,
+              47,
+              118,
+              49,
+              47,
+              102,
+              105,
+              110,
+              97,
+              110,
+              99,
+              101,
+              47,
+              98,
+              105,
+              47,
+              106,
+              111,
+              98,
+              115,
+            ]),
+          ],
+        },
+      },
+    },
+    /** UpdateBiJob mutates schedule_cron, oracle_procedure, config, or is_active. */
+    updateBiJob: {
+      name: "UpdateBiJob",
+      requestType: UpdateBiJobRequest,
+      requestStream: false,
+      responseType: UpdateBiJobResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              37,
+              58,
+              1,
+              42,
+              26,
+              32,
+              47,
+              97,
+              112,
+              105,
+              47,
+              118,
+              49,
+              47,
+              102,
+              105,
+              110,
+              97,
+              110,
+              99,
+              101,
+              47,
+              98,
+              105,
+              47,
+              106,
+              111,
+              98,
+              115,
+              47,
+              123,
+              106,
+              111,
+              98,
+              95,
+              105,
+              100,
+              125,
+            ]),
+          ],
+        },
+      },
+    },
+    /** DeleteBiJob soft-disables a job (sets is_active=false, preserves logs). */
+    deleteBiJob: {
+      name: "DeleteBiJob",
+      requestType: DeleteBiJobRequest,
+      requestStream: false,
+      responseType: DeleteBiJobResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              34,
+              42,
+              32,
+              47,
+              97,
+              112,
+              105,
+              47,
+              118,
+              49,
+              47,
+              102,
+              105,
+              110,
+              97,
+              110,
+              99,
+              101,
+              47,
+              98,
+              105,
+              47,
+              106,
+              111,
+              98,
+              115,
+              47,
+              123,
+              106,
+              111,
+              98,
+              95,
+              105,
+              100,
+              125,
             ]),
           ],
         },

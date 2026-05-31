@@ -3,14 +3,15 @@
 // BI chart-data hook — drives the viewer page. Polling interval comes from the
 // dashboard's refresh_interval_sec (or cache_ttl_sec fallback).
 
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, keepPreviousData } from "@tanstack/react-query"
 
 import { apiClient } from "@/lib/api"
 import type { ChartDataResponse, GetDashboardDataResponse, ViewerState } from "@/types/bi"
 import { GetDashboardDataResponseParser } from "@/types/bi"
 import { dashboardKeys } from "./use-dashboard"
 
-/** Build the query string for the chart-data BFF route from viewer state. */
+/** Build the query string for the chart-data BFF route from viewer state.
+ *  NOTE: selectedPeriod is a client-side filter — it is intentionally excluded here. */
 function buildDataQuery(state: ViewerState): string {
   const params = new URLSearchParams()
   params.set("period", state.period)
@@ -20,8 +21,13 @@ function buildDataQuery(state: ViewerState): string {
   }
   params.set("compare", state.compare)
   if (state.drillPath.length > 0) params.set("drill_path", state.drillPath.join(","))
+  if (state.group1Filter?.length) params.set("group1_filter", state.group1Filter.join(","))
+  if (state.group2Filter?.length) params.set("group2_filter", state.group2Filter.join(","))
   return params.toString()
 }
+
+/** Chart types that represent a trend over time — month selector is hidden for these. */
+export const TREND_CHART_TYPES = new Set(["line", "area", "multi_line"])
 
 /**
  * useDashboardData fetches the shaped chart payload for the viewer.
@@ -44,5 +50,6 @@ export function useDashboardData(code: string | undefined, state: ViewerState, r
     refetchInterval: refreshIntervalMs > 0 ? refreshIntervalMs : false,
     refetchOnWindowFocus: false,
     staleTime: 30_000,
+    placeholderData: keepPreviousData,
   })
 }

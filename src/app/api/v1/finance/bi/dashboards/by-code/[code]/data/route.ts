@@ -32,6 +32,18 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const periodFromStr = sp.get("periodFrom")
     const periodToStr = sp.get("periodTo")
 
+    // Forward filter-chip selections as gRPC metadata headers so the backend can
+    // add WHERE group_1/group_2 IN (...) without proto changes.
+    const group1Filter = sp.get("group1_filter")?.split(",").filter(Boolean) ?? []
+    const group2Filter = sp.get("group2_filter")?.split(",").filter(Boolean) ?? []
+    if (group1Filter.length > 0) metadata.set("x-group1-filter", group1Filter.join(","))
+    if (group2Filter.length > 0) metadata.set("x-group2-filter", group2Filter.join(","))
+
+    // force_trend=true: instructs the backend to override x_axis_field and return a
+    // time-series payload instead of a categorical/waterfall one. Used by CrossDashboardCard
+    // to merge a secondary trend line (e.g. EBITDA) with the primary NP series.
+    if (sp.get("force_trend") === "true") metadata.set("x-force-trend", "true")
+
     const response = await client.getDashboardData(
       {
         dashboardCode: code,

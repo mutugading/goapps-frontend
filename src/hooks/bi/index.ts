@@ -23,7 +23,16 @@ export {
   groupKeys,
 } from "./use-group"
 export { useFactDistincts, useDataSources, factKeys } from "./use-fact-distincts"
-export { useBiJobs, useBiJobLogs, useTriggerBiJob, jobKeys } from "./use-job"
+export {
+  useBiJobs,
+  useBiJobLogs,
+  useTriggerBiJob,
+  useCreateJob,
+  useUpdateJob,
+  useDeleteJob,
+  jobKeys,
+} from "./use-job"
+export type { CreateJobInput, UpdateJobInput } from "./use-job"
 export {
   useUploadTemplate,
   useParseUpload,
