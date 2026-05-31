@@ -34,27 +34,27 @@ interface LandingSection {
 
 // ── Chart data fetcher ────────────────────────────────────────────────────────
 
+// sentinel value distinguishes "not yet fetched" (undefined) from "fetched but empty" (null)
+const LOADING_SENTINEL = undefined
+
 function useDashboardChartData(dashboardCode: string) {
-  const [chartData, setChartData] = useState<ChartDataResponse | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [chartData, setChartData] = useState<ChartDataResponse | null | typeof LOADING_SENTINEL>(LOADING_SENTINEL)
 
   useEffect(() => {
-    setLoading(true)
+    let cancelled = false
     const url = `/api/v1/finance/bi/dashboards/by-code/${dashboardCode}/data?period_preset=L12M&compare=NONE`
     fetch(url, { credentials: "include" })
       .then((r) => r.json())
       .then((d: { data?: ChartDataResponse }) => {
-        setChartData(d.data ?? null)
+        if (!cancelled) setChartData(d.data ?? null)
       })
       .catch(() => {
-        setChartData(null)
+        if (!cancelled) setChartData(null)
       })
-      .finally(() => {
-        setLoading(false)
-      })
+    return () => { cancelled = true }
   }, [dashboardCode])
 
-  return { chartData, loading }
+  return { chartData: chartData ?? null, loading: chartData === LOADING_SENTINEL }
 }
 
 // ── DashboardSection ──────────────────────────────────────────────────────────
