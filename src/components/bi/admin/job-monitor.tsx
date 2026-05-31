@@ -3,7 +3,7 @@
 // Job monitor — ETL job registry + manual trigger + CRUD actions.
 
 import { useState } from "react"
-import { Pencil, Play, Plus, Trash2 } from "lucide-react"
+import { FileText, Pencil, Play, Plus, Trash2 } from "lucide-react"
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
@@ -23,6 +23,7 @@ import {
 import { useBiJobs, useTriggerBiJob, useDeleteJob } from "@/hooks/bi/use-job"
 import type { BiJob } from "@/types/bi"
 import { JobFormDialog } from "./job-form-dialog"
+import { JobLogsSheet } from "./job-logs-sheet"
 
 const STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   SUCCESS: "default",
@@ -36,9 +37,10 @@ export function JobMonitor() {
   const triggerMut = useTriggerBiJob()
   const deleteMut  = useDeleteJob()
 
-  const [formOpen, setFormOpen]   = useState(false)
-  const [editJob,  setEditJob]    = useState<BiJob | null>(null)
-  const [deleteJob, setDeleteJob] = useState<BiJob | null>(null)
+  const [formOpen, setFormOpen]     = useState(false)
+  const [editJob,  setEditJob]      = useState<BiJob | null>(null)
+  const [deleteJob, setDeleteJob]   = useState<BiJob | null>(null)
+  const [logsJob,   setLogsJob]     = useState<BiJob | null>(null)
 
   function openCreate() {
     setEditJob(null)
@@ -107,6 +109,18 @@ export function JobMonitor() {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-1">
+                      {/* Logs */}
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8"
+                        title="View run logs"
+                        onClick={() => setLogsJob(j)}
+                      >
+                        <FileText className="h-4 w-4" />
+                        <span className="sr-only">Logs</span>
+                      </Button>
+
                       {/* Edit */}
                       <Button
                         size="icon"
@@ -160,6 +174,13 @@ export function JobMonitor() {
           </TableBody>
         </Table>
       </div>
+
+      {/* Job logs side panel */}
+      <JobLogsSheet
+        jobId={logsJob?.jobId ?? null}
+        jobName={logsJob?.jobName ?? ""}
+        onClose={() => setLogsJob(null)}
+      />
 
       {/* Create / edit dialog */}
       <JobFormDialog
