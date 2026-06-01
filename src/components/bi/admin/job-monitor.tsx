@@ -33,7 +33,7 @@ const STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive" | "
 }
 
 export function JobMonitor() {
-  const { data: jobs, isLoading } = useBiJobs(true)
+  const { data: jobs, isLoading } = useBiJobs(false)
   const triggerMut = useTriggerBiJob()
   const deleteMut  = useDeleteJob()
 
