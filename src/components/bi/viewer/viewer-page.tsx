@@ -234,7 +234,11 @@ export function ViewerPage({ code }: { code: string }) {
         <div className="flex flex-col gap-2 rounded-lg border bg-card px-4 py-3">
           {group1Values.length > 0 && (
             <FilterChips
-              label="Delivery Type"
+              label={
+                ((dataConfig?.filterChipsGroup1Label ?? dataConfig?.filter_chips_group1_label ??
+                  dashConfig?.filterChipsGroup1Label ?? dashConfig?.filter_chips_group1_label) as string | undefined)
+                ?? "Filter"
+              }
               values={group1Values}
               selected={group1Filter}
               onToggle={toggleGroup1}
@@ -243,7 +247,11 @@ export function ViewerPage({ code }: { code: string }) {
           )}
           {group2Values.length > 0 && (
             <FilterChips
-              label="Category"
+              label={
+                ((dataConfig?.filterChipsGroup2Label ?? dataConfig?.filter_chips_group2_label ??
+                  dashConfig?.filterChipsGroup2Label ?? dashConfig?.filter_chips_group2_label) as string | undefined)
+                ?? "Category"
+              }
               values={group2Values}
               selected={group2Filter}
               onToggle={toggleGroup2}
