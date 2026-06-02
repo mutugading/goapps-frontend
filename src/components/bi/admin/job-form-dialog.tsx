@@ -2,7 +2,7 @@
 
 // ETL Job create/edit dialog.
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -56,6 +56,7 @@ export function JobFormDialog({ open, onOpenChange, job }: JobFormDialogProps) {
     handleSubmit,
     setValue,
     watch,
+    reset,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -70,6 +71,21 @@ export function JobFormDialog({ open, onOpenChange, job }: JobFormDialogProps) {
   })
 
   const isPending = createJob.isPending || updateJob.isPending
+
+  // Reset form when job prop changes (e.g. opening edit dialog for a different job).
+  // useForm defaultValues only runs on initial mount — without this reset, editing
+  // a job after the dialog was previously opened shows stale/empty values and
+  // Zod validation fails silently because jobName = "" (hidden in edit mode).
+  useEffect(() => {
+    reset({
+      jobName:         job?.jobName ?? "",
+      sourceCode:      job?.sourceCode ?? "ERP_ORACLE",
+      targetType:      job?.targetType ?? "MIS",
+      scheduleCron:    job?.scheduleCron ?? "0 */6 * * *",
+      oracleProcedure: job?.oracleProcedure ?? "",
+      isActive:        job?.isActive ?? true,
+    })
+  }, [job, reset])
 
   const onSubmit = async (values: FormValues) => {
     if (isEdit && job) {

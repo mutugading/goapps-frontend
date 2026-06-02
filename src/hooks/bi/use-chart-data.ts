@@ -37,8 +37,10 @@ function buildDataQuery(state: ViewerState, isTrendChart: boolean): string {
   return params.toString()
 }
 
-/** Chart types that represent a trend over time — month selector is hidden for these. */
-export const TREND_CHART_TYPES = new Set(["line", "area", "multi_line"])
+/** Chart types that represent a trend over time — month selector is hidden for these.
+ *  "mixed" is included because NET_PROFIT uses mixed with x_axis_field="period",
+ *  which is semantically a trend chart and should NOT get the single-month override. */
+export const TREND_CHART_TYPES = new Set(["line", "area", "multi_line", "mixed"])
 
 /**
  * useDashboardData fetches the shaped chart payload for the viewer.

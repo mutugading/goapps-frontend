@@ -70,8 +70,14 @@ export function FilterBar({
   // Show month selector when categorical chart type AND we have actual period labels to select.
   const showMonthSelector = !TREND_CHART_TYPES.has(activeChartType) && periodCategories.length > 0
 
-  // Default to latest period category when selectedPeriod is unset.
-  const effectivePeriod = state.selectedPeriod ?? periodCategories[periodCategories.length - 1] ?? ""
+  // "" = show all months (no selected_month override). Non-empty = filter to that month.
+  const effectivePeriod = state.selectedPeriod ?? ""
+
+  function fmtMonth(yyyymm: string): string {
+    const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+    const m = parseInt(yyyymm.slice(4, 6), 10)
+    return `${months[m - 1] ?? ""} ${yyyymm.slice(0, 4)}`
+  }
 
   return (
     <div className="flex flex-wrap items-center gap-4 rounded-lg border bg-card p-4">
@@ -80,7 +86,7 @@ export function FilterBar({
         <span className="text-xs font-semibold uppercase text-muted-foreground">Period</span>
         <Select
           value={state.period}
-          onValueChange={(v) => onChange({ ...state, period: v as PeriodPreset })}
+          onValueChange={(v) => onChange({ ...state, period: v as PeriodPreset, selectedPeriod: undefined })}
         >
           <SelectTrigger className="h-8 w-[180px]">
             <SelectValue />
@@ -95,17 +101,20 @@ export function FilterBar({
         </Select>
       </div>
 
-      {/* Month selector — visible for categorical chart types once data is loaded */}
+      {/* Month selector — visible for categorical chart types once data is loaded.
+          Selecting a month passes selected_month to the BFF to narrow the query.
+          "All Months" (value="") clears selectedPeriod so the chart uses the full period range. */}
       {showMonthSelector && (
         <div className="flex items-center gap-2">
           <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Month</span>
           <select
             value={effectivePeriod}
-            onChange={(e) => onChange({ ...state, selectedPeriod: e.target.value })}
+            onChange={(e) => onChange({ ...state, selectedPeriod: e.target.value || undefined })}
             className="rounded border border-border bg-background px-2 py-1 text-xs"
           >
+            <option value="">All Months</option>
             {[...periodCategories].reverse().map((c) => (
-              <option key={c} value={c}>{c}</option>
+              <option key={c} value={c}>{fmtMonth(c)}</option>
             ))}
           </select>
         </div>

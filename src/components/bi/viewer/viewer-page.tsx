@@ -153,10 +153,11 @@ export function ViewerPage({ code }: { code: string }) {
   // categorical charts use the derived month list.
   const monthSelectorCategories = isTrendChart ? periodCategories : derivedPeriodOptions
 
+  // effectiveSelectedPeriod is undefined when no month is explicitly selected
+  // (default "All Months"). In that case the chart shows the full period range
+  // and the title doesn't append a specific month label.
   const effectiveSelectedPeriod = validSelectedPeriod ??
-    (isTrendChart
-      ? periodCategories[periodCategories.length - 1]
-      : derivedPeriodOptions[derivedPeriodOptions.length - 1])
+    (isTrendChart ? periodCategories[periodCategories.length - 1] : undefined)
 
   // available_chart_types: prefer data endpoint config (always has full JSONB).
   const availableChartTypes = (
