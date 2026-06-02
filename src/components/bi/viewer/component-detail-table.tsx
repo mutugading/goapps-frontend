@@ -49,7 +49,7 @@ export function ComponentDetailTable({
   onRowClick,
   drillPath,
 }: ComponentDetailTableProps) {
-  // null = still loading; [] = loaded but empty; non-empty = data ready.
+  // null = fetch in progress; [] = fetched but empty; non-empty = data ready.
   const [rows, setRows] = useState<ComponentDetailRow[] | null>(null)
 
   // Last element in drillPath is the drilled group_2 segment (e.g. "INCOME").
@@ -57,7 +57,7 @@ export function ComponentDetailTable({
   const drillSegment = drillPath && drillPath.length > 0 ? drillPath[drillPath.length - 1] : ""
 
   useEffect(() => {
-    if (!period) return
+    if (!period) return   // no fetch when period is unset; displayRows handles the empty state
     const qs = new URLSearchParams({ period })
     if (group1) qs.set("group1", group1)
     if (drillSegment) qs.set("drill", drillSegment)
@@ -78,15 +78,19 @@ export function ComponentDetailTable({
     }
   }, [dashboardCode, period, group1, drillSegment])
 
-  if (rows === null) {
+  // When no period is selected ("All Months"), show the empty state immediately
+  // without calling setState inside the effect (which triggers cascading renders).
+  const displayRows = !period ? [] : rows
+
+  if (displayRows === null) {
     return (
       <div className="py-4 text-center text-sm text-muted-foreground">Loading…</div>
     )
   }
-  if (rows.length === 0) {
+  if (displayRows.length === 0) {
     return (
       <div className="py-4 text-center text-sm text-muted-foreground">
-        No data for selected period
+        {period ? "No data for selected period" : "Select a month to view component detail"}
       </div>
     )
   }
@@ -107,7 +111,7 @@ export function ComponentDetailTable({
           </tr>
         </thead>
         <tbody>
-          {rows.map((r) => (
+          {displayRows.map((r) => (
             <tr
               key={r.category}
               className={cn(

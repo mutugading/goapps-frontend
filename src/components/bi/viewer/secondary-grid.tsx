@@ -206,6 +206,8 @@ function ComputedRatioCard({
   group2Filter?: string[]
 }) {
   const [computedData, setComputedData] = useState<ChartDataResponse | null>(null)
+  // Raw denominator sums per category — used to show Net Sales + Margin $ in tooltip.
+  const [denomSums, setDenomSums] = useState<Map<string, number>>(new Map())
   const cr = s.chart_config?.computed_ratio
 
   // Stable serialised filter strings to avoid unnecessary effect re-runs.
@@ -214,26 +216,43 @@ function ComputedRatioCard({
 
   useEffect(() => {
     if (!cr) return
-    const url = new URL(
-      `/api/v1/finance/bi/dashboards/by-code/${dashboardCode}/computed`,
-      window.location.origin,
-    )
-    url.searchParams.set("numerator", cr.numerator)
-    url.searchParams.set("denominator", cr.denominator)
-    url.searchParams.set("scale", String(cr.scale))
-    url.searchParams.set("group_by", cr.group_by)
-    // Pass the selected period so the backend resolves the correct YYYYMM window.
-    if (selectedPeriod) url.searchParams.set("period", selectedPeriod)
-    // Forward active filter-chip selections so the ratio respects the current view.
-    if (g1Key) url.searchParams.set("group1_filter", g1Key)
-    if (g2Key) url.searchParams.set("group2_filter", g2Key)
+    const buildUrl = (num: string, denom: string, scale: string) => {
+      const url = new URL(
+        `/api/v1/finance/bi/dashboards/by-code/${dashboardCode}/computed`,
+        window.location.origin,
+      )
+      url.searchParams.set("numerator", num)
+      url.searchParams.set("denominator", denom)
+      url.searchParams.set("scale", scale)
+      url.searchParams.set("group_by", cr.group_by)
+      if (selectedPeriod) url.searchParams.set("period", selectedPeriod)
+      if (g1Key) url.searchParams.set("group1_filter", g1Key)
+      if (g2Key) url.searchParams.set("group2_filter", g2Key)
+      return url.toString()
+    }
 
-    fetch(url.toString(), { credentials: "include" })
+    // Primary: the ratio itself (e.g. MARGIN / NETT_SALES * 100).
+    fetch(buildUrl(cr.numerator, cr.denominator, String(cr.scale)), { credentials: "include" })
       .then((r) => r.json())
-      .then((j: { data?: ChartDataResponse }) => {
-        if (j.data) setComputedData(j.data)
-      })
+      .then((j: { data?: ChartDataResponse }) => { if (j.data) setComputedData(j.data) })
       .catch(() => {})
+
+    // Secondary (only for ratio charts): raw denominator sums per category so the
+    // tooltip can show Net Sales, Margin $, and Margin % instead of just Margin %.
+    if (cr.denominator) {
+      fetch(buildUrl(cr.denominator, "", "1"), { credentials: "include" })
+        .then((r) => r.json())
+        .then((j: { data?: ChartDataResponse }) => {
+          if (!j.data) return
+          const map = new Map<string, number>()
+          for (const ser of j.data.series ?? []) {
+            // Shape returns N series × 1 point; series.name = category.
+            if (ser.name) map.set(ser.name, ser.points?.[0]?.value ?? 0)
+          }
+          setDenomSums(map)
+        })
+        .catch(() => {})
+    }
   }, [dashboardCode, cr, selectedPeriod, g1Key, g2Key])
 
   const activeType = cardTypes[cardIndex] ?? s.chart_type ?? "horizontal_bar"
@@ -250,13 +269,27 @@ function ComputedRatioCard({
   // The computed endpoint returns N series × 1 point (one series per group_by bucket).
   // Donut / horizontal_bar / data_table expect 1 series × N points (one point per bucket).
   // Pivot here so all chart types receive the correct shape.
+  //
+  // When denomSums is available (ratio charts), inject meta = { denom_val, numer_val }
+  // so horizontal-bar-chart.tsx can render a rich tooltip (Net Sales + Margin $ + %).
   const chartData: ChartDataResponse = (() => {
     if (!computedData?.series?.length) return computedData ?? emptyChart
     const allSinglePoint = computedData.series.every((s) => (s.points?.length ?? 0) <= 1)
     if (!allSinglePoint) return computedData
     const mergedPoints = computedData.series
       .filter((ser) => ser.name && ser.name !== "")
-      .map((ser) => ({ category: ser.name, value: ser.points?.[0]?.value ?? 0, label: "", meta: undefined }))
+      .map((ser) => {
+        const ratioVal = ser.points?.[0]?.value ?? 0
+        const denomVal = denomSums.get(ser.name) ?? 0
+        const scale = cr?.scale ?? 100
+        const numerVal = scale > 0 ? denomVal * ratioVal / scale : 0
+        return {
+          category: ser.name,
+          value: ratioVal,
+          label: "",
+          meta: denomSums.size > 0 ? { denom_val: denomVal, numer_val: numerVal } : undefined,
+        }
+      })
     return {
       ...computedData,
       categories: mergedPoints.map((p) => p.category),

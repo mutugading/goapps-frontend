@@ -3,6 +3,8 @@
 
 import type { ChartDataResponse, Series } from "@/types/bi"
 
+// RechartsRow: row-major shape for Recharts. Keys are series names + "category".
+// Meta fields from SeriesPoint.meta are copied with __ prefix (e.g. __denom_val).
 export interface RechartsRow {
   category: string
   [seriesName: string]: string | number
@@ -26,6 +28,13 @@ export function toRechartsRows(data: ChartDataResponse): RechartsRow[] {
       const idx = indexByCat.get(p.category)
       if (idx === undefined) continue
       rows[idx][s.name] = p.value
+      // Copy meta fields with __ prefix so they're accessible in tooltips
+      // but not accidentally rendered as chart bars/lines.
+      if (p.meta) {
+        for (const [k, v] of Object.entries(p.meta)) {
+          rows[idx][`__${k}`] = v
+        }
+      }
     }
   }
   return rows
