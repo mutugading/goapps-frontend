@@ -76,6 +76,13 @@ interface SecondaryGridProps {
   group2Filter?: string[]
 }
 
+function fmtPeriodLabel(yyyymm: string | undefined): string {
+  if (!yyyymm || yyyymm.length !== 6) return yyyymm ?? ""
+  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+  const m = parseInt(yyyymm.slice(4, 6), 10)
+  return `${months[m - 1] ?? ""} ${yyyymm.slice(0, 4)}`
+}
+
 function humanizeType(t: string): string {
   const labels: Record<string, string> = {
     line: "Line",
@@ -403,7 +410,14 @@ export function SecondaryGrid({ layoutConfig, data, dashboardCode, selectedPerio
           return (
             <Card key={`${s.title ?? "component-detail"}-${i}`} className={cn(s.span === "full" && "lg:col-span-2")}>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold">{s.title ?? "Component Detail"}</CardTitle>
+                <CardTitle className="text-sm font-semibold">
+                  {s.title ?? "Component Detail"}
+                  {selectedPeriod && (
+                    <span className="ml-2 text-xs font-normal text-muted-foreground">
+                      — {fmtPeriodLabel(selectedPeriod)}
+                    </span>
+                  )}
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <ComponentDetailTable

@@ -152,6 +152,39 @@ export function StepDataBinding({ form, setForm }: StepProps) {
         </Field>
       )}
 
+      {/* Filter chip labels — optional; only needed when this dashboard shows filter chips */}
+      <div className="rounded-md border border-dashed border-border/60 p-3 space-y-3">
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          Filter Chip Labels <span className="font-normal normal-case">(optional — shown in viewer above the chart)</span>
+        </p>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Group 1 Chip Label" hint='e.g. "Delivery Type"'>
+            <Input
+              value={(form.chartConfig["filter_chips_group1_label"] as string) ?? ""}
+              onChange={(e) =>
+                setForm((p) => ({
+                  ...p,
+                  chartConfig: { ...p.chartConfig, filter_chips_group1_label: e.target.value || undefined },
+                }))
+              }
+              placeholder="Filter"
+            />
+          </Field>
+          <Field label="Group 2 Chip Label" hint='e.g. "Category"'>
+            <Input
+              value={(form.chartConfig["filter_chips_group2_label"] as string) ?? ""}
+              onChange={(e) =>
+                setForm((p) => ({
+                  ...p,
+                  chartConfig: { ...p.chartConfig, filter_chips_group2_label: e.target.value || undefined },
+                }))
+              }
+              placeholder="Category"
+            />
+          </Field>
+        </div>
+      </div>
+
       <Field label="Period Grain">
         <Select
           value={String(form.periodeGrain)}

@@ -45,11 +45,15 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       metadata,
     )
 
-    // For multi-metric dashboards, find the series matching metricName (by name).
-    // Fall back to first series when metricName is not provided or not found.
+    // For multi-metric dashboards, find the series matching metricName.
+    // Shape() maps raw metric codes (e.g. "MARGIN") to human-readable labels
+    // (e.g. "Margin") via staticMetricLabels, so match case-insensitively and
+    // also try the raw code directly before falling back to the first series.
     const allSeries = mainResp.data?.series ?? []
     const targetSeries = metricName
-      ? (allSeries.find((s) => s.name === metricName) ?? allSeries[0])
+      ? (allSeries.find((s) => s.name.toLowerCase() === metricName.toLowerCase()) ??
+         allSeries.find((s) => s.name === metricName) ??
+         allSeries[0])
       : allSeries[0]
 
     const mainPoints = (targetSeries?.points ?? [])
