@@ -70,8 +70,34 @@ export function ViewerPage({ code }: { code: string }) {
   const [group1Filter, setGroup1Filter] = useState<string[]>([])
   const [group2Filter, setGroup2Filter] = useState<string[]>([])
 
-  // Merge local chip filters into the state object passed to useDashboardData.
-  const stateWithFilters: ViewerState = { ...state, group1Filter, group2Filter }
+  // Determine chart type early (dashboard may not be loaded yet → fall back to "").
+  // Needed to decide whether selectedPeriod should drive the main chart query.
+  const earlyChartType = state.chartType || (dashboard ? chartTypeToString(dashboard.chartType) : "")
+  const earlyIsTrend = TREND_CHART_TYPES.has(earlyChartType)
+
+  // YYYYMM string from URL state (e.g. "202605") — only valid if 6 digits.
+  const validSelectedPeriodEarly = /^\d{6}$/.test(state.selectedPeriod ?? "") ? state.selectedPeriod : undefined
+
+  // For categorical charts (waterfall, bar, donut, data_table) the month picker
+  // controls which month the chart shows. When the user picks a month, override the
+  // period preset with a CUSTOM single-month range so both the main chart AND the
+  // Component Detail table reflect the same period.
+  // Trend charts (line/area/multi_line) ignore selectedPeriod in the main query —
+  // they always show the full period range (e.g. L12M).
+  const stateWithFilters: ViewerState = (() => {
+    const base = { ...state, group1Filter, group2Filter }
+    if (!earlyIsTrend && validSelectedPeriodEarly) {
+      const y = parseInt(validSelectedPeriodEarly.slice(0, 4), 10)
+      const m = parseInt(validSelectedPeriodEarly.slice(4, 6), 10) - 1
+      return {
+        ...base,
+        period: "CUSTOM",
+        periodFrom: new Date(Date.UTC(y, m, 1)).toISOString().slice(0, 10),
+        periodTo: new Date(Date.UTC(y, m + 1, 0)).toISOString().slice(0, 10),
+      }
+    }
+    return base
+  })()
 
   const {
     data: chartData,
