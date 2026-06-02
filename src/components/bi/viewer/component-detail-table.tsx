@@ -57,7 +57,11 @@ export function ComponentDetailTable({
   const drillSegment = drillPath && drillPath.length > 0 ? drillPath[drillPath.length - 1] : ""
 
   useEffect(() => {
-    if (!period) return
+    if (!period) {
+      // No month selected — show empty state instead of perpetual loading.
+      setRows([])
+      return
+    }
     const qs = new URLSearchParams({ period })
     if (group1) qs.set("group1", group1)
     if (drillSegment) qs.set("drill", drillSegment)
