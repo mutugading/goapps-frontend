@@ -29,8 +29,22 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const client = getBiChartDataClient()
 
     const drillPath = sp.get("drill_path")
-    const periodFromStr = sp.get("periodFrom")
-    const periodToStr = sp.get("periodTo")
+    let periodFromStr = sp.get("periodFrom")
+    let periodToStr = sp.get("periodTo")
+    let periodPresetOverride = sp.get("period") || "L12M"
+
+    // selected_month=YYYYMM overrides the period to a single-month CUSTOM range.
+    // Sent by the viewer when a categorical chart (waterfall/bar) has a month selected.
+    const selectedMonth = sp.get("selected_month")
+    if (selectedMonth && /^\d{6}$/.test(selectedMonth)) {
+      const y = parseInt(selectedMonth.slice(0, 4), 10)
+      const m = parseInt(selectedMonth.slice(4, 6), 10) - 1
+      const from = new Date(Date.UTC(y, m, 1))
+      const to = new Date(Date.UTC(y, m + 1, 0)) // day-0 of next month = last day of this month
+      periodPresetOverride = "CUSTOM"
+      periodFromStr = from.toISOString().slice(0, 10)
+      periodToStr = to.toISOString().slice(0, 10)
+    }
 
     // Forward filter-chip selections as gRPC metadata headers so the backend can
     // add WHERE group_1/group_2 IN (...) without proto changes.
@@ -47,7 +61,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const response = await client.getDashboardData(
       {
         dashboardCode: code,
-        periodPreset: sp.get("period") || sp.get("periodPreset") || "L12M",
+        periodPreset: periodPresetOverride,
         periodFrom: periodFromStr ? new Date(periodFromStr) : undefined,
         periodTo: periodToStr ? new Date(periodToStr) : undefined,
         compare: compareKeyToEnum(sp.get("compare")),
