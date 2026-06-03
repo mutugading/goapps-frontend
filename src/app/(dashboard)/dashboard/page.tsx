@@ -1,9 +1,16 @@
 import { generateMetadata as genMeta } from "@/config/site"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-
-export const metadata = genMeta("Dashboard", true)
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { PageHeader } from "@/components/common/page-header"
+import { KpiCard } from "@/components/common/kpi-card"
+import { KpiGrid } from "@/components/common/kpi-grid"
 import { AreaChart } from "@/components/charts/area-chart"
 import { PieChart } from "@/components/charts/pie-chart"
 import {
@@ -13,8 +20,11 @@ import {
     TrendingUp,
     ArrowUpRight,
     ArrowDownRight,
+    Construction,
 } from "lucide-react"
 import dashboardData from "@/data/dashboard.json"
+
+export const metadata = genMeta("Dashboard", true)
 
 export default function DashboardPage() {
     const { stats, monthlyData, moduleStats, recentActivities } = dashboardData
@@ -26,96 +36,83 @@ export default function DashboardPage() {
                 subtitle="Overview of your enterprise metrics and activities"
             />
 
+            <div className="space-y-6">
+
+            {/* Under Development Banner */}
+            <Alert className="border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
+                <Construction className="size-4 text-amber-600 dark:text-amber-400" />
+                <AlertTitle className="text-amber-800 dark:text-amber-300">
+                    Under Development — Sample Data Only
+                </AlertTitle>
+                <AlertDescription className="text-amber-700 dark:text-amber-400">
+                    Halaman ini masih dalam tahap pengembangan. Semua angka dan grafik yang
+                    ditampilkan adalah{" "}
+                    <strong>data dummy</strong> dan tidak mencerminkan data sistem yang
+                    sebenarnya.
+                </AlertDescription>
+            </Alert>
+
             {/* Stats Cards */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-                        <DollarSign className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">
-                            ${stats.totalRevenue.toLocaleString()}
-                        </div>
-                        <p className="text-xs text-muted-foreground flex items-center gap-1">
-                            <ArrowUpRight className="h-3 w-3 text-green-500" />
-                            <span className="text-green-500">+12.5%</span> from last month
-                        </p>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Active Users</CardTitle>
-                        <Users className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">
-                            {stats.activeUsers.toLocaleString()}
-                        </div>
-                        <p className="text-xs text-muted-foreground flex items-center gap-1">
-                            <ArrowUpRight className="h-3 w-3 text-green-500" />
-                            <span className="text-green-500">+8.2%</span> from last month
-                        </p>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Pending Orders</CardTitle>
-                        <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{stats.pendingOrders}</div>
-                        <p className="text-xs text-muted-foreground flex items-center gap-1">
-                            <ArrowDownRight className="h-3 w-3 text-red-500" />
-                            <span className="text-red-500">-4.3%</span> from last month
-                        </p>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Completion Rate</CardTitle>
-                        <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{stats.completionRate}%</div>
-                        <p className="text-xs text-muted-foreground flex items-center gap-1">
-                            <ArrowUpRight className="h-3 w-3 text-green-500" />
-                            <span className="text-green-500">+2.1%</span> from last month
-                        </p>
-                    </CardContent>
-                </Card>
-            </div>
+            <KpiGrid cols={4}>
+                <KpiCard
+                    title="Total Revenue"
+                    value={`$${stats.totalRevenue.toLocaleString()}`}
+                    icon={DollarSign}
+                    variant="success"
+                    delta={{ value: 12.5, label: "from last month", trend: "up" }}
+                />
+                <KpiCard
+                    title="Active Users"
+                    value={stats.activeUsers.toLocaleString()}
+                    icon={Users}
+                    delta={{ value: 8.2, label: "from last month", trend: "up" }}
+                />
+                <KpiCard
+                    title="Pending Orders"
+                    value={stats.pendingOrders}
+                    icon={ShoppingCart}
+                    variant="warning"
+                    delta={{ value: -4.3, label: "from last month", trend: "down" }}
+                />
+                <KpiCard
+                    title="Completion Rate"
+                    value={`${stats.completionRate}%`}
+                    icon={TrendingUp}
+                    variant="success"
+                    delta={{ value: 2.1, label: "from last month", trend: "up" }}
+                />
+            </KpiGrid>
 
             {/* Charts Row */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7 mb-6">
-                <Card className="lg:col-span-4">
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+                {/* min-w-0 prevents grid item from expanding past its column */}
+                <Card className="min-w-0 lg:col-span-2">
                     <CardHeader>
                         <CardTitle>Revenue Overview</CardTitle>
                         <CardDescription>Monthly revenue and profit trends</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <AreaChart
-                            data={monthlyData}
-                            xAxisKey="month"
-                            series={[
-                                { key: "revenue", label: "Revenue", color: "#3b82f6" },
-                                { key: "profit", label: "Profit", color: "#22c55e" },
-                            ]}
-                            className="h-[300px]"
-                        />
+                        <div className="h-[260px] w-full">
+                            <AreaChart
+                                data={monthlyData}
+                                xAxisKey="month"
+                                series={[
+                                    { key: "revenue", label: "Revenue", color: "#3b82f6" },
+                                    { key: "profit", label: "Profit", color: "#22c55e" },
+                                ]}
+                                className="h-full"
+                            />
+                        </div>
                     </CardContent>
                 </Card>
 
-                <Card className="lg:col-span-3">
+                <Card className="min-w-0 lg:col-span-1">
                     <CardHeader>
                         <CardTitle>Module Distribution</CardTitle>
-                        <CardDescription>Activity distribution by module</CardDescription>
+                        <CardDescription>Activity by module</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <PieChart data={moduleStats} className="h-[300px]" />
+                        <PieChart data={moduleStats} chartHeight={200} />
                     </CardContent>
                 </Card>
             </div>
@@ -131,19 +128,17 @@ export default function DashboardPage() {
                         {recentActivities.map((activity) => (
                             <div
                                 key={activity.id}
-                                className="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0"
+                                className="flex flex-col gap-2 border-b pb-4 last:border-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between"
                             >
-                                <div className="flex items-center gap-4">
-                                    <div>
-                                        <p className="text-sm font-medium">{activity.action}</p>
-                                        <p className="text-xs text-muted-foreground">
-                                            by {activity.user}
-                                        </p>
-                                    </div>
+                                <div>
+                                    <p className="text-sm font-medium">{activity.action}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                        by {activity.user}
+                                    </p>
                                 </div>
-                                <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-2 sm:gap-4">
                                     <Badge variant="secondary">{activity.module}</Badge>
-                                    <span className="text-xs text-muted-foreground">
+                                    <span className="text-xs text-muted-foreground whitespace-nowrap">
                                         {activity.time}
                                     </span>
                                 </div>
@@ -152,6 +147,8 @@ export default function DashboardPage() {
                     </div>
                 </CardContent>
             </Card>
+
+            </div>
         </div>
     )
 }
