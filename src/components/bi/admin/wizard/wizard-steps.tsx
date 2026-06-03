@@ -256,15 +256,18 @@ export function StepChartType({ form, setForm }: StepProps) {
             <button
               key={reg.type}
               type="button"
-              onClick={() =>
+              onClick={() => {
+                // Only reset chartConfig when switching to a DIFFERENT chart type.
+                // If the user clicks the already-selected tile (e.g. to confirm selection),
+                // preserve the existing config — otherwise required fields like x_axis_field
+                // and series_defs would be wiped, causing backend validation errors on save.
+                if (reg.type === selectedStr) return
                 setForm((p) => ({
                   ...p,
                   chartType: stringToChartTypeEnum(reg.type),
-                  // Reset chart_config to the registry defaults when switching type,
-                  // and clear available_chart_types since compatible types change.
                   chartConfig: { ...reg.defaultConfig, available_chart_types: [] },
                 }))
-              }
+              }}
               className={cn(
                 "rounded-lg border p-3 text-left text-sm transition-colors hover:border-primary",
                 selected && "border-primary bg-primary/5 ring-1 ring-primary"

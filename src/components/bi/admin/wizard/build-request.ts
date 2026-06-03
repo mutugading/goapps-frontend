@@ -117,6 +117,7 @@ export function buildUpdateRequest(form: DashboardFormData): Omit<UpdateDashboar
     displayOrder: form.displayOrder,
     groupId: form.groupId,
     isActive: form.isActive,
+    allowedRoleCodes: form.allowedRoleCodes,  // was missing — caused roles to reset on every save
   } as Omit<UpdateDashboardRequest, "dashboardId">
 }
 
