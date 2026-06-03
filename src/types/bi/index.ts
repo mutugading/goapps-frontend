@@ -258,6 +258,10 @@ export interface KpiEntry {
   decimals?: number
   showSparkline?: boolean
   sparklinePeriods?: number
+  /** KPI period scope. Empty/undefined = "selected" (inherits viewer's period, fully dynamic).
+   *  "selected_ytd" = Jan 1 of selected year → selected month (YTD that follows the month picker).
+   *  "current_month" / "ytd" / "l12m" = fixed windows anchored to server `now`. */
+  kpiPeriod?: "" | "selected_ytd" | "current_month" | "ytd" | "l12m"
 }
 
 /** Helper: derive the canonical chart_type string from the proto enum. */

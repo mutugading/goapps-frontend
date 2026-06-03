@@ -626,6 +626,18 @@ export function StepCompareAndKpi({ form, setForm }: StepProps) {
                     </SelectContent>
                   </Select>
                 </Field>
+                <Field label="Period Scope" hint="Empty = dynamic (inherits viewer period)">
+                  <Select value={k.kpiPeriod ?? ""} onValueChange={(v) => updateKpi(i, { kpiPeriod: v as KpiEntry["kpiPeriod"] })}>
+                    <SelectTrigger><SelectValue placeholder="Dynamic (follows viewer)" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Dynamic (follows viewer)</SelectItem>
+                      <SelectItem value="selected_ytd">YTD — Jan to selected month</SelectItem>
+                      <SelectItem value="current_month">Current Month (fixed)</SelectItem>
+                      <SelectItem value="ytd">Full YTD (fixed to today)</SelectItem>
+                      <SelectItem value="l12m">Last 12 Months (fixed)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </Field>
                 <div className="col-span-2 flex items-center justify-between">
                   <label className="flex items-center gap-2 text-sm">
                     <Checkbox checked={Boolean(k.showSparkline)} onCheckedChange={(v) => updateKpi(i, { showSparkline: Boolean(v) })} />

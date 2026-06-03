@@ -22,6 +22,7 @@ function kpiConfigStruct(kpis: KpiEntry[]): Record<string, unknown> {
       agg: k.agg,
       compare: k.compare,
       format: k.format,
+      ...(k.kpiPeriod ? { period: k.kpiPeriod } : {}),  // omit period when empty → backend defaults to "selected" (dynamic)
       ...(k.decimals !== undefined ? { decimals: k.decimals } : {}),
       ...(k.showSparkline ? { show_sparkline: true } : {}),
       ...(k.sparklinePeriods ? { sparkline_periods: k.sparklinePeriods } : {}),
