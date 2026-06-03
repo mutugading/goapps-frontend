@@ -256,15 +256,18 @@ export function StepChartType({ form, setForm }: StepProps) {
             <button
               key={reg.type}
               type="button"
-              onClick={() =>
+              onClick={() => {
+                // Only reset chartConfig when switching to a DIFFERENT chart type.
+                // If the user clicks the already-selected tile (e.g. to confirm selection),
+                // preserve the existing config — otherwise required fields like x_axis_field
+                // and series_defs would be wiped, causing backend validation errors on save.
+                if (reg.type === selectedStr) return
                 setForm((p) => ({
                   ...p,
                   chartType: stringToChartTypeEnum(reg.type),
-                  // Reset chart_config to the registry defaults when switching type,
-                  // and clear available_chart_types since compatible types change.
                   chartConfig: { ...reg.defaultConfig, available_chart_types: [] },
                 }))
-              }
+              }}
               className={cn(
                 "rounded-lg border p-3 text-left text-sm transition-colors hover:border-primary",
                 selected && "border-primary bg-primary/5 ring-1 ring-primary"
@@ -620,6 +623,21 @@ export function StepCompareAndKpi({ form, setForm }: StepProps) {
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {["none", "MoM", "QoQ", "YoY", "YTD_vs_LY"].map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </Field>
+                <Field label="Period Scope" hint="Dynamic = widget updates with month/period selection">
+                  <Select
+                    value={k.kpiPeriod || "__dynamic__"}
+                    onValueChange={(v) => updateKpi(i, { kpiPeriod: v === "__dynamic__" ? "" : v as KpiEntry["kpiPeriod"] })}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__dynamic__">Dynamic (follows viewer)</SelectItem>
+                      <SelectItem value="selected_ytd">YTD — Jan to selected month</SelectItem>
+                      <SelectItem value="current_month">Current Month (fixed)</SelectItem>
+                      <SelectItem value="ytd">Full YTD (fixed to today)</SelectItem>
+                      <SelectItem value="l12m">Last 12 Months (fixed)</SelectItem>
                     </SelectContent>
                   </Select>
                 </Field>

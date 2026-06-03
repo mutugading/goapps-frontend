@@ -244,9 +244,16 @@ export function menuTreeToNavGroups(roots: NormalizedMenuWithChildren[]): NavGro
         .map((root) => {
             const visibleChildren = root.children.filter((c) => c.isVisible)
             if (visibleChildren.length > 0) {
-                return {
-                    title: root.menuTitle,
-                    items: visibleChildren.map(menuToMenuItem),
+                // Convert children, but skip any parent-group items that have no URL
+                // and no children of their own (e.g. RM Pricing or Product Costing
+                // parent menus whose children were all filtered by permissions).
+                // Rendering a null-URL / no-children item causes broken navigation
+                // and a "Dashboard not found" error in the BI viewer.
+                const items = visibleChildren
+                    .map(menuToMenuItem)
+                    .filter((item) => item.url || (item.children && item.children.length > 0))
+                if (items.length > 0) {
+                    return { title: root.menuTitle, items }
                 }
             }
             // ROOT leaf (has URL, no visible children) — render as single-item group

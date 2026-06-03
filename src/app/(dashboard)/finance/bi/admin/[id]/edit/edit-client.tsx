@@ -17,6 +17,7 @@ function dashboardToForm(d: Dashboard): DashboardFormData {
     agg: (String(k.agg ?? "sum")) as KpiEntry["agg"],
     compare: (String(k.compare ?? "none")) as KpiEntry["compare"],
     format: String(k.format ?? "currency_thousands"),
+    kpiPeriod: (String(k.period ?? "")) as KpiEntry["kpiPeriod"],
     decimals: typeof k.decimals === "number" ? k.decimals : undefined,
     showSparkline: Boolean(k.show_sparkline),
     sparklinePeriods: typeof k.sparkline_periods === "number" ? k.sparkline_periods : undefined,
