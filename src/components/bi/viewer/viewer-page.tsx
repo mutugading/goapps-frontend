@@ -319,7 +319,10 @@ function derivePeriodOptions(asOfDate: Date | undefined, periodPreset: string): 
   const month = anchor.getMonth() // 0-indexed
   const count = periodPreset === "L24M" ? 24 : 12 // default L12M
   const result: string[] = []
-  for (let i = 0; i < count; i++) {
+  // Start from the PREVIOUS month (last complete month), not the current month.
+  // The current month is excluded because ETL data is only available for completed months.
+  // e.g. June 4 2026 → start from May 2026 (i=1), show 12 months: May 2026 → Jun 2025.
+  for (let i = 1; i <= count; i++) {
     const d = new Date(year, month - i, 1)
     const yyyymm = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}`
     result.push(yyyymm)

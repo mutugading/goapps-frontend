@@ -45,10 +45,7 @@ export default function DashboardPage() {
                     Under Development — Sample Data Only
                 </AlertTitle>
                 <AlertDescription className="text-amber-700 dark:text-amber-400">
-                    Halaman ini masih dalam tahap pengembangan. Semua angka dan grafik yang
-                    ditampilkan adalah{" "}
-                    <strong>data dummy</strong> dan tidak mencerminkan data sistem yang
-                    sebenarnya.
+                    <p>This page is still under development. All figures and charts displayed are <strong>sample data</strong> and do not reflect actual system data.</p>
                 </AlertDescription>
             </Alert>
 
