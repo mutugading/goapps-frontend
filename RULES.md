@@ -1335,6 +1335,8 @@ import { Construction } from "lucide-react"
     {/* Wrap in <p> — AlertDescription uses display:grid internally, which splits
         bare text nodes and inline elements into separate rows without a wrapper */}
     <p>This page is still under development. All figures and charts displayed are <strong>sample data</strong> and do not reflect actual system data.</p>
+    Halaman ini masih dalam tahap pengembangan. Semua angka yang ditampilkan adalah{" "}
+    <strong>data dummy</strong> dan tidak mencerminkan data sistem yang sebenarnya.
   </AlertDescription>
 </Alert>
 ```
