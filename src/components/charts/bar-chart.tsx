@@ -6,13 +6,10 @@ import {
     CartesianGrid,
     XAxis,
     YAxis,
+    Tooltip,
+    ResponsiveContainer,
+    Legend,
 } from "recharts"
-import {
-    ChartContainer,
-    ChartTooltip,
-    ChartTooltipContent,
-    type ChartConfig,
-} from "@/components/ui/chart"
 
 interface BarChartProps {
     data: Array<Record<string, unknown>>
@@ -26,32 +23,60 @@ interface BarChartProps {
 }
 
 export function BarChart({ data, xAxisKey, series, className }: BarChartProps) {
-    const chartConfig: ChartConfig = series.reduce((acc, s) => {
-        acc[s.key] = { label: s.label, color: s.color }
-        return acc
-    }, {} as ChartConfig)
-
     return (
-        <ChartContainer config={chartConfig} className={className}>
-            <RechartsBarChart data={data} margin={{ left: 12, right: 12 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis
-                    dataKey={xAxisKey}
-                    tickLine={false}
-                    axisLine={false}
-                    tickMargin={8}
-                />
-                <YAxis tickLine={false} axisLine={false} tickMargin={8} />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                {series.map((s) => (
-                    <Bar
-                        key={s.key}
-                        dataKey={s.key}
-                        fill={s.color}
-                        radius={[4, 4, 0, 0]}
+        <div className={`w-full ${className ?? ""}`}>
+            <ResponsiveContainer width="100%" height="100%">
+                <RechartsBarChart data={data} margin={{ left: 0, right: 8, top: 4, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+                    <XAxis
+                        dataKey={xAxisKey}
+                        tickLine={false}
+                        axisLine={false}
+                        tickMargin={8}
+                        tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
                     />
-                ))}
-            </RechartsBarChart>
-        </ChartContainer>
+                    <YAxis
+                        tickLine={false}
+                        axisLine={false}
+                        tickMargin={4}
+                        width={52}
+                        tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
+                        tickFormatter={(v: number) =>
+                            v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v)
+                        }
+                    />
+                    <Tooltip
+                        formatter={(value: number, name: string) => {
+                            const s = series.find((s) => s.key === name)
+                            return [value.toLocaleString(), s?.label ?? name]
+                        }}
+                        contentStyle={{
+                            borderRadius: "8px",
+                            fontSize: "12px",
+                            border: "1px solid hsl(var(--border))",
+                            background: "hsl(var(--card))",
+                            color: "hsl(var(--card-foreground))",
+                        }}
+                    />
+                    {series.length > 1 && (
+                        <Legend
+                            wrapperStyle={{ fontSize: "12px", paddingTop: "12px" }}
+                            formatter={(value: string) =>
+                                series.find((s) => s.key === value)?.label ?? value
+                            }
+                        />
+                    )}
+                    {series.map((s) => (
+                        <Bar
+                            key={s.key}
+                            dataKey={s.key}
+                            fill={s.color}
+                            radius={[4, 4, 0, 0]}
+                            maxBarSize={48}
+                        />
+                    ))}
+                </RechartsBarChart>
+            </ResponsiveContainer>
+        </div>
     )
 }
