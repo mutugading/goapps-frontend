@@ -33,7 +33,8 @@ const STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive" | "
 }
 
 export function JobMonitor() {
-  const { data: jobs, isLoading } = useBiJobs(false)
+  const [showInactive, setShowInactive] = useState(false)
+  const { data: jobs, isLoading } = useBiJobs(showInactive)
   const triggerMut = useTriggerBiJob()
   const deleteMut  = useDeleteJob()
 
@@ -57,7 +58,18 @@ export function JobMonitor() {
       <div className="rounded-lg border">
         {/* Header row */}
         <div className="flex items-center justify-between border-b px-4 py-3">
-          <p className="text-sm font-medium text-muted-foreground">ETL Jobs</p>
+          <div className="flex items-center gap-3">
+            <p className="text-sm font-medium text-muted-foreground">ETL Jobs</p>
+            <label className="flex items-center gap-1.5 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                className="h-3.5 w-3.5 rounded border-border"
+                checked={showInactive}
+                onChange={(e) => setShowInactive(e.target.checked)}
+              />
+              <span className="text-xs text-muted-foreground">Show inactive</span>
+            </label>
+          </div>
           <Button size="sm" onClick={openCreate}>
             <Plus className="mr-1 h-3.5 w-3.5" />
             New Job
