@@ -7,10 +7,15 @@ import { ArrowLeft } from "lucide-react"
 import { PageHeader } from "@/components/common/page-header"
 import { EmptyState } from "@/components/common/empty-state"
 import { Button } from "@/components/ui/button"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   RequestDetailPanel,
   RequestFormDialog,
 } from "@/components/finance/cost-product-request"
+import {
+  FillTrackingTab,
+  FillProgressMini,
+} from "@/components/finance/fill-assignment"
 import { useCostProductRequest } from "@/hooks/finance/use-cost-product-request"
 
 interface Props {
@@ -58,6 +63,13 @@ export default function ProductRequestDetailClient({ requestId }: Props) {
     )
   }
 
+  // Show the Fill Tracking tab for statuses where fill tasks may exist.
+  const hasFillTracking =
+    request.status === "PARAMETER_PENDING" ||
+    request.status === "PARAMETER_COMPLETE" ||
+    request.status === "UNDER_REVIEW" ||
+    request.status === "CLOSED"
+
   return (
     <div className="space-y-6">
       <PageHeader title={request.requestNo} subtitle={request.title}>
@@ -65,7 +77,31 @@ export default function ProductRequestDetailClient({ requestId }: Props) {
           <ArrowLeft className="mr-2 h-4 w-4" /> Back to list
         </Button>
       </PageHeader>
-      <RequestDetailPanel request={request} onEdit={() => setFormOpen(true)} />
+
+      <Tabs defaultValue="overview">
+        <TabsList>
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          {hasFillTracking && (
+            <TabsTrigger value="fill-tracking">Fill Tracking</TabsTrigger>
+          )}
+        </TabsList>
+
+        <TabsContent value="overview" className="mt-6">
+          {hasFillTracking && (
+            <div className="mb-4">
+              <FillProgressMini requestId={request.requestId} />
+            </div>
+          )}
+          <RequestDetailPanel request={request} onEdit={() => setFormOpen(true)} />
+        </TabsContent>
+
+        {hasFillTracking && (
+          <TabsContent value="fill-tracking" className="mt-6">
+            <FillTrackingTab requestId={request.requestId} />
+          </TabsContent>
+        )}
+      </Tabs>
+
       <RequestFormDialog open={formOpen} onOpenChange={setFormOpen} request={request} />
     </div>
   )
