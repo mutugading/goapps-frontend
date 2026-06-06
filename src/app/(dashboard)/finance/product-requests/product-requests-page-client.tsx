@@ -16,9 +16,10 @@ import {
   RequestFormDialog,
   RequestTable,
 } from "@/components/finance/cost-product-request"
+import { FillTrackingDrawer } from "@/components/finance/fill-assignment"
 import { useCostProductRequestCounts, useCostProductRequests } from "@/hooks/finance/use-cost-product-request"
 import { useUrlState } from "@/lib/hooks"
-import type { ListCostProductRequestsParams, RequestStatus } from "@/types/finance/cost-product-request"
+import type { CostProductRequest, ListCostProductRequestsParams, RequestStatus } from "@/types/finance/cost-product-request"
 
 const STATUSES: RequestStatus[] = [
   "DRAFT", "SUBMITTED", "UNDER_REVIEW", "ROUTING_DEFINED",
@@ -37,6 +38,7 @@ export default function ProductRequestsPageClient() {
   const router = useRouter()
   const [filters, setFilters] = useUrlState<ListCostProductRequestsParams>({ defaultValues: defaultFilters })
   const [formOpen, setFormOpen] = useState(false)
+  const [trackingRequest, setTrackingRequest] = useState<CostProductRequest | null>(null)
 
   const { data: list, isLoading } = useCostProductRequests(filters)
   const { data: counts, isLoading: countsLoading } = useCostProductRequestCounts()
@@ -94,6 +96,7 @@ export default function ProductRequestsPageClient() {
         items={items}
         isLoading={isLoading}
         onOpen={(r) => router.push(`/finance/product-requests/${r.requestId}`)}
+        onTrack={(r) => setTrackingRequest(r)}
       />
 
       {totalItems > 0 && (
@@ -108,6 +111,13 @@ export default function ProductRequestsPageClient() {
       )}
 
       <RequestFormDialog open={formOpen} onOpenChange={setFormOpen} request={null} />
+
+      <FillTrackingDrawer
+        open={trackingRequest !== null}
+        onOpenChange={(open) => { if (!open) setTrackingRequest(null); }}
+        requestId={trackingRequest?.requestId ?? 0}
+        requestNo={trackingRequest?.requestNo ?? ""}
+      />
     </div>
   )
 }
