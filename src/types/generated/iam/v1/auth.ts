@@ -305,6 +305,21 @@ export interface ResendEmailVerificationResponse {
   expiresIn: number;
 }
 
+/**
+ * ValidateUnlockPasswordRequest re-confirms the authenticated user's password.
+ * The user identity is resolved server-side from the JWT bearer token.
+ */
+export interface ValidateUnlockPasswordRequest {
+  /** Password to validate (must not be empty). */
+  password: string;
+}
+
+/** ValidateUnlockPasswordResponse confirms whether the password is valid. */
+export interface ValidateUnlockPasswordResponse {
+  /** Standard response metadata. is_success=true means the password matched. */
+  base: BaseResponse | undefined;
+}
+
 function createBaseLoginRequest(): LoginRequest {
   return { username: "", password: "", totpCode: "", deviceInfo: "" };
 }
@@ -3010,6 +3025,124 @@ export const ResendEmailVerificationResponse: MessageFns<ResendEmailVerification
   },
 };
 
+function createBaseValidateUnlockPasswordRequest(): ValidateUnlockPasswordRequest {
+  return { password: "" };
+}
+
+export const ValidateUnlockPasswordRequest: MessageFns<ValidateUnlockPasswordRequest> = {
+  encode(message: ValidateUnlockPasswordRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.password !== "") {
+      writer.uint32(10).string(message.password);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ValidateUnlockPasswordRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseValidateUnlockPasswordRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.password = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ValidateUnlockPasswordRequest {
+    return { password: isSet(object.password) ? globalThis.String(object.password) : "" };
+  },
+
+  toJSON(message: ValidateUnlockPasswordRequest): unknown {
+    const obj: any = {};
+    if (message.password !== "") {
+      obj.password = message.password;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ValidateUnlockPasswordRequest>): ValidateUnlockPasswordRequest {
+    return ValidateUnlockPasswordRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ValidateUnlockPasswordRequest>): ValidateUnlockPasswordRequest {
+    const message = createBaseValidateUnlockPasswordRequest();
+    message.password = object.password ?? "";
+    return message;
+  },
+};
+
+function createBaseValidateUnlockPasswordResponse(): ValidateUnlockPasswordResponse {
+  return { base: undefined };
+}
+
+export const ValidateUnlockPasswordResponse: MessageFns<ValidateUnlockPasswordResponse> = {
+  encode(message: ValidateUnlockPasswordResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ValidateUnlockPasswordResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseValidateUnlockPasswordResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ValidateUnlockPasswordResponse {
+    return { base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined };
+  },
+
+  toJSON(message: ValidateUnlockPasswordResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ValidateUnlockPasswordResponse>): ValidateUnlockPasswordResponse {
+    return ValidateUnlockPasswordResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ValidateUnlockPasswordResponse>): ValidateUnlockPasswordResponse {
+    const message = createBaseValidateUnlockPasswordResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    return message;
+  },
+};
+
 /** AuthService handles authentication operations. */
 export type AuthServiceDefinition = typeof AuthServiceDefinition;
 export const AuthServiceDefinition = {
@@ -3729,6 +3862,64 @@ export const AuthServiceDefinition = {
               105,
               111,
               110,
+            ]),
+          ],
+        },
+      },
+    },
+    /**
+     * ValidateUnlockPassword verifies the authenticated user's password without changing it.
+     * Used by sensitive UIs (e.g., fill-task unlock dialogs) to re-confirm identity.
+     * The user identity is resolved from the JWT token; no user_id in the request.
+     */
+    validateUnlockPassword: {
+      name: "ValidateUnlockPassword",
+      requestType: ValidateUnlockPasswordRequest,
+      requestStream: false,
+      responseType: ValidateUnlockPasswordResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              37,
+              58,
+              1,
+              42,
+              34,
+              32,
+              47,
+              97,
+              112,
+              105,
+              47,
+              118,
+              49,
+              47,
+              105,
+              97,
+              109,
+              47,
+              97,
+              117,
+              116,
+              104,
+              47,
+              118,
+              97,
+              108,
+              105,
+              100,
+              97,
+              116,
+              101,
+              45,
+              117,
+              110,
+              108,
+              111,
+              99,
+              107,
             ]),
           ],
         },

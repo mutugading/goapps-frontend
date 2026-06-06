@@ -70,6 +70,8 @@ export interface CostProductRequest {
   existingProductSysId: number;
   /** Active route head linked to this request (many requests → one route head when spec matches). */
   linkedRouteHeadId: number;
+  /** IAM workflow instance ID linked to this request (empty if no workflow attached). */
+  wflInstanceId: string;
 }
 
 export interface SpecInput {
@@ -646,6 +648,7 @@ function createBaseCostProductRequest(): CostProductRequest {
     spec: undefined,
     existingProductSysId: 0,
     linkedRouteHeadId: 0,
+    wflInstanceId: "",
   };
 }
 
@@ -737,6 +740,9 @@ export const CostProductRequest: MessageFns<CostProductRequest> = {
     }
     if (message.linkedRouteHeadId !== 0) {
       writer.uint32(232).int64(message.linkedRouteHeadId);
+    }
+    if (message.wflInstanceId !== "") {
+      writer.uint32(242).string(message.wflInstanceId);
     }
     return writer;
   },
@@ -980,6 +986,14 @@ export const CostProductRequest: MessageFns<CostProductRequest> = {
           message.linkedRouteHeadId = longToNumber(reader.int64());
           continue;
         }
+        case 30: {
+          if (tag !== 242) {
+            break;
+          }
+
+          message.wflInstanceId = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1116,6 +1130,11 @@ export const CostProductRequest: MessageFns<CostProductRequest> = {
         : isSet(object.linked_route_head_id)
         ? globalThis.Number(object.linked_route_head_id)
         : 0,
+      wflInstanceId: isSet(object.wflInstanceId)
+        ? globalThis.String(object.wflInstanceId)
+        : isSet(object.wfl_instance_id)
+        ? globalThis.String(object.wfl_instance_id)
+        : "",
     };
   },
 
@@ -1208,6 +1227,9 @@ export const CostProductRequest: MessageFns<CostProductRequest> = {
     if (message.linkedRouteHeadId !== 0) {
       obj.linkedRouteHeadId = Math.round(message.linkedRouteHeadId);
     }
+    if (message.wflInstanceId !== "") {
+      obj.wflInstanceId = message.wflInstanceId;
+    }
     return obj;
   },
 
@@ -1249,6 +1271,7 @@ export const CostProductRequest: MessageFns<CostProductRequest> = {
       : undefined;
     message.existingProductSysId = object.existingProductSysId ?? 0;
     message.linkedRouteHeadId = object.linkedRouteHeadId ?? 0;
+    message.wflInstanceId = object.wflInstanceId ?? "";
     return message;
   },
 };
