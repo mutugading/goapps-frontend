@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import {
   useFillTasks,
   useClaimFillTask,
@@ -8,6 +9,7 @@ import {
   useRejectFillTask,
 } from "@/hooks/finance/use-fill-assignment";
 import { useUser } from "@/providers/auth-provider";
+import { useDepartments } from "@/hooks/iam/use-departments";
 import { FillTrackingTable } from "./FillTrackingTable";
 import { FillBlockerAlert } from "./FillBlockerAlert";
 
@@ -18,6 +20,16 @@ interface Props {
 export function FillTrackingTab({ requestId }: Props) {
   const user = useUser();
   const currentUserId = user?.userId ?? "";
+  const isSuperAdmin = user?.roles?.includes("SUPER_ADMIN") ?? false;
+
+  // Resolve user's department UUID → department code for DEPT-type task checks
+  const { items: departments } = useDepartments();
+  const currentUserDepts = useMemo(() => {
+    const userDeptId = user?.departmentId;
+    if (!userDeptId) return [];
+    const dept = departments.find((d) => d.id === userDeptId);
+    return dept ? [dept.code] : [];
+  }, [user?.departmentId, departments]);
 
   const { data: tasks = [], isLoading } = useFillTasks(requestId);
   const claim = useClaimFillTask(requestId);
@@ -29,8 +41,10 @@ export function FillTrackingTab({ requestId }: Props) {
     (t) =>
       (t.status === "FILL_TASK_STATUS_ACTIVE" ||
         t.status === "FILL_TASK_STATUS_FILLING") &&
-      t.fillerType === "FILL_ACTOR_TYPE_USER" &&
-      t.fillerValue === currentUserId,
+      ((t.fillerType === "FILL_ACTOR_TYPE_USER" &&
+        t.fillerValue === currentUserId) ||
+        (t.fillerType === "FILL_ACTOR_TYPE_DEPT" &&
+          currentUserDepts.includes(t.fillerValue))),
   );
 
   if (isLoading) {
@@ -47,6 +61,8 @@ export function FillTrackingTab({ requestId }: Props) {
       <FillTrackingTable
         tasks={tasks}
         currentUserId={currentUserId}
+        isSuperAdmin={isSuperAdmin}
+        currentUserDepts={currentUserDepts}
         onClaim={(taskId) => claim.mutate(taskId)}
         onSubmit={(taskId) => submit.mutate(taskId)}
         onApprove={(taskId) => approve.mutate({ taskId })}

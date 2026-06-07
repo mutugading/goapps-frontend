@@ -8,6 +8,13 @@ import { FillTaskProgressBar } from "./FillTaskProgressBar";
 interface FillTaskRowProps {
   task: FillTask;
   currentUserId: string;
+  /** Whether the current user is a super-admin (bypasses all assignment checks). */
+  isSuperAdmin?: boolean;
+  /**
+   * Department codes the current user belongs to (e.g. ["COSTING", "ENGINEERING"]).
+   * Used to determine eligibility for DEPT-type tasks.
+   */
+  currentUserDepts?: string[];
   onClaim?: (taskId: number) => void;
   onSubmit?: (taskId: number) => void;
   onApprove?: (taskId: number) => void;
@@ -17,24 +24,42 @@ interface FillTaskRowProps {
 export function FillTaskRow({
   task,
   currentUserId,
+  isSuperAdmin = false,
+  currentUserDepts = [],
   onClaim,
   onSubmit,
   onApprove,
   onReject,
 }: FillTaskRowProps) {
-  const canClaim =
-    task.status === "FILL_TASK_STATUS_ACTIVE" &&
+  const isActive = task.status === "FILL_TASK_STATUS_ACTIVE";
+  const isFilling = task.status === "FILL_TASK_STATUS_FILLING";
+  const isApprovalPending = task.status === "FILL_TASK_STATUS_APPROVAL_PENDING";
+
+  const isUserFiller =
     task.fillerType === "FILL_ACTOR_TYPE_USER" &&
     task.fillerValue === currentUserId;
+  const isDeptFiller =
+    task.fillerType === "FILL_ACTOR_TYPE_DEPT" &&
+    currentUserDepts.includes(task.fillerValue);
 
-  const canSubmit =
-    task.status === "FILL_TASK_STATUS_FILLING" &&
-    task.claimedBy === currentUserId;
-
-  const canApproveReject =
-    task.status === "FILL_TASK_STATUS_APPROVAL_PENDING" &&
+  const isUserApprover =
     task.approverType === "FILL_ACTOR_TYPE_USER" &&
     task.approverValue === currentUserId;
+  const isDeptApprover =
+    task.approverType === "FILL_ACTOR_TYPE_DEPT" &&
+    currentUserDepts.includes(task.approverValue);
+
+  const canClaim =
+    isActive &&
+    (isSuperAdmin || isUserFiller || isDeptFiller);
+
+  const canSubmit =
+    isFilling &&
+    (isSuperAdmin || task.claimedBy === currentUserId);
+
+  const canApproveReject =
+    isApprovalPending &&
+    (isSuperAdmin || isUserApprover || isDeptApprover);
 
   return (
     <tr className="border-b">

@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { FillTrackingTable } from "./FillTrackingTable";
 import {
@@ -10,6 +11,7 @@ import {
   useSubmitFillTask,
 } from "@/hooks/finance/use-fill-assignment";
 import { useAuth } from "@/providers/auth-provider";
+import { useDepartments } from "@/hooks/iam/use-departments";
 
 interface Props {
   open: boolean;
@@ -21,6 +23,16 @@ interface Props {
 export function FillTrackingDrawer({ open, onOpenChange, requestId, requestNo }: Props) {
   const { user } = useAuth();
   const currentUserId = user?.userId ?? "";
+  const isSuperAdmin = user?.roles?.includes("SUPER_ADMIN") ?? false;
+
+  // Resolve user's department UUID → department code for DEPT-type task checks
+  const { items: departments } = useDepartments();
+  const currentUserDepts = useMemo(() => {
+    const userDeptId = user?.departmentId;
+    if (!userDeptId) return [];
+    const dept = departments.find((d) => d.id === userDeptId);
+    return dept ? [dept.code] : [];
+  }, [user?.departmentId, departments]);
 
   const { data: tasks = [], isLoading } = useFillTasks(requestId);
   const claim = useClaimFillTask(requestId);
@@ -41,6 +53,8 @@ export function FillTrackingDrawer({ open, onOpenChange, requestId, requestNo }:
             <FillTrackingTable
               tasks={tasks}
               currentUserId={currentUserId}
+              isSuperAdmin={isSuperAdmin}
+              currentUserDepts={currentUserDepts}
               onClaim={(taskId) => claim.mutate(taskId)}
               onSubmit={(taskId) => submit.mutate(taskId)}
               onApprove={(taskId) => approve.mutate({ taskId })}

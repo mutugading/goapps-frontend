@@ -6,6 +6,13 @@ import { FillTaskRow } from "./FillTaskRow";
 interface FillTrackingTableProps {
   tasks: FillTask[];
   currentUserId: string;
+  /** Whether the current user is a super-admin (bypasses assignment checks). */
+  isSuperAdmin?: boolean;
+  /**
+   * Department codes the current user belongs to.
+   * Used for DEPT-type task eligibility checks.
+   */
+  currentUserDepts?: string[];
   onClaim?: (taskId: number) => void;
   onSubmit?: (taskId: number) => void;
   onApprove?: (taskId: number) => void;
@@ -15,6 +22,8 @@ interface FillTrackingTableProps {
 export function FillTrackingTable({
   tasks,
   currentUserId,
+  isSuperAdmin = false,
+  currentUserDepts = [],
   onClaim,
   onSubmit,
   onApprove,
@@ -47,6 +56,8 @@ export function FillTrackingTable({
               key={task.taskId}
               task={task}
               currentUserId={currentUserId}
+              isSuperAdmin={isSuperAdmin}
+              currentUserDepts={currentUserDepts}
               onClaim={onClaim}
               onSubmit={onSubmit}
               onApprove={onApprove}
