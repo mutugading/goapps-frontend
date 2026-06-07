@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -16,18 +16,20 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Plus, Trash2, ChevronsUpDown, Check } from "lucide-react";
+import { Plus, Trash2, ChevronsUpDown, Check, Loader2 } from "lucide-react";
 import {
   useGlobalFillConfigs,
   useDeleteGlobalFillConfig,
+  useProductFillConfigs,
 } from "@/hooks/finance/use-fill-assignment";
+import { useRouteByProduct, useRouteGraph } from "@/hooks/finance/use-cost-route";
 import { useCostProductMasters } from "@/hooks/finance/use-cost-product-master";
 import { FillConfigForm } from "@/components/finance/fill-assignment/FillConfigForm";
 import { type LevelAssignmentConfig } from "@/types/finance/fill-assignment";
 import { type CostProductMaster } from "@/types/finance/cost-product-master";
 import { cn } from "@/lib/utils";
 
-// ---------- Product picker for override tab ----------
+// ---------- Product picker ----------
 
 interface ProductPickerProps {
   selected: CostProductMaster | null;
@@ -92,9 +94,7 @@ function ProductPicker({ selected, onSelect }: ProductPickerProps) {
                         : "opacity-0",
                     )}
                   />
-                  <span className="font-mono text-xs mr-2">
-                    {p.productCode}
-                  </span>
+                  <span className="font-mono text-xs mr-2">{p.productCode}</span>
                   <span className="truncate text-sm">{p.productName}</span>
                 </CommandItem>
               ))}
@@ -106,24 +106,39 @@ function ProductPicker({ selected, onSelect }: ProductPickerProps) {
   );
 }
 
-// ---------- Product overrides tab content ----------
+// ---------- Product overrides tab ----------
 
 interface ProductOverridesTabProps {
   onEditOverride: (
     config: LevelAssignmentConfig | undefined,
     productSysId: number,
+    routeLevel: number,
   ) => void;
 }
 
 function ProductOverridesTab({ onEditOverride }: ProductOverridesTabProps) {
-  const [selectedProduct, setSelectedProduct] =
-    useState<CostProductMaster | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<CostProductMaster | null>(null);
 
-  // We show the global configs as baseline and let the user add product-tier
-  // overrides. A dedicated product-tier query would need a different BFF
-  // endpoint; for now we reuse global configs as reference and pass productSysId
-  // when upserting.
-  const { data: configs = [], isLoading } = useGlobalFillConfigs();
+  const { data: routeHead, isLoading: routeLoading } = useRouteByProduct(
+    selectedProduct?.productSysId,
+  );
+  const { data: graph, isLoading: graphLoading } = useRouteGraph(
+    routeHead?.headId ?? undefined,
+  );
+
+  // Unique sorted route levels from the product's routing graph
+  const routeLevels = useMemo(() => {
+    if (!graph) return [];
+    const levels = [...new Set(graph.seqs.map((s) => s.routeLevel))];
+    return levels.sort((a, b) => a - b);
+  }, [graph]);
+
+  const { data: globalConfigs = [] } = useGlobalFillConfigs();
+  const { data: productOverrides = [] } = useProductFillConfigs(
+    selectedProduct?.productSysId ?? 0,
+  );
+
+  const isLoading = routeLoading || graphLoading;
 
   return (
     <div className="space-y-4">
@@ -131,103 +146,131 @@ function ProductOverridesTab({ onEditOverride }: ProductOverridesTabProps) {
         <label className="block text-sm font-medium text-muted-foreground mb-2">
           Product
         </label>
-        <ProductPicker
-          selected={selectedProduct}
-          onSelect={setSelectedProduct}
-        />
+        <ProductPicker selected={selectedProduct} onSelect={setSelectedProduct} />
       </div>
 
       {selectedProduct && (
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-medium">
-              Level overrides for{" "}
-              <span className="font-mono">{selectedProduct.productCode}</span>
-            </p>
-            <Button
-              size="sm"
-              onClick={() =>
-                onEditOverride(undefined, selectedProduct.productSysId)
-              }
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Add Override
-            </Button>
-          </div>
+        <>
           {isLoading ? (
-            <p className="text-sm text-muted-foreground">Loading…</p>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Loading routing levels…
+            </div>
+          ) : routeLevels.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-4">
+              No routing defined for this product yet. Configure the route first, then come back to set fill overrides.
+            </p>
           ) : (
-            <div className="overflow-x-auto rounded-md border">
-              <table className="w-full text-sm">
-                <thead className="bg-muted/50">
-                  <tr>
-                    <th className="py-3 px-4 text-left font-medium">Level</th>
-                    <th className="py-3 px-4 text-left font-medium">Filler</th>
-                    <th className="py-3 px-4 text-left font-medium">
-                      Approver
-                    </th>
-                    <th className="py-3 px-4 text-left font-medium">
-                      SLA Fill
-                    </th>
-                    <th className="py-3 px-4 text-left font-medium">
-                      SLA Approve
-                    </th>
-                    <th className="py-3 px-4 text-left font-medium">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {configs.map((c) => (
-                    <tr key={c.routeLevel} className="border-b">
-                      <td className="py-3 px-4 font-medium">
-                        Level {c.routeLevel}
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className="text-muted-foreground text-xs italic">
-                          Inherits global: {c.fillerType}: {c.fillerValue}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4">
-                        {c.approverType
-                          ? `${c.approverType}: ${c.approverValue}`
-                          : "—"}
-                      </td>
-                      <td className="py-3 px-4">{c.slaFillHours}h</td>
-                      <td className="py-3 px-4">
-                        {c.approverType ? `${c.slaApproveHours}h` : "—"}
-                      </td>
-                      <td className="py-3 px-4">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() =>
-                            onEditOverride(c, selectedProduct.productSysId)
-                          }
-                        >
-                          Edit Override
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                  {configs.length === 0 && (
+            <div className="space-y-2">
+              <p className="text-sm font-medium">
+                Level overrides for{" "}
+                <span className="font-mono">{selectedProduct.productCode}</span>
+                <span className="ml-2 text-muted-foreground font-normal">
+                  ({routeLevels.length} level{routeLevels.length !== 1 ? "s" : ""} from routing)
+                </span>
+              </p>
+
+              <div className="overflow-x-auto rounded-md border">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted/50">
                     <tr>
-                      <td
-                        colSpan={6}
-                        className="py-6 text-center text-sm text-muted-foreground"
-                      >
-                        No global configs found. Add global defaults first.
-                      </td>
+                      <th className="py-3 px-4 text-left font-medium">Level</th>
+                      <th className="py-3 px-4 text-left font-medium">Filler</th>
+                      <th className="py-3 px-4 text-left font-medium">Approver</th>
+                      <th className="py-3 px-4 text-left font-medium">SLA Fill</th>
+                      <th className="py-3 px-4 text-left font-medium">SLA Approve</th>
+                      <th className="py-3 px-4 text-left font-medium">Actions</th>
                     </tr>
-                  )}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {routeLevels.map((level) => {
+                      const override = productOverrides.find(
+                        (c) => c.routeLevel === level,
+                      );
+                      const global = globalConfigs.find(
+                        (c) => c.routeLevel === level,
+                      );
+                      const hasOverride = !!override;
+
+                      return (
+                        <tr key={level} className="border-b last:border-b-0">
+                          <td className="py-3 px-4 font-medium">Level {level}</td>
+
+                          <td className="py-3 px-4">
+                            {hasOverride ? (
+                              <span className="text-xs font-medium text-primary">
+                                {override.fillerType}: {override.fillerValue}
+                              </span>
+                            ) : global ? (
+                              <span className="text-xs text-muted-foreground italic">
+                                Global: {global.fillerType}: {global.fillerValue}
+                              </span>
+                            ) : (
+                              <span className="text-xs text-muted-foreground italic">
+                                No global default
+                              </span>
+                            )}
+                          </td>
+
+                          <td className="py-3 px-4 text-xs">
+                            {hasOverride ? (
+                              override.approverType ? (
+                                <span className="text-primary font-medium">
+                                  {override.approverType}: {override.approverValue}
+                                </span>
+                              ) : "—"
+                            ) : global?.approverType ? (
+                              <span className="text-muted-foreground italic">
+                                Global: {global.approverType}: {global.approverValue}
+                              </span>
+                            ) : "—"}
+                          </td>
+
+                          <td className="py-3 px-4 text-xs">
+                            {hasOverride
+                              ? `${override.slaFillHours}h`
+                              : global
+                                ? <span className="text-muted-foreground italic">{global.slaFillHours}h (global)</span>
+                                : "—"}
+                          </td>
+
+                          <td className="py-3 px-4 text-xs">
+                            {hasOverride
+                              ? override.approverType ? `${override.slaApproveHours}h` : "—"
+                              : global?.approverType
+                                ? <span className="text-muted-foreground italic">{global.slaApproveHours}h (global)</span>
+                                : "—"}
+                          </td>
+
+                          <td className="py-3 px-4">
+                            <Button
+                              size="sm"
+                              variant={hasOverride ? "outline" : "secondary"}
+                              onClick={() =>
+                                onEditOverride(
+                                  override,
+                                  selectedProduct.productSysId,
+                                  level,
+                                )
+                              }
+                            >
+                              {hasOverride ? "Edit Override" : "Set Override"}
+                            </Button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
-        </div>
+        </>
       )}
 
       {!selectedProduct && (
         <p className="text-sm text-muted-foreground">
-          Select a product above to view or create level overrides.
+          Select a product above to view its routing levels and configure overrides.
         </p>
       )}
     </div>
@@ -242,28 +285,31 @@ export default function FillConfigPage() {
 
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<LevelAssignmentConfig | undefined>();
-  const [overrideProductSysId, setOverrideProductSysId] = useState<
-    number | undefined
-  >();
+  const [overrideProductSysId, setOverrideProductSysId] = useState<number | undefined>();
+  const [overrideRouteLevel, setOverrideRouteLevel] = useState<number | undefined>();
 
   function handleEditGlobal(config: LevelAssignmentConfig) {
     setEditing(config);
     setOverrideProductSysId(undefined);
+    setOverrideRouteLevel(undefined);
     setFormOpen(true);
   }
 
   function handleAddGlobal() {
     setEditing(undefined);
     setOverrideProductSysId(undefined);
+    setOverrideRouteLevel(undefined);
     setFormOpen(true);
   }
 
   function handleEditOverride(
     config: LevelAssignmentConfig | undefined,
     productSysId: number,
+    routeLevel: number,
   ) {
     setEditing(config);
     setOverrideProductSysId(productSysId);
+    setOverrideRouteLevel(routeLevel);
     setFormOpen(true);
   }
 
@@ -304,24 +350,16 @@ export default function FillConfigPage() {
                   <tr>
                     <th className="py-3 px-4 text-left font-medium">Level</th>
                     <th className="py-3 px-4 text-left font-medium">Filler</th>
-                    <th className="py-3 px-4 text-left font-medium">
-                      Approver
-                    </th>
-                    <th className="py-3 px-4 text-left font-medium">
-                      SLA Fill
-                    </th>
-                    <th className="py-3 px-4 text-left font-medium">
-                      SLA Approve
-                    </th>
+                    <th className="py-3 px-4 text-left font-medium">Approver</th>
+                    <th className="py-3 px-4 text-left font-medium">SLA Fill</th>
+                    <th className="py-3 px-4 text-left font-medium">SLA Approve</th>
                     <th className="py-3 px-4 text-left font-medium">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {configs.map((c) => (
-                    <tr key={c.routeLevel} className="border-b">
-                      <td className="py-3 px-4 font-medium">
-                        Level {c.routeLevel}
-                      </td>
+                    <tr key={c.routeLevel} className="border-b last:border-b-0">
+                      <td className="py-3 px-4 font-medium">Level {c.routeLevel}</td>
                       <td className="py-3 px-4">
                         {c.fillerType}: {c.fillerValue}
                       </td>
@@ -369,7 +407,7 @@ export default function FillConfigPage() {
       <FillConfigForm
         key={
           overrideProductSysId !== undefined
-            ? `override-${overrideProductSysId}-${editing?.routeLevel ?? "new"}`
+            ? `override-${overrideProductSysId}-${overrideRouteLevel ?? "new"}`
             : editing
               ? `edit-${editing.routeLevel}`
               : "add"
@@ -378,6 +416,7 @@ export default function FillConfigPage() {
         onOpenChange={setFormOpen}
         existing={editing}
         productSysId={overrideProductSysId}
+        fixedRouteLevel={overrideRouteLevel}
         tier={overrideProductSysId !== undefined ? "PRODUCT" : "GLOBAL"}
       />
     </div>

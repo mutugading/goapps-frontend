@@ -13,6 +13,8 @@ import {
 export const fillAssignmentKeys = {
   all: ["finance", "fill-assignment"] as const,
   configs: () => [...fillAssignmentKeys.all, "config"] as const,
+  productConfigs: (productSysId: number) =>
+    [...fillAssignmentKeys.all, "product-config", productSysId] as const,
   tasks: (requestId: number) =>
     [...fillAssignmentKeys.all, "tasks", requestId] as const,
 };
@@ -30,6 +32,19 @@ export function useGlobalFillConfigs() {
       return items.map(normalizeLevelConfig);
     },
     staleTime: 60_000,
+  });
+}
+
+// Product-tier override cache — populated via setQueryData after each successful upsert.
+// No dedicated backend endpoint; overrides are written via the global upsert and tracked
+// client-side so the UI can display what was set without a page refresh.
+export function useProductFillConfigs(productSysId: number) {
+  return useQuery({
+    queryKey: fillAssignmentKeys.productConfigs(productSysId),
+    queryFn: (): LevelAssignmentConfig[] => [],
+    enabled: productSysId > 0,
+    staleTime: Infinity,
+    gcTime: 10 * 60 * 1000,
   });
 }
 
@@ -78,9 +93,32 @@ export function useUpsertFillConfig() {
       if (!res.ok) throw new Error("Failed to upsert fill config");
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       toast.success("Fill config saved");
       void qc.invalidateQueries({ queryKey: fillAssignmentKeys.configs() });
+
+      // Update the product-tier cache so the override is visible immediately.
+      if (variables.tier === "PRODUCT" && (variables.productSysId ?? 0) > 0) {
+        const key = fillAssignmentKeys.productConfigs(variables.productSysId!);
+        const saved: LevelAssignmentConfig = {
+          configId: 0,
+          tier: "PRODUCT",
+          routeLevel: variables.routeLevel,
+          productSysId: variables.productSysId ?? 0,
+          requestId: 0,
+          fillerType: variables.fillerType,
+          fillerValue: variables.fillerValue,
+          approverType: variables.approverType ?? "",
+          approverValue: variables.approverValue ?? "",
+          slaFillHours: variables.slaFillHours ?? 48,
+          slaApproveHours: variables.slaApproveHours ?? 24,
+          reapproveOnChange: variables.reapproveOnChange ?? false,
+        };
+        qc.setQueryData<LevelAssignmentConfig[]>(key, (prev) => {
+          const filtered = (prev ?? []).filter((c) => c.routeLevel !== saved.routeLevel);
+          return [...filtered, saved].sort((a, b) => a.routeLevel - b.routeLevel);
+        });
+      }
     },
     onError: () => toast.error("Failed to save fill config"),
   });

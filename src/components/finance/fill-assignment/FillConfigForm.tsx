@@ -117,6 +117,8 @@ interface Props {
   existing?: LevelAssignmentConfig;
   /** When provided, saves as a PRODUCT-tier override. */
   productSysId?: number;
+  /** Lock the route level to this value (used when opening from product override rows). */
+  fixedRouteLevel?: number;
   tier?: "GLOBAL" | "PRODUCT" | "REQUEST";
 }
 
@@ -125,9 +127,12 @@ export function FillConfigForm({
   onOpenChange,
   existing,
   productSysId,
+  fixedRouteLevel,
   tier = "GLOBAL",
 }: Props) {
-  const [routeLevel, setRouteLevel] = useState(existing?.routeLevel ?? 1);
+  const [routeLevel, setRouteLevel] = useState(
+    existing?.routeLevel ?? fixedRouteLevel ?? 1,
+  );
   const [fillerType, setFillerType] = useState(existing?.fillerType ?? "DEPT");
   const [fillerValue, setFillerValue] = useState(existing?.fillerValue ?? "");
   const [approverType, setApproverType] = useState(existing?.approverType || "NONE");
@@ -192,7 +197,7 @@ export function FillConfigForm({
                 min={1}
                 value={routeLevel}
                 onChange={(e) => setRouteLevel(Number(e.target.value))}
-                disabled={!!existing}
+                disabled={!!existing || fixedRouteLevel !== undefined}
               />
             </div>
             <div>
