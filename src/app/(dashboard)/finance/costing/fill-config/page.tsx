@@ -118,6 +118,7 @@ export default function FillConfigPage() {
       </Tabs>
 
       <FillConfigForm
+        key={editing ? `edit-${editing.routeLevel}` : "add"}
         open={formOpen}
         onOpenChange={setFormOpen}
         existing={editing}

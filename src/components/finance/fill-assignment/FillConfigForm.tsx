@@ -31,7 +31,7 @@ export function FillConfigForm({ open, onOpenChange, existing }: Props) {
   const [routeLevel, setRouteLevel] = useState(existing?.routeLevel ?? 1);
   const [fillerType, setFillerType] = useState(existing?.fillerType ?? "USER");
   const [fillerValue, setFillerValue] = useState(existing?.fillerValue ?? "");
-  const [approverType, setApproverType] = useState(existing?.approverType ?? "");
+  const [approverType, setApproverType] = useState(existing?.approverType || "NONE");
   const [approverValue, setApproverValue] = useState(existing?.approverValue ?? "");
   const [slaFillHours, setSlaFillHours] = useState(existing?.slaFillHours ?? 48);
   const [slaApproveHours, setSlaApproveHours] = useState(existing?.slaApproveHours ?? 24);
@@ -46,7 +46,7 @@ export function FillConfigForm({ open, onOpenChange, existing }: Props) {
         routeLevel,
         fillerType,
         fillerValue,
-        approverType: approverType || undefined,
+        approverType: approverType === "NONE" ? undefined : approverType || undefined,
         approverValue: approverValue || undefined,
         slaFillHours,
         slaApproveHours,
@@ -109,7 +109,7 @@ export function FillConfigForm({ open, onOpenChange, existing }: Props) {
                   <SelectValue placeholder="None" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value="NONE">None</SelectItem>
                   <SelectItem value="USER">User</SelectItem>
                   <SelectItem value="DEPT">Department</SelectItem>
                 </SelectContent>
@@ -121,7 +121,7 @@ export function FillConfigForm({ open, onOpenChange, existing }: Props) {
                 value={approverValue}
                 onChange={(e) => setApproverValue(e.target.value)}
                 placeholder="User ID or dept code"
-                disabled={!approverType}
+                disabled={approverType === "NONE"}
               />
             </div>
             <div>
@@ -131,7 +131,7 @@ export function FillConfigForm({ open, onOpenChange, existing }: Props) {
                 min={1}
                 value={slaApproveHours}
                 onChange={(e) => setSlaApproveHours(Number(e.target.value))}
-                disabled={!approverType}
+                disabled={approverType === "NONE"}
               />
             </div>
           </div>
