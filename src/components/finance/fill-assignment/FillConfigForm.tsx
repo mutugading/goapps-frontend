@@ -9,6 +9,19 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -18,10 +31,85 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useUpsertFillConfig } from "@/hooks/finance/use-fill-assignment";
 import { type LevelAssignmentConfig } from "@/types/finance/fill-assignment";
 import { useDepartments } from "@/hooks/iam/use-departments";
-import { useUsersLookup } from "@/hooks/iam/use-users-lookup";
+import { useUsersLookup, type UserLookupEntry } from "@/hooks/iam/use-users-lookup";
+
+// ---------- Searchable user combobox ----------
+
+interface UserComboboxProps {
+  value: string;
+  onValueChange: (id: string) => void;
+  users: UserLookupEntry[];
+  isLoading: boolean;
+  disabled?: boolean;
+}
+
+function UserCombobox({ value, onValueChange, users, isLoading, disabled }: UserComboboxProps) {
+  const [open, setOpen] = useState(false);
+  const selected = users.find((u) => u.id === value);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen} modal>
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          role="combobox"
+          disabled={disabled || isLoading}
+          className="w-full justify-between font-normal text-sm h-10"
+        >
+          <span className="truncate">
+            {isLoading
+              ? "Loading…"
+              : selected
+                ? `${selected.username || selected.fullName}`
+                : "Select user"}
+          </span>
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-72 p-0" align="start">
+        <Command>
+          <CommandInput placeholder="Search by name or username…" />
+          <CommandList>
+            <CommandEmpty>No users found.</CommandEmpty>
+            <CommandGroup>
+              {users.map((u) => (
+                <CommandItem
+                  key={u.id}
+                  value={`${u.username} ${u.fullName} ${u.email}`}
+                  onSelect={() => {
+                    onValueChange(u.id);
+                    setOpen(false);
+                  }}
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      value === u.id ? "opacity-100" : "opacity-0",
+                    )}
+                  />
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-sm font-medium">{u.username}</span>
+                    {u.fullName && (
+                      <span className="text-xs text-muted-foreground truncate">{u.fullName}</span>
+                    )}
+                  </div>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+// ---------- Main form ----------
 
 interface Props {
   open: boolean;
@@ -40,24 +128,12 @@ export function FillConfigForm({
   tier = "GLOBAL",
 }: Props) {
   const [routeLevel, setRouteLevel] = useState(existing?.routeLevel ?? 1);
-  const [fillerType, setFillerType] = useState(
-    existing?.fillerType ?? "DEPT",
-  );
-  const [fillerValue, setFillerValue] = useState(
-    existing?.fillerValue ?? "",
-  );
-  const [approverType, setApproverType] = useState(
-    existing?.approverType || "NONE",
-  );
-  const [approverValue, setApproverValue] = useState(
-    existing?.approverValue ?? "",
-  );
-  const [slaFillHours, setSlaFillHours] = useState(
-    existing?.slaFillHours ?? 48,
-  );
-  const [slaApproveHours, setSlaApproveHours] = useState(
-    existing?.slaApproveHours ?? 24,
-  );
+  const [fillerType, setFillerType] = useState(existing?.fillerType ?? "DEPT");
+  const [fillerValue, setFillerValue] = useState(existing?.fillerValue ?? "");
+  const [approverType, setApproverType] = useState(existing?.approverType || "NONE");
+  const [approverValue, setApproverValue] = useState(existing?.approverValue ?? "");
+  const [slaFillHours, setSlaFillHours] = useState(existing?.slaFillHours ?? 48);
+  const [slaApproveHours, setSlaApproveHours] = useState(existing?.slaApproveHours ?? 24);
 
   const { items: departments, isLoading: deptsLoading } = useDepartments();
   const { items: users, isLoading: usersLoading } = useUsersLookup();
@@ -66,12 +142,12 @@ export function FillConfigForm({
 
   function handleFillerTypeChange(value: string) {
     setFillerType(value);
-    setFillerValue(""); // reset value when type changes
+    setFillerValue("");
   }
 
   function handleApproverTypeChange(value: string) {
     setApproverType(value);
-    setApproverValue(""); // reset value when type changes
+    setApproverValue("");
   }
 
   function handleSubmit(e: React.FormEvent) {
@@ -82,8 +158,7 @@ export function FillConfigForm({
         routeLevel,
         fillerType,
         fillerValue,
-        approverType:
-          approverType === "NONE" ? undefined : approverType || undefined,
+        approverType: approverType === "NONE" ? undefined : approverType || undefined,
         approverValue: approverValue || undefined,
         slaFillHours,
         slaApproveHours,
@@ -144,7 +219,7 @@ export function FillConfigForm({
               </Select>
             </div>
 
-            {/* Filler Value — dropdown based on type */}
+            {/* Filler Value */}
             <div>
               <Label>Filler Value</Label>
               {fillerType === "DEPT" ? (
@@ -161,28 +236,19 @@ export function FillConfigForm({
                   </SelectContent>
                 </Select>
               ) : (
-                <Select value={fillerValue} onValueChange={setFillerValue}>
-                  <SelectTrigger>
-                    <SelectValue placeholder={usersLoading ? "Loading…" : "Select user"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {users.map((u) => (
-                      <SelectItem key={u.id} value={u.id}>
-                        {u.username || u.fullName || u.email}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <UserCombobox
+                  value={fillerValue}
+                  onValueChange={setFillerValue}
+                  users={users}
+                  isLoading={usersLoading}
+                />
               )}
             </div>
 
             {/* Approver Type */}
             <div>
               <Label>Approver Type (optional)</Label>
-              <Select
-                value={approverType}
-                onValueChange={handleApproverTypeChange}
-              >
+              <Select value={approverType} onValueChange={handleApproverTypeChange}>
                 <SelectTrigger>
                   <SelectValue placeholder="None" />
                 </SelectTrigger>
@@ -194,16 +260,13 @@ export function FillConfigForm({
               </Select>
             </div>
 
-            {/* Approver Value — dropdown based on type */}
+            {/* Approver Value */}
             <div>
               <Label>Approver Value</Label>
               {approverType === "NONE" ? (
                 <Input value="" disabled placeholder="—" />
               ) : approverType === "DEPT" ? (
-                <Select
-                  value={approverValue}
-                  onValueChange={setApproverValue}
-                >
+                <Select value={approverValue} onValueChange={setApproverValue}>
                   <SelectTrigger>
                     <SelectValue placeholder={deptsLoading ? "Loading…" : "Select department"} />
                   </SelectTrigger>
@@ -216,21 +279,12 @@ export function FillConfigForm({
                   </SelectContent>
                 </Select>
               ) : (
-                <Select
+                <UserCombobox
                   value={approverValue}
                   onValueChange={setApproverValue}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={usersLoading ? "Loading…" : "Select user"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {users.map((u) => (
-                      <SelectItem key={u.id} value={u.id}>
-                        {u.username || u.fullName || u.email}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  users={users}
+                  isLoading={usersLoading}
+                />
               )}
             </div>
 
@@ -246,11 +300,7 @@ export function FillConfigForm({
             </div>
           </div>
           <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-            >
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
             <Button type="submit" disabled={upsert.isPending}>

@@ -1,7 +1,8 @@
 "use client"
 
-// Lightweight users lookup — fetches up to 200 users to resolve UUIDs → usernames
+// Lightweight users lookup — fetches up to 100 users to resolve UUIDs → usernames
 // in tables and detail pages. Cached for 5 minutes.
+// Note: backend proto caps pageSize at 100; fetching page 1 only (suitable for most orgs).
 
 import { useMemo } from "react"
 import { useQuery } from "@tanstack/react-query"
@@ -61,7 +62,7 @@ export function useUsersLookup(): UseUsersLookupResult {
         queryKey: usersLookupKeys.all,
         queryFn: async (): Promise<UserLookupEntry[]> => {
             const res = await apiClient.get<ListEnvelope>(
-                "/api/v1/iam/users?page=1&pageSize=200"
+                "/api/v1/iam/users?page=1&pageSize=100"
             )
             if (res.base && res.base.isSuccess === false) {
                 throw new Error(res.base.message || "Failed to fetch users")
