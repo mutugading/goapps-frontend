@@ -244,6 +244,19 @@ export interface ReopenCostProductRequestResponse {
 }
 
 /**
+ * MarkParameterPending moves ROUTING_DEFINED → PARAMETER_PENDING.
+ * Creates fill tasks for every route level attached to this request.
+ */
+export interface MarkParameterPendingRequest {
+  requestId: number;
+}
+
+export interface MarkParameterPendingResponse {
+  base: BaseResponse | undefined;
+  data: CostProductRequest | undefined;
+}
+
+/**
  * MarkParameterComplete moves PARAMETER_PENDING → PARAMETER_COMPLETE.
  * The handler verifies all promoted products have their required CAPP params
  * filled before allowing the transition.
@@ -4045,6 +4058,150 @@ export const ReopenCostProductRequestResponse: MessageFns<ReopenCostProductReque
   },
 };
 
+function createBaseMarkParameterPendingRequest(): MarkParameterPendingRequest {
+  return { requestId: 0 };
+}
+
+export const MarkParameterPendingRequest: MessageFns<MarkParameterPendingRequest> = {
+  encode(message: MarkParameterPendingRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.requestId !== 0) {
+      writer.uint32(8).int64(message.requestId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): MarkParameterPendingRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMarkParameterPendingRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.requestId = longToNumber(reader.int64());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): MarkParameterPendingRequest {
+    return {
+      requestId: isSet(object.requestId)
+        ? globalThis.Number(object.requestId)
+        : isSet(object.request_id)
+        ? globalThis.Number(object.request_id)
+        : 0,
+    };
+  },
+
+  toJSON(message: MarkParameterPendingRequest): unknown {
+    const obj: any = {};
+    if (message.requestId !== 0) {
+      obj.requestId = Math.round(message.requestId);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<MarkParameterPendingRequest>): MarkParameterPendingRequest {
+    return MarkParameterPendingRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<MarkParameterPendingRequest>): MarkParameterPendingRequest {
+    const message = createBaseMarkParameterPendingRequest();
+    message.requestId = object.requestId ?? 0;
+    return message;
+  },
+};
+
+function createBaseMarkParameterPendingResponse(): MarkParameterPendingResponse {
+  return { base: undefined, data: undefined };
+}
+
+export const MarkParameterPendingResponse: MessageFns<MarkParameterPendingResponse> = {
+  encode(message: MarkParameterPendingResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    if (message.data !== undefined) {
+      CostProductRequest.encode(message.data, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): MarkParameterPendingResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMarkParameterPendingResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.data = CostProductRequest.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): MarkParameterPendingResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      data: isSet(object.data) ? CostProductRequest.fromJSON(object.data) : undefined,
+    };
+  },
+
+  toJSON(message: MarkParameterPendingResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.data !== undefined) {
+      obj.data = CostProductRequest.toJSON(message.data);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<MarkParameterPendingResponse>): MarkParameterPendingResponse {
+    return MarkParameterPendingResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<MarkParameterPendingResponse>): MarkParameterPendingResponse {
+    const message = createBaseMarkParameterPendingResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.data = (object.data !== undefined && object.data !== null)
+      ? CostProductRequest.fromPartial(object.data)
+      : undefined;
+    return message;
+  },
+};
+
 function createBaseMarkParameterCompleteRequest(): MarkParameterCompleteRequest {
   return { requestId: 0 };
 }
@@ -6127,6 +6284,104 @@ export const CostProductRequestServiceDefinition = {
               112,
               101,
               110,
+            ]),
+          ],
+        },
+      },
+    },
+    /**
+     * MarkParameterPending advances ROUTING_DEFINED → PARAMETER_PENDING and
+     * creates fill tasks for every route level before committing the transition.
+     */
+    markParameterPending: {
+      name: "MarkParameterPending",
+      requestType: MarkParameterPendingRequest,
+      requestStream: false,
+      responseType: MarkParameterPendingResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              78,
+              58,
+              1,
+              42,
+              34,
+              73,
+              47,
+              97,
+              112,
+              105,
+              47,
+              118,
+              49,
+              47,
+              102,
+              105,
+              110,
+              97,
+              110,
+              99,
+              101,
+              47,
+              99,
+              111,
+              115,
+              116,
+              45,
+              112,
+              114,
+              111,
+              100,
+              117,
+              99,
+              116,
+              45,
+              114,
+              101,
+              113,
+              117,
+              101,
+              115,
+              116,
+              115,
+              47,
+              123,
+              114,
+              101,
+              113,
+              117,
+              101,
+              115,
+              116,
+              95,
+              105,
+              100,
+              125,
+              47,
+              109,
+              97,
+              114,
+              107,
+              45,
+              112,
+              97,
+              114,
+              97,
+              109,
+              101,
+              116,
+              101,
+              114,
+              45,
+              112,
+              101,
+              110,
+              100,
+              105,
+              110,
+              103,
             ]),
           ],
         },
