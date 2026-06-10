@@ -9,6 +9,7 @@ import { Edit, EyeOff, History, Loader2, Save, Trash2, X } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
+import { MentionContent } from "@/components/common/mentionable-textarea"
 import { UserName } from "@/components/common/user-name"
 import { usePermissionContext } from "@/providers/permission-provider"
 import {
@@ -132,7 +133,13 @@ export function CommentItem({ comment, currentUserId }: Props) {
           </Button>
         </div>
       ) : (
-        <p className="text-sm whitespace-pre-wrap">{comment.isHidden ? comment.hiddenReason || "(hidden by admin)" : comment.bodyPlaintext}</p>
+        <p className="text-sm whitespace-pre-wrap">
+          {comment.isHidden ? (
+            comment.hiddenReason || "(hidden by admin)"
+          ) : (
+            <MentionContent text={comment.bodyPlaintext} />
+          )}
+        </p>
       )}
 
       {comment.mentionedUserIds.length > 0 && !comment.isHidden && (

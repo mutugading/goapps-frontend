@@ -8,7 +8,7 @@ import { Loader2, Paperclip, Send, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Textarea } from "@/components/ui/textarea"
+import { MentionableTextarea } from "@/components/common/mentionable-textarea"
 import { useAuth } from "@/providers/auth-provider"
 import { useCreateRequestComment, useRequestComments } from "@/hooks/finance/use-cost-request-comment"
 import { useUploadAttachment } from "@/hooks/finance/use-cost-attachment"
@@ -29,7 +29,7 @@ function wrapRichtext(plain: string): string {
 }
 
 function extractMentions(text: string): string[] {
-  const matches = text.matchAll(/@([A-Za-z0-9._@-]{1,64})/g)
+  const matches = text.matchAll(/@\[[^\]]+\]\(([^)]+)\)/g)
   const seen = new Set<string>()
   const out: string[] = []
   for (const m of matches) {
@@ -110,7 +110,7 @@ export function CommentsPanel({ requestId, readOnly = false }: Props) {
           Comments
         </CardTitle>
         <div className="text-xs text-muted-foreground">
-          @mention teammates by typing <span className="font-mono">@user_id</span>.
+          Type <span className="font-mono">@name</span> to mention and notify a teammate.
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -134,11 +134,12 @@ export function CommentsPanel({ requestId, readOnly = false }: Props) {
           </div>
         ) : (
         <div className="space-y-2 pt-2 border-t">
-          <Textarea
+          <MentionableTextarea
             rows={3}
             value={body}
-            onChange={(e) => setBody(e.target.value)}
-            placeholder="Add a comment… use @user_id to notify someone."
+            onChange={setBody}
+            placeholder="Add a comment… @mention to notify someone."
+            disabled={createM.isPending}
           />
           {stagedFiles.length > 0 && (
             <ul className="rounded border bg-muted/30 p-2 space-y-1 text-xs">
