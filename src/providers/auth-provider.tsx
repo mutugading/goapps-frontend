@@ -11,7 +11,6 @@ import {
     useMemo,
     useState,
 } from "react"
-import { useRouter } from "next/navigation"
 import type { AuthUser } from "@/types/generated/iam/v1/auth"
 import { AUTH_API, TOKEN_CONFIG } from "@/lib/auth/config"
 import { useIdleTimeout } from "@/lib/hooks/use-idle-timeout"
@@ -27,7 +26,6 @@ interface AuthProviderProps {
 }
 
 export function AuthProvider({ children, initialUser = null }: AuthProviderProps) {
-    const router = useRouter()
     const [state, setState] = useState<AuthState>({
         user: initialUser,
         isAuthenticated: !!initialUser,

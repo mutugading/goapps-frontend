@@ -4,6 +4,7 @@
  */
 import { describe, it, expect, vi, beforeEach } from "vitest"
 import { render, screen } from "@testing-library/react"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import type { CostProductRequest } from "@/types/finance/cost-product-request"
 
 // ─── Module mocks ─────────────────────────────────────────────────────────────
@@ -22,6 +23,12 @@ vi.mock("@/hooks/finance/use-cost-product-request", () => {
     useCancelRequest:          stub,
     useCloseRequest:           stub,
     useMarkParameterComplete:  stub,
+    useMarkParameterPending:   stub,
+    useConfirmRequest:         stub,
+    useApproveRequest:         stub,
+    useReleaseRequest:         stub,
+    useAssignRequest:          stub,
+    useRequestHistory:         () => ({ data: [], isLoading: false }),
   }
 })
 
@@ -106,8 +113,11 @@ function renderPanel(
   mockHasPermission.mockImplementation((code: string) => permissions.includes(code))
   mockUser.userId = currentUserId
 
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
-    <RequestDetailPanel request={request} onEdit={vi.fn()} />,
+    <QueryClientProvider client={qc}>
+      <RequestDetailPanel request={request} onEdit={vi.fn()} />
+    </QueryClientProvider>,
   )
 }
 
