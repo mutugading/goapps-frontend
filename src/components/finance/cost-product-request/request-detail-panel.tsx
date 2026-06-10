@@ -57,6 +57,7 @@ import {
 import type { CostProductRequest } from "@/types/finance/cost-product-request"
 import { usePermissionContext } from "@/providers/permission-provider"
 import { useAuth } from "@/providers/auth-provider"
+import { useCPRRealtimeSync } from "@/hooks/finance/use-cpr-realtime-sync"
 
 interface Props {
   request: CostProductRequest
@@ -68,6 +69,8 @@ interface Props {
 type DialogKind = "reject" | "cancel" | "verify" | "feasibility" | "close" | "useExisting" | null
 
 export function RequestDetailPanel({ request, onEdit, allFillsApproved = false }: Props) {
+  useCPRRealtimeSync(request.requestId)
+
   const [dialog, setDialog] = useState<DialogKind>(null)
 
   const submitM = useSubmitRequest()
