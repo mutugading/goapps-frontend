@@ -314,6 +314,70 @@ export interface AssignCostProductRequestResponse {
   data: CostProductRequest | undefined;
 }
 
+/**
+ * ConfirmCostProductRequest advances PARAMETER_COMPLETE → CONFIRMED.
+ * Requires finance.product.request.confirm permission.
+ */
+export interface ConfirmCostProductRequestRequest {
+  requestId: number;
+}
+
+export interface ConfirmCostProductRequestResponse {
+  base: BaseResponse | undefined;
+  data: CostProductRequest | undefined;
+}
+
+/**
+ * ApproveCostProductRequest advances CONFIRMED → APPROVED.
+ * Requires finance.product.request.approve permission.
+ */
+export interface ApproveCostProductRequestRequest {
+  requestId: number;
+  note: string;
+}
+
+export interface ApproveCostProductRequestResponse {
+  base: BaseResponse | undefined;
+  data: CostProductRequest | undefined;
+}
+
+/**
+ * ReleaseCostProductRequest advances APPROVED → RELEASED.
+ * Requires finance.product.request.release permission.
+ * After release the request is locked and ready for the cost calculation engine.
+ */
+export interface ReleaseCostProductRequestRequest {
+  requestId: number;
+}
+
+export interface ReleaseCostProductRequestResponse {
+  base: BaseResponse | undefined;
+  data: CostProductRequest | undefined;
+}
+
+/** StatusHistoryEntry records a single CPR status transition. */
+export interface StatusHistoryEntry {
+  id: number;
+  requestId: number;
+  fromStatus: string;
+  toStatus: string;
+  actorUserId: string;
+  actorName: string;
+  note: string;
+  createdAt: string;
+}
+
+/** GetCostProductRequestHistoryRequest carries the CPR id to query. */
+export interface GetCostProductRequestHistoryRequest {
+  requestId: number;
+}
+
+/** GetCostProductRequestHistoryResponse returns the full status-transition timeline. */
+export interface GetCostProductRequestHistoryResponse {
+  base: BaseResponse | undefined;
+  entries: StatusHistoryEntry[];
+}
+
 export interface LinkExistingRouteRequest {
   requestId: number;
   routeHeadId: number;
@@ -4978,6 +5042,794 @@ export const AssignCostProductRequestResponse: MessageFns<AssignCostProductReque
   },
 };
 
+function createBaseConfirmCostProductRequestRequest(): ConfirmCostProductRequestRequest {
+  return { requestId: 0 };
+}
+
+export const ConfirmCostProductRequestRequest: MessageFns<ConfirmCostProductRequestRequest> = {
+  encode(message: ConfirmCostProductRequestRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.requestId !== 0) {
+      writer.uint32(8).int64(message.requestId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ConfirmCostProductRequestRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseConfirmCostProductRequestRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.requestId = longToNumber(reader.int64());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ConfirmCostProductRequestRequest {
+    return {
+      requestId: isSet(object.requestId)
+        ? globalThis.Number(object.requestId)
+        : isSet(object.request_id)
+        ? globalThis.Number(object.request_id)
+        : 0,
+    };
+  },
+
+  toJSON(message: ConfirmCostProductRequestRequest): unknown {
+    const obj: any = {};
+    if (message.requestId !== 0) {
+      obj.requestId = Math.round(message.requestId);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ConfirmCostProductRequestRequest>): ConfirmCostProductRequestRequest {
+    return ConfirmCostProductRequestRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ConfirmCostProductRequestRequest>): ConfirmCostProductRequestRequest {
+    const message = createBaseConfirmCostProductRequestRequest();
+    message.requestId = object.requestId ?? 0;
+    return message;
+  },
+};
+
+function createBaseConfirmCostProductRequestResponse(): ConfirmCostProductRequestResponse {
+  return { base: undefined, data: undefined };
+}
+
+export const ConfirmCostProductRequestResponse: MessageFns<ConfirmCostProductRequestResponse> = {
+  encode(message: ConfirmCostProductRequestResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    if (message.data !== undefined) {
+      CostProductRequest.encode(message.data, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ConfirmCostProductRequestResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseConfirmCostProductRequestResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.data = CostProductRequest.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ConfirmCostProductRequestResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      data: isSet(object.data) ? CostProductRequest.fromJSON(object.data) : undefined,
+    };
+  },
+
+  toJSON(message: ConfirmCostProductRequestResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.data !== undefined) {
+      obj.data = CostProductRequest.toJSON(message.data);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ConfirmCostProductRequestResponse>): ConfirmCostProductRequestResponse {
+    return ConfirmCostProductRequestResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ConfirmCostProductRequestResponse>): ConfirmCostProductRequestResponse {
+    const message = createBaseConfirmCostProductRequestResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.data = (object.data !== undefined && object.data !== null)
+      ? CostProductRequest.fromPartial(object.data)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseApproveCostProductRequestRequest(): ApproveCostProductRequestRequest {
+  return { requestId: 0, note: "" };
+}
+
+export const ApproveCostProductRequestRequest: MessageFns<ApproveCostProductRequestRequest> = {
+  encode(message: ApproveCostProductRequestRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.requestId !== 0) {
+      writer.uint32(8).int64(message.requestId);
+    }
+    if (message.note !== "") {
+      writer.uint32(18).string(message.note);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ApproveCostProductRequestRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseApproveCostProductRequestRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.requestId = longToNumber(reader.int64());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.note = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ApproveCostProductRequestRequest {
+    return {
+      requestId: isSet(object.requestId)
+        ? globalThis.Number(object.requestId)
+        : isSet(object.request_id)
+        ? globalThis.Number(object.request_id)
+        : 0,
+      note: isSet(object.note) ? globalThis.String(object.note) : "",
+    };
+  },
+
+  toJSON(message: ApproveCostProductRequestRequest): unknown {
+    const obj: any = {};
+    if (message.requestId !== 0) {
+      obj.requestId = Math.round(message.requestId);
+    }
+    if (message.note !== "") {
+      obj.note = message.note;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ApproveCostProductRequestRequest>): ApproveCostProductRequestRequest {
+    return ApproveCostProductRequestRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ApproveCostProductRequestRequest>): ApproveCostProductRequestRequest {
+    const message = createBaseApproveCostProductRequestRequest();
+    message.requestId = object.requestId ?? 0;
+    message.note = object.note ?? "";
+    return message;
+  },
+};
+
+function createBaseApproveCostProductRequestResponse(): ApproveCostProductRequestResponse {
+  return { base: undefined, data: undefined };
+}
+
+export const ApproveCostProductRequestResponse: MessageFns<ApproveCostProductRequestResponse> = {
+  encode(message: ApproveCostProductRequestResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    if (message.data !== undefined) {
+      CostProductRequest.encode(message.data, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ApproveCostProductRequestResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseApproveCostProductRequestResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.data = CostProductRequest.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ApproveCostProductRequestResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      data: isSet(object.data) ? CostProductRequest.fromJSON(object.data) : undefined,
+    };
+  },
+
+  toJSON(message: ApproveCostProductRequestResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.data !== undefined) {
+      obj.data = CostProductRequest.toJSON(message.data);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ApproveCostProductRequestResponse>): ApproveCostProductRequestResponse {
+    return ApproveCostProductRequestResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ApproveCostProductRequestResponse>): ApproveCostProductRequestResponse {
+    const message = createBaseApproveCostProductRequestResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.data = (object.data !== undefined && object.data !== null)
+      ? CostProductRequest.fromPartial(object.data)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseReleaseCostProductRequestRequest(): ReleaseCostProductRequestRequest {
+  return { requestId: 0 };
+}
+
+export const ReleaseCostProductRequestRequest: MessageFns<ReleaseCostProductRequestRequest> = {
+  encode(message: ReleaseCostProductRequestRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.requestId !== 0) {
+      writer.uint32(8).int64(message.requestId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ReleaseCostProductRequestRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseReleaseCostProductRequestRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.requestId = longToNumber(reader.int64());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ReleaseCostProductRequestRequest {
+    return {
+      requestId: isSet(object.requestId)
+        ? globalThis.Number(object.requestId)
+        : isSet(object.request_id)
+        ? globalThis.Number(object.request_id)
+        : 0,
+    };
+  },
+
+  toJSON(message: ReleaseCostProductRequestRequest): unknown {
+    const obj: any = {};
+    if (message.requestId !== 0) {
+      obj.requestId = Math.round(message.requestId);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ReleaseCostProductRequestRequest>): ReleaseCostProductRequestRequest {
+    return ReleaseCostProductRequestRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ReleaseCostProductRequestRequest>): ReleaseCostProductRequestRequest {
+    const message = createBaseReleaseCostProductRequestRequest();
+    message.requestId = object.requestId ?? 0;
+    return message;
+  },
+};
+
+function createBaseReleaseCostProductRequestResponse(): ReleaseCostProductRequestResponse {
+  return { base: undefined, data: undefined };
+}
+
+export const ReleaseCostProductRequestResponse: MessageFns<ReleaseCostProductRequestResponse> = {
+  encode(message: ReleaseCostProductRequestResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    if (message.data !== undefined) {
+      CostProductRequest.encode(message.data, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ReleaseCostProductRequestResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseReleaseCostProductRequestResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.data = CostProductRequest.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ReleaseCostProductRequestResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      data: isSet(object.data) ? CostProductRequest.fromJSON(object.data) : undefined,
+    };
+  },
+
+  toJSON(message: ReleaseCostProductRequestResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.data !== undefined) {
+      obj.data = CostProductRequest.toJSON(message.data);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ReleaseCostProductRequestResponse>): ReleaseCostProductRequestResponse {
+    return ReleaseCostProductRequestResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ReleaseCostProductRequestResponse>): ReleaseCostProductRequestResponse {
+    const message = createBaseReleaseCostProductRequestResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.data = (object.data !== undefined && object.data !== null)
+      ? CostProductRequest.fromPartial(object.data)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseStatusHistoryEntry(): StatusHistoryEntry {
+  return { id: 0, requestId: 0, fromStatus: "", toStatus: "", actorUserId: "", actorName: "", note: "", createdAt: "" };
+}
+
+export const StatusHistoryEntry: MessageFns<StatusHistoryEntry> = {
+  encode(message: StatusHistoryEntry, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.id !== 0) {
+      writer.uint32(8).int64(message.id);
+    }
+    if (message.requestId !== 0) {
+      writer.uint32(16).int64(message.requestId);
+    }
+    if (message.fromStatus !== "") {
+      writer.uint32(26).string(message.fromStatus);
+    }
+    if (message.toStatus !== "") {
+      writer.uint32(34).string(message.toStatus);
+    }
+    if (message.actorUserId !== "") {
+      writer.uint32(42).string(message.actorUserId);
+    }
+    if (message.actorName !== "") {
+      writer.uint32(50).string(message.actorName);
+    }
+    if (message.note !== "") {
+      writer.uint32(58).string(message.note);
+    }
+    if (message.createdAt !== "") {
+      writer.uint32(66).string(message.createdAt);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): StatusHistoryEntry {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseStatusHistoryEntry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.id = longToNumber(reader.int64());
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.requestId = longToNumber(reader.int64());
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.fromStatus = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.toStatus = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.actorUserId = reader.string();
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.actorName = reader.string();
+          continue;
+        }
+        case 7: {
+          if (tag !== 58) {
+            break;
+          }
+
+          message.note = reader.string();
+          continue;
+        }
+        case 8: {
+          if (tag !== 66) {
+            break;
+          }
+
+          message.createdAt = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): StatusHistoryEntry {
+    return {
+      id: isSet(object.id) ? globalThis.Number(object.id) : 0,
+      requestId: isSet(object.requestId)
+        ? globalThis.Number(object.requestId)
+        : isSet(object.request_id)
+        ? globalThis.Number(object.request_id)
+        : 0,
+      fromStatus: isSet(object.fromStatus)
+        ? globalThis.String(object.fromStatus)
+        : isSet(object.from_status)
+        ? globalThis.String(object.from_status)
+        : "",
+      toStatus: isSet(object.toStatus)
+        ? globalThis.String(object.toStatus)
+        : isSet(object.to_status)
+        ? globalThis.String(object.to_status)
+        : "",
+      actorUserId: isSet(object.actorUserId)
+        ? globalThis.String(object.actorUserId)
+        : isSet(object.actor_user_id)
+        ? globalThis.String(object.actor_user_id)
+        : "",
+      actorName: isSet(object.actorName)
+        ? globalThis.String(object.actorName)
+        : isSet(object.actor_name)
+        ? globalThis.String(object.actor_name)
+        : "",
+      note: isSet(object.note) ? globalThis.String(object.note) : "",
+      createdAt: isSet(object.createdAt)
+        ? globalThis.String(object.createdAt)
+        : isSet(object.created_at)
+        ? globalThis.String(object.created_at)
+        : "",
+    };
+  },
+
+  toJSON(message: StatusHistoryEntry): unknown {
+    const obj: any = {};
+    if (message.id !== 0) {
+      obj.id = Math.round(message.id);
+    }
+    if (message.requestId !== 0) {
+      obj.requestId = Math.round(message.requestId);
+    }
+    if (message.fromStatus !== "") {
+      obj.fromStatus = message.fromStatus;
+    }
+    if (message.toStatus !== "") {
+      obj.toStatus = message.toStatus;
+    }
+    if (message.actorUserId !== "") {
+      obj.actorUserId = message.actorUserId;
+    }
+    if (message.actorName !== "") {
+      obj.actorName = message.actorName;
+    }
+    if (message.note !== "") {
+      obj.note = message.note;
+    }
+    if (message.createdAt !== "") {
+      obj.createdAt = message.createdAt;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<StatusHistoryEntry>): StatusHistoryEntry {
+    return StatusHistoryEntry.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<StatusHistoryEntry>): StatusHistoryEntry {
+    const message = createBaseStatusHistoryEntry();
+    message.id = object.id ?? 0;
+    message.requestId = object.requestId ?? 0;
+    message.fromStatus = object.fromStatus ?? "";
+    message.toStatus = object.toStatus ?? "";
+    message.actorUserId = object.actorUserId ?? "";
+    message.actorName = object.actorName ?? "";
+    message.note = object.note ?? "";
+    message.createdAt = object.createdAt ?? "";
+    return message;
+  },
+};
+
+function createBaseGetCostProductRequestHistoryRequest(): GetCostProductRequestHistoryRequest {
+  return { requestId: 0 };
+}
+
+export const GetCostProductRequestHistoryRequest: MessageFns<GetCostProductRequestHistoryRequest> = {
+  encode(message: GetCostProductRequestHistoryRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.requestId !== 0) {
+      writer.uint32(8).int64(message.requestId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetCostProductRequestHistoryRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetCostProductRequestHistoryRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.requestId = longToNumber(reader.int64());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetCostProductRequestHistoryRequest {
+    return {
+      requestId: isSet(object.requestId)
+        ? globalThis.Number(object.requestId)
+        : isSet(object.request_id)
+        ? globalThis.Number(object.request_id)
+        : 0,
+    };
+  },
+
+  toJSON(message: GetCostProductRequestHistoryRequest): unknown {
+    const obj: any = {};
+    if (message.requestId !== 0) {
+      obj.requestId = Math.round(message.requestId);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetCostProductRequestHistoryRequest>): GetCostProductRequestHistoryRequest {
+    return GetCostProductRequestHistoryRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GetCostProductRequestHistoryRequest>): GetCostProductRequestHistoryRequest {
+    const message = createBaseGetCostProductRequestHistoryRequest();
+    message.requestId = object.requestId ?? 0;
+    return message;
+  },
+};
+
+function createBaseGetCostProductRequestHistoryResponse(): GetCostProductRequestHistoryResponse {
+  return { base: undefined, entries: [] };
+}
+
+export const GetCostProductRequestHistoryResponse: MessageFns<GetCostProductRequestHistoryResponse> = {
+  encode(message: GetCostProductRequestHistoryResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    for (const v of message.entries) {
+      StatusHistoryEntry.encode(v!, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetCostProductRequestHistoryResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetCostProductRequestHistoryResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.entries.push(StatusHistoryEntry.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetCostProductRequestHistoryResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      entries: globalThis.Array.isArray(object?.entries)
+        ? object.entries.map((e: any) => StatusHistoryEntry.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: GetCostProductRequestHistoryResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.entries?.length) {
+      obj.entries = message.entries.map((e) => StatusHistoryEntry.toJSON(e));
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetCostProductRequestHistoryResponse>): GetCostProductRequestHistoryResponse {
+    return GetCostProductRequestHistoryResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GetCostProductRequestHistoryResponse>): GetCostProductRequestHistoryResponse {
+    const message = createBaseGetCostProductRequestHistoryResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.entries = object.entries?.map((e) => StatusHistoryEntry.fromPartial(e)) || [];
+    return message;
+  },
+};
+
 function createBaseLinkExistingRouteRequest(): LinkExistingRouteRequest {
   return { requestId: 0, routeHeadId: 0 };
 }
@@ -6882,6 +7734,326 @@ export const CostProductRequestServiceDefinition = {
               117,
               116,
               101,
+            ]),
+          ],
+        },
+      },
+    },
+    /** ConfirmCostProductRequest advances PARAMETER_COMPLETE → CONFIRMED. */
+    confirmCostProductRequest: {
+      name: "ConfirmCostProductRequest",
+      requestType: ConfirmCostProductRequestRequest,
+      requestStream: false,
+      responseType: ConfirmCostProductRequestResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              63,
+              58,
+              1,
+              42,
+              34,
+              58,
+              47,
+              97,
+              112,
+              105,
+              47,
+              118,
+              49,
+              47,
+              102,
+              105,
+              110,
+              97,
+              110,
+              99,
+              101,
+              47,
+              99,
+              111,
+              115,
+              116,
+              45,
+              112,
+              114,
+              111,
+              100,
+              117,
+              99,
+              116,
+              45,
+              114,
+              101,
+              113,
+              117,
+              101,
+              115,
+              116,
+              115,
+              47,
+              123,
+              114,
+              101,
+              113,
+              117,
+              101,
+              115,
+              116,
+              95,
+              105,
+              100,
+              125,
+              47,
+              99,
+              111,
+              110,
+              102,
+              105,
+              114,
+              109,
+            ]),
+          ],
+        },
+      },
+    },
+    /** ApproveCostProductRequest advances CONFIRMED → APPROVED. */
+    approveCostProductRequest: {
+      name: "ApproveCostProductRequest",
+      requestType: ApproveCostProductRequestRequest,
+      requestStream: false,
+      responseType: ApproveCostProductRequestResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              63,
+              58,
+              1,
+              42,
+              34,
+              58,
+              47,
+              97,
+              112,
+              105,
+              47,
+              118,
+              49,
+              47,
+              102,
+              105,
+              110,
+              97,
+              110,
+              99,
+              101,
+              47,
+              99,
+              111,
+              115,
+              116,
+              45,
+              112,
+              114,
+              111,
+              100,
+              117,
+              99,
+              116,
+              45,
+              114,
+              101,
+              113,
+              117,
+              101,
+              115,
+              116,
+              115,
+              47,
+              123,
+              114,
+              101,
+              113,
+              117,
+              101,
+              115,
+              116,
+              95,
+              105,
+              100,
+              125,
+              47,
+              97,
+              112,
+              112,
+              114,
+              111,
+              118,
+              101,
+            ]),
+          ],
+        },
+      },
+    },
+    /**
+     * ReleaseCostProductRequest advances APPROVED → RELEASED.
+     * After release the request is locked and the cost calculation engine can proceed.
+     */
+    releaseCostProductRequest: {
+      name: "ReleaseCostProductRequest",
+      requestType: ReleaseCostProductRequestRequest,
+      requestStream: false,
+      responseType: ReleaseCostProductRequestResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              63,
+              58,
+              1,
+              42,
+              34,
+              58,
+              47,
+              97,
+              112,
+              105,
+              47,
+              118,
+              49,
+              47,
+              102,
+              105,
+              110,
+              97,
+              110,
+              99,
+              101,
+              47,
+              99,
+              111,
+              115,
+              116,
+              45,
+              112,
+              114,
+              111,
+              100,
+              117,
+              99,
+              116,
+              45,
+              114,
+              101,
+              113,
+              117,
+              101,
+              115,
+              116,
+              115,
+              47,
+              123,
+              114,
+              101,
+              113,
+              117,
+              101,
+              115,
+              116,
+              95,
+              105,
+              100,
+              125,
+              47,
+              114,
+              101,
+              108,
+              101,
+              97,
+              115,
+              101,
+            ]),
+          ],
+        },
+      },
+    },
+    /** GetCostProductRequestHistory returns the full status-transition timeline for a request. */
+    getCostProductRequestHistory: {
+      name: "GetCostProductRequestHistory",
+      requestType: GetCostProductRequestHistoryRequest,
+      requestStream: false,
+      responseType: GetCostProductRequestHistoryResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              60,
+              18,
+              58,
+              47,
+              97,
+              112,
+              105,
+              47,
+              118,
+              49,
+              47,
+              102,
+              105,
+              110,
+              97,
+              110,
+              99,
+              101,
+              47,
+              99,
+              111,
+              115,
+              116,
+              45,
+              112,
+              114,
+              111,
+              100,
+              117,
+              99,
+              116,
+              45,
+              114,
+              101,
+              113,
+              117,
+              101,
+              115,
+              116,
+              115,
+              47,
+              123,
+              114,
+              101,
+              113,
+              117,
+              101,
+              115,
+              116,
+              95,
+              105,
+              100,
+              125,
+              47,
+              104,
+              105,
+              115,
+              116,
+              111,
+              114,
+              121,
             ]),
           ],
         },
