@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
   useFillTasks,
@@ -11,7 +11,6 @@ import {
 } from "@/hooks/finance/use-fill-assignment";
 import { useCostProductRequests } from "@/hooks/finance/use-cost-product-request";
 import { useUser } from "@/providers/auth-provider";
-import { useDepartments } from "@/hooks/iam/use-departments";
 import { FillTrackingTable } from "@/components/finance/fill-assignment/FillTrackingTable";
 import { FillBlockerAlert } from "@/components/finance/fill-assignment/FillBlockerAlert";
 import { Button } from "@/components/ui/button";
@@ -117,18 +116,16 @@ interface FillTasksContentProps {
 }
 
 function FillTasksContent({ requestId, onRequestSelect }: FillTasksContentProps) {
+  const router = useRouter();
   const user = useUser();
   const currentUserId = user?.userId ?? "";
   const isSuperAdmin = user?.roles?.includes("SUPER_ADMIN") ?? false;
 
-  // Resolve user's department UUID → department code for DEPT-type task checks
-  const { items: departments } = useDepartments();
-  const currentUserDepts = useMemo(() => {
-    const userDeptId = user?.departmentId;
-    if (!userDeptId) return [];
-    const dept = departments.find((d) => d.id === userDeptId);
-    return dept ? [dept.code] : [];
-  }, [user?.departmentId, departments]);
+  // Use departmentCode and sectionCode from AuthUser (populated server-side via company mapping).
+  const currentUserDepts: string[] = [
+    user?.departmentCode,
+    user?.sectionCode,
+  ].filter((c): c is string => Boolean(c));
 
   const { data: tasks = [], isLoading } = useFillTasks(requestId);
   const claim = useClaimFillTask(requestId);
@@ -181,7 +178,15 @@ function FillTasksContent({ requestId, onRequestSelect }: FillTasksContentProps)
             currentUserId={currentUserId}
             isSuperAdmin={isSuperAdmin}
             currentUserDepts={currentUserDepts}
-            onClaim={(taskId) => claim.mutate(taskId)}
+            onClaim={(taskId) => {
+              claim.mutate(taskId, {
+                onSuccess: () => {
+                  if (requestId) {
+                    router.push(`/finance/product-requests/${requestId}?tab=fill-tracking`);
+                  }
+                },
+              });
+            }}
             onSubmit={(taskId) => submit.mutate(taskId)}
             onApprove={(taskId) => approve.mutate({ taskId })}
             onReject={(taskId) =>

@@ -1,6 +1,5 @@
 "use client";
 
-import { useMemo } from "react";
 import {
   useFillTasks,
   useClaimFillTask,
@@ -9,7 +8,6 @@ import {
   useRejectFillTask,
 } from "@/hooks/finance/use-fill-assignment";
 import { useUser } from "@/providers/auth-provider";
-import { useDepartments } from "@/hooks/iam/use-departments";
 import { FillTrackingTable } from "./FillTrackingTable";
 import { FillBlockerAlert } from "./FillBlockerAlert";
 
@@ -22,14 +20,11 @@ export function FillTrackingTab({ requestId }: Props) {
   const currentUserId = user?.userId ?? "";
   const isSuperAdmin = user?.roles?.includes("SUPER_ADMIN") ?? false;
 
-  // Resolve user's department UUID → department code for DEPT-type task checks
-  const { items: departments } = useDepartments();
-  const currentUserDepts = useMemo(() => {
-    const userDeptId = user?.departmentId;
-    if (!userDeptId) return [];
-    const dept = departments.find((d) => d.id === userDeptId);
-    return dept ? [dept.code] : [];
-  }, [user?.departmentId, departments]);
+  // Use departmentCode and sectionCode from AuthUser (populated server-side via company mapping).
+  const currentUserDepts: string[] = [
+    user?.departmentCode,
+    user?.sectionCode,
+  ].filter((c): c is string => Boolean(c));
 
   const { data: tasks = [], isLoading } = useFillTasks(requestId);
   const claim = useClaimFillTask(requestId);

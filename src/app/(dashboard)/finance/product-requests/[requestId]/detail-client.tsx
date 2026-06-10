@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { ArrowLeft } from "lucide-react"
 
 import { PageHeader } from "@/components/common/page-header"
@@ -17,6 +17,7 @@ import {
   FillProgressMini,
 } from "@/components/finance/fill-assignment"
 import { useCostProductRequest } from "@/hooks/finance/use-cost-product-request"
+import { useFillTasks } from "@/hooks/finance/use-fill-assignment"
 
 interface Props {
   requestId: string
@@ -27,10 +28,17 @@ interface Props {
 // that left the URL stuck at the list.
 export default function ProductRequestDetailClient({ requestId }: Props) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const numericId = Number(requestId)
   const { data: request, isLoading } = useCostProductRequest(
     Number.isFinite(numericId) && numericId > 0 ? numericId : undefined,
   )
+  const isParameterPending = request?.status === "PARAMETER_PENDING"
+  const { data: fillTasks = [] } = useFillTasks(numericId)
+  const allFillsApproved =
+    isParameterPending &&
+    fillTasks.length > 0 &&
+    fillTasks.every((t) => t.status === "FILL_TASK_STATUS_APPROVED")
   const [formOpen, setFormOpen] = useState(false)
 
   function backToList() {
@@ -64,11 +72,13 @@ export default function ProductRequestDetailClient({ requestId }: Props) {
   }
 
   // Show the Fill Tracking tab for statuses where fill tasks may exist.
+  // UNDER_REVIEW is excluded — fill tasks don't exist yet at that stage.
   const hasFillTracking =
     request.status === "PARAMETER_PENDING" ||
     request.status === "PARAMETER_COMPLETE" ||
-    request.status === "UNDER_REVIEW" ||
-    request.status === "CLOSED"
+    request.status === "COSTING_DONE" ||
+    request.status === "QUOTED" ||
+    (request.status === "CLOSED" && !!request.linkedRouteHeadId)
 
   return (
     <div className="space-y-6">
@@ -78,7 +88,7 @@ export default function ProductRequestDetailClient({ requestId }: Props) {
         </Button>
       </PageHeader>
 
-      <Tabs defaultValue="overview">
+      <Tabs defaultValue={searchParams.get("tab") === "fill-tracking" && hasFillTracking ? "fill-tracking" : "overview"}>
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           {hasFillTracking && (
@@ -92,7 +102,7 @@ export default function ProductRequestDetailClient({ requestId }: Props) {
               <FillProgressMini requestId={request.requestId} />
             </div>
           )}
-          <RequestDetailPanel request={request} onEdit={() => setFormOpen(true)} />
+          <RequestDetailPanel request={request} onEdit={() => setFormOpen(true)} allFillsApproved={allFillsApproved} />
         </TabsContent>
 
         {hasFillTracking && (

@@ -30,6 +30,8 @@ function parseAuthUser(data: unknown): AuthUser | null {
         emailVerified: Boolean(obj.emailVerified ?? obj.email_verified ?? false),
         sectionId: (obj.sectionId ?? obj.section_id ?? "") as string,
         departmentId: (obj.departmentId ?? obj.department_id ?? "") as string,
+        sectionCode: (obj.sectionCode ?? obj.section_code ?? "") as string,
+        departmentCode: (obj.departmentCode ?? obj.department_code ?? "") as string,
     }
 }
 
