@@ -34,9 +34,13 @@ import {
   VerifyClassificationDialog,
 } from "./transition-dialogs"
 import {
+  useApproveRequest,
   useCancelRequest,
+  useConfirmRequest,
   useDecideFeasibility,
   useMarkParameterComplete,
+  useMarkParameterPending,
+  useReleaseRequest,
   useReviseRequest,
   useReopenRequest,
   useRejectRequest,
@@ -47,15 +51,19 @@ import {
   useCloseRequest,
 } from "@/hooks/finance/use-cost-product-request"
 import type { CostProductRequest } from "@/types/finance/cost-product-request"
+import { usePermissionContext } from "@/providers/permission-provider"
+import { useAuth } from "@/providers/auth-provider"
 
 interface Props {
   request: CostProductRequest
   onEdit: () => void
+  /** When true, all fill levels are approved and "Mark parameters complete" is enabled. */
+  allFillsApproved?: boolean
 }
 
 type DialogKind = "reject" | "cancel" | "verify" | "feasibility" | "close" | "useExisting" | null
 
-export function RequestDetailPanel({ request, onEdit }: Props) {
+export function RequestDetailPanel({ request, onEdit, allFillsApproved = false }: Props) {
   const [dialog, setDialog] = useState<DialogKind>(null)
 
   const submitM = useSubmitRequest()
@@ -68,7 +76,30 @@ export function RequestDetailPanel({ request, onEdit }: Props) {
   const rejectM = useRejectRequest()
   const cancelM = useCancelRequest()
   const closeM = useCloseRequest()
+  const markPendingM = useMarkParameterPending()
   const markCompleteM = useMarkParameterComplete()
+  const confirmM = useConfirmRequest()
+  const approveM = useApproveRequest()
+  const releaseM = useReleaseRequest()
+
+  const { hasPermission } = usePermissionContext()
+  const { user } = useAuth()
+  const currentUserId = user?.userId
+
+  const isOwner = request.requesterUserId === currentUserId
+
+  const canCreate      = hasPermission("finance.product.request.create")
+  const canSubmit      = hasPermission("finance.product.request.submit")
+  const canReview      = hasPermission("finance.product.request.review")
+  const canResolve     = hasPermission("finance.product.request.resolve")
+  const canReject      = hasPermission("finance.product.request.reject")
+  const canRouteCreate = hasPermission("finance.product.route.create")
+  const canRouteUpdate = hasPermission("finance.product.route.update")
+  const canCalc        = hasPermission("finance.cost.caljob.trigger")
+  const canReopen      = hasPermission("finance.product.request.reopen")
+  const canConfirm     = hasPermission("finance.product.request.confirm")
+  const canApprove     = hasPermission("finance.product.request.approve")
+  const canRelease     = hasPermission("finance.product.request.release")
 
   const requestId = request.requestId
   const status = request.status
@@ -76,7 +107,13 @@ export function RequestDetailPanel({ request, onEdit }: Props) {
   const isDraft = status === "DRAFT"
   const isSubmitted = status === "SUBMITTED"
   const isUnderReview = status === "UNDER_REVIEW"
+  const isQuoteReady = status === "QUOTE_READY"
+  const isRoutingDefined = status === "ROUTING_DEFINED"
   const isParameterPending = status === "PARAMETER_PENDING"
+  const isParameterComplete = status === "PARAMETER_COMPLETE"
+  const isConfirmed = status === "CONFIRMED"
+  const isApproved = status === "APPROVED"
+  const isReleased = status === "RELEASED"
   const isRejected = status === "REJECTED"
   const isClosed = status === "CLOSED"
   // Terminal = the request lifecycle has stopped. Both REJECTED and CLOSED are
@@ -100,70 +137,111 @@ export function RequestDetailPanel({ request, onEdit }: Props) {
         </div>
       )}
 
-      {/* Action toolbar — gated by status. Terminal states show only reopen. */}
+      {/* Action toolbar — gated by status AND permissions. Terminal states show only reopen/revise. */}
       <div className="flex flex-wrap items-center gap-2">
-        {isRejected && (
+        {isRejected && canCreate && isOwner && (
           <Button onClick={() => reviseM.mutate({ requestId })} disabled={reviseM.isPending}>
             <RotateCcw className="mr-2 h-4 w-4" /> Revise &amp; resubmit
           </Button>
         )}
-        {isClosed && (
+        {isClosed && canReopen && (
           <Button onClick={() => reopenM.mutate({ requestId })} disabled={reopenM.isPending}>
             <RotateCcw className="mr-2 h-4 w-4" /> Reopen request
           </Button>
         )}
-        {isDraft && (
-          <>
-            <Button onClick={onEdit} variant="outline">
-              <Pencil className="mr-2 h-4 w-4" /> Edit
-            </Button>
-            <Button onClick={() => submitM.mutate({ requestId })} disabled={submitM.isPending}>
-              <Play className="mr-2 h-4 w-4" /> Submit
-            </Button>
-          </>
+        {isDraft && canCreate && isOwner && (
+          <Button onClick={onEdit} variant="outline">
+            <Pencil className="mr-2 h-4 w-4" /> Edit
+          </Button>
         )}
-        {isSubmitted && (
+        {isDraft && canSubmit && isOwner && (
+          <Button onClick={() => submitM.mutate({ requestId })} disabled={submitM.isPending}>
+            <Play className="mr-2 h-4 w-4" /> Submit
+          </Button>
+        )}
+        {isSubmitted && canReview && (
           <Button onClick={() => startM.mutate({ requestId })} disabled={startM.isPending}>
             <Inbox className="mr-2 h-4 w-4" /> Start review
           </Button>
         )}
-        {isUnderReview && (
-          <>
-            <Button variant="outline" onClick={() => setDialog("verify")}>
-              <Edit className="mr-2 h-4 w-4" /> Verify classification
-            </Button>
-            <Button onClick={() => setDialog("feasibility")} disabled={feasibilityM.isPending}>
-              <CheckCircle2 className="mr-2 h-4 w-4" /> Decide feasibility
-            </Button>
-            {request.verifiedClassification === "existing" && (
-              <Button
-                variant="secondary"
-                onClick={() => setDialog("useExisting")}
-                disabled={useExistingM.isPending}
-              >
-                <FileCheck className="mr-2 h-4 w-4" /> Use existing costing
-              </Button>
-            )}
-            <Button variant="destructive" onClick={() => setDialog("reject")}>
-              <XCircle className="mr-2 h-4 w-4" /> Reject
-            </Button>
-          </>
+        {isRoutingDefined && canRouteUpdate && (
+          <Button
+            onClick={() => markPendingM.mutate({ requestId })}
+            disabled={markPendingM.isPending}
+          >
+            <Play className="mr-2 h-4 w-4" /> Promote route
+          </Button>
         )}
-        {isParameterPending && (
+        {isUnderReview && canResolve && (
+          <Button onClick={() => setDialog("feasibility")} disabled={feasibilityM.isPending}>
+            <CheckCircle2 className="mr-2 h-4 w-4" /> Decide feasibility
+          </Button>
+        )}
+        {isUnderReview && canResolve &&
+          (request.verifiedClassification === "existing" ||
+            (!request.verifiedClassification && request.productClassification === "existing")) && (
+          <Button
+            variant="secondary"
+            onClick={() => setDialog("useExisting")}
+            disabled={useExistingM.isPending}
+          >
+            <FileCheck className="mr-2 h-4 w-4" /> Use existing costing
+          </Button>
+        )}
+        {(isSubmitted || isUnderReview) && canReject && (
+          <Button variant="destructive" onClick={() => setDialog("reject")}>
+            <XCircle className="mr-2 h-4 w-4" /> Reject
+          </Button>
+        )}
+        {isParameterPending && canResolve && (
           <Button
             onClick={() => markCompleteM.mutate({ requestId })}
-            disabled={markCompleteM.isPending}
+            disabled={markCompleteM.isPending || !allFillsApproved}
+            title={!allFillsApproved ? "All fill levels must be approved before marking complete" : undefined}
           >
             <CheckCircle2 className="mr-2 h-4 w-4" /> Mark parameters complete
           </Button>
         )}
-        {!isTerminal && request.linkedRouteHeadId ? (
+        {isParameterComplete && canConfirm && (
+          <Button
+            onClick={() => confirmM.mutate({ requestId })}
+            disabled={confirmM.isPending}
+          >
+            <CheckCircle2 className="mr-2 h-4 w-4" /> Confirm
+          </Button>
+        )}
+        {isConfirmed && canApprove && (
+          <Button
+            onClick={() => approveM.mutate({ requestId })}
+            disabled={approveM.isPending}
+          >
+            <CheckCircle2 className="mr-2 h-4 w-4" /> Approve
+          </Button>
+        )}
+        {isApproved && canRelease && (
+          <Button
+            onClick={() => releaseM.mutate({ requestId })}
+            disabled={releaseM.isPending}
+          >
+            <Play className="mr-2 h-4 w-4" /> Release
+          </Button>
+        )}
+        {!isTerminal &&
+          canCalc &&
+          !!request.linkedRouteHeadId &&
+          (status === "ROUTING_DEFINED" ||
+            status === "PARAMETER_PENDING" ||
+            status === "PARAMETER_COMPLETE" ||
+            status === "CONFIRMED" ||
+            status === "APPROVED" ||
+            status === "RELEASED" ||
+            status === "COSTING_DONE") && (
           <CalculateButton
             routeHeadId={request.linkedRouteHeadId}
             label="Calculate for linked route"
           />
-        ) : null}
-        {!isTerminal && (
+        )}
+        {!isTerminal && (isOwner || canSubmit || canResolve) && (
           <>
             <div className="flex-1" />
             <Button variant="outline" onClick={() => setDialog("close")}>
@@ -305,12 +383,14 @@ export function RequestDetailPanel({ request, onEdit }: Props) {
         </Card>
       )}
 
-      {/* Routing panel — 3 states: linked / own / nothing. */}
-      <RoutingPanel
-        requestId={request.requestId}
-        linkedRouteHeadId={request.linkedRouteHeadId}
-        readOnly={readOnly}
-      />
+      {/* Routing panel — only show from ROUTING_DEFINED onwards. QUOTE_READY = existing costing path (no routing). */}
+      {!isDraft && !isSubmitted && !isUnderReview && !isQuoteReady && (
+        <RoutingPanel
+          requestId={request.requestId}
+          linkedRouteHeadId={request.linkedRouteHeadId}
+          readOnly={readOnly || !(canRouteCreate || canRouteUpdate)}
+        />
+      )}
 
       {/* Comments + attachments (Phase A §7.1.7–10) */}
       <AttachmentsPanel requestId={request.requestId} readOnly={readOnly} />

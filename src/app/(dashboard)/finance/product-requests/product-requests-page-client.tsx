@@ -19,6 +19,7 @@ import {
 import { FillTrackingDrawer } from "@/components/finance/fill-assignment"
 import { useCostProductRequestCounts, useCostProductRequests } from "@/hooks/finance/use-cost-product-request"
 import { useUrlState } from "@/lib/hooks"
+import { usePermissionContext } from "@/providers/permission-provider"
 import type { CostProductRequest, ListCostProductRequestsParams, RequestStatus } from "@/types/finance/cost-product-request"
 
 const STATUSES: RequestStatus[] = [
@@ -36,6 +37,8 @@ const defaultFilters: ListCostProductRequestsParams = {
 
 export default function ProductRequestsPageClient() {
   const router = useRouter()
+  const { hasPermission } = usePermissionContext()
+  const canCreate = hasPermission("finance.product.request.create")
   const [filters, setFilters] = useUrlState<ListCostProductRequestsParams>({ defaultValues: defaultFilters })
   const [formOpen, setFormOpen] = useState(false)
   const [trackingRequest, setTrackingRequest] = useState<CostProductRequest | null>(null)
@@ -54,9 +57,11 @@ export default function ProductRequestsPageClient() {
   return (
     <div className="space-y-6">
       <PageHeader title="Product Requests" subtitle="Marketing → Engineering request lifecycle (Phase A).">
-        <Button onClick={openCreate}>
-          <Plus className="mr-2 h-4 w-4" /> New request
-        </Button>
+        {canCreate && (
+          <Button onClick={openCreate}>
+            <Plus className="mr-2 h-4 w-4" /> New request
+          </Button>
+        )}
       </PageHeader>
 
       <KpiGrid>
