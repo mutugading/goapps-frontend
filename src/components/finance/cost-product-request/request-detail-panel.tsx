@@ -161,7 +161,7 @@ export function RequestDetailPanel({ request, onEdit, allFillsApproved = false }
             <Pencil className="mr-2 h-4 w-4" /> Edit
           </Button>
         )}
-        {isDraft && canSubmit && isOwner && (
+        {isDraft && canSubmit && (
           <Button onClick={() => submitM.mutate({ requestId })} disabled={submitM.isPending}>
             <Play className="mr-2 h-4 w-4" /> Submit
           </Button>
