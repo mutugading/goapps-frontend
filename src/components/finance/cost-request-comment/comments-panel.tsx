@@ -28,19 +28,6 @@ function wrapRichtext(plain: string): string {
   })
 }
 
-function extractMentions(text: string): string[] {
-  const matches = text.matchAll(/@\[[^\]]+\]\(([^)]+)\)/g)
-  const seen = new Set<string>()
-  const out: string[] = []
-  for (const m of matches) {
-    const uid = m[1]
-    if (!seen.has(uid)) {
-      seen.add(uid)
-      out.push(uid)
-    }
-  }
-  return out
-}
 
 const MAX_ATTACH_BYTES = 25 * 1024 * 1024 // FR-5 hard cap
 
@@ -48,6 +35,7 @@ export function CommentsPanel({ requestId, readOnly = false }: Props) {
   const { user } = useAuth()
   const { data: comments, isLoading } = useRequestComments(requestId)
   const [body, setBody] = useState("")
+  const [mentionedUserIds, setMentionedUserIds] = useState<string[]>([])
   const [stagedFiles, setStagedFiles] = useState<File[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
   const createM = useCreateRequestComment()
@@ -83,7 +71,7 @@ export function CommentsPanel({ requestId, readOnly = false }: Props) {
         requestId,
         bodyRichtext: wrapRichtext(text),
         bodyPlaintext: text,
-        mentionedUserIds: extractMentions(text),
+        mentionedUserIds,
       })
       // Upload any staged attachments and bind them to the new comment.
       for (const file of stagedFiles) {
@@ -96,6 +84,7 @@ export function CommentsPanel({ requestId, readOnly = false }: Props) {
       }
       setBody("")
       setStagedFiles([])
+      setMentionedUserIds([])
     } catch {
       /* toast in hook */
     }
@@ -138,6 +127,7 @@ export function CommentsPanel({ requestId, readOnly = false }: Props) {
             rows={3}
             value={body}
             onChange={setBody}
+            onMentionsChange={setMentionedUserIds}
             placeholder="Add a comment… @mention to notify someone."
             disabled={createM.isPending}
           />
