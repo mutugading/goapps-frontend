@@ -15,7 +15,7 @@ export const currentUserKeys = {
 }
 
 // Response parser (convert snake_case to camelCase)
-function parseAuthUser(data: unknown): AuthUser | null {
+export function parseAuthUser(data: unknown): AuthUser | null {
     if (!data || typeof data !== "object") return null
     const obj = data as Record<string, unknown>
     return {

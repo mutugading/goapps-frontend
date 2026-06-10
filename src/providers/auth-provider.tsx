@@ -17,6 +17,7 @@ import { AUTH_API, TOKEN_CONFIG } from "@/lib/auth/config"
 import { useIdleTimeout } from "@/lib/hooks/use-idle-timeout"
 import { IdleTimeoutDialog } from "@/components/common/idle-timeout-dialog"
 import type { AuthContextValue, AuthState, LoginFormValues, LoginResult } from "@/lib/auth/types"
+import { parseAuthUser } from "@/hooks/iam/use-current-user"
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
@@ -52,7 +53,7 @@ export function AuthProvider({ children, initialUser = null }: AuthProviderProps
                 return null
             }
 
-            return data.data
+            return parseAuthUser(data.data) ?? null
         } catch (error) {
             console.error("Failed to fetch current user:", error)
             return null
@@ -164,10 +165,8 @@ export function AuthProvider({ children, initialUser = null }: AuthProviderProps
                 isLoading: false,
                 error: null,
             })
-            router.push("/")
-            router.refresh()
         }
-    }, [router])
+    }, [])
 
     // Clear stale httpOnly cookies via API when both tokens are invalid
     const clearStaleTokens = useCallback(async () => {
