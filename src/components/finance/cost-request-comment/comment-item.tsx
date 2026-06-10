@@ -142,16 +142,6 @@ export function CommentItem({ comment, currentUserId }: Props) {
         </p>
       )}
 
-      {comment.mentionedUserIds.length > 0 && !comment.isHidden && (
-        <div className="text-xs text-muted-foreground">
-          Mentioned:{" "}
-          {comment.mentionedUserIds.map((u) => (
-            <span key={u} className="font-mono mr-1">
-              @{u}
-            </span>
-          ))}
-        </div>
-      )}
 
       {/* Attachment upload after post is no longer offered — files are staged in
           the composer before Post via CommentsPanel and uploaded once the
