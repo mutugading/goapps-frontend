@@ -172,6 +172,11 @@ export function RequestDetailPanel({ request, onEdit, allFillsApproved = false }
             <Play className="mr-2 h-4 w-4" /> Promote route
           </Button>
         )}
+        {isUnderReview && canResolve && !request.verifiedClassification && (
+          <Button variant="secondary" onClick={() => setDialog("verify")}>
+            <FileCheck className="mr-2 h-4 w-4" /> Verify classification
+          </Button>
+        )}
         {isUnderReview && canResolve && (
           <Button onClick={() => setDialog("feasibility")} disabled={feasibilityM.isPending}>
             <CheckCircle2 className="mr-2 h-4 w-4" /> Decide feasibility
