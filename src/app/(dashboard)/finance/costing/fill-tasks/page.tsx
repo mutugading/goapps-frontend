@@ -5,7 +5,6 @@ import { useSearchParams, useRouter } from "next/navigation";
 import {
   useFillTasks,
   useClaimFillTask,
-  useSubmitFillTask,
   useApproveFillTask,
   useRejectFillTask,
 } from "@/hooks/finance/use-fill-assignment";
@@ -129,7 +128,6 @@ function FillTasksContent({ requestId, onRequestSelect }: FillTasksContentProps)
 
   const { data: tasks = [], isLoading } = useFillTasks(requestId);
   const claim = useClaimFillTask(requestId);
-  const submit = useSubmitFillTask(requestId);
   const approve = useApproveFillTask(requestId);
   const reject = useRejectFillTask(requestId);
 
@@ -187,7 +185,6 @@ function FillTasksContent({ requestId, onRequestSelect }: FillTasksContentProps)
                 },
               });
             }}
-            onSubmit={(taskId) => submit.mutate(taskId)}
             onApprove={(taskId) => approve.mutate({ taskId })}
             onReject={(taskId) =>
               reject.mutate({ taskId, reason: "Rejected" })

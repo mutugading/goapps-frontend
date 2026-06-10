@@ -1,9 +1,13 @@
 "use client";
 
+import Link from "next/link";
+
 import { type FillTask } from "@/types/finance/fill-assignment";
 import { Button } from "@/components/ui/button";
 import { FillTaskStatusBadge } from "./FillTaskStatusBadge";
 import { FillTaskProgressBar } from "./FillTaskProgressBar";
+import { UserName } from "@/components/common/user-name";
+import { DeptName } from "@/components/common/dept-name";
 
 interface FillTaskRowProps {
   task: FillTask;
@@ -16,7 +20,6 @@ interface FillTaskRowProps {
    */
   currentUserDepts?: string[];
   onClaim?: (taskId: number) => void;
-  onSubmit?: (taskId: number) => void;
   onApprove?: (taskId: number) => void;
   onReject?: (taskId: number) => void;
 }
@@ -27,7 +30,6 @@ export function FillTaskRow({
   isSuperAdmin = false,
   currentUserDepts = [],
   onClaim,
-  onSubmit,
   onApprove,
   onReject,
 }: FillTaskRowProps) {
@@ -62,13 +64,17 @@ export function FillTaskRow({
     (isSuperAdmin || isUserApprover || isDeptApprover);
 
   return (
-    <tr className="border-b">
+    <tr className="border-b" data-testid={`fill-task-level-${task.routeLevel}`}>
       <td className="py-3 px-4 text-sm font-medium">Level {task.routeLevel}</td>
       <td className="py-3 px-4">
         <FillTaskStatusBadge status={task.status} />
       </td>
       <td className="py-3 px-4 text-sm text-muted-foreground">
-        {task.fillerValue || "—"}
+        {task.fillerType === "FILL_ACTOR_TYPE_USER"
+          ? <UserName userId={task.fillerValue} />
+          : task.fillerType === "FILL_ACTOR_TYPE_DEPT"
+            ? <DeptName deptCode={task.fillerValue} />
+            : task.fillerValue || "—"}
       </td>
       <td className="py-3 px-4 min-w-[160px]">
         <FillTaskProgressBar task={task} />
@@ -87,9 +93,11 @@ export function FillTaskRow({
               Claim
             </Button>
           )}
-          {canSubmit && onSubmit && (
-            <Button size="sm" onClick={() => onSubmit(task.taskId)}>
-              Submit
+          {canSubmit && (
+            <Button size="sm" asChild>
+              <Link href={`/finance/product-requests/${task.requestId}/fill/${task.taskId}`}>
+                Fill Parameters
+              </Link>
             </Button>
           )}
           {canApproveReject && (

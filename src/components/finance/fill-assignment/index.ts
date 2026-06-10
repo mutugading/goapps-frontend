@@ -7,3 +7,5 @@ export { FillTrackingDrawer } from "./FillTrackingDrawer";
 export { FillTrackingTab } from "./FillTrackingTab";
 export { FillProgressMini } from "./FillProgressMini";
 export { FillConfigForm } from "./FillConfigForm";
+export { FillParamEntryPage } from "./FillParamEntryPage";
+export { FillParamProductSection } from "./FillParamProductSection";

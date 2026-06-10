@@ -3,7 +3,6 @@
 import {
   useFillTasks,
   useClaimFillTask,
-  useSubmitFillTask,
   useApproveFillTask,
   useRejectFillTask,
 } from "@/hooks/finance/use-fill-assignment";
@@ -28,7 +27,6 @@ export function FillTrackingTab({ requestId }: Props) {
 
   const { data: tasks = [], isLoading } = useFillTasks(requestId);
   const claim = useClaimFillTask(requestId);
-  const submit = useSubmitFillTask(requestId);
   const approve = useApproveFillTask(requestId);
   const reject = useRejectFillTask(requestId);
 
@@ -59,7 +57,6 @@ export function FillTrackingTab({ requestId }: Props) {
         isSuperAdmin={isSuperAdmin}
         currentUserDepts={currentUserDepts}
         onClaim={(taskId) => claim.mutate(taskId)}
-        onSubmit={(taskId) => submit.mutate(taskId)}
         onApprove={(taskId) => approve.mutate({ taskId })}
         onReject={(taskId) => reject.mutate({ taskId, reason: "Rejected" })}
       />
