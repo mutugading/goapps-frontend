@@ -7,12 +7,16 @@ import {
   CheckCircle2,
   Edit,
   FileCheck,
+  History,
   Inbox,
   Pencil,
   Play,
   RotateCcw,
   XCircle,
 } from "lucide-react"
+import { formatDistanceToNow } from "date-fns"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import { useRequestHistory } from "@/hooks/finance/use-cost-product-request"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -397,6 +401,9 @@ export function RequestDetailPanel({ request, onEdit, allFillsApproved = false }
         />
       )}
 
+      {/* Approval trace timeline */}
+      <ApprovalTraceTimeline requestId={request.requestId} />
+
       {/* Comments + attachments (Phase A §7.1.7–10) */}
       <AttachmentsPanel requestId={request.requestId} readOnly={readOnly} />
       <CommentsPanel requestId={request.requestId} readOnly={readOnly} />
@@ -473,5 +480,63 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       <div className="text-xs uppercase tracking-wide text-muted-foreground">{label}</div>
       <div>{children}</div>
     </div>
+  )
+}
+
+function ApprovalTraceTimeline({ requestId }: { requestId: number }) {
+  const { data: entries = [], isLoading } = useRequestHistory(requestId)
+
+  if (!isLoading && entries.length === 0) return null
+
+  return (
+    <Collapsible defaultOpen={false}>
+      <Card>
+        <CardHeader className="py-3">
+          <CollapsibleTrigger asChild>
+            <button className="flex w-full items-center justify-between text-left">
+              <div className="flex items-center gap-2">
+                <History className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium">Approval trace</span>
+                {!isLoading && (
+                  <span className="text-xs text-muted-foreground">({entries.length})</span>
+                )}
+              </div>
+              <span className="text-xs text-muted-foreground">toggle</span>
+            </button>
+          </CollapsibleTrigger>
+        </CardHeader>
+        <CollapsibleContent>
+          <CardContent className="pt-0">
+            {isLoading ? (
+              <p className="text-sm text-muted-foreground">Loading…</p>
+            ) : (
+              <ol className="relative border-l border-border pl-4 space-y-4">
+                {entries.map((entry) => (
+                  <li key={entry.id} className="relative">
+                    <div className="absolute -left-[1.125rem] top-1 h-3 w-3 rounded-full border-2 border-background bg-muted-foreground" />
+                    <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                      <span className="text-sm font-medium">
+                        {entry.fromStatus ? `${entry.fromStatus} → ` : ""}{entry.toStatus}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        by {entry.actorName || entry.actorUserId}
+                      </span>
+                      {entry.createdAt && (
+                        <span className="text-xs text-muted-foreground" title={entry.createdAt}>
+                          · {formatDistanceToNow(new Date(entry.createdAt), { addSuffix: true })}
+                        </span>
+                      )}
+                    </div>
+                    {entry.note && (
+                      <p className="mt-0.5 text-xs text-muted-foreground whitespace-pre-wrap">{entry.note}</p>
+                    )}
+                  </li>
+                ))}
+              </ol>
+            )}
+          </CardContent>
+        </CollapsibleContent>
+      </Card>
+    </Collapsible>
   )
 }
