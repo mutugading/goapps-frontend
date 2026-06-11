@@ -1,21 +1,16 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { ArrowLeft } from "lucide-react"
 
 import { PageHeader } from "@/components/common/page-header"
 import { EmptyState } from "@/components/common/empty-state"
 import { Button } from "@/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   RequestDetailPanel,
   RequestFormDialog,
 } from "@/components/finance/cost-product-request"
-import {
-  FillTrackingTab,
-  FillProgressMini,
-} from "@/components/finance/fill-assignment"
 import { useCostProductRequest } from "@/hooks/finance/use-cost-product-request"
 import { useFillTasks } from "@/hooks/finance/use-fill-assignment"
 
@@ -28,7 +23,6 @@ interface Props {
 // that left the URL stuck at the list.
 export default function ProductRequestDetailClient({ requestId }: Props) {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const numericId = Number(requestId)
   const { data: request, isLoading } = useCostProductRequest(
     Number.isFinite(numericId) && numericId > 0 ? numericId : undefined,
@@ -88,29 +82,12 @@ export default function ProductRequestDetailClient({ requestId }: Props) {
         </Button>
       </PageHeader>
 
-      <Tabs defaultValue={searchParams.get("tab") === "fill-tracking" && hasFillTracking ? "fill-tracking" : "overview"}>
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          {hasFillTracking && (
-            <TabsTrigger value="fill-tracking">Fill Tracking</TabsTrigger>
-          )}
-        </TabsList>
-
-        <TabsContent value="overview" className="mt-6">
-          {hasFillTracking && (
-            <div className="mb-4">
-              <FillProgressMini requestId={request.requestId} />
-            </div>
-          )}
-          <RequestDetailPanel request={request} onEdit={() => setFormOpen(true)} allFillsApproved={allFillsApproved} />
-        </TabsContent>
-
-        {hasFillTracking && (
-          <TabsContent value="fill-tracking" className="mt-6">
-            <FillTrackingTab requestId={request.requestId} />
-          </TabsContent>
-        )}
-      </Tabs>
+      <RequestDetailPanel
+        request={request}
+        onEdit={() => setFormOpen(true)}
+        allFillsApproved={allFillsApproved}
+        hasFillTracking={hasFillTracking}
+      />
 
       <RequestFormDialog open={formOpen} onOpenChange={setFormOpen} request={request} />
     </div>
