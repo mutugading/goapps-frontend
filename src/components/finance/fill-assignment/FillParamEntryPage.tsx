@@ -16,9 +16,10 @@ import { FillTaskStatusBadge } from "./FillTaskStatusBadge"
 interface Props {
   requestId: number
   taskId: number
+  onDone?: () => void
 }
 
-export function FillParamEntryPage({ requestId, taskId }: Props) {
+export function FillParamEntryPage({ requestId, taskId, onDone }: Props) {
   const router = useRouter()
   const { data: tasks = [], isLoading: tasksLoading } = useFillTasks(requestId)
   const task = useMemo(() => tasks.find((t) => t.taskId === taskId), [tasks, taskId])
@@ -45,6 +46,7 @@ export function FillParamEntryPage({ requestId, taskId }: Props) {
   const backUrl = `/finance/product-requests/${requestId}?tab=fill-tracking`
 
   function goBack() {
+    if (onDone) { onDone(); return }
     router.push(backUrl)
   }
 
@@ -79,7 +81,7 @@ export function FillParamEntryPage({ requestId, taskId }: Props) {
 
   function onSubmit() {
     submitM.mutate(task!.taskId, {
-      onSuccess: () => router.push(backUrl),
+      onSuccess: () => onDone ? onDone() : router.push(backUrl),
     })
   }
 
