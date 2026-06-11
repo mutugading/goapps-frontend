@@ -1,13 +1,12 @@
 // GET /api/v1/iam/auth/me - Get current user endpoint
 // Returns authenticated user info using access token from cookie
 
-import { NextResponse } from "next/server"
-import { getAccessToken } from "@/lib/auth/cookies"
+import { NextRequest, NextResponse } from "next/server"
 import { getAuthClient, createAuthMetadata, isGrpcError, handleGrpcError } from "@/lib/grpc"
 
-export async function GET() {
+export async function GET(request: NextRequest) {
     try {
-        const accessToken = await getAccessToken()
+        const accessToken = request.cookies.get("goapps_access_token")?.value
 
         if (!accessToken) {
             return NextResponse.json(

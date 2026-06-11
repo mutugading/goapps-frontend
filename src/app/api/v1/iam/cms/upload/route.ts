@@ -2,7 +2,6 @@
 // Accepts multipart/form-data with file + folder, converts to gRPC bytes
 
 import { NextRequest, NextResponse } from "next/server"
-import { getAccessToken } from "@/lib/auth/cookies"
 import { getCmsSectionClient, createAuthMetadata, isGrpcError, handleGrpcError } from "@/lib/grpc"
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB (matches proto validation)
@@ -10,7 +9,7 @@ const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/svg+xml"]
 
 export async function POST(request: NextRequest) {
     try {
-        const accessToken = await getAccessToken()
+        const accessToken = request.cookies.get("goapps_access_token")?.value
 
         if (!accessToken) {
             return NextResponse.json(

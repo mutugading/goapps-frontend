@@ -1,13 +1,13 @@
 // POST /api/v1/iam/auth/refresh - Token refresh endpoint
 // Refreshes tokens using refresh token from httpOnly cookie
 
-import { NextResponse } from "next/server"
-import { setAuthCookies, getRefreshToken, clearAuthCookies } from "@/lib/auth/cookies"
+import { NextRequest, NextResponse } from "next/server"
+import { setAuthCookiesOnResponse, clearAuthCookiesOnResponse } from "@/lib/auth/cookies"
 import { getAuthClient, isGrpcError, handleGrpcError } from "@/lib/grpc"
 
-export async function POST() {
+export async function POST(request: NextRequest) {
     try {
-        const refreshToken = await getRefreshToken()
+        const refreshToken = request.cookies.get("goapps_refresh_token")?.value
 
         if (!refreshToken) {
             return NextResponse.json(
@@ -26,32 +26,31 @@ export async function POST() {
         const client = getAuthClient()
         const response = await client.refreshToken({ refreshToken })
 
-        // Set new tokens in cookies
+        const jsonResponse = NextResponse.json({
+            base: response.base,
+            data: {
+                expiresIn: response.data?.expiresIn,
+            },
+        })
+
+        // Set new tokens directly on the response (next/headers cookies().set() broken in Next.js 16.2+)
         if (response.data?.accessToken && response.data?.refreshToken) {
-            await setAuthCookies({
+            setAuthCookiesOnResponse(jsonResponse, {
                 accessToken: response.data.accessToken,
                 refreshToken: response.data.refreshToken,
                 expiresIn: response.data.expiresIn,
             })
         }
 
-        return NextResponse.json({
-            base: response.base,
-            data: {
-                expiresIn: response.data?.expiresIn,
-            },
-        })
+        return jsonResponse
     } catch (error) {
         console.error("Token refresh error:", error)
-        // Clear cookies on error to force re-login
-        try {
-            await clearAuthCookies()
-        } catch {
-            // Ignore cleanup errors
+        if (isGrpcError(error)) {
+            const errResponse = handleGrpcError(error)
+            clearAuthCookiesOnResponse(errResponse as NextResponse)
+            return errResponse
         }
-
-        if (isGrpcError(error)) return handleGrpcError(error)
-        return NextResponse.json(
+        const errResponse = NextResponse.json(
             {
                 base: {
                     isSuccess: false,
@@ -62,5 +61,7 @@ export async function POST() {
             },
             { status: 500 }
         )
+        clearAuthCookiesOnResponse(errResponse)
+        return errResponse
     }
 }

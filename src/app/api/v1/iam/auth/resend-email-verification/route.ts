@@ -1,12 +1,11 @@
 // POST /api/v1/iam/auth/resend-email-verification - Resend email verification code
 
-import { NextResponse } from "next/server"
-import { getAccessToken } from "@/lib/auth/cookies"
+import { NextRequest, NextResponse } from "next/server"
 import { getAuthClient, createAuthMetadata, isGrpcError, handleGrpcError } from "@/lib/grpc"
 
-export async function POST() {
+export async function POST(request: NextRequest) {
     try {
-        const accessToken = await getAccessToken()
+        const accessToken = request.cookies.get("goapps_access_token")?.value
 
         if (!accessToken) {
             return NextResponse.json(

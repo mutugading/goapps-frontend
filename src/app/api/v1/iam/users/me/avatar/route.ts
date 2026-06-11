@@ -2,7 +2,6 @@
 // Accepts multipart/form-data with file, converts to gRPC bytes
 
 import { NextRequest, NextResponse } from "next/server"
-import { getAccessToken } from "@/lib/auth/cookies"
 import { getUserClient, createAuthMetadata, isGrpcError, handleGrpcError } from "@/lib/grpc"
 import { jwtDecode } from "jwt-decode"
 
@@ -16,7 +15,7 @@ const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"]
 
 export async function POST(request: NextRequest) {
     try {
-        const accessToken = await getAccessToken()
+        const accessToken = request.cookies.get("goapps_access_token")?.value
 
         if (!accessToken) {
             return NextResponse.json(

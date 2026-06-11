@@ -1,7 +1,6 @@
 // GET /api/v1/iam/users/me - Get current authenticated user profile
 
-import { NextResponse } from "next/server"
-import { getAccessToken } from "@/lib/auth/cookies"
+import { NextRequest, NextResponse } from "next/server"
 import { getUserClient, createAuthMetadata, isGrpcError, handleGrpcError } from "@/lib/grpc"
 import { jwtDecode } from "jwt-decode"
 
@@ -11,9 +10,9 @@ interface JwtPayload {
     exp: number
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
     try {
-        const accessToken = await getAccessToken()
+        const accessToken = request.cookies.get("goapps_access_token")?.value
 
         if (!accessToken) {
             return NextResponse.json(
