@@ -34,7 +34,7 @@ export function RoutingPanel({ requestId, linkedRouteHeadId, readOnly = false }:
   if (!linkedRouteHeadId) {
     return (
       <>
-        <Card className="space-y-3 p-4">
+        <Card className="space-y-3 p-4" data-testid="routing-panel">
           <div className="font-semibold">Routing</div>
           {readOnly ? (
             <p className="text-sm text-muted-foreground">
@@ -87,7 +87,7 @@ export function RoutingPanel({ requestId, linkedRouteHeadId, readOnly = false }:
 
   return (
     <>
-      <Card className="space-y-3 p-4">
+      <Card className="space-y-3 p-4" data-testid="routing-panel">
         <div className="flex items-center justify-between">
           <div className="font-semibold">Routing</div>
           <Badge variant="outline">

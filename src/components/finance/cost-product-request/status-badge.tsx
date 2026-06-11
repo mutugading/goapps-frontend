@@ -11,7 +11,10 @@ const STATUS_VARIANT: Record<string, "secondary" | "outline" | "destructive" | "
   ROUTING_DEFINED: "secondary",
   PARAMETER_PENDING: "secondary",
   PARAMETER_COMPLETE: "secondary",
-  COSTING_DONE: "secondary",
+  CONFIRMED: "default",
+  APPROVED: "default",
+  RELEASED: "default",
+  COSTING_DONE: "default",
   QUOTED: "default",
   QUOTE_READY: "default",
   CLOSED: "outline",
@@ -34,7 +37,7 @@ export function StatusBadge({
       ? `${status} · ${substatus}`
       : status.replace(/_/g, " ")
   return (
-    <Badge variant={variant} className={sizeClass}>
+    <Badge variant={variant} className={sizeClass} data-testid="request-status-badge">
       {label}
     </Badge>
   )
