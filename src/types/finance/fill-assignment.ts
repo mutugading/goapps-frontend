@@ -2,6 +2,7 @@
 // Generated proto source: finance/v1/cost_fill_assignment.proto
 
 export type FillTaskStatus =
+  | "FILL_TASK_STATUS_INACTIVE"
   | "FILL_TASK_STATUS_ACTIVE"
   | "FILL_TASK_STATUS_FILLING"
   | "FILL_TASK_STATUS_FILLED"
@@ -58,6 +59,23 @@ export interface LevelAssignmentConfig {
   slaApproveHours: number
 }
 
+// --- internal helpers for raw → proto-style enum normalization ---
+
+/** Backend stores short strings ("USER", "DEPT"); frontend types use proto-style ("FILL_ACTOR_TYPE_USER"). */
+function normalizeActorType(raw: unknown): string {
+  const v = String(raw ?? "")
+  if (v === "USER") return "FILL_ACTOR_TYPE_USER"
+  if (v === "DEPT") return "FILL_ACTOR_TYPE_DEPT"
+  return v // already prefixed or empty
+}
+
+/** Backend stores short status strings ("ACTIVE", "FILLING"); frontend types use proto-style. */
+function normalizeTaskStatus(raw: unknown): string {
+  const v = String(raw ?? "")
+  if (!v.startsWith("FILL_TASK_STATUS_") && v !== "") return `FILL_TASK_STATUS_${v}`
+  return v
+}
+
 // --- normalizers ---
 
 function normalizeApproval(raw: Record<string, unknown>): FillApproval {
@@ -81,11 +99,11 @@ export function normalizeFillTask(raw: Record<string, unknown>): FillTask {
     requestId: Number(raw.requestId ?? raw.request_id ?? 0),
     routeHeadId: Number(raw.routeHeadId ?? raw.route_head_id ?? 0),
     routeLevel: Number(raw.routeLevel ?? raw.route_level ?? 0),
-    fillerType: String(raw.fillerType ?? raw.filler_type ?? ""),
+    fillerType: normalizeActorType(raw.fillerType ?? raw.filler_type),
     fillerValue: String(raw.fillerValue ?? raw.filler_value ?? ""),
-    approverType: String(raw.approverType ?? raw.approver_type ?? ""),
+    approverType: normalizeActorType(raw.approverType ?? raw.approver_type),
     approverValue: String(raw.approverValue ?? raw.approver_value ?? ""),
-    status: String(raw.status ?? "") as FillTaskStatus,
+    status: normalizeTaskStatus(raw.status) as FillTaskStatus,
     claimedBy: String(raw.claimedBy ?? raw.claimed_by ?? ""),
     reapproveOnChange: Boolean(raw.reapproveOnChange ?? raw.reapprove_on_change ?? false),
     slaFillHours: Number(raw.slaFillHours ?? raw.sla_fill_hours ?? 0),
@@ -117,10 +135,11 @@ export function normalizeLevelConfig(raw: Record<string, unknown>): LevelAssignm
 // --- helpers ---
 
 const FILL_TASK_STATUS_LABELS: Record<string, string> = {
+  FILL_TASK_STATUS_INACTIVE: "Inactive",
   FILL_TASK_STATUS_ACTIVE: "Active",
   FILL_TASK_STATUS_FILLING: "Filling",
   FILL_TASK_STATUS_FILLED: "Filled",
-  FILL_TASK_STATUS_APPROVAL_PENDING: "Pending Approval",
+  FILL_TASK_STATUS_APPROVAL_PENDING: "Approval Pending",
   FILL_TASK_STATUS_APPROVED: "Approved",
   FILL_TASK_STATUS_REJECTED: "Rejected",
 }
