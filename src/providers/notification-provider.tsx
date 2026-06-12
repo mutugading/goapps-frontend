@@ -12,6 +12,7 @@ import { toast } from "sonner"
 
 import { useAuth } from "./auth-provider"
 import { notificationKeys } from "@/hooks/iam/use-notifications"
+import { useNotificationEventStore } from "@/stores/notification-event-store"
 import {
   Notification,
   normalizeNotification,
@@ -87,6 +88,9 @@ export function NotificationProvider({ children }: ProviderProps) {
       if (isHeartbeat) return
       if (!raw.notification) return
       const n: Notification = normalizeNotification(raw.notification)
+
+      // Fan-out to per-feature hooks (e.g. useCPRRealtimeSync) via Zustand store.
+      useNotificationEventStore.getState().dispatch(n)
 
       // Refresh the unread count + lists.
       qc.invalidateQueries({ queryKey: notificationKeys.all })

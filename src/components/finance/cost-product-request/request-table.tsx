@@ -1,6 +1,6 @@
 "use client"
 
-import { ArrowRight } from "lucide-react"
+import { ArrowRight, ListChecks } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -11,9 +11,11 @@ interface Props {
   items: CostProductRequest[]
   isLoading?: boolean
   onOpen: (r: CostProductRequest) => void
+  onTrack?: (r: CostProductRequest) => void
 }
 
-export function RequestTable({ items, isLoading, onOpen }: Props) {
+export function RequestTable({ items, isLoading, onOpen, onTrack }: Props) {
+  const colSpan = onTrack ? 9 : 8
   return (
     <div className="rounded-md border">
       <Table>
@@ -26,20 +28,21 @@ export function RequestTable({ items, isLoading, onOpen }: Props) {
             <TableHead className="w-24">Class</TableHead>
             <TableHead className="w-20">Urgency</TableHead>
             <TableHead className="w-44">Status</TableHead>
+            {onTrack && <TableHead className="w-16 text-center">Fills</TableHead>}
             <TableHead className="w-16 text-right">Open</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {isLoading && (
             <TableRow>
-              <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+              <TableCell colSpan={colSpan} className="text-center py-8 text-muted-foreground">
                 Loading…
               </TableCell>
             </TableRow>
           )}
           {!isLoading && items.length === 0 && (
             <TableRow>
-              <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+              <TableCell colSpan={colSpan} className="text-center py-8 text-muted-foreground">
                 No requests yet.
               </TableCell>
             </TableRow>
@@ -65,6 +68,18 @@ export function RequestTable({ items, isLoading, onOpen }: Props) {
               <TableCell>
                 <StatusBadge status={r.status} substatus={r.closedSubstatus} />
               </TableCell>
+              {onTrack && (
+                <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    aria-label="Track fill tasks"
+                    onClick={() => onTrack(r)}
+                  >
+                    <ListChecks className="h-4 w-4" />
+                  </Button>
+                </TableCell>
+              )}
               <TableCell className="text-right">
                 <Button size="icon" variant="ghost" aria-label="Open">
                   <ArrowRight className="h-4 w-4" />

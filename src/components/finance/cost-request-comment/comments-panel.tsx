@@ -8,8 +8,9 @@ import { Loader2, Paperclip, Send, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Textarea } from "@/components/ui/textarea"
+import { MentionableTextarea } from "@/components/common/mentionable-textarea"
 import { useAuth } from "@/providers/auth-provider"
+import { useUser as useIamUser } from "@/hooks/iam/use-users"
 import { useCreateRequestComment, useRequestComments } from "@/hooks/finance/use-cost-request-comment"
 import { useUploadAttachment } from "@/hooks/finance/use-cost-attachment"
 
@@ -21,6 +22,36 @@ interface Props {
   readOnly?: boolean
 }
 
+const AVATAR_COLORS = [
+  "bg-blue-100 text-blue-700",
+  "bg-emerald-100 text-emerald-700",
+  "bg-violet-100 text-violet-700",
+  "bg-orange-100 text-orange-700",
+  "bg-pink-100 text-pink-700",
+  "bg-cyan-100 text-cyan-700",
+]
+
+function avatarColor(userId: string): string {
+  const hash = (userId || "").split("").reduce((a, c) => a + c.charCodeAt(0), 0)
+  return AVATAR_COLORS[hash % AVATAR_COLORS.length]
+}
+
+export function UserInitials({ userId, className = "" }: { userId: string; className?: string }) {
+  const { data: resp } = useIamUser(userId || "")
+  const fullName: string = resp?.data?.detail?.fullName || ""
+  const initials = fullName
+    ? fullName.trim().split(/\s+/).map((w: string) => w[0]).join("").toUpperCase().slice(0, 2)
+    : (userId || "?").charAt(0).toUpperCase()
+  return (
+    <div
+      className={`h-7 w-7 rounded-full flex items-center justify-center text-xs font-semibold ${avatarColor(userId)} ${className}`}
+      title={fullName || userId}
+    >
+      {initials}
+    </div>
+  )
+}
+
 function wrapRichtext(plain: string): string {
   return JSON.stringify({
     type: "doc",
@@ -28,19 +59,6 @@ function wrapRichtext(plain: string): string {
   })
 }
 
-function extractMentions(text: string): string[] {
-  const matches = text.matchAll(/@([A-Za-z0-9._@-]{1,64})/g)
-  const seen = new Set<string>()
-  const out: string[] = []
-  for (const m of matches) {
-    const uid = m[1]
-    if (!seen.has(uid)) {
-      seen.add(uid)
-      out.push(uid)
-    }
-  }
-  return out
-}
 
 const MAX_ATTACH_BYTES = 25 * 1024 * 1024 // FR-5 hard cap
 
@@ -48,6 +66,7 @@ export function CommentsPanel({ requestId, readOnly = false }: Props) {
   const { user } = useAuth()
   const { data: comments, isLoading } = useRequestComments(requestId)
   const [body, setBody] = useState("")
+  const [mentionedUserIds, setMentionedUserIds] = useState<string[]>([])
   const [stagedFiles, setStagedFiles] = useState<File[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
   const createM = useCreateRequestComment()
@@ -83,7 +102,7 @@ export function CommentsPanel({ requestId, readOnly = false }: Props) {
         requestId,
         bodyRichtext: wrapRichtext(text),
         bodyPlaintext: text,
-        mentionedUserIds: extractMentions(text),
+        mentionedUserIds,
       })
       // Upload any staged attachments and bind them to the new comment.
       for (const file of stagedFiles) {
@@ -96,6 +115,7 @@ export function CommentsPanel({ requestId, readOnly = false }: Props) {
       }
       setBody("")
       setStagedFiles([])
+      setMentionedUserIds([])
     } catch {
       /* toast in hook */
     }
@@ -106,12 +126,10 @@ export function CommentsPanel({ requestId, readOnly = false }: Props) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-sm uppercase tracking-wide text-muted-foreground">
-          Comments
-        </CardTitle>
-        <div className="text-xs text-muted-foreground">
-          @mention teammates by typing <span className="font-mono">@user_id</span>.
-        </div>
+        <CardTitle className="text-sm font-semibold">Comments</CardTitle>
+        <p className="text-xs text-muted-foreground">
+          Type <span className="font-mono">@name</span> to mention and notify a teammate.
+        </p>
       </CardHeader>
       <CardContent className="space-y-3">
         {isLoading && (
@@ -133,64 +151,69 @@ export function CommentsPanel({ requestId, readOnly = false }: Props) {
             Request is read-only — commenting is disabled.
           </div>
         ) : (
-        <div className="space-y-2 pt-2 border-t">
-          <Textarea
-            rows={3}
-            value={body}
-            onChange={(e) => setBody(e.target.value)}
-            placeholder="Add a comment… use @user_id to notify someone."
-          />
-          {stagedFiles.length > 0 && (
-            <ul className="rounded border bg-muted/30 p-2 space-y-1 text-xs">
-              {stagedFiles.map((f, idx) => (
-                <li key={`${f.name}-${idx}`} className="flex items-center gap-2">
-                  <Paperclip className="h-3 w-3 shrink-0" />
-                  <span className="truncate flex-1">{f.name}</span>
-                  <span className="text-muted-foreground">
-                    {(f.size / 1024).toFixed(1)} KB
-                  </span>
-                  <button
-                    type="button"
-                    className="text-muted-foreground hover:text-destructive"
-                    onClick={() => removeStaged(idx)}
-                    title="Remove"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            className="hidden"
-            onChange={onFilesPicked}
-          />
-          <div className="flex items-center justify-between">
-            <Button
-              size="sm"
-              variant="outline"
-              type="button"
-              onClick={pickFiles}
-              disabled={createM.isPending}
-            >
-              <Paperclip className="mr-2 h-3.5 w-3.5" /> Attach files
-            </Button>
-            <Button
-              size="sm"
-              onClick={onSubmit}
-              disabled={createM.isPending || uploadM.isPending || !body.trim()}
-            >
-              {(createM.isPending || uploadM.isPending) && (
-                <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+          <div className="flex gap-3 pt-2 border-t items-start">
+            <UserInitials userId={currentUserId} className="mt-1 shrink-0" />
+            <div className="flex-1 space-y-2 min-w-0">
+              <MentionableTextarea
+                rows={3}
+                value={body}
+                onChange={setBody}
+                onMentionsChange={setMentionedUserIds}
+                placeholder="Add a comment… @mention to notify someone."
+                disabled={createM.isPending}
+              />
+              {stagedFiles.length > 0 && (
+                <ul className="rounded border bg-muted/30 p-2 space-y-1 text-xs">
+                  {stagedFiles.map((f, idx) => (
+                    <li key={`${f.name}-${idx}`} className="flex items-center gap-2">
+                      <Paperclip className="h-3 w-3 shrink-0" />
+                      <span className="truncate flex-1">{f.name}</span>
+                      <span className="text-muted-foreground">
+                        {(f.size / 1024).toFixed(1)} KB
+                      </span>
+                      <button
+                        type="button"
+                        className="text-muted-foreground hover:text-destructive"
+                        onClick={() => removeStaged(idx)}
+                        title="Remove"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
               )}
-              <Send className="mr-2 h-3.5 w-3.5" /> Post
-              {stagedFiles.length > 0 && ` + ${stagedFiles.length} file(s)`}
-            </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                className="hidden"
+                onChange={onFilesPicked}
+              />
+              <div className="flex items-center justify-between">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  type="button"
+                  onClick={pickFiles}
+                  disabled={createM.isPending}
+                >
+                  <Paperclip className="mr-2 h-3.5 w-3.5" /> Attach files
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={onSubmit}
+                  disabled={createM.isPending || uploadM.isPending || !body.trim()}
+                >
+                  {(createM.isPending || uploadM.isPending) && (
+                    <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                  )}
+                  <Send className="mr-2 h-3.5 w-3.5" /> Post
+                  {stagedFiles.length > 0 && ` + ${stagedFiles.length} file(s)`}
+                </Button>
+              </div>
+            </div>
           </div>
-        </div>
         )}
       </CardContent>
     </Card>

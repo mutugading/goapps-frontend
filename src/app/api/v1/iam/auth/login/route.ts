@@ -2,7 +2,7 @@
 // Handles authentication and sets httpOnly cookies
 
 import { NextRequest, NextResponse } from "next/server"
-import { setAuthCookies } from "@/lib/auth/cookies"
+import { setAuthCookiesOnResponse } from "@/lib/auth/cookies"
 import { getAuthClient, isGrpcError, handleGrpcError } from "@/lib/grpc"
 
 export async function POST(request: NextRequest) {
@@ -33,17 +33,8 @@ export async function POST(request: NextRequest) {
             })
         }
 
-        // Set auth cookies with tokens from backend
-        if (response.data?.accessToken && response.data?.refreshToken) {
-            await setAuthCookies({
-                accessToken: response.data.accessToken,
-                refreshToken: response.data.refreshToken,
-                expiresIn: response.data.expiresIn,
-            })
-        }
-
-        // Return user info WITHOUT tokens (tokens are in httpOnly cookies)
-        return NextResponse.json({
+        // Return user info WITHOUT tokens (tokens go in httpOnly cookies)
+        const jsonResponse = NextResponse.json({
             base: response.base,
             data: {
                 user: response.data?.user ?? null,
@@ -52,6 +43,17 @@ export async function POST(request: NextRequest) {
                 expiresIn: response.data?.expiresIn,
             },
         })
+
+        // Set auth cookies directly on the response (next/headers cookies().set() is broken in Next.js 16.2+)
+        if (response.data?.accessToken && response.data?.refreshToken) {
+            setAuthCookiesOnResponse(jsonResponse, {
+                accessToken: response.data.accessToken,
+                refreshToken: response.data.refreshToken,
+                expiresIn: response.data.expiresIn,
+            })
+        }
+
+        return jsonResponse
     } catch (error) {
         if (isGrpcError(error)) return handleGrpcError(error)
         console.error("Login error:", error)

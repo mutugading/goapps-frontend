@@ -312,6 +312,62 @@ export function notificationStatusToJSON(object: NotificationStatus): string {
   }
 }
 
+/** RecipientRuleType determines how recipients are resolved for a notification. */
+export enum RecipientRuleType {
+  RECIPIENT_RULE_TYPE_UNSPECIFIED = 0,
+  /** RECIPIENT_RULE_TYPE_BY_USER_ID - Resolve by explicit user UUID. */
+  RECIPIENT_RULE_TYPE_BY_USER_ID = 1,
+  /** RECIPIENT_RULE_TYPE_BY_PERMISSION - All users holding the given permission code. */
+  RECIPIENT_RULE_TYPE_BY_PERMISSION = 2,
+  /** RECIPIENT_RULE_TYPE_BY_DEPT - All users in the given department UUID. */
+  RECIPIENT_RULE_TYPE_BY_DEPT = 3,
+  /** RECIPIENT_RULE_TYPE_BY_ROLE - All users assigned the given role UUID. */
+  RECIPIENT_RULE_TYPE_BY_ROLE = 4,
+  UNRECOGNIZED = -1,
+}
+
+export function recipientRuleTypeFromJSON(object: any): RecipientRuleType {
+  switch (object) {
+    case 0:
+    case "RECIPIENT_RULE_TYPE_UNSPECIFIED":
+      return RecipientRuleType.RECIPIENT_RULE_TYPE_UNSPECIFIED;
+    case 1:
+    case "RECIPIENT_RULE_TYPE_BY_USER_ID":
+      return RecipientRuleType.RECIPIENT_RULE_TYPE_BY_USER_ID;
+    case 2:
+    case "RECIPIENT_RULE_TYPE_BY_PERMISSION":
+      return RecipientRuleType.RECIPIENT_RULE_TYPE_BY_PERMISSION;
+    case 3:
+    case "RECIPIENT_RULE_TYPE_BY_DEPT":
+      return RecipientRuleType.RECIPIENT_RULE_TYPE_BY_DEPT;
+    case 4:
+    case "RECIPIENT_RULE_TYPE_BY_ROLE":
+      return RecipientRuleType.RECIPIENT_RULE_TYPE_BY_ROLE;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return RecipientRuleType.UNRECOGNIZED;
+  }
+}
+
+export function recipientRuleTypeToJSON(object: RecipientRuleType): string {
+  switch (object) {
+    case RecipientRuleType.RECIPIENT_RULE_TYPE_UNSPECIFIED:
+      return "RECIPIENT_RULE_TYPE_UNSPECIFIED";
+    case RecipientRuleType.RECIPIENT_RULE_TYPE_BY_USER_ID:
+      return "RECIPIENT_RULE_TYPE_BY_USER_ID";
+    case RecipientRuleType.RECIPIENT_RULE_TYPE_BY_PERMISSION:
+      return "RECIPIENT_RULE_TYPE_BY_PERMISSION";
+    case RecipientRuleType.RECIPIENT_RULE_TYPE_BY_DEPT:
+      return "RECIPIENT_RULE_TYPE_BY_DEPT";
+    case RecipientRuleType.RECIPIENT_RULE_TYPE_BY_ROLE:
+      return "RECIPIENT_RULE_TYPE_BY_ROLE";
+    case RecipientRuleType.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
 /** Notification represents a single notification record. */
 export interface Notification {
   notificationId: string;
@@ -452,6 +508,56 @@ export interface StreamNotificationsRequest {
    * Format mirrors StreamNotificationsResponse.event_id.
    */
   since: string;
+}
+
+/** RecipientRule is a single rule for resolving notification recipients. */
+export interface RecipientRule {
+  ruleType: RecipientRuleType;
+  /**
+   * value interpretation depends on rule_type:
+   *   BY_USER_ID → user UUID
+   *   BY_PERMISSION → permission code (e.g. "finance.master.uom.view")
+   *   BY_DEPT → department UUID
+   *   BY_ROLE → role UUID
+   */
+  value: string;
+}
+
+/**
+ * RequestNotificationRequest is used by external services (e.g. Finance) to
+ * dispatch a notification to one or more recipients resolved by rules.
+ */
+export interface RequestNotificationRequest {
+  /** event_type identifies the notification event for deduplication and display. */
+  eventType: string;
+  /** source_service is the originating service name (e.g. "finance"). */
+  sourceService: string;
+  /** source_type correlates the notification to a feature (e.g. "finance.rm_cost_export"). */
+  sourceType: string;
+  /** source_id is the identifier of the source entity (e.g. job UUID). */
+  sourceId: string;
+  /** recipient_rules must contain at least one rule. */
+  recipientRules: RecipientRule[];
+  type: NotificationType;
+  severity: NotificationSeverity;
+  title: string;
+  body: string;
+  actionType: NotificationActionType;
+  /** action_payload is a JSON-encoded string whose shape depends on action_type. */
+  actionPayload: string;
+  /** idempotency_key prevents duplicate dispatch on retry; optional. */
+  idempotencyKey: string;
+}
+
+/** RequestNotificationResponse returns the dispatch result. */
+export interface RequestNotificationResponse {
+  base:
+    | BaseResponse
+    | undefined;
+  /** event_id is a server-generated identifier for this dispatch event. */
+  eventId: string;
+  /** recipient_count is the number of users notified. */
+  recipientCount: number;
 }
 
 function createBaseNotification(): Notification {
@@ -2288,6 +2394,469 @@ export const StreamNotificationsRequest: MessageFns<StreamNotificationsRequest> 
   },
 };
 
+function createBaseRecipientRule(): RecipientRule {
+  return { ruleType: 0, value: "" };
+}
+
+export const RecipientRule: MessageFns<RecipientRule> = {
+  encode(message: RecipientRule, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.ruleType !== 0) {
+      writer.uint32(8).int32(message.ruleType);
+    }
+    if (message.value !== "") {
+      writer.uint32(18).string(message.value);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): RecipientRule {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRecipientRule();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.ruleType = reader.int32() as any;
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.value = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RecipientRule {
+    return {
+      ruleType: isSet(object.ruleType)
+        ? recipientRuleTypeFromJSON(object.ruleType)
+        : isSet(object.rule_type)
+        ? recipientRuleTypeFromJSON(object.rule_type)
+        : 0,
+      value: isSet(object.value) ? globalThis.String(object.value) : "",
+    };
+  },
+
+  toJSON(message: RecipientRule): unknown {
+    const obj: any = {};
+    if (message.ruleType !== 0) {
+      obj.ruleType = recipientRuleTypeToJSON(message.ruleType);
+    }
+    if (message.value !== "") {
+      obj.value = message.value;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<RecipientRule>): RecipientRule {
+    return RecipientRule.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<RecipientRule>): RecipientRule {
+    const message = createBaseRecipientRule();
+    message.ruleType = object.ruleType ?? 0;
+    message.value = object.value ?? "";
+    return message;
+  },
+};
+
+function createBaseRequestNotificationRequest(): RequestNotificationRequest {
+  return {
+    eventType: "",
+    sourceService: "",
+    sourceType: "",
+    sourceId: "",
+    recipientRules: [],
+    type: 0,
+    severity: 0,
+    title: "",
+    body: "",
+    actionType: 0,
+    actionPayload: "",
+    idempotencyKey: "",
+  };
+}
+
+export const RequestNotificationRequest: MessageFns<RequestNotificationRequest> = {
+  encode(message: RequestNotificationRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.eventType !== "") {
+      writer.uint32(10).string(message.eventType);
+    }
+    if (message.sourceService !== "") {
+      writer.uint32(18).string(message.sourceService);
+    }
+    if (message.sourceType !== "") {
+      writer.uint32(26).string(message.sourceType);
+    }
+    if (message.sourceId !== "") {
+      writer.uint32(34).string(message.sourceId);
+    }
+    for (const v of message.recipientRules) {
+      RecipientRule.encode(v!, writer.uint32(42).fork()).join();
+    }
+    if (message.type !== 0) {
+      writer.uint32(48).int32(message.type);
+    }
+    if (message.severity !== 0) {
+      writer.uint32(56).int32(message.severity);
+    }
+    if (message.title !== "") {
+      writer.uint32(66).string(message.title);
+    }
+    if (message.body !== "") {
+      writer.uint32(74).string(message.body);
+    }
+    if (message.actionType !== 0) {
+      writer.uint32(80).int32(message.actionType);
+    }
+    if (message.actionPayload !== "") {
+      writer.uint32(90).string(message.actionPayload);
+    }
+    if (message.idempotencyKey !== "") {
+      writer.uint32(98).string(message.idempotencyKey);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): RequestNotificationRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRequestNotificationRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.eventType = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.sourceService = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.sourceType = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.sourceId = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.recipientRules.push(RecipientRule.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 6: {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.type = reader.int32() as any;
+          continue;
+        }
+        case 7: {
+          if (tag !== 56) {
+            break;
+          }
+
+          message.severity = reader.int32() as any;
+          continue;
+        }
+        case 8: {
+          if (tag !== 66) {
+            break;
+          }
+
+          message.title = reader.string();
+          continue;
+        }
+        case 9: {
+          if (tag !== 74) {
+            break;
+          }
+
+          message.body = reader.string();
+          continue;
+        }
+        case 10: {
+          if (tag !== 80) {
+            break;
+          }
+
+          message.actionType = reader.int32() as any;
+          continue;
+        }
+        case 11: {
+          if (tag !== 90) {
+            break;
+          }
+
+          message.actionPayload = reader.string();
+          continue;
+        }
+        case 12: {
+          if (tag !== 98) {
+            break;
+          }
+
+          message.idempotencyKey = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RequestNotificationRequest {
+    return {
+      eventType: isSet(object.eventType)
+        ? globalThis.String(object.eventType)
+        : isSet(object.event_type)
+        ? globalThis.String(object.event_type)
+        : "",
+      sourceService: isSet(object.sourceService)
+        ? globalThis.String(object.sourceService)
+        : isSet(object.source_service)
+        ? globalThis.String(object.source_service)
+        : "",
+      sourceType: isSet(object.sourceType)
+        ? globalThis.String(object.sourceType)
+        : isSet(object.source_type)
+        ? globalThis.String(object.source_type)
+        : "",
+      sourceId: isSet(object.sourceId)
+        ? globalThis.String(object.sourceId)
+        : isSet(object.source_id)
+        ? globalThis.String(object.source_id)
+        : "",
+      recipientRules: globalThis.Array.isArray(object?.recipientRules)
+        ? object.recipientRules.map((e: any) => RecipientRule.fromJSON(e))
+        : globalThis.Array.isArray(object?.recipient_rules)
+        ? object.recipient_rules.map((e: any) => RecipientRule.fromJSON(e))
+        : [],
+      type: isSet(object.type) ? notificationTypeFromJSON(object.type) : 0,
+      severity: isSet(object.severity) ? notificationSeverityFromJSON(object.severity) : 0,
+      title: isSet(object.title) ? globalThis.String(object.title) : "",
+      body: isSet(object.body) ? globalThis.String(object.body) : "",
+      actionType: isSet(object.actionType)
+        ? notificationActionTypeFromJSON(object.actionType)
+        : isSet(object.action_type)
+        ? notificationActionTypeFromJSON(object.action_type)
+        : 0,
+      actionPayload: isSet(object.actionPayload)
+        ? globalThis.String(object.actionPayload)
+        : isSet(object.action_payload)
+        ? globalThis.String(object.action_payload)
+        : "",
+      idempotencyKey: isSet(object.idempotencyKey)
+        ? globalThis.String(object.idempotencyKey)
+        : isSet(object.idempotency_key)
+        ? globalThis.String(object.idempotency_key)
+        : "",
+    };
+  },
+
+  toJSON(message: RequestNotificationRequest): unknown {
+    const obj: any = {};
+    if (message.eventType !== "") {
+      obj.eventType = message.eventType;
+    }
+    if (message.sourceService !== "") {
+      obj.sourceService = message.sourceService;
+    }
+    if (message.sourceType !== "") {
+      obj.sourceType = message.sourceType;
+    }
+    if (message.sourceId !== "") {
+      obj.sourceId = message.sourceId;
+    }
+    if (message.recipientRules?.length) {
+      obj.recipientRules = message.recipientRules.map((e) => RecipientRule.toJSON(e));
+    }
+    if (message.type !== 0) {
+      obj.type = notificationTypeToJSON(message.type);
+    }
+    if (message.severity !== 0) {
+      obj.severity = notificationSeverityToJSON(message.severity);
+    }
+    if (message.title !== "") {
+      obj.title = message.title;
+    }
+    if (message.body !== "") {
+      obj.body = message.body;
+    }
+    if (message.actionType !== 0) {
+      obj.actionType = notificationActionTypeToJSON(message.actionType);
+    }
+    if (message.actionPayload !== "") {
+      obj.actionPayload = message.actionPayload;
+    }
+    if (message.idempotencyKey !== "") {
+      obj.idempotencyKey = message.idempotencyKey;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<RequestNotificationRequest>): RequestNotificationRequest {
+    return RequestNotificationRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<RequestNotificationRequest>): RequestNotificationRequest {
+    const message = createBaseRequestNotificationRequest();
+    message.eventType = object.eventType ?? "";
+    message.sourceService = object.sourceService ?? "";
+    message.sourceType = object.sourceType ?? "";
+    message.sourceId = object.sourceId ?? "";
+    message.recipientRules = object.recipientRules?.map((e) => RecipientRule.fromPartial(e)) || [];
+    message.type = object.type ?? 0;
+    message.severity = object.severity ?? 0;
+    message.title = object.title ?? "";
+    message.body = object.body ?? "";
+    message.actionType = object.actionType ?? 0;
+    message.actionPayload = object.actionPayload ?? "";
+    message.idempotencyKey = object.idempotencyKey ?? "";
+    return message;
+  },
+};
+
+function createBaseRequestNotificationResponse(): RequestNotificationResponse {
+  return { base: undefined, eventId: "", recipientCount: 0 };
+}
+
+export const RequestNotificationResponse: MessageFns<RequestNotificationResponse> = {
+  encode(message: RequestNotificationResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    if (message.eventId !== "") {
+      writer.uint32(18).string(message.eventId);
+    }
+    if (message.recipientCount !== 0) {
+      writer.uint32(24).int32(message.recipientCount);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): RequestNotificationResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRequestNotificationResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.eventId = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.recipientCount = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RequestNotificationResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      eventId: isSet(object.eventId)
+        ? globalThis.String(object.eventId)
+        : isSet(object.event_id)
+        ? globalThis.String(object.event_id)
+        : "",
+      recipientCount: isSet(object.recipientCount)
+        ? globalThis.Number(object.recipientCount)
+        : isSet(object.recipient_count)
+        ? globalThis.Number(object.recipient_count)
+        : 0,
+    };
+  },
+
+  toJSON(message: RequestNotificationResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.eventId !== "") {
+      obj.eventId = message.eventId;
+    }
+    if (message.recipientCount !== 0) {
+      obj.recipientCount = Math.round(message.recipientCount);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<RequestNotificationResponse>): RequestNotificationResponse {
+    return RequestNotificationResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<RequestNotificationResponse>): RequestNotificationResponse {
+    const message = createBaseRequestNotificationResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.eventId = object.eventId ?? "";
+    message.recipientCount = object.recipientCount ?? 0;
+    return message;
+  },
+};
+
 /**
  * NotificationService manages user notifications. The system is generic and
  * extensible: any backend service can call CreateNotification (via gRPC) to
@@ -2300,6 +2869,65 @@ export const NotificationServiceDefinition = {
   name: "NotificationService",
   fullName: "iam.v1.NotificationService",
   methods: {
+    /**
+     * RequestNotification creates notifications for one or more recipients
+     * resolved dynamically from RecipientRules. Used by cross-service
+     * notification dispatch (e.g. Finance → IAM).
+     */
+    requestNotification: {
+      name: "RequestNotification",
+      requestType: RequestNotificationRequest,
+      requestStream: false,
+      responseType: RequestNotificationResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              38,
+              58,
+              1,
+              42,
+              34,
+              33,
+              47,
+              97,
+              112,
+              105,
+              47,
+              118,
+              49,
+              47,
+              105,
+              97,
+              109,
+              47,
+              110,
+              111,
+              116,
+              105,
+              102,
+              105,
+              99,
+              97,
+              116,
+              105,
+              111,
+              110,
+              115,
+              47,
+              114,
+              101,
+              113,
+              117,
+              101,
+              115,
+              116,
+            ]),
+          ],
+        },
+      },
+    },
     /**
      * CreateNotification creates a new notification for a user. Used by other
      * services (e.g. finance worker emitting EXPORT_READY).

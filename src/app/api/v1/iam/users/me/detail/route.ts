@@ -1,7 +1,6 @@
 // PUT /api/v1/iam/users/me/detail - Update current authenticated user's profile detail
 
 import { NextRequest, NextResponse } from "next/server"
-import { getAccessToken } from "@/lib/auth/cookies"
 import { getUserClient, createAuthMetadata, isGrpcError, handleGrpcError } from "@/lib/grpc"
 import { jwtDecode } from "jwt-decode"
 
@@ -13,7 +12,7 @@ interface JwtPayload {
 
 export async function PUT(request: NextRequest) {
     try {
-        const accessToken = await getAccessToken()
+        const accessToken = request.cookies.get("goapps_access_token")?.value
 
         if (!accessToken) {
             return NextResponse.json(

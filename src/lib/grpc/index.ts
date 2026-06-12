@@ -51,4 +51,6 @@ export {
   getCostCalcClient,
   getWorkflowTemplateClient,
   getWorkflowInstanceClient,
+  getFillConfigClient,
+  getFillTaskClient,
 } from "./clients"

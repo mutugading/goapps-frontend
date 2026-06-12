@@ -12,6 +12,7 @@ import {
   RequestFormDialog,
 } from "@/components/finance/cost-product-request"
 import { useCostProductRequest } from "@/hooks/finance/use-cost-product-request"
+import { useFillTasks } from "@/hooks/finance/use-fill-assignment"
 
 interface Props {
   requestId: string
@@ -26,6 +27,12 @@ export default function ProductRequestDetailClient({ requestId }: Props) {
   const { data: request, isLoading } = useCostProductRequest(
     Number.isFinite(numericId) && numericId > 0 ? numericId : undefined,
   )
+  const isParameterPending = request?.status === "PARAMETER_PENDING"
+  const { data: fillTasks = [] } = useFillTasks(numericId)
+  const allFillsApproved =
+    isParameterPending &&
+    fillTasks.length > 0 &&
+    fillTasks.every((t) => t.status === "FILL_TASK_STATUS_APPROVED")
   const [formOpen, setFormOpen] = useState(false)
 
   function backToList() {
@@ -58,6 +65,15 @@ export default function ProductRequestDetailClient({ requestId }: Props) {
     )
   }
 
+  // Show the Fill Tracking tab for statuses where fill tasks may exist.
+  // UNDER_REVIEW is excluded — fill tasks don't exist yet at that stage.
+  const hasFillTracking =
+    request.status === "PARAMETER_PENDING" ||
+    request.status === "PARAMETER_COMPLETE" ||
+    request.status === "COSTING_DONE" ||
+    request.status === "QUOTED" ||
+    (request.status === "CLOSED" && !!request.linkedRouteHeadId)
+
   return (
     <div className="space-y-6">
       <PageHeader title={request.requestNo} subtitle={request.title}>
@@ -65,7 +81,14 @@ export default function ProductRequestDetailClient({ requestId }: Props) {
           <ArrowLeft className="mr-2 h-4 w-4" /> Back to list
         </Button>
       </PageHeader>
-      <RequestDetailPanel request={request} onEdit={() => setFormOpen(true)} />
+
+      <RequestDetailPanel
+        request={request}
+        onEdit={() => setFormOpen(true)}
+        allFillsApproved={allFillsApproved}
+        hasFillTracking={hasFillTracking}
+      />
+
       <RequestFormDialog open={formOpen} onOpenChange={setFormOpen} request={request} />
     </div>
   )

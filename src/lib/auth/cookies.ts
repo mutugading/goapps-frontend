@@ -2,6 +2,7 @@
 // These functions run on the server (API routes, middleware)
 
 import { cookies } from "next/headers"
+import { NextResponse } from "next/server"
 import { AUTH_COOKIES, getCookieConfig } from "./config"
 
 /**
@@ -89,6 +90,36 @@ export async function hasAuthCookies(): Promise<boolean> {
     const refreshToken = cookieStore.get(AUTH_COOKIES.REFRESH_TOKEN)?.value
 
     return !!(accessToken || refreshToken)
+}
+
+/**
+ * Set authentication cookies directly on a NextResponse object.
+ * Use this instead of setAuthCookies() in Route Handlers to avoid
+ * next/headers cookie-write issues in Next.js 16.2+.
+ */
+export function setAuthCookiesOnResponse(response: NextResponse, tokens: AuthTokens): void {
+    const config = getCookieConfig()
+    const accessTokenExpiry = tokens.expiresIn || 900
+    const refreshTokenExpiry = 7 * 24 * 60 * 60
+
+    response.cookies.set(AUTH_COOKIES.ACCESS_TOKEN, tokens.accessToken, {
+        ...config,
+        maxAge: accessTokenExpiry,
+    })
+    response.cookies.set(AUTH_COOKIES.REFRESH_TOKEN, tokens.refreshToken, {
+        ...config,
+        maxAge: refreshTokenExpiry,
+    })
+}
+
+/**
+ * Clear authentication cookies directly on a NextResponse object.
+ * Use this instead of clearAuthCookies() in Route Handlers.
+ */
+export function clearAuthCookiesOnResponse(response: NextResponse): void {
+    const config = getCookieConfig()
+    response.cookies.set(AUTH_COOKIES.ACCESS_TOKEN, "", { ...config, maxAge: 0 })
+    response.cookies.set(AUTH_COOKIES.REFRESH_TOKEN, "", { ...config, maxAge: 0 })
 }
 
 /**

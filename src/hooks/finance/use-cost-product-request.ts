@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 
+import { fillAssignmentKeys } from "@/hooks/finance/use-fill-assignment"
 import {
   type ClosedSubstatus,
   type CostProductRequest,
@@ -173,10 +174,28 @@ export const useReviseRequest = makeTransition("revise", "Revised; back to SUBMI
 export const useReopenRequest = makeTransition("reopen", "Reopened; back to DRAFT")
 export const useRejectRequest = makeTransition("reject", "Rejected")
 export const useCancelRequest = makeTransition("cancel", "Cancelled")
+export function useMarkParameterPending() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: { requestId: number; body?: Record<string, unknown> }) => {
+      const result = await postJson(`/api/v1/finance/cost-product-requests/${input.requestId}/mark-parameter-pending`, input.body)
+      return result.data
+    },
+    onSuccess: () => {
+      toast.success("Route promoted — fill tasks created")
+      qc.invalidateQueries({ queryKey: KEYS.all })
+      qc.invalidateQueries({ queryKey: fillAssignmentKeys.all })
+    },
+    onError: (e: Error) => toast.error(e.message),
+  })
+}
 export const useMarkParameterComplete = makeTransition(
   "mark-parameter-complete",
   "Marked PARAMETER_COMPLETE",
 )
+export const useConfirmRequest = makeTransition("confirm", "Confirmed")
+export const useApproveRequest = makeTransition("approve", "Approved")
+export const useReleaseRequest = makeTransition("release", "Released — ready for costing")
 
 // Hooks with structured payloads.
 export function useVerifyClassification() {
@@ -250,3 +269,43 @@ export function useAssignRequest() {
 }
 
 export const costProductRequestKeys = KEYS
+
+// -- Approval Trace History --------------------------------------------------
+
+interface StatusHistoryEntry {
+  id: number
+  requestId: number
+  fromStatus: string
+  toStatus: string
+  actorUserId: string
+  actorName: string
+  note: string
+  createdAt: string
+}
+
+function normalizeHistoryEntry(raw: Record<string, unknown>): StatusHistoryEntry {
+  return {
+    id: Number(raw.id ?? 0),
+    requestId: Number(raw.requestId ?? raw["request_id"] ?? 0),
+    fromStatus: String(raw.fromStatus ?? raw["from_status"] ?? ""),
+    toStatus: String(raw.toStatus ?? raw["to_status"] ?? ""),
+    actorUserId: String(raw.actorUserId ?? raw["actor_user_id"] ?? ""),
+    actorName: String(raw.actorName ?? raw["actor_name"] ?? ""),
+    note: String(raw.note ?? ""),
+    createdAt: String(raw.createdAt ?? raw["created_at"] ?? ""),
+  }
+}
+
+export function useRequestHistory(requestId: number) {
+  return useQuery({
+    queryKey: ["finance", "cpr", "history", requestId],
+    queryFn: async () => {
+      const res = await fetch(`/api/v1/finance/cost-product-requests/${requestId}/history`)
+      if (!res.ok) throw new Error("Failed to fetch history")
+      const data = (await res.json()) as { entries?: Record<string, unknown>[] }
+      return (data.entries ?? []).map(normalizeHistoryEntry)
+    },
+    enabled: requestId > 0,
+    staleTime: 30_000,
+  })
+}

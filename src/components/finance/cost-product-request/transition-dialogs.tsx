@@ -1,10 +1,11 @@
 "use client"
 
 // transition-dialogs — small per-transition modal helpers (reason / decision / substatus inputs).
-import { useState } from "react"
-import { Loader2 } from "lucide-react"
+import { useMemo, useState } from "react"
+import { Check, Loader2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog"
@@ -12,8 +13,8 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { ProductMasterCombobox } from "@/components/finance/comboboxes"
-import { useCostProductMaster } from "@/hooks/finance/use-cost-product-master"
+import { useCostProductMaster, useCostProductMasters } from "@/hooks/finance/use-cost-product-master"
+import { cn } from "@/lib/utils"
 import type { ClosedSubstatus, ProductClassification } from "@/types/finance/cost-product-request"
 
 // ----- ReasonDialog: used by Reject + Cancel (any free-text "why" prompt). ----------------
@@ -43,8 +44,8 @@ export function ReasonDialog({ open, onOpenChange, title, description, confirmLa
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
         <div className="space-y-2">
-          <Label>Reason *</Label>
-          <Textarea rows={4} value={reason} onChange={(e) => setReason(e.target.value)} />
+          <Label htmlFor="reason-input">Reason *</Label>
+          <Textarea id="reason-input" rows={4} value={reason} onChange={(e) => setReason(e.target.value)} />
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
@@ -257,7 +258,10 @@ interface UseExistingProps {
 
 export function UseExistingCostingDialog({ open, onOpenChange, pending, onConfirm }: UseExistingProps) {
   const [productSysId, setProductSysId] = useState<number | undefined>()
+  const [search, setSearch] = useState("")
+  const { data, isLoading } = useCostProductMasters({ search, activeFilter: "active", pageSize: 30 })
   const { data: product } = useCostProductMaster(productSysId)
+  const items = useMemo(() => data?.items ?? [], [data])
   const canSubmit = !!productSysId && productSysId > 0
 
   return (
@@ -265,7 +269,10 @@ export function UseExistingCostingDialog({ open, onOpenChange, pending, onConfir
       open={open}
       onOpenChange={(o) => {
         onOpenChange(o)
-        if (!o) setProductSysId(undefined)
+        if (!o) {
+          setProductSysId(undefined)
+          setSearch("")
+        }
       }}
     >
       <DialogContent>
@@ -279,11 +286,34 @@ export function UseExistingCostingDialog({ open, onOpenChange, pending, onConfir
         <div className="space-y-3">
           <div className="space-y-1.5">
             <Label>Existing product *</Label>
-            <ProductMasterCombobox
-              value={productSysId}
-              onChange={(id) => setProductSysId(id)}
-              placeholder="Pick a product master with completed costing…"
-            />
+            <Command shouldFilter={false} className="rounded border">
+              <CommandInput
+                placeholder="Search by code or name…"
+                value={search}
+                onValueChange={setSearch}
+              />
+              <CommandList className="max-h-40">
+                {isLoading && (
+                  <div className="py-4 text-center text-sm text-muted-foreground flex items-center justify-center gap-2">
+                    <Loader2 className="h-3 w-3 animate-spin" /> Loading…
+                  </div>
+                )}
+                <CommandEmpty>No products found.</CommandEmpty>
+                <CommandGroup>
+                  {items.map((p) => (
+                    <CommandItem
+                      key={p.productSysId}
+                      value={`${p.productCode} ${p.productName}`}
+                      onSelect={() => setProductSysId(p.productSysId)}
+                    >
+                      <Check className={cn("mr-2 h-4 w-4", productSysId === p.productSysId ? "opacity-100" : "opacity-0")} />
+                      <span className="font-mono text-xs text-muted-foreground mr-2">{p.productCode}</span>
+                      {p.productName}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
             <p className="text-xs text-muted-foreground">
               Only products that already have an active product order should be picked here. If
               there&apos;s no match,{" "}

@@ -7,3 +7,4 @@ export { KpiCard, type KpiCardProps, type KpiVariant, type KpiDelta } from "./kp
 export { KpiGrid, type KpiGridProps } from "./kpi-grid"
 export { EmptyState, type EmptyStateProps } from "./empty-state"
 export { StatusBadge, type StatusBadgeProps } from "./status-badge"
+export { MentionableTextarea, MentionContent } from "./mentionable-textarea"

@@ -20,14 +20,12 @@ export function AttachmentsPanel({ requestId, readOnly = false }: Props) {
   const { data, isLoading } = useAttachmentsByRequest(requestId)
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0">
-        <div className="space-y-0.5">
-          <CardTitle className="text-sm uppercase tracking-wide text-muted-foreground">
-            Attachments
-          </CardTitle>
-          <div className="text-xs text-muted-foreground">
+      <CardHeader className="flex flex-row items-start justify-between space-y-0">
+        <div>
+          <CardTitle className="text-sm font-semibold">Attachments</CardTitle>
+          <p className="mt-1 text-xs text-muted-foreground">
             {readOnly ? "Request is read-only." : "Max 25 MB per file."}
-          </div>
+          </p>
         </div>
         {!readOnly && <AttachmentUploader requestId={requestId} label="Upload" />}
       </CardHeader>

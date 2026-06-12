@@ -2,9 +2,9 @@ import { describe, it, expect } from "vitest"
 import { chartRegistry, getChartRegistration, allChartTypes } from "@/lib/bi/chart-registry"
 
 describe("chartRegistry", () => {
-  it("has 13 chart types", () => {
-    expect(Object.keys(chartRegistry)).toHaveLength(13)
-    expect(allChartTypes()).toHaveLength(13)
+  it("has 15 chart types", () => {
+    expect(Object.keys(chartRegistry)).toHaveLength(15)
+    expect(allChartTypes()).toHaveLength(15)
   })
 
   it("waterfall is an ECharts chart with x/y required, drill-capable, no compare", () => {

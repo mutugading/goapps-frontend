@@ -2,53 +2,35 @@
 // Clears auth cookies and invalidates session on backend
 
 import { NextRequest, NextResponse } from "next/server"
-import { clearAuthCookies, getRefreshToken } from "@/lib/auth/cookies"
+import { clearAuthCookiesOnResponse } from "@/lib/auth/cookies"
 import { getAuthClient, createAuthMetadata } from "@/lib/grpc"
 
 export async function POST(request: NextRequest) {
-    try {
-        const refreshToken = await getRefreshToken()
+    const refreshToken = request.cookies.get("goapps_refresh_token")?.value
 
-        // Call backend logout to invalidate session
-        if (refreshToken) {
-            try {
-                const accessToken = request.cookies.get("goapps_access_token")?.value
-                const metadata = accessToken ? createAuthMetadata(accessToken) : undefined
-                const client = getAuthClient()
-                await client.logout({ refreshToken }, metadata)
-            } catch {
-                // Continue with cookie cleanup even if backend call fails
-                console.warn("Backend logout failed, continuing with cookie cleanup")
-            }
-        }
-
-        // Clear auth cookies
-        await clearAuthCookies()
-
-        return NextResponse.json({
-            base: {
-                isSuccess: true,
-                statusCode: "200",
-                message: "Logged out successfully",
-                validationErrors: [],
-            },
-        })
-    } catch (error) {
-        console.error("Logout error:", error)
-        // Still try to clear cookies even on error
+    // Call backend logout to invalidate session
+    if (refreshToken) {
         try {
-            await clearAuthCookies()
+            const accessToken = request.cookies.get("goapps_access_token")?.value
+            const metadata = accessToken ? createAuthMetadata(accessToken) : undefined
+            const client = getAuthClient()
+            await client.logout({ refreshToken }, metadata)
         } catch {
-            // Ignore cleanup errors
+            console.warn("Backend logout failed, continuing with cookie cleanup")
         }
-
-        return NextResponse.json({
-            base: {
-                isSuccess: true,
-                statusCode: "200",
-                message: "Logged out",
-                validationErrors: [],
-            },
-        })
     }
+
+    const jsonResponse = NextResponse.json({
+        base: {
+            isSuccess: true,
+            statusCode: "200",
+            message: "Logged out successfully",
+            validationErrors: [],
+        },
+    })
+
+    // Clear cookies directly on the response (next/headers cookies().set() broken in Next.js 16.2+)
+    clearAuthCookiesOnResponse(jsonResponse)
+
+    return jsonResponse
 }

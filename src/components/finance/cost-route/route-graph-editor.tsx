@@ -204,8 +204,10 @@ export function RouteGraphEditor({ headId }: Props) {
       if (!base) return prev
       const seq = base.seqs[seqIdx]
       if (!seq) return base
-      seq.rms = [...(seq.rms ?? []), { ...rm, seqId: seq.seqId, parentProductSysId: seq.productSysId }]
-      return { ...base, seqs: [...base.seqs] }
+      const updatedSeq = { ...seq, rms: [...(seq.rms ?? []), { ...rm, seqId: seq.seqId, parentProductSysId: seq.productSysId }] }
+      const updatedSeqs = [...base.seqs]
+      updatedSeqs[seqIdx] = updatedSeq
+      return { ...base, seqs: updatedSeqs }
     })
     setDirty(true)
   }

@@ -60,6 +60,10 @@ import { CostAuditLogServiceDefinition } from "@/types/generated/finance/v1/cost
 import { CostNotificationServiceDefinition } from "@/types/generated/finance/v1/cost_notification"
 import { CostProductParameterServiceDefinition } from "@/types/generated/finance/v1/cost_product_parameter"
 import { CostCalcServiceDefinition } from "@/types/generated/finance/v1/cost_calc"
+import {
+  CostLevelAssignmentConfigServiceDefinition,
+  CostFillTaskServiceDefinition,
+} from "@/types/generated/finance/v1/cost_fill_assignment"
 
 const CHANNEL_OPTIONS = {
   "grpc.keepalive_time_ms": 120000,
@@ -391,6 +395,19 @@ export function getWorkflowTemplateClient() {
 export function getWorkflowInstanceClient() {
   return getOrCreate("workflowInstance", () =>
     createServiceClient(WorkflowInstanceServiceDefinition, SERVICE_ADDRESSES.iam, insecure, CHANNEL_OPTIONS)
+  )
+}
+
+// Fill-assignment clients (Finance service).
+export function getFillConfigClient() {
+  return getOrCreate("fillConfig", () =>
+    createServiceClient(CostLevelAssignmentConfigServiceDefinition, SERVICE_ADDRESSES.finance, insecure, CHANNEL_OPTIONS)
+  )
+}
+
+export function getFillTaskClient() {
+  return getOrCreate("fillTask", () =>
+    createServiceClient(CostFillTaskServiceDefinition, SERVICE_ADDRESSES.finance, insecure, CHANNEL_OPTIONS)
   )
 }
 

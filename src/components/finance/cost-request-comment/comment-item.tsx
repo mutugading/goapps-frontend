@@ -9,6 +9,7 @@ import { Edit, EyeOff, History, Loader2, Save, Trash2, X } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
+import { MentionContent } from "@/components/common/mentionable-textarea"
 import { UserName } from "@/components/common/user-name"
 import { usePermissionContext } from "@/providers/permission-provider"
 import {
@@ -29,6 +30,7 @@ import {
 import type { CostRequestComment } from "@/types/finance/cost-request-comment"
 
 import { AttachmentList } from "./attachment-list"
+import { UserInitials } from "./comments-panel"
 
 interface Props {
   comment: CostRequestComment
@@ -69,9 +71,9 @@ export function CommentItem({ comment, currentUserId }: Props) {
   }
 
   return (
-    <div
-      className={`rounded-md border bg-card p-3 space-y-2 ${comment.isHidden ? "opacity-60" : ""}`}
-    >
+    <div className={`flex gap-3 ${comment.isHidden ? "opacity-60" : ""}`}>
+      <UserInitials userId={comment.authorUserId} className="mt-0.5 shrink-0" />
+      <div className="flex-1 min-w-0 rounded-md border bg-card p-3 space-y-2">
       <div className="flex items-center gap-2 text-xs">
         <span className="font-medium"><UserName userId={comment.authorUserId} compact /></span>
         <span className="text-muted-foreground">{comment.createdAt?.slice(0, 19).replace("T", " ")}</span>
@@ -132,19 +134,15 @@ export function CommentItem({ comment, currentUserId }: Props) {
           </Button>
         </div>
       ) : (
-        <p className="text-sm whitespace-pre-wrap">{comment.isHidden ? comment.hiddenReason || "(hidden by admin)" : comment.bodyPlaintext}</p>
+        <p className="text-sm whitespace-pre-wrap">
+          {comment.isHidden ? (
+            comment.hiddenReason || "(hidden by admin)"
+          ) : (
+            <MentionContent text={comment.bodyPlaintext} />
+          )}
+        </p>
       )}
 
-      {comment.mentionedUserIds.length > 0 && !comment.isHidden && (
-        <div className="text-xs text-muted-foreground">
-          Mentioned:{" "}
-          {comment.mentionedUserIds.map((u) => (
-            <span key={u} className="font-mono mr-1">
-              @{u}
-            </span>
-          ))}
-        </div>
-      )}
 
       {/* Attachment upload after post is no longer offered — files are staged in
           the composer before Post via CommentsPanel and uploaded once the
@@ -192,6 +190,7 @@ export function CommentItem({ comment, currentUserId }: Props) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      </div>
     </div>
   )
 }

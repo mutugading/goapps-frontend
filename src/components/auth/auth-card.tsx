@@ -22,8 +22,8 @@ export function AuthCard({ children, className }: AuthCardProps) {
                     {children}
                 </div>
 
-                {/* Image side - hidden on mobile */}
-                <div className="relative hidden md:block">
+                {/* Image side - hidden on mobile, pointer-events-none so the form stays interactive */}
+                <div className="relative hidden md:block pointer-events-none">
                     <Image
                         src="/mutugading-base.jpg"
                         alt="PT Mutu Gading Tekstil"

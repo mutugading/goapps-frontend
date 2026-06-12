@@ -58,8 +58,7 @@ export function NavUser({ user }: NavUserProps) {
 
     const handleLogout = async () => {
         await logout()
-        router.push("/login")
-        router.refresh()
+        window.location.href = "/login"
     }
 
     const initials = user.name
@@ -76,6 +75,7 @@ export function NavUser({ user }: NavUserProps) {
                     <DropdownMenuTrigger asChild>
                         <SidebarMenuButton
                             size="lg"
+                            data-testid="nav-user-trigger"
                             className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
                         >
                             <Avatar className="h-8 w-8 rounded-lg">
