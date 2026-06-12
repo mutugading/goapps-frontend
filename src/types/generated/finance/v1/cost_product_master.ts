@@ -30,6 +30,10 @@ export interface CostProductMaster {
   erpLinkedBy: string;
   isActive: boolean;
   audit: AuditInfo | undefined;
+  shadeName: string;
+  flex01: string;
+  flex02: string;
+  flex03: string;
 }
 
 export interface CreateCostProductMasterRequest {
@@ -113,6 +117,38 @@ export interface ListCostProductMastersResponse {
   pagination: PaginationResponse | undefined;
 }
 
+export interface ExportCostProductMastersRequest {
+  productTypeCode: string;
+  activeFilter: string;
+  search: string;
+}
+
+export interface ExportCostProductMastersResponse {
+  base: BaseResponse | undefined;
+  fileContent: Uint8Array;
+  fileName: string;
+}
+
+export interface ImportCostProductMastersRequest {
+  fileContent: Uint8Array;
+  fileName: string;
+  duplicateAction: string;
+}
+
+export interface ImportCostProductMastersResponse {
+  base: BaseResponse | undefined;
+  jobId: number;
+}
+
+export interface DownloadCostProductMasterTemplateRequest {
+}
+
+export interface DownloadCostProductMasterTemplateResponse {
+  base: BaseResponse | undefined;
+  fileContent: Uint8Array;
+  fileName: string;
+}
+
 function createBaseCostProductMaster(): CostProductMaster {
   return {
     productSysId: 0,
@@ -131,6 +167,10 @@ function createBaseCostProductMaster(): CostProductMaster {
     erpLinkedBy: "",
     isActive: false,
     audit: undefined,
+    shadeName: "",
+    flex01: "",
+    flex02: "",
+    flex03: "",
   };
 }
 
@@ -183,6 +223,18 @@ export const CostProductMaster: MessageFns<CostProductMaster> = {
     }
     if (message.audit !== undefined) {
       AuditInfo.encode(message.audit, writer.uint32(130).fork()).join();
+    }
+    if (message.shadeName !== "") {
+      writer.uint32(138).string(message.shadeName);
+    }
+    if (message.flex01 !== "") {
+      writer.uint32(146).string(message.flex01);
+    }
+    if (message.flex02 !== "") {
+      writer.uint32(154).string(message.flex02);
+    }
+    if (message.flex03 !== "") {
+      writer.uint32(162).string(message.flex03);
     }
     return writer;
   },
@@ -322,6 +374,38 @@ export const CostProductMaster: MessageFns<CostProductMaster> = {
           message.audit = AuditInfo.decode(reader, reader.uint32());
           continue;
         }
+        case 17: {
+          if (tag !== 138) {
+            break;
+          }
+
+          message.shadeName = reader.string();
+          continue;
+        }
+        case 18: {
+          if (tag !== 146) {
+            break;
+          }
+
+          message.flex01 = reader.string();
+          continue;
+        }
+        case 19: {
+          if (tag !== 154) {
+            break;
+          }
+
+          message.flex02 = reader.string();
+          continue;
+        }
+        case 20: {
+          if (tag !== 162) {
+            break;
+          }
+
+          message.flex03 = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -405,6 +489,26 @@ export const CostProductMaster: MessageFns<CostProductMaster> = {
         ? globalThis.Boolean(object.is_active)
         : false,
       audit: isSet(object.audit) ? AuditInfo.fromJSON(object.audit) : undefined,
+      shadeName: isSet(object.shadeName)
+        ? globalThis.String(object.shadeName)
+        : isSet(object.shade_name)
+        ? globalThis.String(object.shade_name)
+        : "",
+      flex01: isSet(object.flex01)
+        ? globalThis.String(object.flex01)
+        : isSet(object.flex_01)
+        ? globalThis.String(object.flex_01)
+        : "",
+      flex02: isSet(object.flex02)
+        ? globalThis.String(object.flex02)
+        : isSet(object.flex_02)
+        ? globalThis.String(object.flex_02)
+        : "",
+      flex03: isSet(object.flex03)
+        ? globalThis.String(object.flex03)
+        : isSet(object.flex_03)
+        ? globalThis.String(object.flex_03)
+        : "",
     };
   },
 
@@ -458,6 +562,18 @@ export const CostProductMaster: MessageFns<CostProductMaster> = {
     if (message.audit !== undefined) {
       obj.audit = AuditInfo.toJSON(message.audit);
     }
+    if (message.shadeName !== "") {
+      obj.shadeName = message.shadeName;
+    }
+    if (message.flex01 !== "") {
+      obj.flex01 = message.flex01;
+    }
+    if (message.flex02 !== "") {
+      obj.flex02 = message.flex02;
+    }
+    if (message.flex03 !== "") {
+      obj.flex03 = message.flex03;
+    }
     return obj;
   },
 
@@ -484,6 +600,10 @@ export const CostProductMaster: MessageFns<CostProductMaster> = {
     message.audit = (object.audit !== undefined && object.audit !== null)
       ? AuditInfo.fromPartial(object.audit)
       : undefined;
+    message.shadeName = object.shadeName ?? "";
+    message.flex01 = object.flex01 ?? "";
+    message.flex02 = object.flex02 ?? "";
+    message.flex03 = object.flex03 ?? "";
     return message;
   },
 };
@@ -1828,6 +1948,541 @@ export const ListCostProductMastersResponse: MessageFns<ListCostProductMastersRe
   },
 };
 
+function createBaseExportCostProductMastersRequest(): ExportCostProductMastersRequest {
+  return { productTypeCode: "", activeFilter: "", search: "" };
+}
+
+export const ExportCostProductMastersRequest: MessageFns<ExportCostProductMastersRequest> = {
+  encode(message: ExportCostProductMastersRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.productTypeCode !== "") {
+      writer.uint32(10).string(message.productTypeCode);
+    }
+    if (message.activeFilter !== "") {
+      writer.uint32(18).string(message.activeFilter);
+    }
+    if (message.search !== "") {
+      writer.uint32(26).string(message.search);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ExportCostProductMastersRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseExportCostProductMastersRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.productTypeCode = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.activeFilter = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.search = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ExportCostProductMastersRequest {
+    return {
+      productTypeCode: isSet(object.productTypeCode)
+        ? globalThis.String(object.productTypeCode)
+        : isSet(object.product_type_code)
+        ? globalThis.String(object.product_type_code)
+        : "",
+      activeFilter: isSet(object.activeFilter)
+        ? globalThis.String(object.activeFilter)
+        : isSet(object.active_filter)
+        ? globalThis.String(object.active_filter)
+        : "",
+      search: isSet(object.search) ? globalThis.String(object.search) : "",
+    };
+  },
+
+  toJSON(message: ExportCostProductMastersRequest): unknown {
+    const obj: any = {};
+    if (message.productTypeCode !== "") {
+      obj.productTypeCode = message.productTypeCode;
+    }
+    if (message.activeFilter !== "") {
+      obj.activeFilter = message.activeFilter;
+    }
+    if (message.search !== "") {
+      obj.search = message.search;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ExportCostProductMastersRequest>): ExportCostProductMastersRequest {
+    return ExportCostProductMastersRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ExportCostProductMastersRequest>): ExportCostProductMastersRequest {
+    const message = createBaseExportCostProductMastersRequest();
+    message.productTypeCode = object.productTypeCode ?? "";
+    message.activeFilter = object.activeFilter ?? "";
+    message.search = object.search ?? "";
+    return message;
+  },
+};
+
+function createBaseExportCostProductMastersResponse(): ExportCostProductMastersResponse {
+  return { base: undefined, fileContent: new Uint8Array(0), fileName: "" };
+}
+
+export const ExportCostProductMastersResponse: MessageFns<ExportCostProductMastersResponse> = {
+  encode(message: ExportCostProductMastersResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    if (message.fileContent.length !== 0) {
+      writer.uint32(18).bytes(message.fileContent);
+    }
+    if (message.fileName !== "") {
+      writer.uint32(26).string(message.fileName);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ExportCostProductMastersResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseExportCostProductMastersResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.fileContent = reader.bytes();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.fileName = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ExportCostProductMastersResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      fileContent: isSet(object.fileContent)
+        ? bytesFromBase64(object.fileContent)
+        : isSet(object.file_content)
+        ? bytesFromBase64(object.file_content)
+        : new Uint8Array(0),
+      fileName: isSet(object.fileName)
+        ? globalThis.String(object.fileName)
+        : isSet(object.file_name)
+        ? globalThis.String(object.file_name)
+        : "",
+    };
+  },
+
+  toJSON(message: ExportCostProductMastersResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.fileContent.length !== 0) {
+      obj.fileContent = base64FromBytes(message.fileContent);
+    }
+    if (message.fileName !== "") {
+      obj.fileName = message.fileName;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ExportCostProductMastersResponse>): ExportCostProductMastersResponse {
+    return ExportCostProductMastersResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ExportCostProductMastersResponse>): ExportCostProductMastersResponse {
+    const message = createBaseExportCostProductMastersResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.fileContent = object.fileContent ?? new Uint8Array(0);
+    message.fileName = object.fileName ?? "";
+    return message;
+  },
+};
+
+function createBaseImportCostProductMastersRequest(): ImportCostProductMastersRequest {
+  return { fileContent: new Uint8Array(0), fileName: "", duplicateAction: "" };
+}
+
+export const ImportCostProductMastersRequest: MessageFns<ImportCostProductMastersRequest> = {
+  encode(message: ImportCostProductMastersRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.fileContent.length !== 0) {
+      writer.uint32(10).bytes(message.fileContent);
+    }
+    if (message.fileName !== "") {
+      writer.uint32(18).string(message.fileName);
+    }
+    if (message.duplicateAction !== "") {
+      writer.uint32(26).string(message.duplicateAction);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ImportCostProductMastersRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseImportCostProductMastersRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.fileContent = reader.bytes();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.fileName = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.duplicateAction = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ImportCostProductMastersRequest {
+    return {
+      fileContent: isSet(object.fileContent)
+        ? bytesFromBase64(object.fileContent)
+        : isSet(object.file_content)
+        ? bytesFromBase64(object.file_content)
+        : new Uint8Array(0),
+      fileName: isSet(object.fileName)
+        ? globalThis.String(object.fileName)
+        : isSet(object.file_name)
+        ? globalThis.String(object.file_name)
+        : "",
+      duplicateAction: isSet(object.duplicateAction)
+        ? globalThis.String(object.duplicateAction)
+        : isSet(object.duplicate_action)
+        ? globalThis.String(object.duplicate_action)
+        : "",
+    };
+  },
+
+  toJSON(message: ImportCostProductMastersRequest): unknown {
+    const obj: any = {};
+    if (message.fileContent.length !== 0) {
+      obj.fileContent = base64FromBytes(message.fileContent);
+    }
+    if (message.fileName !== "") {
+      obj.fileName = message.fileName;
+    }
+    if (message.duplicateAction !== "") {
+      obj.duplicateAction = message.duplicateAction;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ImportCostProductMastersRequest>): ImportCostProductMastersRequest {
+    return ImportCostProductMastersRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ImportCostProductMastersRequest>): ImportCostProductMastersRequest {
+    const message = createBaseImportCostProductMastersRequest();
+    message.fileContent = object.fileContent ?? new Uint8Array(0);
+    message.fileName = object.fileName ?? "";
+    message.duplicateAction = object.duplicateAction ?? "";
+    return message;
+  },
+};
+
+function createBaseImportCostProductMastersResponse(): ImportCostProductMastersResponse {
+  return { base: undefined, jobId: 0 };
+}
+
+export const ImportCostProductMastersResponse: MessageFns<ImportCostProductMastersResponse> = {
+  encode(message: ImportCostProductMastersResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    if (message.jobId !== 0) {
+      writer.uint32(16).int64(message.jobId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ImportCostProductMastersResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseImportCostProductMastersResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.jobId = longToNumber(reader.int64());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ImportCostProductMastersResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      jobId: isSet(object.jobId)
+        ? globalThis.Number(object.jobId)
+        : isSet(object.job_id)
+        ? globalThis.Number(object.job_id)
+        : 0,
+    };
+  },
+
+  toJSON(message: ImportCostProductMastersResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.jobId !== 0) {
+      obj.jobId = Math.round(message.jobId);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ImportCostProductMastersResponse>): ImportCostProductMastersResponse {
+    return ImportCostProductMastersResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ImportCostProductMastersResponse>): ImportCostProductMastersResponse {
+    const message = createBaseImportCostProductMastersResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.jobId = object.jobId ?? 0;
+    return message;
+  },
+};
+
+function createBaseDownloadCostProductMasterTemplateRequest(): DownloadCostProductMasterTemplateRequest {
+  return {};
+}
+
+export const DownloadCostProductMasterTemplateRequest: MessageFns<DownloadCostProductMasterTemplateRequest> = {
+  encode(_: DownloadCostProductMasterTemplateRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): DownloadCostProductMasterTemplateRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDownloadCostProductMasterTemplateRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): DownloadCostProductMasterTemplateRequest {
+    return {};
+  },
+
+  toJSON(_: DownloadCostProductMasterTemplateRequest): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create(base?: DeepPartial<DownloadCostProductMasterTemplateRequest>): DownloadCostProductMasterTemplateRequest {
+    return DownloadCostProductMasterTemplateRequest.fromPartial(base ?? {});
+  },
+  fromPartial(_: DeepPartial<DownloadCostProductMasterTemplateRequest>): DownloadCostProductMasterTemplateRequest {
+    const message = createBaseDownloadCostProductMasterTemplateRequest();
+    return message;
+  },
+};
+
+function createBaseDownloadCostProductMasterTemplateResponse(): DownloadCostProductMasterTemplateResponse {
+  return { base: undefined, fileContent: new Uint8Array(0), fileName: "" };
+}
+
+export const DownloadCostProductMasterTemplateResponse: MessageFns<DownloadCostProductMasterTemplateResponse> = {
+  encode(message: DownloadCostProductMasterTemplateResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    if (message.fileContent.length !== 0) {
+      writer.uint32(18).bytes(message.fileContent);
+    }
+    if (message.fileName !== "") {
+      writer.uint32(26).string(message.fileName);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): DownloadCostProductMasterTemplateResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDownloadCostProductMasterTemplateResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.fileContent = reader.bytes();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.fileName = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DownloadCostProductMasterTemplateResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      fileContent: isSet(object.fileContent)
+        ? bytesFromBase64(object.fileContent)
+        : isSet(object.file_content)
+        ? bytesFromBase64(object.file_content)
+        : new Uint8Array(0),
+      fileName: isSet(object.fileName)
+        ? globalThis.String(object.fileName)
+        : isSet(object.file_name)
+        ? globalThis.String(object.file_name)
+        : "",
+    };
+  },
+
+  toJSON(message: DownloadCostProductMasterTemplateResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.fileContent.length !== 0) {
+      obj.fileContent = base64FromBytes(message.fileContent);
+    }
+    if (message.fileName !== "") {
+      obj.fileName = message.fileName;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<DownloadCostProductMasterTemplateResponse>): DownloadCostProductMasterTemplateResponse {
+    return DownloadCostProductMasterTemplateResponse.fromPartial(base ?? {});
+  },
+  fromPartial(
+    object: DeepPartial<DownloadCostProductMasterTemplateResponse>,
+  ): DownloadCostProductMasterTemplateResponse {
+    const message = createBaseDownloadCostProductMasterTemplateResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.fileContent = object.fileContent ?? new Uint8Array(0);
+    message.fileName = object.fileName ?? "";
+    return message;
+  },
+};
+
 export type CostProductMasterServiceDefinition = typeof CostProductMasterServiceDefinition;
 export const CostProductMasterServiceDefinition = {
   name: "CostProductMasterService",
@@ -2316,8 +2971,221 @@ export const CostProductMasterServiceDefinition = {
         },
       },
     },
+    exportCostProductMasters: {
+      name: "ExportCostProductMasters",
+      requestType: ExportCostProductMastersRequest,
+      requestStream: false,
+      responseType: ExportCostProductMastersResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              45,
+              18,
+              43,
+              47,
+              97,
+              112,
+              105,
+              47,
+              118,
+              49,
+              47,
+              102,
+              105,
+              110,
+              97,
+              110,
+              99,
+              101,
+              47,
+              99,
+              111,
+              115,
+              116,
+              45,
+              112,
+              114,
+              111,
+              100,
+              117,
+              99,
+              116,
+              45,
+              109,
+              97,
+              115,
+              116,
+              101,
+              114,
+              115,
+              47,
+              101,
+              120,
+              112,
+              111,
+              114,
+              116,
+            ]),
+          ],
+        },
+      },
+    },
+    importCostProductMasters: {
+      name: "ImportCostProductMasters",
+      requestType: ImportCostProductMastersRequest,
+      requestStream: false,
+      responseType: ImportCostProductMastersResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              48,
+              58,
+              1,
+              42,
+              34,
+              43,
+              47,
+              97,
+              112,
+              105,
+              47,
+              118,
+              49,
+              47,
+              102,
+              105,
+              110,
+              97,
+              110,
+              99,
+              101,
+              47,
+              99,
+              111,
+              115,
+              116,
+              45,
+              112,
+              114,
+              111,
+              100,
+              117,
+              99,
+              116,
+              45,
+              109,
+              97,
+              115,
+              116,
+              101,
+              114,
+              115,
+              47,
+              105,
+              109,
+              112,
+              111,
+              114,
+              116,
+            ]),
+          ],
+        },
+      },
+    },
+    downloadCostProductMasterTemplate: {
+      name: "DownloadCostProductMasterTemplate",
+      requestType: DownloadCostProductMasterTemplateRequest,
+      requestStream: false,
+      responseType: DownloadCostProductMasterTemplateResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              47,
+              18,
+              45,
+              47,
+              97,
+              112,
+              105,
+              47,
+              118,
+              49,
+              47,
+              102,
+              105,
+              110,
+              97,
+              110,
+              99,
+              101,
+              47,
+              99,
+              111,
+              115,
+              116,
+              45,
+              112,
+              114,
+              111,
+              100,
+              117,
+              99,
+              116,
+              45,
+              109,
+              97,
+              115,
+              116,
+              101,
+              114,
+              115,
+              47,
+              116,
+              101,
+              109,
+              112,
+              108,
+              97,
+              116,
+              101,
+            ]),
+          ],
+        },
+      },
+    },
   },
 } as const;
+
+function bytesFromBase64(b64: string): Uint8Array {
+  if ((globalThis as any).Buffer) {
+    return Uint8Array.from(globalThis.Buffer.from(b64, "base64"));
+  } else {
+    const bin = globalThis.atob(b64);
+    const arr = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; ++i) {
+      arr[i] = bin.charCodeAt(i);
+    }
+    return arr;
+  }
+}
+
+function base64FromBytes(arr: Uint8Array): string {
+  if ((globalThis as any).Buffer) {
+    return globalThis.Buffer.from(arr).toString("base64");
+  } else {
+    const bin: string[] = [];
+    arr.forEach((byte) => {
+      bin.push(globalThis.String.fromCharCode(byte));
+    });
+    return globalThis.btoa(bin.join(""));
+  }
+}
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
