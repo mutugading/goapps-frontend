@@ -2,6 +2,7 @@
 
 import { CheckCircle2, Package, PauseCircle, Plus } from "lucide-react"
 import { useState } from "react"
+import { useQueryClient } from "@tanstack/react-query"
 
 import { PageHeader } from "@/components/common/page-header"
 import { KpiCard, KpiGrid } from "@/components/common"
@@ -16,9 +17,10 @@ import {
   ProductMasterFormDialog,
   ProductMasterTable,
 } from "@/components/finance/cost-product-master"
+import { ImportExportToolbar } from "@/components/finance/costing/import-export-toolbar"
 import { ProductTypeCombobox } from "@/components/finance/comboboxes"
 import { DataTablePagination } from "@/components/shared"
-import { useCostProductMasterCounts, useCostProductMasters } from "@/hooks/finance/use-cost-product-master"
+import { useCostProductMasterCounts, useCostProductMasters, costProductMasterKeys } from "@/hooks/finance/use-cost-product-master"
 import { useUrlState } from "@/lib/hooks"
 import type { CostProductMaster, ListCostProductMastersParams } from "@/types/finance/cost-product-master"
 
@@ -34,6 +36,7 @@ export default function ProductMasterPageClient() {
   const [filters, setFilters] = useUrlState<ListCostProductMastersParams>({ defaultValues: defaultFilters })
   const { data, isLoading } = useCostProductMasters(filters)
   const { data: counts, isLoading: countsLoading } = useCostProductMasterCounts()
+  const queryClient = useQueryClient()
 
   const [formOpen, setFormOpen] = useState(false)
   const [erpOpen, setErpOpen] = useState(false)
@@ -67,6 +70,12 @@ export default function ProductMasterPageClient() {
         title="Product Master"
         subtitle="Costing product identity (CPM_). Codes are auto-generated as CST + type + YYMM + 6-digit sequence."
       >
+        <ImportExportToolbar
+          entity="product_master"
+          onImportSuccess={() =>
+            queryClient.invalidateQueries({ queryKey: costProductMasterKeys.all })
+          }
+        />
         <Button onClick={openCreate}>
           <Plus className="mr-2 h-4 w-4" /> New product
         </Button>
