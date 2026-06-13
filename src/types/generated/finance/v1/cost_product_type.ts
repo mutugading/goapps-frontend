@@ -7,6 +7,7 @@
 /* eslint-disable */
 import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
 import { AuditInfo, BaseResponse, PaginationRequest, PaginationResponse } from "../../common/v1/common";
+import { ImportError } from "./uom";
 
 export const protobufPackage = "finance.v1";
 
@@ -63,6 +64,40 @@ export interface ListCostProductTypesResponse {
   base: BaseResponse | undefined;
   data: CostProductType[];
   pagination: PaginationResponse | undefined;
+}
+
+export interface ExportCostProductTypesRequest {
+  activeFilter: string;
+}
+
+export interface ExportCostProductTypesResponse {
+  base: BaseResponse | undefined;
+  fileContent: Uint8Array;
+  fileName: string;
+}
+
+export interface ImportCostProductTypesRequest {
+  fileContent: Uint8Array;
+  fileName: string;
+  duplicateAction: string;
+}
+
+export interface ImportCostProductTypesResponse {
+  base: BaseResponse | undefined;
+  successCount: number;
+  skippedCount: number;
+  updatedCount: number;
+  failedCount: number;
+  errors: ImportError[];
+}
+
+export interface DownloadCostProductTypeTemplateRequest {
+}
+
+export interface DownloadCostProductTypeTemplateResponse {
+  base: BaseResponse | undefined;
+  fileContent: Uint8Array;
+  fileName: string;
 }
 
 function createBaseCostProductType(): CostProductType {
@@ -933,6 +968,581 @@ export const ListCostProductTypesResponse: MessageFns<ListCostProductTypesRespon
   },
 };
 
+function createBaseExportCostProductTypesRequest(): ExportCostProductTypesRequest {
+  return { activeFilter: "" };
+}
+
+export const ExportCostProductTypesRequest: MessageFns<ExportCostProductTypesRequest> = {
+  encode(message: ExportCostProductTypesRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.activeFilter !== "") {
+      writer.uint32(10).string(message.activeFilter);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ExportCostProductTypesRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseExportCostProductTypesRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.activeFilter = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ExportCostProductTypesRequest {
+    return {
+      activeFilter: isSet(object.activeFilter)
+        ? globalThis.String(object.activeFilter)
+        : isSet(object.active_filter)
+        ? globalThis.String(object.active_filter)
+        : "",
+    };
+  },
+
+  toJSON(message: ExportCostProductTypesRequest): unknown {
+    const obj: any = {};
+    if (message.activeFilter !== "") {
+      obj.activeFilter = message.activeFilter;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ExportCostProductTypesRequest>): ExportCostProductTypesRequest {
+    return ExportCostProductTypesRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ExportCostProductTypesRequest>): ExportCostProductTypesRequest {
+    const message = createBaseExportCostProductTypesRequest();
+    message.activeFilter = object.activeFilter ?? "";
+    return message;
+  },
+};
+
+function createBaseExportCostProductTypesResponse(): ExportCostProductTypesResponse {
+  return { base: undefined, fileContent: new Uint8Array(0), fileName: "" };
+}
+
+export const ExportCostProductTypesResponse: MessageFns<ExportCostProductTypesResponse> = {
+  encode(message: ExportCostProductTypesResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    if (message.fileContent.length !== 0) {
+      writer.uint32(18).bytes(message.fileContent);
+    }
+    if (message.fileName !== "") {
+      writer.uint32(26).string(message.fileName);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ExportCostProductTypesResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseExportCostProductTypesResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.fileContent = reader.bytes();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.fileName = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ExportCostProductTypesResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      fileContent: isSet(object.fileContent)
+        ? bytesFromBase64(object.fileContent)
+        : isSet(object.file_content)
+        ? bytesFromBase64(object.file_content)
+        : new Uint8Array(0),
+      fileName: isSet(object.fileName)
+        ? globalThis.String(object.fileName)
+        : isSet(object.file_name)
+        ? globalThis.String(object.file_name)
+        : "",
+    };
+  },
+
+  toJSON(message: ExportCostProductTypesResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.fileContent.length !== 0) {
+      obj.fileContent = base64FromBytes(message.fileContent);
+    }
+    if (message.fileName !== "") {
+      obj.fileName = message.fileName;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ExportCostProductTypesResponse>): ExportCostProductTypesResponse {
+    return ExportCostProductTypesResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ExportCostProductTypesResponse>): ExportCostProductTypesResponse {
+    const message = createBaseExportCostProductTypesResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.fileContent = object.fileContent ?? new Uint8Array(0);
+    message.fileName = object.fileName ?? "";
+    return message;
+  },
+};
+
+function createBaseImportCostProductTypesRequest(): ImportCostProductTypesRequest {
+  return { fileContent: new Uint8Array(0), fileName: "", duplicateAction: "" };
+}
+
+export const ImportCostProductTypesRequest: MessageFns<ImportCostProductTypesRequest> = {
+  encode(message: ImportCostProductTypesRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.fileContent.length !== 0) {
+      writer.uint32(10).bytes(message.fileContent);
+    }
+    if (message.fileName !== "") {
+      writer.uint32(18).string(message.fileName);
+    }
+    if (message.duplicateAction !== "") {
+      writer.uint32(26).string(message.duplicateAction);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ImportCostProductTypesRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseImportCostProductTypesRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.fileContent = reader.bytes();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.fileName = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.duplicateAction = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ImportCostProductTypesRequest {
+    return {
+      fileContent: isSet(object.fileContent)
+        ? bytesFromBase64(object.fileContent)
+        : isSet(object.file_content)
+        ? bytesFromBase64(object.file_content)
+        : new Uint8Array(0),
+      fileName: isSet(object.fileName)
+        ? globalThis.String(object.fileName)
+        : isSet(object.file_name)
+        ? globalThis.String(object.file_name)
+        : "",
+      duplicateAction: isSet(object.duplicateAction)
+        ? globalThis.String(object.duplicateAction)
+        : isSet(object.duplicate_action)
+        ? globalThis.String(object.duplicate_action)
+        : "",
+    };
+  },
+
+  toJSON(message: ImportCostProductTypesRequest): unknown {
+    const obj: any = {};
+    if (message.fileContent.length !== 0) {
+      obj.fileContent = base64FromBytes(message.fileContent);
+    }
+    if (message.fileName !== "") {
+      obj.fileName = message.fileName;
+    }
+    if (message.duplicateAction !== "") {
+      obj.duplicateAction = message.duplicateAction;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ImportCostProductTypesRequest>): ImportCostProductTypesRequest {
+    return ImportCostProductTypesRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ImportCostProductTypesRequest>): ImportCostProductTypesRequest {
+    const message = createBaseImportCostProductTypesRequest();
+    message.fileContent = object.fileContent ?? new Uint8Array(0);
+    message.fileName = object.fileName ?? "";
+    message.duplicateAction = object.duplicateAction ?? "";
+    return message;
+  },
+};
+
+function createBaseImportCostProductTypesResponse(): ImportCostProductTypesResponse {
+  return { base: undefined, successCount: 0, skippedCount: 0, updatedCount: 0, failedCount: 0, errors: [] };
+}
+
+export const ImportCostProductTypesResponse: MessageFns<ImportCostProductTypesResponse> = {
+  encode(message: ImportCostProductTypesResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    if (message.successCount !== 0) {
+      writer.uint32(16).int32(message.successCount);
+    }
+    if (message.skippedCount !== 0) {
+      writer.uint32(24).int32(message.skippedCount);
+    }
+    if (message.updatedCount !== 0) {
+      writer.uint32(32).int32(message.updatedCount);
+    }
+    if (message.failedCount !== 0) {
+      writer.uint32(40).int32(message.failedCount);
+    }
+    for (const v of message.errors) {
+      ImportError.encode(v!, writer.uint32(50).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ImportCostProductTypesResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseImportCostProductTypesResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.successCount = reader.int32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.skippedCount = reader.int32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.updatedCount = reader.int32();
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.failedCount = reader.int32();
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.errors.push(ImportError.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ImportCostProductTypesResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      successCount: isSet(object.successCount)
+        ? globalThis.Number(object.successCount)
+        : isSet(object.success_count)
+        ? globalThis.Number(object.success_count)
+        : 0,
+      skippedCount: isSet(object.skippedCount)
+        ? globalThis.Number(object.skippedCount)
+        : isSet(object.skipped_count)
+        ? globalThis.Number(object.skipped_count)
+        : 0,
+      updatedCount: isSet(object.updatedCount)
+        ? globalThis.Number(object.updatedCount)
+        : isSet(object.updated_count)
+        ? globalThis.Number(object.updated_count)
+        : 0,
+      failedCount: isSet(object.failedCount)
+        ? globalThis.Number(object.failedCount)
+        : isSet(object.failed_count)
+        ? globalThis.Number(object.failed_count)
+        : 0,
+      errors: globalThis.Array.isArray(object?.errors)
+        ? object.errors.map((e: any) => ImportError.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: ImportCostProductTypesResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.successCount !== 0) {
+      obj.successCount = Math.round(message.successCount);
+    }
+    if (message.skippedCount !== 0) {
+      obj.skippedCount = Math.round(message.skippedCount);
+    }
+    if (message.updatedCount !== 0) {
+      obj.updatedCount = Math.round(message.updatedCount);
+    }
+    if (message.failedCount !== 0) {
+      obj.failedCount = Math.round(message.failedCount);
+    }
+    if (message.errors?.length) {
+      obj.errors = message.errors.map((e) => ImportError.toJSON(e));
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ImportCostProductTypesResponse>): ImportCostProductTypesResponse {
+    return ImportCostProductTypesResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ImportCostProductTypesResponse>): ImportCostProductTypesResponse {
+    const message = createBaseImportCostProductTypesResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.successCount = object.successCount ?? 0;
+    message.skippedCount = object.skippedCount ?? 0;
+    message.updatedCount = object.updatedCount ?? 0;
+    message.failedCount = object.failedCount ?? 0;
+    message.errors = object.errors?.map((e) => ImportError.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseDownloadCostProductTypeTemplateRequest(): DownloadCostProductTypeTemplateRequest {
+  return {};
+}
+
+export const DownloadCostProductTypeTemplateRequest: MessageFns<DownloadCostProductTypeTemplateRequest> = {
+  encode(_: DownloadCostProductTypeTemplateRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): DownloadCostProductTypeTemplateRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDownloadCostProductTypeTemplateRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): DownloadCostProductTypeTemplateRequest {
+    return {};
+  },
+
+  toJSON(_: DownloadCostProductTypeTemplateRequest): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create(base?: DeepPartial<DownloadCostProductTypeTemplateRequest>): DownloadCostProductTypeTemplateRequest {
+    return DownloadCostProductTypeTemplateRequest.fromPartial(base ?? {});
+  },
+  fromPartial(_: DeepPartial<DownloadCostProductTypeTemplateRequest>): DownloadCostProductTypeTemplateRequest {
+    const message = createBaseDownloadCostProductTypeTemplateRequest();
+    return message;
+  },
+};
+
+function createBaseDownloadCostProductTypeTemplateResponse(): DownloadCostProductTypeTemplateResponse {
+  return { base: undefined, fileContent: new Uint8Array(0), fileName: "" };
+}
+
+export const DownloadCostProductTypeTemplateResponse: MessageFns<DownloadCostProductTypeTemplateResponse> = {
+  encode(message: DownloadCostProductTypeTemplateResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    if (message.fileContent.length !== 0) {
+      writer.uint32(18).bytes(message.fileContent);
+    }
+    if (message.fileName !== "") {
+      writer.uint32(26).string(message.fileName);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): DownloadCostProductTypeTemplateResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDownloadCostProductTypeTemplateResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.fileContent = reader.bytes();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.fileName = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DownloadCostProductTypeTemplateResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      fileContent: isSet(object.fileContent)
+        ? bytesFromBase64(object.fileContent)
+        : isSet(object.file_content)
+        ? bytesFromBase64(object.file_content)
+        : new Uint8Array(0),
+      fileName: isSet(object.fileName)
+        ? globalThis.String(object.fileName)
+        : isSet(object.file_name)
+        ? globalThis.String(object.file_name)
+        : "",
+    };
+  },
+
+  toJSON(message: DownloadCostProductTypeTemplateResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.fileContent.length !== 0) {
+      obj.fileContent = base64FromBytes(message.fileContent);
+    }
+    if (message.fileName !== "") {
+      obj.fileName = message.fileName;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<DownloadCostProductTypeTemplateResponse>): DownloadCostProductTypeTemplateResponse {
+    return DownloadCostProductTypeTemplateResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<DownloadCostProductTypeTemplateResponse>): DownloadCostProductTypeTemplateResponse {
+    const message = createBaseDownloadCostProductTypeTemplateResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.fileContent = object.fileContent ?? new Uint8Array(0);
+    message.fileName = object.fileName ?? "";
+    return message;
+  },
+};
+
 /** CostProductTypeService — CRUD master for canonical product types. */
 export type CostProductTypeServiceDefinition = typeof CostProductTypeServiceDefinition;
 export const CostProductTypeServiceDefinition = {
@@ -1173,8 +1783,215 @@ export const CostProductTypeServiceDefinition = {
         },
       },
     },
+    exportCostProductTypes: {
+      name: "ExportCostProductTypes",
+      requestType: ExportCostProductTypesRequest,
+      requestStream: false,
+      responseType: ExportCostProductTypesResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              43,
+              18,
+              41,
+              47,
+              97,
+              112,
+              105,
+              47,
+              118,
+              49,
+              47,
+              102,
+              105,
+              110,
+              97,
+              110,
+              99,
+              101,
+              47,
+              99,
+              111,
+              115,
+              116,
+              45,
+              112,
+              114,
+              111,
+              100,
+              117,
+              99,
+              116,
+              45,
+              116,
+              121,
+              112,
+              101,
+              115,
+              47,
+              101,
+              120,
+              112,
+              111,
+              114,
+              116,
+            ]),
+          ],
+        },
+      },
+    },
+    importCostProductTypes: {
+      name: "ImportCostProductTypes",
+      requestType: ImportCostProductTypesRequest,
+      requestStream: false,
+      responseType: ImportCostProductTypesResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              46,
+              58,
+              1,
+              42,
+              34,
+              41,
+              47,
+              97,
+              112,
+              105,
+              47,
+              118,
+              49,
+              47,
+              102,
+              105,
+              110,
+              97,
+              110,
+              99,
+              101,
+              47,
+              99,
+              111,
+              115,
+              116,
+              45,
+              112,
+              114,
+              111,
+              100,
+              117,
+              99,
+              116,
+              45,
+              116,
+              121,
+              112,
+              101,
+              115,
+              47,
+              105,
+              109,
+              112,
+              111,
+              114,
+              116,
+            ]),
+          ],
+        },
+      },
+    },
+    downloadCostProductTypeTemplate: {
+      name: "DownloadCostProductTypeTemplate",
+      requestType: DownloadCostProductTypeTemplateRequest,
+      requestStream: false,
+      responseType: DownloadCostProductTypeTemplateResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              45,
+              18,
+              43,
+              47,
+              97,
+              112,
+              105,
+              47,
+              118,
+              49,
+              47,
+              102,
+              105,
+              110,
+              97,
+              110,
+              99,
+              101,
+              47,
+              99,
+              111,
+              115,
+              116,
+              45,
+              112,
+              114,
+              111,
+              100,
+              117,
+              99,
+              116,
+              45,
+              116,
+              121,
+              112,
+              101,
+              115,
+              47,
+              116,
+              101,
+              109,
+              112,
+              108,
+              97,
+              116,
+              101,
+            ]),
+          ],
+        },
+      },
+    },
   },
 } as const;
+
+function bytesFromBase64(b64: string): Uint8Array {
+  if ((globalThis as any).Buffer) {
+    return Uint8Array.from(globalThis.Buffer.from(b64, "base64"));
+  } else {
+    const bin = globalThis.atob(b64);
+    const arr = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; ++i) {
+      arr[i] = bin.charCodeAt(i);
+    }
+    return arr;
+  }
+}
+
+function base64FromBytes(arr: Uint8Array): string {
+  if ((globalThis as any).Buffer) {
+    return globalThis.Buffer.from(arr).toString("base64");
+  } else {
+    const bin: string[] = [];
+    arr.forEach((byte) => {
+      bin.push(globalThis.String.fromCharCode(byte));
+    });
+    return globalThis.btoa(bin.join(""));
+  }
+}
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 

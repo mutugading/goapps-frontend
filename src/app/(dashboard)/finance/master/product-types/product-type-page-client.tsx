@@ -2,6 +2,7 @@
 
 import { Plus } from "lucide-react"
 import { useState } from "react"
+import { useQueryClient } from "@tanstack/react-query"
 
 import { PageHeader } from "@/components/common/page-header"
 import { DebouncedSearchInput } from "@/components/common/debounced-search-input"
@@ -12,7 +13,8 @@ import {
   ProductTypeFormDialog,
   ProductTypeTable,
 } from "@/components/finance/cost-product-type"
-import { useCostProductTypes } from "@/hooks/finance/use-cost-product-type"
+import { ImportExportToolbar } from "@/components/finance/costing/import-export-toolbar"
+import { useCostProductTypes, costProductTypeKeys } from "@/hooks/finance/use-cost-product-type"
 import { useUrlState } from "@/lib/hooks"
 import type { CostProductType, ListCostProductTypesParams } from "@/types/finance/cost-product-type"
 
@@ -27,6 +29,7 @@ export default function ProductTypePageClient() {
   const [filters, setFilters] = useUrlState<ListCostProductTypesParams>({ defaultValues: defaultFilters })
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<CostProductType | null>(null)
+  const queryClient = useQueryClient()
 
   const { data, isLoading } = useCostProductTypes(filters)
   const items = data?.items ?? []
@@ -48,6 +51,12 @@ export default function ProductTypePageClient() {
         title="Product Types"
         subtitle="Master lookup driving the auto-generated product code prefix (CST + type + YYMM + seq)."
       >
+        <ImportExportToolbar
+          entity="product_type"
+          onImportSuccess={() =>
+            queryClient.invalidateQueries({ queryKey: costProductTypeKeys.all })
+          }
+        />
         <Button onClick={openCreate}>
           <Plus className="mr-2 h-4 w-4" /> New type
         </Button>

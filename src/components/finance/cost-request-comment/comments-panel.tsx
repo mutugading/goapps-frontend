@@ -132,19 +132,21 @@ export function CommentsPanel({ requestId, readOnly = false }: Props) {
         </p>
       </CardHeader>
       <CardContent className="space-y-3">
-        {isLoading && (
-          <div className="text-sm text-muted-foreground flex items-center gap-2">
-            <Loader2 className="h-4 w-4 animate-spin" /> Loading…
-          </div>
-        )}
-        {!isLoading && (comments?.length ?? 0) === 0 && (
-          <div className="rounded-md border border-dashed py-6 text-center text-sm text-muted-foreground">
-            No comments yet — be the first to post.
-          </div>
-        )}
-        {(comments ?? []).map((c) => (
-          <CommentItem key={c.commentId} comment={c} currentUserId={currentUserId} />
-        ))}
+        <div className="max-h-[480px] overflow-y-auto space-y-3 pr-1">
+          {isLoading && (
+            <div className="text-sm text-muted-foreground flex items-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+            </div>
+          )}
+          {!isLoading && (comments?.length ?? 0) === 0 && (
+            <div className="rounded-md border border-dashed py-6 text-center text-sm text-muted-foreground">
+              No comments yet — be the first to post.
+            </div>
+          )}
+          {(comments ?? []).map((c) => (
+            <CommentItem key={c.commentId} comment={c} currentUserId={currentUserId} />
+          ))}
+        </div>
 
         {readOnly ? (
           <div className="rounded-md border border-dashed py-3 text-center text-xs text-muted-foreground">

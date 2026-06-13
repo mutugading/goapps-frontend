@@ -6,6 +6,8 @@
 import { useState } from "react"
 import { Edit, EyeOff, History, Loader2, Save, Trash2, X } from "lucide-react"
 
+import { ConfirmDialog } from "@/components/shared/confirm-dialog/confirm-dialog"
+
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
@@ -49,6 +51,7 @@ export function CommentItem({ comment, currentUserId }: Props) {
   const [historyOpen, setHistoryOpen] = useState(false)
   const [hideOpen, setHideOpen] = useState(false)
   const [hideReason, setHideReason] = useState("")
+  const [deleteOpen, setDeleteOpen] = useState(false)
 
   const updateM = useUpdateRequestComment()
   const hideM = useHideRequestComment()
@@ -71,10 +74,10 @@ export function CommentItem({ comment, currentUserId }: Props) {
   }
 
   return (
-    <div className={`flex gap-3 ${comment.isHidden ? "opacity-60" : ""}`}>
+    <div className={`flex gap-3 ${isAuthor ? "" : "flex-row-reverse"} ${comment.isHidden ? "opacity-60" : ""}`}>
       <UserInitials userId={comment.authorUserId} className="mt-0.5 shrink-0" />
       <div className="flex-1 min-w-0 rounded-md border bg-card p-3 space-y-2">
-      <div className="flex items-center gap-2 text-xs">
+      <div className={`flex items-center gap-2 text-xs ${isAuthor ? "" : "flex-row-reverse"}`}>
         <span className="font-medium"><UserName userId={comment.authorUserId} compact /></span>
         <span className="text-muted-foreground">{comment.createdAt?.slice(0, 19).replace("T", " ")}</span>
         {comment.isEdited && (
@@ -113,11 +116,7 @@ export function CommentItem({ comment, currentUserId }: Props) {
             size="icon"
             variant="ghost"
             className="h-7 w-7"
-            onClick={() => {
-              if (confirm("Delete this comment? Edit history will be lost.")) {
-                deleteM.mutate({ commentId: comment.commentId, requestId: comment.requestId })
-              }
-            }}
+            onClick={() => setDeleteOpen(true)}
             title="Delete"
           >
             <Trash2 className="h-3.5 w-3.5 text-destructive" />
@@ -150,6 +149,23 @@ export function CommentItem({ comment, currentUserId }: Props) {
       {(attachments?.length ?? 0) > 0 && (
         <AttachmentList attachments={attachments ?? []} canDelete={isAuthor || isAdmin} />
       )}
+
+      {/* Delete confirmation dialog */}
+      <ConfirmDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title="Delete comment"
+        description="This comment and its edit history will be permanently removed."
+        variant="destructive"
+        confirmText="Delete"
+        isLoading={deleteM.isPending}
+        onConfirm={() => {
+          deleteM.mutate(
+            { commentId: comment.commentId, requestId: comment.requestId },
+            { onSuccess: () => setDeleteOpen(false) },
+          )
+        }}
+      />
 
       {/* Edit-history dialog */}
       <EditHistoryDialog open={historyOpen} onOpenChange={setHistoryOpen} commentId={comment.commentId} />

@@ -64,6 +64,7 @@ import {
   CostLevelAssignmentConfigServiceDefinition,
   CostFillTaskServiceDefinition,
 } from "@/types/generated/finance/v1/cost_fill_assignment"
+import { CostDataImportServiceDefinition } from "@/types/generated/finance/v1/cost_import"
 
 const CHANNEL_OPTIONS = {
   "grpc.keepalive_time_ms": 120000,
@@ -408,6 +409,13 @@ export function getFillConfigClient() {
 export function getFillTaskClient() {
   return getOrCreate("fillTask", () =>
     createServiceClient(CostFillTaskServiceDefinition, SERVICE_ADDRESSES.finance, insecure, CHANNEL_OPTIONS)
+  )
+}
+
+// Cost data import/export client (Finance service).
+export function getCostDataImportClient() {
+  return getOrCreate("costDataImport", () =>
+    createServiceClient(CostDataImportServiceDefinition, SERVICE_ADDRESSES.finance, insecure, CHANNEL_OPTIONS)
   )
 }
 

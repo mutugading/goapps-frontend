@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, Suspense } from "react"
-import { Plus, Download, Upload, Loader2 } from "lucide-react"
+import { Plus, Loader2 } from "lucide-react"
+import { useQueryClient } from "@tanstack/react-query"
 
 import {
   Card,
@@ -13,22 +14,15 @@ import {
 import { Button } from "@/components/ui/button"
 import { PageHeader } from "@/components/common/page-header"
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-
-import {
   ParameterFormDialog,
   ParameterDeleteDialog,
-  ParameterImportDialog,
   ParameterFilters,
   ParameterTable,
   ParameterPagination,
 } from "@/components/finance/parameter"
 
-import { useParameters, useExportParameters } from "@/hooks/finance/use-parameter"
+import { useParameters, parameterKeys } from "@/hooks/finance/use-parameter"
+import { ImportExportToolbar } from "@/components/finance/costing/import-export-toolbar"
 import { useUrlState } from "@/lib/hooks"
 import {
   type Parameter,
@@ -56,11 +50,10 @@ function ParameterPageContent() {
 
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
-  const [isImportOpen, setIsImportOpen] = useState(false)
   const [selectedParameter, setSelectedParameter] = useState<Parameter | null>(null)
 
+  const queryClient = useQueryClient()
   const { data, isLoading, isError, error } = useParameters(filters)
-  const exportMutation = useExportParameters()
 
   const handleAddNew = () => {
     setSelectedParameter(null)
@@ -75,14 +68,6 @@ function ParameterPageContent() {
   const handleDelete = (parameter: Parameter) => {
     setSelectedParameter(parameter)
     setIsDeleteOpen(true)
-  }
-
-  const handleExport = async () => {
-    await exportMutation.mutateAsync({
-      dataType: filters.dataType,
-      paramCategory: filters.paramCategory,
-      activeFilter: filters.activeFilter,
-    })
   }
 
   const handlePageChange = (page: number) => {
@@ -102,32 +87,12 @@ function ParameterPageContent() {
         subtitle="Manage parameters for costing calculations"
       >
         <div className="flex items-center gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline">
-                {exportMutation.isPending ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Download className="mr-2 h-4 w-4" />
-                )}
-                Export/Import
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                onClick={handleExport}
-                disabled={exportMutation.isPending}
-              >
-                <Download className="mr-2 h-4 w-4" />
-                Export to Excel
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setIsImportOpen(true)}>
-                <Upload className="mr-2 h-4 w-4" />
-                Import from Excel
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
+          <ImportExportToolbar
+            entity="parameter"
+            onImportSuccess={() =>
+              queryClient.invalidateQueries({ queryKey: parameterKeys.lists() })
+            }
+          />
           <Button onClick={handleAddNew}>
             <Plus className="mr-2 h-4 w-4" />
             Add Parameter
@@ -181,8 +146,6 @@ function ParameterPageContent() {
         onOpenChange={setIsDeleteOpen}
         parameter={selectedParameter}
       />
-
-      <ParameterImportDialog open={isImportOpen} onOpenChange={setIsImportOpen} />
     </div>
   )
 }
@@ -195,10 +158,9 @@ function ParameterPageSkeleton() {
         subtitle="Manage parameters for costing calculations"
       >
         <div className="flex items-center gap-2">
-          <Button variant="outline" disabled>
-            <Download className="mr-2 h-4 w-4" />
-            Export/Import
-          </Button>
+          <Button variant="outline" size="sm" disabled>Template</Button>
+          <Button variant="outline" size="sm" disabled>Export</Button>
+          <Button variant="outline" size="sm" disabled>Import</Button>
           <Button disabled>
             <Plus className="mr-2 h-4 w-4" />
             Add Parameter
