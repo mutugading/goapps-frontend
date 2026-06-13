@@ -11,8 +11,6 @@ import {
   handleGrpcError,
 } from "@/lib/grpc"
 
-const XLSX_CONTENT_TYPE =
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
 export async function GET(
   request: NextRequest,
@@ -125,11 +123,10 @@ export async function GET(
         )
     }
 
-    return new NextResponse(Buffer.from(fileContent), {
-      headers: {
-        "Content-Type": XLSX_CONTENT_TYPE,
-        "Content-Disposition": `attachment; filename="${fileName}"`,
-      },
+    return NextResponse.json({
+      base: { isSuccess: true, statusCode: "200", message: "OK", validationErrors: [] },
+      fileContent: Buffer.from(fileContent).toString("base64"),
+      fileName,
     })
   } catch (error) {
     if (isGrpcError(error)) return handleGrpcError(error)

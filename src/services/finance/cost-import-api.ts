@@ -8,6 +8,15 @@ import type {
 } from "@/types/finance/cost-import"
 
 const BASE = "/api/v1/finance/costing"
+const XLSX_MIME =
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+function base64ToBlob(b64: string): Blob {
+  const binary = atob(b64)
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+  return new Blob([bytes], { type: XLSX_MIME })
+}
 
 /**
  * Download a blank import template for the given entity.
@@ -16,7 +25,8 @@ const BASE = "/api/v1/finance/costing"
 export async function downloadTemplate(entity: ImportEntity): Promise<Blob> {
   const res = await fetch(`${BASE}/templates/${entity}`)
   if (!res.ok) throw new Error(`Template download failed: ${res.status}`)
-  return res.blob()
+  const json = await res.json()
+  return base64ToBlob(json.fileContent as string)
 }
 
 /**
@@ -30,7 +40,8 @@ export async function exportData(
   const qs = params ? "?" + new URLSearchParams(params).toString() : ""
   const res = await fetch(`${BASE}/export/${entity}${qs}`)
   if (!res.ok) throw new Error(`Export failed: ${res.status}`)
-  return res.blob()
+  const json = await res.json()
+  return base64ToBlob(json.fileContent as string)
 }
 
 /**
