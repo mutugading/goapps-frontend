@@ -29,8 +29,11 @@ import {
 } from "@/components/finance/cost-request-comment"
 import { RoutingPanel } from "./routing-panel"
 import { StatusBadge } from "./status-badge"
+import { ParamSummaryPanel } from "./param-summary-panel"
+import { RouteLockCard } from "./route-lock-card"
 import {
   CloseDialog,
+  ConfirmActionDialog,
   FeasibilityDialog,
   ReasonDialog,
   UseExistingCostingDialog,
@@ -57,6 +60,8 @@ import type { CostProductRequest } from "@/types/finance/cost-product-request"
 import { usePermissionContext } from "@/providers/permission-provider"
 import { useAuth } from "@/providers/auth-provider"
 import { useCPRRealtimeSync } from "@/hooks/finance/use-cpr-realtime-sync"
+import { useRouteGraph } from "@/hooks/finance/use-cost-route"
+import { useParamSummary } from "@/hooks/finance/use-param-summary"
 
 interface Props {
   request: CostProductRequest
@@ -67,12 +72,13 @@ interface Props {
   hasFillTracking?: boolean
 }
 
-type DialogKind = "reject" | "cancel" | "verify" | "feasibility" | "close" | "useExisting" | null
+type DialogKind = "reject" | "cancel" | "verify" | "feasibility" | "close" | "useExisting" | "confirmAction" | null
 
 export function RequestDetailPanel({ request, onEdit, allFillsApproved = false, hasFillTracking = false }: Props) {
   useCPRRealtimeSync(request.requestId)
 
   const [dialog, setDialog] = useState<DialogKind>(null)
+  const [confirmActionType, setConfirmActionType] = useState<"confirm" | "approve" | "release">("confirm")
 
   const submitM = useSubmitRequest()
   const startM = useStartReview()
@@ -108,6 +114,13 @@ export function RequestDetailPanel({ request, onEdit, allFillsApproved = false, 
   const canConfirm     = hasPermission("finance.product.request.confirm")
   const canApprove     = hasPermission("finance.product.request.approve")
   const canRelease     = hasPermission("finance.product.request.release")
+  const canManageLock  = hasPermission("finance.costing.route.unlock")
+
+  const { data: routeGraph } = useRouteGraph(request.linkedRouteHeadId)
+  const routeHead = routeGraph?.head
+  const isRouteLocked = routeHead?.routingStatus === "LOCKED"
+
+  const { data: paramSummary } = useParamSummary(request.requestId)
 
   const requestId = request.requestId
   const status = request.status
@@ -217,7 +230,7 @@ export function RequestDetailPanel({ request, onEdit, allFillsApproved = false, 
         )}
         {isParameterComplete && canConfirm && (
           <Button
-            onClick={() => confirmM.mutate({ requestId })}
+            onClick={() => { setConfirmActionType("confirm"); setDialog("confirmAction") }}
             disabled={confirmM.isPending}
           >
             <CheckCircle2 className="mr-2 h-4 w-4" /> Confirm
@@ -225,7 +238,7 @@ export function RequestDetailPanel({ request, onEdit, allFillsApproved = false, 
         )}
         {isConfirmed && canApprove && (
           <Button
-            onClick={() => approveM.mutate({ requestId })}
+            onClick={() => { setConfirmActionType("approve"); setDialog("confirmAction") }}
             disabled={approveM.isPending}
           >
             <CheckCircle2 className="mr-2 h-4 w-4" /> Approve
@@ -233,7 +246,7 @@ export function RequestDetailPanel({ request, onEdit, allFillsApproved = false, 
         )}
         {isApproved && canRelease && (
           <Button
-            onClick={() => releaseM.mutate({ requestId })}
+            onClick={() => { setConfirmActionType("release"); setDialog("confirmAction") }}
             disabled={releaseM.isPending}
           >
             <Play className="mr-2 h-4 w-4" /> Release
@@ -417,6 +430,9 @@ export function RequestDetailPanel({ request, onEdit, allFillsApproved = false, 
             </Card>
           )}
 
+          {/* Parameter summary — shows fill progress per product/level */}
+          <ParamSummaryPanel requestId={request.requestId} />
+
           {/* Comments */}
           <CommentsPanel requestId={request.requestId} readOnly={readOnly} />
         </div>
@@ -439,6 +455,11 @@ export function RequestDetailPanel({ request, onEdit, allFillsApproved = false, 
               linkedRouteHeadId={request.linkedRouteHeadId}
               readOnly={readOnly || !(canRouteCreate || canRouteUpdate)}
             />
+          )}
+
+          {/* Route lock card — permission-gated, only when a route is linked */}
+          {canManageLock && routeHead && (
+            <RouteLockCard head={routeHead} requestId={request.requestId} />
           )}
 
           {/* Attachments */}
@@ -506,6 +527,26 @@ export function RequestDetailPanel({ request, onEdit, allFillsApproved = false, 
         pending={closeM.isPending}
         onConfirm={(substatus) => {
           closeM.mutate({ requestId, closedSubstatus: substatus }, { onSuccess: () => setDialog(null) })
+        }}
+      />
+      <ConfirmActionDialog
+        open={dialog === "confirmAction"}
+        onOpenChange={(v) => {
+          if (!v) setDialog(null)
+        }}
+        action={confirmActionType}
+        pending={confirmM.isPending || approveM.isPending || releaseM.isPending}
+        totalParams={paramSummary?.totalParams ?? 0}
+        filledParams={paramSummary?.filledParams ?? 0}
+        isLocked={isRouteLocked}
+        onConfirm={() => {
+          if (confirmActionType === "confirm") {
+            confirmM.mutate({ requestId }, { onSuccess: () => setDialog(null) })
+          } else if (confirmActionType === "approve") {
+            approveM.mutate({ requestId }, { onSuccess: () => setDialog(null) })
+          } else if (confirmActionType === "release") {
+            releaseM.mutate({ requestId }, { onSuccess: () => setDialog(null) })
+          }
         }}
       />
     </div>
