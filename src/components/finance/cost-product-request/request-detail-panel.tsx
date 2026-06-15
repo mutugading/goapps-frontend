@@ -458,10 +458,20 @@ export function RequestDetailPanel({ request, onEdit, allFillsApproved = false, 
             />
           )}
 
-          {/* Route lock card — only when route is COMPLETE (ready to lock) or LOCKED (can unlock) */}
+          {/* Route lock card — only when route is COMPLETE (ready to lock) or LOCKED (can unlock).
+              When PARAMETER_COMPLETE but route is still DRAFT, show guidance. */}
           {canManageLock && routeHead &&
             (routeHead.routingStatus === "COMPLETE" || routeHead.routingStatus === "LOCKED") && (
             <RouteLockCard head={routeHead} requestId={request.requestId} />
+          )}
+          {canManageLock && routeHead && routeHead.routingStatus === "DRAFT" && isParameterComplete && (
+            <div className="rounded-md border border-amber-200 bg-amber-50 p-4 text-sm dark:border-amber-800 dark:bg-amber-950/30">
+              <p className="font-medium text-amber-800 dark:text-amber-300">Route not ready to lock</p>
+              <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">
+                All parameters are complete. Before locking, open the route and click{" "}
+                <strong>Mark Complete</strong> to finalize the routing structure.
+              </p>
+            </div>
           )}
 
           {/* Attachments */}
