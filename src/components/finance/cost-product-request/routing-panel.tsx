@@ -91,8 +91,6 @@ export function RoutingPanel({ requestId, linkedRouteHeadId, readOnly = false, c
 
   const head = graph.head
   const isShared = (linked?.length ?? 0) > 1
-  const isOwnFresh = head.routingStatus === "DRAFT"
-
   return (
     <>
       <Card data-testid="routing-panel">
@@ -126,7 +124,7 @@ export function RoutingPanel({ requestId, linkedRouteHeadId, readOnly = false, c
                 Duplicate & adjust
               </Button>
             )}
-            {!readOnly && !isOwnFresh && canUnlink && (
+            {!readOnly && canUnlink && (
               <Button variant="ghost" size="sm" onClick={() => unlinkM.mutate({ requestId })}>
                 Unlink
               </Button>
