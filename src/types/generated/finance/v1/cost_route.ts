@@ -27,6 +27,11 @@ export interface CostRouteHead {
   promotedFromDraftId: number;
   cylTypeId: number;
   notes: string;
+  /** Lock tracking -- populated when routing_status = "LOCKED". */
+  lockedBy: string;
+  lockedAt: string;
+  unlockedBy: string;
+  unlockedAt: string;
   audit: AuditInfo | undefined;
 }
 
@@ -220,6 +225,10 @@ function createBaseCostRouteHead(): CostRouteHead {
     promotedFromDraftId: 0,
     cylTypeId: 0,
     notes: "",
+    lockedBy: "",
+    lockedAt: "",
+    unlockedBy: "",
+    unlockedAt: "",
     audit: undefined,
   };
 }
@@ -252,6 +261,18 @@ export const CostRouteHead: MessageFns<CostRouteHead> = {
     }
     if (message.notes !== "") {
       writer.uint32(74).string(message.notes);
+    }
+    if (message.lockedBy !== "") {
+      writer.uint32(138).string(message.lockedBy);
+    }
+    if (message.lockedAt !== "") {
+      writer.uint32(146).string(message.lockedAt);
+    }
+    if (message.unlockedBy !== "") {
+      writer.uint32(154).string(message.unlockedBy);
+    }
+    if (message.unlockedAt !== "") {
+      writer.uint32(162).string(message.unlockedAt);
     }
     if (message.audit !== undefined) {
       AuditInfo.encode(message.audit, writer.uint32(130).fork()).join();
@@ -338,6 +359,38 @@ export const CostRouteHead: MessageFns<CostRouteHead> = {
           message.notes = reader.string();
           continue;
         }
+        case 17: {
+          if (tag !== 138) {
+            break;
+          }
+
+          message.lockedBy = reader.string();
+          continue;
+        }
+        case 18: {
+          if (tag !== 146) {
+            break;
+          }
+
+          message.lockedAt = reader.string();
+          continue;
+        }
+        case 19: {
+          if (tag !== 154) {
+            break;
+          }
+
+          message.unlockedBy = reader.string();
+          continue;
+        }
+        case 20: {
+          if (tag !== 162) {
+            break;
+          }
+
+          message.unlockedAt = reader.string();
+          continue;
+        }
         case 16: {
           if (tag !== 130) {
             break;
@@ -394,6 +447,26 @@ export const CostRouteHead: MessageFns<CostRouteHead> = {
         ? globalThis.Number(object.cyl_type_id)
         : 0,
       notes: isSet(object.notes) ? globalThis.String(object.notes) : "",
+      lockedBy: isSet(object.lockedBy)
+        ? globalThis.String(object.lockedBy)
+        : isSet(object.locked_by)
+        ? globalThis.String(object.locked_by)
+        : "",
+      lockedAt: isSet(object.lockedAt)
+        ? globalThis.String(object.lockedAt)
+        : isSet(object.locked_at)
+        ? globalThis.String(object.locked_at)
+        : "",
+      unlockedBy: isSet(object.unlockedBy)
+        ? globalThis.String(object.unlockedBy)
+        : isSet(object.unlocked_by)
+        ? globalThis.String(object.unlocked_by)
+        : "",
+      unlockedAt: isSet(object.unlockedAt)
+        ? globalThis.String(object.unlockedAt)
+        : isSet(object.unlocked_at)
+        ? globalThis.String(object.unlocked_at)
+        : "",
       audit: isSet(object.audit) ? AuditInfo.fromJSON(object.audit) : undefined,
     };
   },
@@ -427,6 +500,18 @@ export const CostRouteHead: MessageFns<CostRouteHead> = {
     if (message.notes !== "") {
       obj.notes = message.notes;
     }
+    if (message.lockedBy !== "") {
+      obj.lockedBy = message.lockedBy;
+    }
+    if (message.lockedAt !== "") {
+      obj.lockedAt = message.lockedAt;
+    }
+    if (message.unlockedBy !== "") {
+      obj.unlockedBy = message.unlockedBy;
+    }
+    if (message.unlockedAt !== "") {
+      obj.unlockedAt = message.unlockedAt;
+    }
     if (message.audit !== undefined) {
       obj.audit = AuditInfo.toJSON(message.audit);
     }
@@ -447,6 +532,10 @@ export const CostRouteHead: MessageFns<CostRouteHead> = {
     message.promotedFromDraftId = object.promotedFromDraftId ?? 0;
     message.cylTypeId = object.cylTypeId ?? 0;
     message.notes = object.notes ?? "";
+    message.lockedBy = object.lockedBy ?? "";
+    message.lockedAt = object.lockedAt ?? "";
+    message.unlockedBy = object.unlockedBy ?? "";
+    message.unlockedAt = object.unlockedAt ?? "";
     message.audit = (object.audit !== undefined && object.audit !== null)
       ? AuditInfo.fromPartial(object.audit)
       : undefined;
