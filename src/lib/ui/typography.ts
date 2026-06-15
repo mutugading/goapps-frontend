@@ -5,7 +5,7 @@
 export const typography = {
   pageTitle: "text-xl font-bold tracking-tight md:text-2xl",
   sectionTitle: "text-base font-semibold md:text-lg",
-  cardTitle: "text-sm font-medium text-muted-foreground",
+  cardTitle: "text-sm font-semibold",
   subtitle: "text-sm text-muted-foreground",
   metric: "text-2xl font-bold tabular-nums md:text-3xl",
   metricDelta: "text-xs text-muted-foreground",

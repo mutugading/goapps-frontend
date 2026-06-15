@@ -1,25 +1,13 @@
 "use client"
 
-// StatusBadge — renders the lifecycle status with colour coding.
 import { Badge } from "@/components/ui/badge"
+import { cn } from "@/lib/utils"
+import {
+  baseBadgeVariant,
+  getStatusDisplay,
+  semanticBadgeClasses,
+} from "@/lib/ui/status-colors"
 import type { ClosedSubstatus, RequestStatus } from "@/types/finance/cost-product-request"
-
-const STATUS_VARIANT: Record<string, "secondary" | "outline" | "destructive" | "default"> = {
-  DRAFT: "outline",
-  SUBMITTED: "secondary",
-  UNDER_REVIEW: "secondary",
-  ROUTING_DEFINED: "secondary",
-  PARAMETER_PENDING: "secondary",
-  PARAMETER_COMPLETE: "secondary",
-  CONFIRMED: "default",
-  APPROVED: "default",
-  RELEASED: "default",
-  COSTING_DONE: "default",
-  QUOTED: "default",
-  QUOTE_READY: "default",
-  CLOSED: "outline",
-  REJECTED: "destructive",
-}
 
 export function StatusBadge({
   status,
@@ -30,14 +18,21 @@ export function StatusBadge({
   substatus?: ClosedSubstatus
   size?: "default" | "lg"
 }) {
-  const variant = STATUS_VARIANT[status] ?? "secondary"
-  const sizeClass = size === "lg" ? "text-sm px-3 py-1" : ""
+  const { variant, label: baseLabel } = getStatusDisplay("request", status)
   const label =
     status === "CLOSED" && substatus
-      ? `${status} · ${substatus}`
-      : status.replace(/_/g, " ")
+      ? `${baseLabel} · ${substatus.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase())}`
+      : baseLabel
+
   return (
-    <Badge variant={variant} className={sizeClass} data-testid="request-status-badge">
+    <Badge
+      variant={baseBadgeVariant(variant)}
+      className={cn(
+        semanticBadgeClasses[variant],
+        size === "lg" && "text-sm px-3 py-1",
+      )}
+      data-testid="request-status-badge"
+    >
       {label}
     </Badge>
   )

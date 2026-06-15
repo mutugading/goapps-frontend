@@ -71,6 +71,7 @@ vi.mock(
   "@/components/finance/cost-product-request/transition-dialogs",
   () => ({
     CloseDialog:                () => null,
+    ConfirmActionDialog:        () => null,
     FeasibilityDialog:          () => null,
     ReasonDialog:               () => null,
     UseExistingCostingDialog:   () => null,

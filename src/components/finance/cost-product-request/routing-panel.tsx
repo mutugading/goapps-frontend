@@ -19,9 +19,11 @@ interface Props {
   linkedRouteHeadId?: number
   /** When true the request is terminal: routing is view-only (no link/create/unlink/duplicate). */
   readOnly?: boolean
+  /** When false, Unlink is hidden regardless of other conditions (e.g. already confirmed/approved/released). */
+  canUnlink?: boolean
 }
 
-export function RoutingPanel({ requestId, linkedRouteHeadId, readOnly = false }: Props) {
+export function RoutingPanel({ requestId, linkedRouteHeadId, readOnly = false, canUnlink = true }: Props) {
   const [pickOpen, setPickOpen] = useState(false)
   const [wizardOpen, setWizardOpen] = useState(false)
   const [dupOpen, setDupOpen] = useState(false)
@@ -124,7 +126,7 @@ export function RoutingPanel({ requestId, linkedRouteHeadId, readOnly = false }:
                 Duplicate & adjust
               </Button>
             )}
-            {!readOnly && !isOwnFresh && (
+            {!readOnly && !isOwnFresh && canUnlink && (
               <Button variant="ghost" size="sm" onClick={() => unlinkM.mutate({ requestId })}>
                 Unlink
               </Button>
