@@ -14,6 +14,10 @@ export interface CostRouteHead {
   promotedFromDraftId?: number
   cylTypeId?: number
   notes?: string
+  lockedBy: string
+  lockedAt: string
+  unlockedBy: string
+  unlockedAt: string
 }
 
 export interface CostRouteRm {
@@ -125,6 +129,10 @@ export function normalizeCostRouteHead(raw: Record<string, unknown>): CostRouteH
     promotedFromDraftId: numOpt(raw.promotedFromDraftId ?? raw.promoted_from_draft_id),
     cylTypeId: numOpt(raw.cylTypeId ?? raw.cyl_type_id),
     notes: str(raw.notes) || undefined,
+    lockedBy: str(raw.lockedBy ?? raw.locked_by),
+    lockedAt: str(raw.lockedAt ?? raw.locked_at),
+    unlockedBy: str(raw.unlockedBy ?? raw.unlocked_by),
+    unlockedAt: str(raw.unlockedAt ?? raw.unlocked_at),
   }
 }
 
