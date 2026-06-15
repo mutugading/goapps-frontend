@@ -2,10 +2,8 @@
 
 import { Loader2 } from "lucide-react"
 
-import { Badge } from "@/components/ui/badge"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import {
   Select,
   SelectContent,
@@ -28,6 +26,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { DataTablePagination } from "@/components/shared"
+import { StatusBadge } from "@/components/common/status-badge"
 import { useUrlState } from "@/lib/hooks"
 import { useCalcJobChunks } from "@/hooks/finance/use-cost-calc"
 import type {
@@ -47,15 +46,6 @@ const STATUSES: ChunkStatus[] = [
   "PARTIAL_FAILED",
   "FAILED",
 ]
-
-const STATUS_CLASS: Record<ChunkStatus, string> = {
-  QUEUED: "bg-slate-100 text-slate-700",
-  DISPATCHED: "bg-sky-100 text-sky-700",
-  PROCESSING: "bg-blue-100 text-blue-700",
-  SUCCESS: "bg-emerald-100 text-emerald-700",
-  PARTIAL_FAILED: "bg-amber-100 text-amber-700",
-  FAILED: "bg-red-100 text-red-700",
-}
 
 const defaultFilters: ListCalcJobChunksParams = {
   waveNo: undefined,
@@ -90,14 +80,15 @@ export function CalcJobChunksTab({ jobId }: Props) {
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+      <div className="flex flex-wrap gap-3">
         <div className="space-y-1">
-          <Label className="text-xs">Wave #</Label>
+          <div className="text-xs uppercase tracking-wide text-muted-foreground">Wave #</div>
           <Input
             type="number"
             min={1}
             value={filters.waveNo ?? ""}
-            placeholder="all"
+            placeholder="All waves"
+            className="w-32"
             onChange={(e) => {
               const v = e.target.value
               patch({ waveNo: v ? Number(v) : undefined })
@@ -105,21 +96,21 @@ export function CalcJobChunksTab({ jobId }: Props) {
           />
         </div>
         <div className="space-y-1">
-          <Label className="text-xs">Status</Label>
+          <div className="text-xs uppercase tracking-wide text-muted-foreground">Status</div>
           <Select
             value={filters.status || "all"}
             onValueChange={(v) =>
               patch({ status: v === "all" ? "" : (v as ChunkStatus) })
             }
           >
-            <SelectTrigger>
+            <SelectTrigger className="w-40">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="all">All statuses</SelectItem>
               {STATUSES.map((s) => (
                 <SelectItem key={s} value={s}>
-                  {s}
+                  <StatusBadge status={s} type="chunk" size="sm" />
                 </SelectItem>
               ))}
             </SelectContent>
@@ -168,9 +159,7 @@ export function CalcJobChunksTab({ jobId }: Props) {
                   {c.productCount}
                 </TableCell>
                 <TableCell>
-                  <Badge variant="outline" className={STATUS_CLASS[c.status]}>
-                    {c.status}
-                  </Badge>
+                  <StatusBadge status={c.status} type="chunk" size="sm" />
                 </TableCell>
                 <TableCell className="font-mono text-xs">{c.workerId || "—"}</TableCell>
                 <TableCell className="text-right font-mono text-xs text-emerald-700">

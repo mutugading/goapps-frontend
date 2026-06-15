@@ -3,10 +3,11 @@
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
 
-import { PageHeader } from "@/components/common/page-header"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { EmptyState } from "@/components/common/empty-state"
+import { PageHeader } from "@/components/common/page-header"
 import { useCalcJob } from "@/hooks/finance/use-cost-calc"
 
 import { CalcJobHeader } from "./calc-job-header"
@@ -34,32 +35,41 @@ export function CalcJobDetailClient({ jobId }: Props) {
 
   if (error || !job) {
     return (
-      <div className="space-y-4">
-        <Button asChild variant="ghost" size="sm">
-          <Link href="/finance/calc-jobs">
-            <ArrowLeft className="mr-1 h-4 w-4" /> Back to calc jobs
-          </Link>
-        </Button>
-        <div className="rounded border border-red-200 bg-red-50 p-6 text-sm text-red-700">
-          Calc job not found.
-        </div>
+      <div className="space-y-6">
+        <PageHeader title="Calc Job">
+          <Button asChild variant="outline">
+            <Link href="/finance/calc-jobs">
+              <ArrowLeft className="mr-2 h-4 w-4" /> Back to calc jobs
+            </Link>
+          </Button>
+        </PageHeader>
+        <EmptyState
+          title="Job not found"
+          description={`No calc job with ID ${jobId}.`}
+          action={
+            <Button asChild variant="outline">
+              <Link href="/finance/calc-jobs">Back to list</Link>
+            </Button>
+          }
+        />
       </div>
     )
   }
 
+  const scope = job.scope.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase())
+
   return (
     <div className="space-y-6">
-      <div>
-        <Button asChild variant="ghost" size="sm" className="mb-2 -ml-3">
+      <PageHeader
+        title={job.jobCode || `Job #${job.jobId}`}
+        subtitle={`Period ${job.period} · ${job.calculationType} · ${scope}`}
+      >
+        <Button asChild variant="outline">
           <Link href="/finance/calc-jobs">
-            <ArrowLeft className="mr-1 h-4 w-4" /> Back to calc jobs
+            <ArrowLeft className="mr-2 h-4 w-4" /> Back to calc jobs
           </Link>
         </Button>
-        <PageHeader
-          title={`Job ${job.jobCode || `#${job.jobId}`}`}
-          subtitle={`Period ${job.period} · ${job.calculationType} · ${job.scope.replace(/_/g, " ")}`}
-        />
-      </div>
+      </PageHeader>
 
       <CalcJobHeader job={job} />
 

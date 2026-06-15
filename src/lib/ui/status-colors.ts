@@ -60,6 +60,7 @@ export const statusRegistry: Record<StatusType, Record<string, StatusDisplay>> =
   },
   job: {
     QUEUED: { variant: "secondary", label: "Queued" },
+    PLANNING: { variant: "default", label: "Planning" },
     PROCESSING: { variant: "warning", label: "Processing" },
     SUCCESS: { variant: "success", label: "Success" },
     PARTIAL_FAILED: { variant: "warning", label: "Partial Failed" },
@@ -67,11 +68,17 @@ export const statusRegistry: Record<StatusType, Record<string, StatusDisplay>> =
     CANCELLED: { variant: "outline", label: "Cancelled" },
   },
   chunk: {
-    PENDING: { variant: "secondary", label: "Pending" },
+    QUEUED: { variant: "secondary", label: "Queued" },
+    DISPATCHED: { variant: "default", label: "Dispatched" },
     PROCESSING: { variant: "warning", label: "Processing" },
     SUCCESS: { variant: "success", label: "Success" },
     PARTIAL_FAILED: { variant: "warning", label: "Partial Failed" },
     FAILED: { variant: "destructive", label: "Failed" },
+    PENDING: { variant: "secondary", label: "Pending" },
+    READY: { variant: "default", label: "Ready" },
+    CALCULATING: { variant: "warning", label: "Calculating" },
+    BLOCKED: { variant: "warning", label: "Blocked" },
+    SKIPPED: { variant: "outline", label: "Skipped" },
   },
   cost: {
     CALCULATED: { variant: "default", label: "Calculated" },

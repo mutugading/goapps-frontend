@@ -14,13 +14,13 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Textarea } from "@/components/ui/textarea"
+import { StatusBadge } from "@/components/common/status-badge"
 import { useCancelCalcJob } from "@/hooks/finance/use-cost-calc"
 import { usePermissionContext } from "@/providers/permission-provider"
 import type { CalJob, CalcJobStatus } from "@/types/finance/cost-calc"
-
-import { CalcJobStatusBadge } from "./calc-job-status-badge"
 
 interface Props {
   job: CalJob
@@ -41,10 +41,6 @@ export function CalcJobHeader({ job }: Props) {
       : 0
 
   async function confirm() {
-    // Race-safe: job may transition to terminal state (SUCCESS / PARTIAL_FAILED /
-    // FAILED) between user clicking Cancel and the request hitting the backend.
-    // useCancelCalcJob's onError toast already surfaces the message; swallow
-    // the re-throw to avoid Next.js's unhandled-rejection runtime error.
     try {
       await cancel.mutateAsync({ jobId: job.jobId, reason: reason.trim() || undefined })
     } catch {
@@ -55,33 +51,48 @@ export function CalcJobHeader({ job }: Props) {
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-6 py-2">
-      <CalcJobStatusBadge status={job.status} />
-      <div className="min-w-[220px] space-y-1">
-        <div className="text-xs text-muted-foreground">Progress</div>
-        <div className="flex items-center gap-2">
-          <Progress value={pct} className="w-32" />
-          <span className="text-sm tabular-nums">
-            {job.processedChunks}/{job.totalChunks || "—"}
-          </span>
-          <span className="text-xs text-muted-foreground">({pct}%)</span>
+    <Card>
+      <CardContent className="pt-6 pb-5">
+        <div className="flex flex-wrap items-start justify-between gap-6">
+          {/* Status + progress */}
+          <div className="flex flex-wrap items-start gap-6">
+            <div className="space-y-1.5">
+              <div className="text-xs uppercase tracking-wide text-muted-foreground">Status</div>
+              <StatusBadge status={job.status} type="job" />
+            </div>
+
+            <div className="space-y-1.5">
+              <div className="text-xs uppercase tracking-wide text-muted-foreground">Progress</div>
+              <div className="flex items-center gap-2">
+                <Progress value={pct} className="h-2 w-36" />
+                <span className="text-sm tabular-nums">
+                  {job.processedChunks}/{job.totalChunks || "—"}
+                </span>
+                <span className="text-xs text-muted-foreground">({pct}%)</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Count stats + cancel */}
+          <div className="flex flex-wrap items-end gap-6">
+            <Stat label="Success" value={job.successCount} colorClass="text-emerald-600" />
+            <Stat label="Failed" value={job.failedCount} colorClass="text-red-600" />
+            <Stat label="Blocked" value={job.blockedCount} colorClass="text-amber-600" />
+            <Stat label="Total" value={job.totalProducts} />
+            {canCancel && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-destructive hover:text-destructive"
+                onClick={() => setOpen(true)}
+                disabled={cancel.isPending}
+              >
+                <XCircle className="mr-1.5 h-3.5 w-3.5" /> Cancel job
+              </Button>
+            )}
+          </div>
         </div>
-      </div>
-      <CountBlock label="Success" value={job.successCount} colorClass="text-emerald-600" />
-      <CountBlock label="Failed" value={job.failedCount} colorClass="text-red-600" />
-      <CountBlock label="Blocked" value={job.blockedCount} colorClass="text-amber-600" />
-      <CountBlock label="Total" value={job.totalProducts} />
-      {canCancel && (
-        <Button
-          variant="outline"
-          size="sm"
-          className="text-red-600 hover:text-red-700"
-          onClick={() => setOpen(true)}
-          disabled={cancel.isPending}
-        >
-          <XCircle className="mr-1 h-3 w-3" /> Cancel job
-        </Button>
-      )}
+      </CardContent>
 
       <AlertDialog open={open} onOpenChange={(o) => !o && setOpen(false)}>
         <AlertDialogContent>
@@ -89,9 +100,9 @@ export function CalcJobHeader({ job }: Props) {
             <AlertDialogTitle>Cancel calc job?</AlertDialogTitle>
             <AlertDialogDescription>
               This will signal job{" "}
-              <strong className="font-mono">{job.jobCode || `#${job.jobId}`}</strong> to
-              stop. In-flight chunks may continue until they finish, but no new chunks will
-              be dispatched.
+              <strong className="font-mono">{job.jobCode || `#${job.jobId}`}</strong> to stop.
+              In-flight chunks may continue until they finish, but no new chunks will be
+              dispatched.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="space-y-1">
@@ -111,11 +122,11 @@ export function CalcJobHeader({ job }: Props) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </Card>
   )
 }
 
-function CountBlock({
+function Stat({
   label,
   value,
   colorClass,
@@ -125,9 +136,9 @@ function CountBlock({
   colorClass?: string
 }) {
   return (
-    <div className="min-w-[72px]">
-      <div className="text-xs text-muted-foreground">{label}</div>
-      <div className={`text-lg font-semibold tabular-nums ${colorClass ?? ""}`}>{value}</div>
+    <div className="text-center">
+      <div className="text-xs uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className={`mt-0.5 text-xl font-semibold tabular-nums ${colorClass ?? ""}`}>{value}</div>
     </div>
   )
 }

@@ -3,10 +3,8 @@
 import { useState } from "react"
 import { ChevronDown, ChevronRight, Download, Loader2 } from "lucide-react"
 
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Label } from "@/components/ui/label"
 import {
   Select,
   SelectContent,
@@ -23,6 +21,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { DataTablePagination } from "@/components/shared"
+import { StatusBadge } from "@/components/common/status-badge"
 import { useUrlState } from "@/lib/hooks"
 import { useCalcJobProducts } from "@/hooks/finance/use-cost-calc"
 import type {
@@ -45,16 +44,6 @@ const STATUSES: JobProductStatus[] = [
   "BLOCKED",
   "SKIPPED",
 ]
-
-const STATUS_CLASS: Record<JobProductStatus, string> = {
-  PENDING: "bg-slate-100 text-slate-700",
-  READY: "bg-sky-100 text-sky-700",
-  CALCULATING: "bg-blue-100 text-blue-700",
-  SUCCESS: "bg-emerald-100 text-emerald-700",
-  FAILED: "bg-red-100 text-red-700",
-  BLOCKED: "bg-amber-100 text-amber-700",
-  SKIPPED: "bg-zinc-100 text-zinc-700",
-}
 
 const defaultFilters: ListCalcJobProductsParams & { tab: string } = {
   status: "",
@@ -153,7 +142,7 @@ export function CalcJobProductsTab({ jobId }: Props) {
     <div className="space-y-4">
       <div className="flex flex-wrap items-end gap-3">
         <div className="space-y-1">
-          <Label className="text-xs">Status</Label>
+          <div className="text-xs uppercase tracking-wide text-muted-foreground">Status</div>
           <Select
             value={filters.status || "all"}
             onValueChange={(v) =>
@@ -164,10 +153,10 @@ export function CalcJobProductsTab({ jobId }: Props) {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="all">All statuses</SelectItem>
               {STATUSES.map((s) => (
                 <SelectItem key={s} value={s}>
-                  {s}
+                  <StatusBadge status={s} type="chunk" size="sm" />
                 </SelectItem>
               ))}
             </SelectContent>
@@ -280,9 +269,7 @@ function ProductRow({
         <TableCell className="text-xs">{p.productName || "—"}</TableCell>
         <TableCell className="text-right font-mono text-xs">{p.waveNo}</TableCell>
         <TableCell>
-          <Badge variant="outline" className={STATUS_CLASS[p.status]}>
-            {p.status}
-          </Badge>
+          <StatusBadge status={p.status} type="chunk" size="sm" />
         </TableCell>
         <TableCell className="text-xs">
           {p.status === "BLOCKED" && p.blockReason ? (

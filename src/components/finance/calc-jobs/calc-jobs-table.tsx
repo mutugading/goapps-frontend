@@ -20,7 +20,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { usePermissionContext } from "@/providers/permission-provider"
 import { useCancelCalcJob } from "@/hooks/finance/use-cost-calc"
 import type { CalJob, CalcJobStatus } from "@/types/finance/cost-calc"
-import { CalcJobStatusBadge } from "./calc-job-status-badge"
+import { StatusBadge } from "@/components/common/status-badge"
 
 interface Props {
   items: CalJob[]
@@ -137,7 +137,7 @@ export function CalcJobsTable({
                   <TableCell className="text-xs">{job.calculationType}</TableCell>
                   <TableCell className="text-xs">{job.scope.replace("_", " ")}</TableCell>
                   <TableCell>
-                    <CalcJobStatusBadge status={job.status} />
+                    <StatusBadge status={job.status} type="job" size="sm" />
                   </TableCell>
                   <TableCell className="text-xs">
                     {job.processedChunks}/{job.totalChunks || "—"}
