@@ -65,11 +65,15 @@ export default function ProductRequestDetailClient({ requestId }: Props) {
     )
   }
 
-  // Show the Fill Tracking tab for statuses where fill tasks may exist.
-  // UNDER_REVIEW is excluded — fill tasks don't exist yet at that stage.
+  // Show fill tracking and param summary for all statuses after parameter collection starts.
+  // UNDER_REVIEW excluded — fill tasks don't exist yet at that stage.
+  // CONFIRMED/APPROVED/RELEASED included — param audit trail remains relevant throughout lifecycle.
   const hasFillTracking =
     request.status === "PARAMETER_PENDING" ||
     request.status === "PARAMETER_COMPLETE" ||
+    request.status === "CONFIRMED" ||
+    request.status === "APPROVED" ||
+    request.status === "RELEASED" ||
     request.status === "COSTING_DONE" ||
     request.status === "QUOTED" ||
     (request.status === "CLOSED" && !!request.linkedRouteHeadId)

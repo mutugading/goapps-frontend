@@ -3,6 +3,7 @@
 // RequestDetailPanel — renders full request info + state-machine action buttons gated by status.
 import { useState } from "react"
 import {
+  ArrowRight,
   Ban,
   CheckCircle2,
   FileCheck,
@@ -30,7 +31,6 @@ import {
 import { RoutingPanel } from "./routing-panel"
 import { StatusBadge } from "./status-badge"
 import { ParamSummaryPanel } from "./param-summary-panel"
-import { RouteLockCard } from "./route-lock-card"
 import {
   CloseDialog,
   ConfirmActionDialog,
@@ -302,9 +302,12 @@ export function RequestDetailPanel({ request, onEdit, allFillsApproved = false, 
                 <Field label="Type">{request.requestTypeCode ?? `#${request.requestTypeId}`}</Field>
                 <Field label="Urgency">{humanizeEnumValue(request.urgencyLevel)}</Field>
                 <Field label="Classification">
-                  <span>{request.productClassification}</span>
+                  <span className="capitalize">{request.productClassification}</span>
                   {request.verifiedClassification && request.verifiedClassification !== request.productClassification && (
-                    <span className="ml-2 text-orange-600 text-xs">→ {request.verifiedClassification}</span>
+                    <span className="ml-1.5 inline-flex items-center gap-0.5 text-muted-foreground">
+                      <ArrowRight className="h-3 w-3 shrink-0" />
+                      <span className="capitalize">{request.verifiedClassification}</span>
+                    </span>
                   )}
                 </Field>
                 <Field label="Needed by">{request.neededByDate || "—"}</Field>
@@ -316,10 +319,13 @@ export function RequestDetailPanel({ request, onEdit, allFillsApproved = false, 
               </div>
               {request.description && (
                 <div className="border-t pt-4">
-                  <p className="text-xs text-muted-foreground mb-1">Description</p>
+                  <div className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Description</div>
                   <p className="text-sm whitespace-pre-wrap">{request.description}</p>
                 </div>
               )}
+              <div className="border-t pt-4 space-y-2">
+                <AttachmentsPanel requestId={request.requestId} readOnly={readOnly} inline />
+              </div>
             </CardContent>
           </Card>
 
@@ -350,56 +356,66 @@ export function RequestDetailPanel({ request, onEdit, allFillsApproved = false, 
                 <CardTitle className="text-sm font-semibold">Review assessment</CardTitle>
               </CardHeader>
               <CardContent className="text-sm">
-                <div className="grid grid-cols-2 gap-x-6 gap-y-0">
-                  {/* Classification column — override reason sits directly below */}
-                  <div className="space-y-3">
-                    <div className="space-y-1">
-                      <div className="text-xs uppercase tracking-wide text-muted-foreground">Classification</div>
+                {/* Flat 4-cell grid — each row spans both columns so alignment is always correct */}
+                <div className="grid grid-cols-2 gap-x-6 gap-y-4 items-start">
+                  {/* Row 1: Classification | Feasibility */}
+                  <div className="space-y-1">
+                    <div className="text-xs uppercase tracking-wide text-muted-foreground">Classification</div>
+                    <div>
+                      <span className="capitalize">{request.productClassification}</span>
+                      {request.verifiedClassification && request.verifiedClassification !== request.productClassification ? (
+                        <span className="ml-1.5 inline-flex items-center gap-0.5 text-muted-foreground">
+                          <ArrowRight className="h-3 w-3 shrink-0" />
+                          <span className="capitalize">{request.verifiedClassification}</span>
+                        </span>
+                      ) : !request.verifiedClassification ? (
+                        <span className="ml-1 text-muted-foreground text-xs">— not verified</span>
+                      ) : null}
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="text-xs uppercase tracking-wide text-muted-foreground">Feasibility</div>
+                    {request.feasibilityDecision ? (
                       <div>
-                        <span className="capitalize">{request.productClassification}</span>
-                        {request.verifiedClassification && request.verifiedClassification !== request.productClassification
-                          ? <span className="ml-2 text-orange-600 text-xs">→ {request.verifiedClassification}</span>
-                          : !request.verifiedClassification && <span className="ml-1 text-muted-foreground text-xs">— not verified</span>
-                        }
+                        <span className="font-medium">{humanizeEnumValue(request.feasibilityDecision)}</span>
+                        {request.feasibilityBy && (
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            <UserName userId={request.feasibilityBy} compact />
+                            {request.feasibilityAt && (
+                              <> · {new Date(request.feasibilityAt).toLocaleString("en-GB", {
+                                year: "numeric", month: "short", day: "2-digit",
+                                hour: "2-digit", minute: "2-digit",
+                              })}</>
+                            )}
+                          </p>
+                        )}
                       </div>
-                    </div>
-                    {request.classificationOverrideReason && (
-                      <div className="space-y-1">
-                        <div className="text-xs uppercase tracking-wide text-orange-600">Override reason</div>
-                        <p className="whitespace-pre-wrap text-muted-foreground">{request.classificationOverrideReason}</p>
-                      </div>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
                     )}
                   </div>
-                  {/* Feasibility column — note sits directly below */}
-                  <div className="space-y-3">
-                    <div className="space-y-1">
-                      <div className="text-xs uppercase tracking-wide text-muted-foreground">Feasibility</div>
-                      {request.feasibilityDecision ? (
-                        <div>
-                          <span className="font-medium">{humanizeEnumValue(request.feasibilityDecision)}</span>
-                          {request.feasibilityBy && (
-                            <p className="text-xs text-muted-foreground mt-0.5">
-                              <UserName userId={request.feasibilityBy} compact />
-                              {request.feasibilityAt && (
-                                <> · {new Date(request.feasibilityAt).toLocaleString("en-GB", {
-                                  year: "numeric", month: "short", day: "2-digit",
-                                  hour: "2-digit", minute: "2-digit",
-                                })}</>
-                              )}
-                            </p>
-                          )}
-                        </div>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
-                    </div>
-                    {request.feasibilityNote && (
+
+                  {/* Row 2: Override reason | Note — empty placeholder keeps columns aligned */}
+                  {(request.classificationOverrideReason || request.feasibilityNote) && (
+                    <>
                       <div className="space-y-1">
-                        <div className="text-xs uppercase tracking-wide text-muted-foreground">Note</div>
-                        <p className="whitespace-pre-wrap text-muted-foreground">{request.feasibilityNote}</p>
+                        {request.classificationOverrideReason && (
+                          <>
+                            <div className="text-xs uppercase tracking-wide text-muted-foreground">Override reason</div>
+                            <p className="whitespace-pre-wrap text-muted-foreground">{request.classificationOverrideReason}</p>
+                          </>
+                        )}
                       </div>
-                    )}
-                  </div>
+                      <div className="space-y-1">
+                        {request.feasibilityNote && (
+                          <>
+                            <div className="text-xs uppercase tracking-wide text-muted-foreground">Note</div>
+                            <p className="whitespace-pre-wrap text-muted-foreground">{request.feasibilityNote}</p>
+                          </>
+                        )}
+                      </div>
+                    </>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -430,9 +446,6 @@ export function RequestDetailPanel({ request, onEdit, allFillsApproved = false, 
             </Card>
           )}
 
-          {/* Parameter summary — shows fill progress per product/level */}
-          <ParamSummaryPanel requestId={request.requestId} routeLocked={isRouteLocked} />
-
           {/* Comments */}
           <CommentsPanel requestId={request.requestId} readOnly={readOnly} />
         </div>
@@ -448,34 +461,27 @@ export function RequestDetailPanel({ request, onEdit, allFillsApproved = false, 
             <FillTrackingCompact requestId={request.requestId} />
           )}
 
-          {/* Routing panel — only show from ROUTING_DEFINED onwards. QUOTE_READY = existing costing path (no routing). */}
+          {/* Parameter summary — fill progress per product/level */}
+          {hasFillTracking && (
+            <ParamSummaryPanel requestId={request.requestId} routeLocked={isRouteLocked} />
+          )}
+
+          {/* Routing panel — only show from ROUTING_DEFINED onwards. QUOTE_READY = existing costing path (no routing).
+              Lock/unlock/complete actions are folded into this card when canManageLock is true. */}
           {!isDraft && !isSubmitted && !isUnderReview && !isQuoteReady && (
             <RoutingPanel
               requestId={request.requestId}
               linkedRouteHeadId={request.linkedRouteHeadId}
               readOnly={readOnly || !(canRouteCreate || canRouteUpdate)}
               canUnlink={!isConfirmed && !isApproved && !isReleased && !isTerminal}
+              canManageLock={canManageLock}
+              showCompleteAction={
+                !isTerminal &&
+                (isParameterPending || isParameterComplete || isConfirmed || isApproved || isReleased)
+              }
             />
           )}
 
-          {/* Route lock card — only when route is COMPLETE (ready to lock) or LOCKED (can unlock).
-              When PARAMETER_COMPLETE but route is still DRAFT, show guidance. */}
-          {canManageLock && routeHead &&
-            (routeHead.routingStatus === "COMPLETE" || routeHead.routingStatus === "LOCKED") && (
-            <RouteLockCard head={routeHead} requestId={request.requestId} />
-          )}
-          {canManageLock && routeHead && routeHead.routingStatus === "DRAFT" && isParameterComplete && (
-            <div className="rounded-md border border-amber-200 bg-amber-50 p-4 text-sm dark:border-amber-800 dark:bg-amber-950/30">
-              <p className="font-medium text-amber-800 dark:text-amber-300">Route not ready to lock</p>
-              <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">
-                All parameters are complete. Before locking, open the route and click{" "}
-                <strong>Mark Complete</strong> to finalize the routing structure.
-              </p>
-            </div>
-          )}
-
-          {/* Attachments */}
-          <AttachmentsPanel requestId={request.requestId} readOnly={readOnly} />
         </div>
       </div>
 

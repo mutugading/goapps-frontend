@@ -70,6 +70,9 @@ export function useOverrideParamValues(requestId: number) {
       void queryClient.invalidateQueries({
         queryKey: ["finance", "cost-product-request", requestId, "param-summary"],
       })
+      void queryClient.invalidateQueries({
+        queryKey: ["finance", "cost-product-request", requestId, "param-edit-log"],
+      })
     },
     onError: (err: Error) => {
       toast.error(err.message)

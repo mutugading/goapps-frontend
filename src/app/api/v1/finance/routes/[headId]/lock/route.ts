@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server"
-import { cookies } from "next/headers"
 import { jwtDecode } from "jwt-decode"
 import {
   getCostRouteClient,
@@ -21,8 +20,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       )
     }
 
-    const cookieStore = await cookies()
-    const accessToken = cookieStore.get("access_token")?.value
+    const accessToken = request.cookies.get("goapps_access_token")?.value
     if (!accessToken) {
       return NextResponse.json(
         { base: { isSuccess: false, statusCode: "401", message: "Unauthenticated", validationErrors: [] } },
