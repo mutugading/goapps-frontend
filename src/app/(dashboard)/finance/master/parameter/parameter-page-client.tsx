@@ -158,7 +158,6 @@ function ParameterPageSkeleton() {
         subtitle="Manage parameters for costing calculations"
       >
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" disabled>Template</Button>
           <Button variant="outline" size="sm" disabled>Export</Button>
           <Button variant="outline" size="sm" disabled>Import</Button>
           <Button disabled>
