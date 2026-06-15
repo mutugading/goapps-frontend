@@ -431,7 +431,7 @@ export function RequestDetailPanel({ request, onEdit, allFillsApproved = false, 
           )}
 
           {/* Parameter summary — shows fill progress per product/level */}
-          <ParamSummaryPanel requestId={request.requestId} />
+          <ParamSummaryPanel requestId={request.requestId} routeLocked={isRouteLocked} />
 
           {/* Comments */}
           <CommentsPanel requestId={request.requestId} readOnly={readOnly} />
@@ -454,6 +454,7 @@ export function RequestDetailPanel({ request, onEdit, allFillsApproved = false, 
               requestId={request.requestId}
               linkedRouteHeadId={request.linkedRouteHeadId}
               readOnly={readOnly || !(canRouteCreate || canRouteUpdate)}
+              canUnlink={!isConfirmed && !isApproved && !isReleased && !isTerminal}
             />
           )}
 

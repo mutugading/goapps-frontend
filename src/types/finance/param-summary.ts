@@ -22,6 +22,8 @@ export interface FillLevelSummary {
   filledParams: number
   totalParams: number
   params: ParamValueEntry[]
+  lastEditedBy: string
+  lastEditedAt: string
 }
 
 export interface ProductParamSummary {
@@ -64,6 +66,8 @@ function normalizeFillLevel(raw: Record<string, unknown>): FillLevelSummary {
     filledParams: Number(raw.filledParams ?? raw.filled_params ?? 0),
     totalParams: Number(raw.totalParams ?? raw.total_params ?? 0),
     params: rawParams.map(normalizeParamValue),
+    lastEditedBy: String(raw.lastEditedBy ?? raw.last_edited_by ?? ""),
+    lastEditedAt: String(raw.lastEditedAt ?? raw.last_edited_at ?? ""),
   }
 }
 
