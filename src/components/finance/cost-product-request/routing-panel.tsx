@@ -125,7 +125,7 @@ export function RoutingPanel({ requestId, linkedRouteHeadId, readOnly = false, c
               </Button>
             )}
             {!readOnly && canUnlink && (
-              <Button variant="ghost" size="sm" onClick={() => unlinkM.mutate({ requestId })}>
+              <Button variant="outline" size="sm" onClick={() => unlinkM.mutate({ requestId })}>
                 Unlink
               </Button>
             )}

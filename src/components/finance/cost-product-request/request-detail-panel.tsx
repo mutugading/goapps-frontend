@@ -273,7 +273,7 @@ export function RequestDetailPanel({ request, onEdit, allFillsApproved = false, 
             <Button variant="outline" onClick={() => setDialog("close")}>
               Close
             </Button>
-            <Button variant="ghost" onClick={() => setDialog("cancel")}>
+            <Button variant="outline" className="border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={() => setDialog("cancel")}>
               <Ban className="mr-2 h-4 w-4" /> Cancel
             </Button>
           </>
