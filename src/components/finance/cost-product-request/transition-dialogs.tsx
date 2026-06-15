@@ -353,3 +353,79 @@ export function UseExistingCostingDialog({ open, onOpenChange, pending, onConfir
     </Dialog>
   )
 }
+
+// ----- ConfirmActionDialog: pre-action checklist shown before Confirm/Approve/Release ----------
+interface ConfirmActionDialogProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  action: "confirm" | "approve" | "release"
+  pending: boolean
+  totalParams: number
+  filledParams: number
+  isLocked: boolean
+  onConfirm: () => void
+}
+
+export function ConfirmActionDialog({
+  open,
+  onOpenChange,
+  action,
+  pending,
+  totalParams,
+  filledParams,
+  isLocked,
+  onConfirm,
+}: ConfirmActionDialogProps) {
+  const allFilled = totalParams > 0 && filledParams >= totalParams
+  const label = action.charAt(0).toUpperCase() + action.slice(1)
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>{label} Request</DialogTitle>
+          <DialogDescription>
+            You are about to <strong>{action}</strong> this request.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-2 py-2 text-sm">
+          <p className="font-medium text-muted-foreground">Quick summary:</p>
+          <ul className="space-y-1.5">
+            <li
+              className={`flex items-center gap-2 ${
+                allFilled ? "text-green-600 dark:text-green-400" : "text-destructive"
+              }`}
+            >
+              <span>{allFilled ? "✓" : "✗"}</span>
+              {filledParams} / {totalParams} params filled across all products
+            </li>
+            <li
+              className={`flex items-center gap-2 ${
+                isLocked
+                  ? "text-green-600 dark:text-green-400"
+                  : "text-amber-600 dark:text-amber-400"
+              }`}
+            >
+              <span>{isLocked ? "✓" : "⚠"}</span>
+              Route is {isLocked ? "LOCKED" : "not locked"}
+            </li>
+          </ul>
+          <p className="pt-1 text-xs text-muted-foreground">
+            This action cannot be undone. The backend will reject if preconditions are not met.
+          </p>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={pending}>
+            Cancel
+          </Button>
+          <Button onClick={onConfirm} disabled={pending}>
+            {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Yes, {label}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
