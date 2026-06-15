@@ -458,8 +458,9 @@ export function RequestDetailPanel({ request, onEdit, allFillsApproved = false, 
             />
           )}
 
-          {/* Route lock card — permission-gated, only when a route is linked */}
-          {canManageLock && routeHead && (
+          {/* Route lock card — only when route is COMPLETE (ready to lock) or LOCKED (can unlock) */}
+          {canManageLock && routeHead &&
+            (routeHead.routingStatus === "COMPLETE" || routeHead.routingStatus === "LOCKED") && (
             <RouteLockCard head={routeHead} requestId={request.requestId} />
           )}
 
