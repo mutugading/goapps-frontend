@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { ArrowLeft, Loader2, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -45,31 +45,29 @@ export function OverrideParamsDrawer({
 }: Props) {
   const overrideMutation = useOverrideParamValues(requestId)
 
-  // Local state: map of paramId → current draft value string (or bool for flags)
-  const [numericValues, setNumericValues] = useState<Record<string, string>>({})
-  const [textValues, setTextValues] = useState<Record<string, string>>({})
-  const [flagValues, setFlagValues] = useState<Record<string, boolean>>({})
-
-  // Reset to current param values whenever the drawer opens.
+  // Initialize state from props on mount (component remounts each time drawer opens via `drawer &&`).
   // State is keyed by paramCode (unique per level, never 0).
-  useEffect(() => {
-    if (!open) return
+  const [numericValues, setNumericValues] = useState<Record<string, string>>(() => {
     const nums: Record<string, string> = {}
+    for (const p of params) {
+      if (p.dataType === "NUMBER") nums[p.paramCode] = p.hasValue ? p.valueNumeric : ""
+    }
+    return nums
+  })
+  const [textValues, setTextValues] = useState<Record<string, string>>(() => {
     const texts: Record<string, string> = {}
+    for (const p of params) {
+      if (p.dataType === "TEXT") texts[p.paramCode] = p.hasValue ? p.valueText : ""
+    }
+    return texts
+  })
+  const [flagValues, setFlagValues] = useState<Record<string, boolean>>(() => {
     const flags: Record<string, boolean> = {}
     for (const p of params) {
-      if (p.dataType === "NUMBER") {
-        nums[p.paramCode] = p.hasValue ? p.valueNumeric : ""
-      } else if (p.dataType === "TEXT") {
-        texts[p.paramCode] = p.hasValue ? p.valueText : ""
-      } else if (p.dataType === "BOOLEAN") {
-        flags[p.paramCode] = p.hasValue ? p.valueFlag : false
-      }
+      if (p.dataType === "BOOLEAN") flags[p.paramCode] = p.hasValue ? p.valueFlag : false
     }
-    setNumericValues(nums)
-    setTextValues(texts)
-    setFlagValues(flags)
-  }, [open, params])
+    return flags
+  })
 
   function handleSave() {
     const values: OverrideValue[] = params.map((p) => {

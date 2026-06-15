@@ -399,7 +399,7 @@ export interface UnlinkRouteResponse {
 
 /** ParamValueEntry is one parameter cell in the summary. */
 export interface ParamValueEntry {
-  paramId: number;
+  paramId: string;
   paramCode: string;
   paramName: string;
   dataType: string;
@@ -6188,7 +6188,7 @@ export const UnlinkRouteResponse: MessageFns<UnlinkRouteResponse> = {
 
 function createBaseParamValueEntry(): ParamValueEntry {
   return {
-    paramId: 0,
+    paramId: "",
     paramCode: "",
     paramName: "",
     dataType: "",
@@ -6203,8 +6203,8 @@ function createBaseParamValueEntry(): ParamValueEntry {
 
 export const ParamValueEntry: MessageFns<ParamValueEntry> = {
   encode(message: ParamValueEntry, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.paramId !== 0) {
-      writer.uint32(8).int64(message.paramId);
+    if (message.paramId !== "") {
+      writer.uint32(10).string(message.paramId);
     }
     if (message.paramCode !== "") {
       writer.uint32(18).string(message.paramCode);
@@ -6244,11 +6244,11 @@ export const ParamValueEntry: MessageFns<ParamValueEntry> = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1: {
-          if (tag !== 8) {
+          if (tag !== 10) {
             break;
           }
 
-          message.paramId = longToNumber(reader.int64());
+          message.paramId = reader.string();
           continue;
         }
         case 2: {
@@ -6335,10 +6335,10 @@ export const ParamValueEntry: MessageFns<ParamValueEntry> = {
   fromJSON(object: any): ParamValueEntry {
     return {
       paramId: isSet(object.paramId)
-        ? globalThis.Number(object.paramId)
+        ? globalThis.String(object.paramId)
         : isSet(object.param_id)
-        ? globalThis.Number(object.param_id)
-        : 0,
+        ? globalThis.String(object.param_id)
+        : "",
       paramCode: isSet(object.paramCode)
         ? globalThis.String(object.paramCode)
         : isSet(object.param_code)
@@ -6389,8 +6389,8 @@ export const ParamValueEntry: MessageFns<ParamValueEntry> = {
 
   toJSON(message: ParamValueEntry): unknown {
     const obj: any = {};
-    if (message.paramId !== 0) {
-      obj.paramId = Math.round(message.paramId);
+    if (message.paramId !== "") {
+      obj.paramId = message.paramId;
     }
     if (message.paramCode !== "") {
       obj.paramCode = message.paramCode;
@@ -6427,7 +6427,7 @@ export const ParamValueEntry: MessageFns<ParamValueEntry> = {
   },
   fromPartial(object: DeepPartial<ParamValueEntry>): ParamValueEntry {
     const message = createBaseParamValueEntry();
-    message.paramId = object.paramId ?? 0;
+    message.paramId = object.paramId ?? "";
     message.paramCode = object.paramCode ?? "";
     message.paramName = object.paramName ?? "";
     message.dataType = object.dataType ?? "";

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Pencil } from "lucide-react"
+import { Clock, Pencil } from "lucide-react"
 import {
   Accordion,
   AccordionContent,
@@ -16,6 +16,7 @@ import { UserName } from "@/components/common/user-name"
 import { usePermissionContext } from "@/providers/permission-provider"
 import { useParamSummary } from "@/hooks/finance/use-param-summary"
 import { OverrideParamsDrawer } from "./override-params-drawer"
+import { ParamEditLogDrawer } from "./param-edit-log-drawer"
 import type { FillLevelSummary, ParamValueEntry } from "@/types/finance/param-summary"
 
 interface Props {
@@ -28,6 +29,11 @@ interface DrawerState {
   productCode: string
   routeLevel: number
   params: ParamValueEntry[]
+}
+
+interface LogDrawerState {
+  routeLevel: number
+  productCode: string
 }
 
 function taskStatusBadge(status: string) {
@@ -65,9 +71,10 @@ interface LevelSummaryProps {
   canEdit: boolean
   locked: boolean
   onEdit: () => void
+  onShowLog: () => void
 }
 
-function LevelSummary({ level, canEdit, locked, onEdit }: LevelSummaryProps) {
+function LevelSummary({ level, canEdit, locked, onEdit, onShowLog }: LevelSummaryProps) {
   return (
     <div className="space-y-2 rounded-md border bg-muted/30 p-3 text-xs">
       <div className="flex items-center justify-between gap-2">
@@ -77,6 +84,17 @@ function LevelSummary({ level, canEdit, locked, onEdit }: LevelSummaryProps) {
             {level.filledParams}/{level.totalParams}
           </span>
           {taskStatusBadge(level.taskStatus)}
+          {level.lastEditedBy && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-5 w-5 shrink-0 text-muted-foreground"
+              title="View edit history"
+              onClick={(e) => { e.stopPropagation(); onShowLog() }}
+            >
+              <Clock className="h-3 w-3" />
+            </Button>
+          )}
           {canEdit && !locked && level.params.length > 0 && (
             <Button
               variant="ghost"
@@ -138,6 +156,7 @@ export function ParamSummaryPanel({ requestId, routeLocked = false }: Props) {
   const canEdit = hasPermission("finance.costing.paramvalue.update")
 
   const [drawer, setDrawer] = useState<DrawerState | null>(null)
+  const [logDrawer, setLogDrawer] = useState<LogDrawerState | null>(null)
 
   if (isLoading) {
     return (
@@ -204,6 +223,12 @@ export function ParamSummaryPanel({ requestId, routeLocked = false }: Props) {
                           params: level.params,
                         })
                       }
+                      onShowLog={() =>
+                        setLogDrawer({
+                          routeLevel: level.routeLevel,
+                          productCode: product.productCode,
+                        })
+                      }
                     />
                   ))}
                 </AccordionContent>
@@ -222,6 +247,16 @@ export function ParamSummaryPanel({ requestId, routeLocked = false }: Props) {
           productSysId={drawer.productSysId}
           productCode={drawer.productCode}
           params={drawer.params}
+        />
+      )}
+
+      {logDrawer && (
+        <ParamEditLogDrawer
+          open
+          onClose={() => setLogDrawer(null)}
+          requestId={requestId}
+          routeLevel={logDrawer.routeLevel}
+          productCode={logDrawer.productCode}
         />
       )}
     </Card>
