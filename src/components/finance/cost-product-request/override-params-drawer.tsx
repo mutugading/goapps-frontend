@@ -50,7 +50,8 @@ export function OverrideParamsDrawer({
   const [textValues, setTextValues] = useState<Record<string, string>>({})
   const [flagValues, setFlagValues] = useState<Record<string, boolean>>({})
 
-  // Reset to current param values whenever the drawer opens
+  // Reset to current param values whenever the drawer opens.
+  // State is keyed by paramCode (unique per level, never 0).
   useEffect(() => {
     if (!open) return
     const nums: Record<string, string> = {}
@@ -58,11 +59,11 @@ export function OverrideParamsDrawer({
     const flags: Record<string, boolean> = {}
     for (const p of params) {
       if (p.dataType === "NUMBER") {
-        nums[p.paramId.toString()] = p.hasValue ? p.valueNumeric : ""
+        nums[p.paramCode] = p.hasValue ? p.valueNumeric : ""
       } else if (p.dataType === "TEXT") {
-        texts[p.paramId.toString()] = p.hasValue ? p.valueText : ""
+        texts[p.paramCode] = p.hasValue ? p.valueText : ""
       } else if (p.dataType === "BOOLEAN") {
-        flags[p.paramId.toString()] = p.hasValue ? p.valueFlag : false
+        flags[p.paramCode] = p.hasValue ? p.valueFlag : false
       }
     }
     setNumericValues(nums)
@@ -72,18 +73,17 @@ export function OverrideParamsDrawer({
 
   function handleSave() {
     const values: OverrideValue[] = params.map((p) => {
-      const key = p.paramId.toString()
+      // Send paramId (UUID) to the backend; use paramCode locally as state key.
       if (p.dataType === "NUMBER") {
-        return { productSysId, paramId: key, valueNumeric: numericValues[key] ?? "" }
+        return { productSysId, paramId: p.paramId, valueNumeric: numericValues[p.paramCode] ?? "" }
       }
       if (p.dataType === "TEXT") {
-        return { productSysId, paramId: key, valueText: textValues[key] ?? "" }
+        return { productSysId, paramId: p.paramId, valueText: textValues[p.paramCode] ?? "" }
       }
-      // BOOLEAN
       return {
         productSysId,
-        paramId: key,
-        valueFlag: flagValues[key] ?? false,
+        paramId: p.paramId,
+        valueFlag: flagValues[p.paramCode] ?? false,
         hasValueFlag: true,
       }
     })
@@ -94,10 +94,9 @@ export function OverrideParamsDrawer({
   }
 
   const isDirty = params.some((p) => {
-    const key = p.paramId.toString()
-    if (p.dataType === "NUMBER") return (numericValues[key] ?? "") !== (p.hasValue ? p.valueNumeric : "")
-    if (p.dataType === "TEXT") return (textValues[key] ?? "") !== (p.hasValue ? p.valueText : "")
-    return (flagValues[key] ?? false) !== (p.hasValue ? p.valueFlag : false)
+    if (p.dataType === "NUMBER") return (numericValues[p.paramCode] ?? "") !== (p.hasValue ? p.valueNumeric : "")
+    if (p.dataType === "TEXT") return (textValues[p.paramCode] ?? "") !== (p.hasValue ? p.valueText : "")
+    return (flagValues[p.paramCode] ?? false) !== (p.hasValue ? p.valueFlag : false)
   })
 
   return (
@@ -135,53 +134,50 @@ export function OverrideParamsDrawer({
           {params.length === 0 && (
             <p className="text-sm text-muted-foreground text-center py-8">No parameters at this level.</p>
           )}
-          {params.map((p) => {
-            const key = p.paramId.toString()
-            return (
-              <div key={key} className="space-y-1.5">
-                <div className="flex items-baseline justify-between gap-2">
-                  <label className="text-xs font-medium">
-                    {p.paramCode}
-                    {p.isRequired && <span className="text-destructive ml-0.5">*</span>}
-                  </label>
-                  {p.uomCode && (
-                    <span className="text-[10px] text-muted-foreground">{p.uomCode}</span>
-                  )}
-                </div>
-                <p className="text-[10px] text-muted-foreground">{p.paramName}</p>
-                {p.dataType === "NUMBER" && (
-                  <Input
-                    type="number"
-                    value={numericValues[key] ?? ""}
-                    onChange={(e) => setNumericValues((prev) => ({ ...prev, [key]: e.target.value }))}
-                    placeholder="Enter value"
-                    className="h-8 text-sm font-mono"
-                  />
-                )}
-                {p.dataType === "TEXT" && (
-                  <Input
-                    value={textValues[key] ?? ""}
-                    onChange={(e) => setTextValues((prev) => ({ ...prev, [key]: e.target.value }))}
-                    placeholder="Enter value"
-                    className="h-8 text-sm"
-                  />
-                )}
-                {p.dataType === "BOOLEAN" && (
-                  <div className="flex items-center gap-2">
-                    <Switch
-                      checked={flagValues[key] ?? false}
-                      onCheckedChange={(checked) =>
-                        setFlagValues((prev) => ({ ...prev, [key]: checked }))
-                      }
-                    />
-                    <span className="text-xs text-muted-foreground">
-                      {(flagValues[key] ?? false) ? "True" : "False"}
-                    </span>
-                  </div>
+          {params.map((p) => (
+            <div key={p.paramCode} className="space-y-1.5">
+              <div className="flex items-baseline justify-between gap-2">
+                <label className="text-xs font-medium">
+                  {p.paramCode}
+                  {p.isRequired && <span className="text-destructive ml-0.5">*</span>}
+                </label>
+                {p.uomCode && (
+                  <span className="text-[10px] text-muted-foreground">{p.uomCode}</span>
                 )}
               </div>
-            )
-          })}
+              <p className="text-[10px] text-muted-foreground">{p.paramName}</p>
+              {p.dataType === "NUMBER" && (
+                <Input
+                  type="number"
+                  value={numericValues[p.paramCode] ?? ""}
+                  onChange={(e) => setNumericValues((prev) => ({ ...prev, [p.paramCode]: e.target.value }))}
+                  placeholder="Enter value"
+                  className="h-8 text-sm font-mono"
+                />
+              )}
+              {p.dataType === "TEXT" && (
+                <Input
+                  value={textValues[p.paramCode] ?? ""}
+                  onChange={(e) => setTextValues((prev) => ({ ...prev, [p.paramCode]: e.target.value }))}
+                  placeholder="Enter value"
+                  className="h-8 text-sm"
+                />
+              )}
+              {p.dataType === "BOOLEAN" && (
+                <div className="flex items-center gap-2">
+                  <Switch
+                    checked={flagValues[p.paramCode] ?? false}
+                    onCheckedChange={(checked) =>
+                      setFlagValues((prev) => ({ ...prev, [p.paramCode]: checked }))
+                    }
+                  />
+                  <span className="text-xs text-muted-foreground">
+                    {(flagValues[p.paramCode] ?? false) ? "True" : "False"}
+                  </span>
+                </div>
+              )}
+            </div>
+          ))}
         </div>
 
         {/* Sticky footer */}

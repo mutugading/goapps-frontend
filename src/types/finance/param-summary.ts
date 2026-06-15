@@ -2,7 +2,7 @@
 // Returned by the GetParamSummary RPC.
 
 export interface ParamValueEntry {
-  paramId: number
+  paramId: string
   paramCode: string
   paramName: string
   dataType: string // "NUMBER" | "TEXT" | "BOOLEAN"
@@ -43,7 +43,7 @@ export interface ParamSummaryData {
 
 function normalizeParamValue(raw: Record<string, unknown>): ParamValueEntry {
   return {
-    paramId: Number(raw.paramId ?? raw.param_id ?? 0),
+    paramId: String(raw.paramId ?? raw.param_id ?? ""),
     paramCode: String(raw.paramCode ?? raw.param_code ?? ""),
     paramName: String(raw.paramName ?? raw.param_name ?? ""),
     dataType: String(raw.dataType ?? raw.data_type ?? ""),
