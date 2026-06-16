@@ -3,6 +3,7 @@
 // RequestDetailPanel — renders full request info + state-machine action buttons gated by status.
 import { useState } from "react"
 import {
+  ArrowRight,
   Ban,
   CheckCircle2,
   FileCheck,
@@ -29,8 +30,10 @@ import {
 } from "@/components/finance/cost-request-comment"
 import { RoutingPanel } from "./routing-panel"
 import { StatusBadge } from "./status-badge"
+import { ParamSummaryPanel } from "./param-summary-panel"
 import {
   CloseDialog,
+  ConfirmActionDialog,
   FeasibilityDialog,
   ReasonDialog,
   UseExistingCostingDialog,
@@ -57,6 +60,8 @@ import type { CostProductRequest } from "@/types/finance/cost-product-request"
 import { usePermissionContext } from "@/providers/permission-provider"
 import { useAuth } from "@/providers/auth-provider"
 import { useCPRRealtimeSync } from "@/hooks/finance/use-cpr-realtime-sync"
+import { useRouteGraph } from "@/hooks/finance/use-cost-route"
+import { useParamSummary } from "@/hooks/finance/use-param-summary"
 
 interface Props {
   request: CostProductRequest
@@ -67,12 +72,13 @@ interface Props {
   hasFillTracking?: boolean
 }
 
-type DialogKind = "reject" | "cancel" | "verify" | "feasibility" | "close" | "useExisting" | null
+type DialogKind = "reject" | "cancel" | "verify" | "feasibility" | "close" | "useExisting" | "confirmAction" | null
 
 export function RequestDetailPanel({ request, onEdit, allFillsApproved = false, hasFillTracking = false }: Props) {
   useCPRRealtimeSync(request.requestId)
 
   const [dialog, setDialog] = useState<DialogKind>(null)
+  const [confirmActionType, setConfirmActionType] = useState<"confirm" | "approve" | "release">("confirm")
 
   const submitM = useSubmitRequest()
   const startM = useStartReview()
@@ -108,6 +114,13 @@ export function RequestDetailPanel({ request, onEdit, allFillsApproved = false, 
   const canConfirm     = hasPermission("finance.product.request.confirm")
   const canApprove     = hasPermission("finance.product.request.approve")
   const canRelease     = hasPermission("finance.product.request.release")
+  const canManageLock  = hasPermission("finance.costing.route.unlock")
+
+  const { data: routeGraph } = useRouteGraph(request.linkedRouteHeadId)
+  const routeHead = routeGraph?.head
+  const isRouteLocked = routeHead?.routingStatus === "LOCKED"
+
+  const { data: paramSummary } = useParamSummary(request.requestId)
 
   const requestId = request.requestId
   const status = request.status
@@ -217,7 +230,7 @@ export function RequestDetailPanel({ request, onEdit, allFillsApproved = false, 
         )}
         {isParameterComplete && canConfirm && (
           <Button
-            onClick={() => confirmM.mutate({ requestId })}
+            onClick={() => { setConfirmActionType("confirm"); setDialog("confirmAction") }}
             disabled={confirmM.isPending}
           >
             <CheckCircle2 className="mr-2 h-4 w-4" /> Confirm
@@ -225,7 +238,7 @@ export function RequestDetailPanel({ request, onEdit, allFillsApproved = false, 
         )}
         {isConfirmed && canApprove && (
           <Button
-            onClick={() => approveM.mutate({ requestId })}
+            onClick={() => { setConfirmActionType("approve"); setDialog("confirmAction") }}
             disabled={approveM.isPending}
           >
             <CheckCircle2 className="mr-2 h-4 w-4" /> Approve
@@ -233,7 +246,7 @@ export function RequestDetailPanel({ request, onEdit, allFillsApproved = false, 
         )}
         {isApproved && canRelease && (
           <Button
-            onClick={() => releaseM.mutate({ requestId })}
+            onClick={() => { setConfirmActionType("release"); setDialog("confirmAction") }}
             disabled={releaseM.isPending}
           >
             <Play className="mr-2 h-4 w-4" /> Release
@@ -260,7 +273,7 @@ export function RequestDetailPanel({ request, onEdit, allFillsApproved = false, 
             <Button variant="outline" onClick={() => setDialog("close")}>
               Close
             </Button>
-            <Button variant="ghost" onClick={() => setDialog("cancel")}>
+            <Button variant="outline" className="border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={() => setDialog("cancel")}>
               <Ban className="mr-2 h-4 w-4" /> Cancel
             </Button>
           </>
@@ -289,9 +302,12 @@ export function RequestDetailPanel({ request, onEdit, allFillsApproved = false, 
                 <Field label="Type">{request.requestTypeCode ?? `#${request.requestTypeId}`}</Field>
                 <Field label="Urgency">{humanizeEnumValue(request.urgencyLevel)}</Field>
                 <Field label="Classification">
-                  <span>{request.productClassification}</span>
+                  <span className="capitalize">{request.productClassification}</span>
                   {request.verifiedClassification && request.verifiedClassification !== request.productClassification && (
-                    <span className="ml-2 text-orange-600 text-xs">→ {request.verifiedClassification}</span>
+                    <span className="ml-1.5 inline-flex items-center gap-0.5 text-muted-foreground">
+                      <ArrowRight className="h-3 w-3 shrink-0" />
+                      <span className="capitalize">{request.verifiedClassification}</span>
+                    </span>
                   )}
                 </Field>
                 <Field label="Needed by">{request.neededByDate || "—"}</Field>
@@ -303,10 +319,13 @@ export function RequestDetailPanel({ request, onEdit, allFillsApproved = false, 
               </div>
               {request.description && (
                 <div className="border-t pt-4">
-                  <p className="text-xs text-muted-foreground mb-1">Description</p>
+                  <div className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Description</div>
                   <p className="text-sm whitespace-pre-wrap">{request.description}</p>
                 </div>
               )}
+              <div className="border-t pt-4 space-y-2">
+                <AttachmentsPanel requestId={request.requestId} readOnly={readOnly} inline />
+              </div>
             </CardContent>
           </Card>
 
@@ -337,56 +356,66 @@ export function RequestDetailPanel({ request, onEdit, allFillsApproved = false, 
                 <CardTitle className="text-sm font-semibold">Review assessment</CardTitle>
               </CardHeader>
               <CardContent className="text-sm">
-                <div className="grid grid-cols-2 gap-x-6 gap-y-0">
-                  {/* Classification column — override reason sits directly below */}
-                  <div className="space-y-3">
-                    <div className="space-y-1">
-                      <div className="text-xs uppercase tracking-wide text-muted-foreground">Classification</div>
+                {/* Flat 4-cell grid — each row spans both columns so alignment is always correct */}
+                <div className="grid grid-cols-2 gap-x-6 gap-y-4 items-start">
+                  {/* Row 1: Classification | Feasibility */}
+                  <div className="space-y-1">
+                    <div className="text-xs uppercase tracking-wide text-muted-foreground">Classification</div>
+                    <div>
+                      <span className="capitalize">{request.productClassification}</span>
+                      {request.verifiedClassification && request.verifiedClassification !== request.productClassification ? (
+                        <span className="ml-1.5 inline-flex items-center gap-0.5 text-muted-foreground">
+                          <ArrowRight className="h-3 w-3 shrink-0" />
+                          <span className="capitalize">{request.verifiedClassification}</span>
+                        </span>
+                      ) : !request.verifiedClassification ? (
+                        <span className="ml-1 text-muted-foreground text-xs">— not verified</span>
+                      ) : null}
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="text-xs uppercase tracking-wide text-muted-foreground">Feasibility</div>
+                    {request.feasibilityDecision ? (
                       <div>
-                        <span className="capitalize">{request.productClassification}</span>
-                        {request.verifiedClassification && request.verifiedClassification !== request.productClassification
-                          ? <span className="ml-2 text-orange-600 text-xs">→ {request.verifiedClassification}</span>
-                          : !request.verifiedClassification && <span className="ml-1 text-muted-foreground text-xs">— not verified</span>
-                        }
+                        <span className="font-medium">{humanizeEnumValue(request.feasibilityDecision)}</span>
+                        {request.feasibilityBy && (
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            <UserName userId={request.feasibilityBy} compact />
+                            {request.feasibilityAt && (
+                              <> · {new Date(request.feasibilityAt).toLocaleString("en-GB", {
+                                year: "numeric", month: "short", day: "2-digit",
+                                hour: "2-digit", minute: "2-digit",
+                              })}</>
+                            )}
+                          </p>
+                        )}
                       </div>
-                    </div>
-                    {request.classificationOverrideReason && (
-                      <div className="space-y-1">
-                        <div className="text-xs uppercase tracking-wide text-orange-600">Override reason</div>
-                        <p className="whitespace-pre-wrap text-muted-foreground">{request.classificationOverrideReason}</p>
-                      </div>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
                     )}
                   </div>
-                  {/* Feasibility column — note sits directly below */}
-                  <div className="space-y-3">
-                    <div className="space-y-1">
-                      <div className="text-xs uppercase tracking-wide text-muted-foreground">Feasibility</div>
-                      {request.feasibilityDecision ? (
-                        <div>
-                          <span className="font-medium">{humanizeEnumValue(request.feasibilityDecision)}</span>
-                          {request.feasibilityBy && (
-                            <p className="text-xs text-muted-foreground mt-0.5">
-                              <UserName userId={request.feasibilityBy} compact />
-                              {request.feasibilityAt && (
-                                <> · {new Date(request.feasibilityAt).toLocaleString("en-GB", {
-                                  year: "numeric", month: "short", day: "2-digit",
-                                  hour: "2-digit", minute: "2-digit",
-                                })}</>
-                              )}
-                            </p>
-                          )}
-                        </div>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
-                    </div>
-                    {request.feasibilityNote && (
+
+                  {/* Row 2: Override reason | Note — empty placeholder keeps columns aligned */}
+                  {(request.classificationOverrideReason || request.feasibilityNote) && (
+                    <>
                       <div className="space-y-1">
-                        <div className="text-xs uppercase tracking-wide text-muted-foreground">Note</div>
-                        <p className="whitespace-pre-wrap text-muted-foreground">{request.feasibilityNote}</p>
+                        {request.classificationOverrideReason && (
+                          <>
+                            <div className="text-xs uppercase tracking-wide text-muted-foreground">Override reason</div>
+                            <p className="whitespace-pre-wrap text-muted-foreground">{request.classificationOverrideReason}</p>
+                          </>
+                        )}
                       </div>
-                    )}
-                  </div>
+                      <div className="space-y-1">
+                        {request.feasibilityNote && (
+                          <>
+                            <div className="text-xs uppercase tracking-wide text-muted-foreground">Note</div>
+                            <p className="whitespace-pre-wrap text-muted-foreground">{request.feasibilityNote}</p>
+                          </>
+                        )}
+                      </div>
+                    </>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -432,17 +461,27 @@ export function RequestDetailPanel({ request, onEdit, allFillsApproved = false, 
             <FillTrackingCompact requestId={request.requestId} />
           )}
 
-          {/* Routing panel — only show from ROUTING_DEFINED onwards. QUOTE_READY = existing costing path (no routing). */}
+          {/* Parameter summary — fill progress per product/level */}
+          {hasFillTracking && (
+            <ParamSummaryPanel requestId={request.requestId} routeLocked={isRouteLocked} />
+          )}
+
+          {/* Routing panel — only show from ROUTING_DEFINED onwards. QUOTE_READY = existing costing path (no routing).
+              Lock/unlock/complete actions are folded into this card when canManageLock is true. */}
           {!isDraft && !isSubmitted && !isUnderReview && !isQuoteReady && (
             <RoutingPanel
               requestId={request.requestId}
               linkedRouteHeadId={request.linkedRouteHeadId}
               readOnly={readOnly || !(canRouteCreate || canRouteUpdate)}
+              canUnlink={!isConfirmed && !isApproved && !isReleased && !isTerminal}
+              canManageLock={canManageLock}
+              showCompleteAction={
+                !isTerminal &&
+                (isParameterPending || isParameterComplete || isConfirmed || isApproved || isReleased)
+              }
             />
           )}
 
-          {/* Attachments */}
-          <AttachmentsPanel requestId={request.requestId} readOnly={readOnly} />
         </div>
       </div>
 
@@ -506,6 +545,26 @@ export function RequestDetailPanel({ request, onEdit, allFillsApproved = false, 
         pending={closeM.isPending}
         onConfirm={(substatus) => {
           closeM.mutate({ requestId, closedSubstatus: substatus }, { onSuccess: () => setDialog(null) })
+        }}
+      />
+      <ConfirmActionDialog
+        open={dialog === "confirmAction"}
+        onOpenChange={(v) => {
+          if (!v) setDialog(null)
+        }}
+        action={confirmActionType}
+        pending={confirmM.isPending || approveM.isPending || releaseM.isPending}
+        totalParams={paramSummary?.totalParams ?? 0}
+        filledParams={paramSummary?.filledParams ?? 0}
+        isLocked={isRouteLocked}
+        onConfirm={() => {
+          if (confirmActionType === "confirm") {
+            confirmM.mutate({ requestId }, { onSuccess: () => setDialog(null) })
+          } else if (confirmActionType === "approve") {
+            approveM.mutate({ requestId }, { onSuccess: () => setDialog(null) })
+          } else if (confirmActionType === "release") {
+            releaseM.mutate({ requestId }, { onSuccess: () => setDialog(null) })
+          }
         }}
       />
     </div>

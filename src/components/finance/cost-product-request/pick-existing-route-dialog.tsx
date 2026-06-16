@@ -57,7 +57,7 @@ export function PickExistingRouteDialog({ open, onClose, onPick }: Props) {
           )}
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
           <Button disabled={!head} onClick={() => head && onPick(head.headId)}>

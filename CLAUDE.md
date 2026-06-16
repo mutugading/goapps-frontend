@@ -1,7 +1,42 @@
 # CLAUDE.md — GoApps Frontend UI Standards & Conventions
 
-> **Last updated**: 2026-06-11 — Full UI/layout audit. Covers list pages, detail pages, cards, forms, drawers, tables, hooks, BFF routes, and all shared components.
-> This file is the single source of truth for frontend developers and AI assistants. Read it before building or modifying any page.
+> **Last updated**: 2026-06-15 — Design system docs added. Typography conflict resolved. All component rules now in DESIGN.md.
+> This file is the single source of truth for **architecture and patterns**. Read this first, then follow the design system docs for visual decisions.
+
+---
+
+## Design System Docs (read these before generating UI)
+
+| Document | What's inside | When to read |
+|----------|---------------|--------------|
+| [`docs/design-system/DESIGN.md`](./docs/design-system/DESIGN.md) | Design tokens, typography canonical, all components A–Z (Button, Card, Badge, Table, Dialog, Form fields, Combobox, Radio, Slider, Switch, Timeline, Toast, Tooltip, etc.) | Before building any component or page UI |
+| [`docs/design-system/LAYOUT.md`](./docs/design-system/LAYOUT.md) | Responsive breakpoints, dashboard shell anatomy, overflow/scroll rules, list/detail/dashboard page patterns, mobile rules, sticky elements, common bug fixes | Before building any page layout |
+| [`docs/design-system/RULES.md`](./docs/design-system/RULES.md) | AI generation checklist, cardinal rules, decision trees (typography/component/layout), do/don't tables, page scaffold templates, common mistakes | Quick reference during code generation |
+
+### The 10 Cardinal Rules (from RULES.md §1)
+
+1. `CardTitle` **always** `className="text-sm font-semibold"` — never without the class
+2. **Never** `<Badge>` for entity status — always `<StatusBadge status={x} type={...} />`
+3. **Never** modify `src/components/ui/` — extend via `components/common/` or `components/shared/`
+4. `min-w-0` on every flex parent in the main layout path — prevents horizontal page overflow
+5. Tables inside `overflow-x-auto` — `DataTable` handles this; custom tables must wrap manually
+6. `flex-wrap` on every action bar — `flex flex-wrap items-center gap-2`
+7. `loading={isLoading}` on every `KpiCard` — always
+8. `Number(totalItems)` always — proto returns `totalItems` as string
+9. `form.reset()` in `useEffect([open, target])` — always reset form on dialog open
+10. **Never** `window.confirm()` — always `<ConfirmDialog>` for destructive actions
+
+### Known Conflict (MUST FIX when touching typography.ts)
+
+`src/lib/ui/typography.ts` has an incorrect `cardTitle` value:
+```ts
+// ✗ Current (WRONG):
+cardTitle: "text-sm font-medium text-muted-foreground",
+
+// ✓ Correct (matches reference page):
+cardTitle: "text-sm font-semibold",
+```
+Until fixed, **do not use `typography.cardTitle`** for `CardTitle`. Always use `className="text-sm font-semibold"` directly.
 
 ---
 

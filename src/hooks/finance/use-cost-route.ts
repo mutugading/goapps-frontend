@@ -168,11 +168,11 @@ function makeTransition(path: "complete" | "lock" | "unlock", successMsg: string
   return function useTransition() {
     const qc = useQueryClient()
     return useMutation({
-      mutationFn: async ({ headId }: { headId: number }) => {
+      mutationFn: async ({ headId, password }: { headId: number; password?: string }) => {
         const res = await fetch(`/api/v1/finance/routes/${headId}/${path}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: "{}",
+          body: JSON.stringify(password !== undefined ? { password } : {}),
         })
         const json = (await res.json()) as BFFResponse<Record<string, unknown>>
         const data = ensureOK(json)

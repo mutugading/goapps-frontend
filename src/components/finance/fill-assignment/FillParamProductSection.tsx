@@ -26,9 +26,10 @@ interface Props {
   productCode?: string
   productName?: string
   onSaved?: () => void
+  isLocked?: boolean
 }
 
-export function FillParamProductSection({ productSysId, productCode, productName, onSaved }: Props) {
+export function FillParamProductSection({ productSysId, productCode, productName, onSaved, isLocked }: Props) {
   const { data: params = [], isLoading } = useProductRequiredParams(productSysId)
   const upsertM = useUpsertProductParamValuesBatch()
 
@@ -80,6 +81,14 @@ export function FillParamProductSection({ productSysId, productCode, productName
           <div className="h-16 animate-pulse rounded bg-muted" />
         </CardContent>
       </Card>
+    )
+  }
+
+  if (isLocked) {
+    return (
+      <div className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
+        🔒 This route is locked. Param values are read-only. Contact an authorized user to unlock.
+      </div>
     )
   }
 

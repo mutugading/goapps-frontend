@@ -76,7 +76,7 @@ export function CommentItem({ comment, currentUserId }: Props) {
   return (
     <div className={`flex gap-3 ${isAuthor ? "" : "flex-row-reverse"} ${comment.isHidden ? "opacity-60" : ""}`}>
       <UserInitials userId={comment.authorUserId} className="mt-0.5 shrink-0" />
-      <div className="flex-1 min-w-0 rounded-md border bg-card p-3 space-y-2">
+      <div className="min-w-0 max-w-[75%] rounded-md border bg-card p-3 space-y-2">
       <div className={`flex items-center gap-2 text-xs ${isAuthor ? "" : "flex-row-reverse"}`}>
         <span className="font-medium"><UserName userId={comment.authorUserId} compact /></span>
         <span className="text-muted-foreground">{comment.createdAt?.slice(0, 19).replace("T", " ")}</span>

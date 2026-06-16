@@ -145,5 +145,10 @@ export function useAsyncImport(entity: ImportEntity, onComplete?: () => void) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [job?.status])
 
-  return { submitMutation, job, polling, jobId }
+  function reset() {
+    setJobId(null)
+    setPolling(false)
+  }
+
+  return { submitMutation, job, polling, jobId, reset }
 }

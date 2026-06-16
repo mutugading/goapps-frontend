@@ -195,6 +195,56 @@ export interface UpdateApplicableParamResponse {
   base: BaseResponse | undefined;
 }
 
+/** OverrideParamValueItem holds the new value for a single product+param pair. */
+export interface OverrideParamValueItem {
+  productSysId: number;
+  paramId: string;
+  valueNumeric: string;
+  valueText: string;
+  valueFlag: boolean;
+  hasValueFlag: boolean;
+}
+
+/**
+ * OverrideParamValuesRequest overrides param values for one fill level of a request.
+ * The route must NOT be locked; the caller must hold finance.costing.paramvalue.update.
+ */
+export interface OverrideParamValuesRequest {
+  requestId: number;
+  routeLevel: number;
+  values: OverrideParamValueItem[];
+}
+
+/** OverrideParamValuesResponse summarizes the outcome. */
+export interface OverrideParamValuesResponse {
+  base: BaseResponse | undefined;
+  updatedCount: number;
+}
+
+/** ParamEditLogEntry is one record of a param value change by an authorized user. */
+export interface ParamEditLogEntry {
+  paramCode: string;
+  /** Human-readable old/new values; empty string means the field had no value. */
+  oldValue: string;
+  newValue: string;
+  /** Display name of the user who made the change. */
+  changedBy: string;
+  /** RFC-3339 timestamp. */
+  changedAt: string;
+}
+
+/** ListParamEditLogRequest requests the override audit history for one fill level. */
+export interface ListParamEditLogRequest {
+  requestId: number;
+  routeLevel: number;
+}
+
+/** ListParamEditLogResponse returns entries ordered newest-first. */
+export interface ListParamEditLogResponse {
+  base: BaseResponse | undefined;
+  entries: ParamEditLogEntry[];
+}
+
 function createBaseCostProductParameterValue(): CostProductParameterValue {
   return {
     valueId: 0,
@@ -3033,6 +3083,662 @@ export const UpdateApplicableParamResponse: MessageFns<UpdateApplicableParamResp
   },
 };
 
+function createBaseOverrideParamValueItem(): OverrideParamValueItem {
+  return { productSysId: 0, paramId: "", valueNumeric: "", valueText: "", valueFlag: false, hasValueFlag: false };
+}
+
+export const OverrideParamValueItem: MessageFns<OverrideParamValueItem> = {
+  encode(message: OverrideParamValueItem, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.productSysId !== 0) {
+      writer.uint32(8).int64(message.productSysId);
+    }
+    if (message.paramId !== "") {
+      writer.uint32(18).string(message.paramId);
+    }
+    if (message.valueNumeric !== "") {
+      writer.uint32(26).string(message.valueNumeric);
+    }
+    if (message.valueText !== "") {
+      writer.uint32(34).string(message.valueText);
+    }
+    if (message.valueFlag !== false) {
+      writer.uint32(40).bool(message.valueFlag);
+    }
+    if (message.hasValueFlag !== false) {
+      writer.uint32(48).bool(message.hasValueFlag);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): OverrideParamValueItem {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseOverrideParamValueItem();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.productSysId = longToNumber(reader.int64());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.paramId = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.valueNumeric = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.valueText = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.valueFlag = reader.bool();
+          continue;
+        }
+        case 6: {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.hasValueFlag = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): OverrideParamValueItem {
+    return {
+      productSysId: isSet(object.productSysId)
+        ? globalThis.Number(object.productSysId)
+        : isSet(object.product_sys_id)
+        ? globalThis.Number(object.product_sys_id)
+        : 0,
+      paramId: isSet(object.paramId)
+        ? globalThis.String(object.paramId)
+        : isSet(object.param_id)
+        ? globalThis.String(object.param_id)
+        : "",
+      valueNumeric: isSet(object.valueNumeric)
+        ? globalThis.String(object.valueNumeric)
+        : isSet(object.value_numeric)
+        ? globalThis.String(object.value_numeric)
+        : "",
+      valueText: isSet(object.valueText)
+        ? globalThis.String(object.valueText)
+        : isSet(object.value_text)
+        ? globalThis.String(object.value_text)
+        : "",
+      valueFlag: isSet(object.valueFlag)
+        ? globalThis.Boolean(object.valueFlag)
+        : isSet(object.value_flag)
+        ? globalThis.Boolean(object.value_flag)
+        : false,
+      hasValueFlag: isSet(object.hasValueFlag)
+        ? globalThis.Boolean(object.hasValueFlag)
+        : isSet(object.has_value_flag)
+        ? globalThis.Boolean(object.has_value_flag)
+        : false,
+    };
+  },
+
+  toJSON(message: OverrideParamValueItem): unknown {
+    const obj: any = {};
+    if (message.productSysId !== 0) {
+      obj.productSysId = Math.round(message.productSysId);
+    }
+    if (message.paramId !== "") {
+      obj.paramId = message.paramId;
+    }
+    if (message.valueNumeric !== "") {
+      obj.valueNumeric = message.valueNumeric;
+    }
+    if (message.valueText !== "") {
+      obj.valueText = message.valueText;
+    }
+    if (message.valueFlag !== false) {
+      obj.valueFlag = message.valueFlag;
+    }
+    if (message.hasValueFlag !== false) {
+      obj.hasValueFlag = message.hasValueFlag;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<OverrideParamValueItem>): OverrideParamValueItem {
+    return OverrideParamValueItem.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<OverrideParamValueItem>): OverrideParamValueItem {
+    const message = createBaseOverrideParamValueItem();
+    message.productSysId = object.productSysId ?? 0;
+    message.paramId = object.paramId ?? "";
+    message.valueNumeric = object.valueNumeric ?? "";
+    message.valueText = object.valueText ?? "";
+    message.valueFlag = object.valueFlag ?? false;
+    message.hasValueFlag = object.hasValueFlag ?? false;
+    return message;
+  },
+};
+
+function createBaseOverrideParamValuesRequest(): OverrideParamValuesRequest {
+  return { requestId: 0, routeLevel: 0, values: [] };
+}
+
+export const OverrideParamValuesRequest: MessageFns<OverrideParamValuesRequest> = {
+  encode(message: OverrideParamValuesRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.requestId !== 0) {
+      writer.uint32(8).int64(message.requestId);
+    }
+    if (message.routeLevel !== 0) {
+      writer.uint32(16).int32(message.routeLevel);
+    }
+    for (const v of message.values) {
+      OverrideParamValueItem.encode(v!, writer.uint32(26).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): OverrideParamValuesRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseOverrideParamValuesRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.requestId = longToNumber(reader.int64());
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.routeLevel = reader.int32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.values.push(OverrideParamValueItem.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): OverrideParamValuesRequest {
+    return {
+      requestId: isSet(object.requestId)
+        ? globalThis.Number(object.requestId)
+        : isSet(object.request_id)
+        ? globalThis.Number(object.request_id)
+        : 0,
+      routeLevel: isSet(object.routeLevel)
+        ? globalThis.Number(object.routeLevel)
+        : isSet(object.route_level)
+        ? globalThis.Number(object.route_level)
+        : 0,
+      values: globalThis.Array.isArray(object?.values)
+        ? object.values.map((e: any) => OverrideParamValueItem.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: OverrideParamValuesRequest): unknown {
+    const obj: any = {};
+    if (message.requestId !== 0) {
+      obj.requestId = Math.round(message.requestId);
+    }
+    if (message.routeLevel !== 0) {
+      obj.routeLevel = Math.round(message.routeLevel);
+    }
+    if (message.values?.length) {
+      obj.values = message.values.map((e) => OverrideParamValueItem.toJSON(e));
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<OverrideParamValuesRequest>): OverrideParamValuesRequest {
+    return OverrideParamValuesRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<OverrideParamValuesRequest>): OverrideParamValuesRequest {
+    const message = createBaseOverrideParamValuesRequest();
+    message.requestId = object.requestId ?? 0;
+    message.routeLevel = object.routeLevel ?? 0;
+    message.values = object.values?.map((e) => OverrideParamValueItem.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseOverrideParamValuesResponse(): OverrideParamValuesResponse {
+  return { base: undefined, updatedCount: 0 };
+}
+
+export const OverrideParamValuesResponse: MessageFns<OverrideParamValuesResponse> = {
+  encode(message: OverrideParamValuesResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    if (message.updatedCount !== 0) {
+      writer.uint32(16).int32(message.updatedCount);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): OverrideParamValuesResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseOverrideParamValuesResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.updatedCount = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): OverrideParamValuesResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      updatedCount: isSet(object.updatedCount)
+        ? globalThis.Number(object.updatedCount)
+        : isSet(object.updated_count)
+        ? globalThis.Number(object.updated_count)
+        : 0,
+    };
+  },
+
+  toJSON(message: OverrideParamValuesResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.updatedCount !== 0) {
+      obj.updatedCount = Math.round(message.updatedCount);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<OverrideParamValuesResponse>): OverrideParamValuesResponse {
+    return OverrideParamValuesResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<OverrideParamValuesResponse>): OverrideParamValuesResponse {
+    const message = createBaseOverrideParamValuesResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.updatedCount = object.updatedCount ?? 0;
+    return message;
+  },
+};
+
+function createBaseParamEditLogEntry(): ParamEditLogEntry {
+  return { paramCode: "", oldValue: "", newValue: "", changedBy: "", changedAt: "" };
+}
+
+export const ParamEditLogEntry: MessageFns<ParamEditLogEntry> = {
+  encode(message: ParamEditLogEntry, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.paramCode !== "") {
+      writer.uint32(10).string(message.paramCode);
+    }
+    if (message.oldValue !== "") {
+      writer.uint32(18).string(message.oldValue);
+    }
+    if (message.newValue !== "") {
+      writer.uint32(26).string(message.newValue);
+    }
+    if (message.changedBy !== "") {
+      writer.uint32(34).string(message.changedBy);
+    }
+    if (message.changedAt !== "") {
+      writer.uint32(42).string(message.changedAt);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ParamEditLogEntry {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseParamEditLogEntry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.paramCode = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.oldValue = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.newValue = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.changedBy = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.changedAt = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ParamEditLogEntry {
+    return {
+      paramCode: isSet(object.paramCode)
+        ? globalThis.String(object.paramCode)
+        : isSet(object.param_code)
+        ? globalThis.String(object.param_code)
+        : "",
+      oldValue: isSet(object.oldValue)
+        ? globalThis.String(object.oldValue)
+        : isSet(object.old_value)
+        ? globalThis.String(object.old_value)
+        : "",
+      newValue: isSet(object.newValue)
+        ? globalThis.String(object.newValue)
+        : isSet(object.new_value)
+        ? globalThis.String(object.new_value)
+        : "",
+      changedBy: isSet(object.changedBy)
+        ? globalThis.String(object.changedBy)
+        : isSet(object.changed_by)
+        ? globalThis.String(object.changed_by)
+        : "",
+      changedAt: isSet(object.changedAt)
+        ? globalThis.String(object.changedAt)
+        : isSet(object.changed_at)
+        ? globalThis.String(object.changed_at)
+        : "",
+    };
+  },
+
+  toJSON(message: ParamEditLogEntry): unknown {
+    const obj: any = {};
+    if (message.paramCode !== "") {
+      obj.paramCode = message.paramCode;
+    }
+    if (message.oldValue !== "") {
+      obj.oldValue = message.oldValue;
+    }
+    if (message.newValue !== "") {
+      obj.newValue = message.newValue;
+    }
+    if (message.changedBy !== "") {
+      obj.changedBy = message.changedBy;
+    }
+    if (message.changedAt !== "") {
+      obj.changedAt = message.changedAt;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ParamEditLogEntry>): ParamEditLogEntry {
+    return ParamEditLogEntry.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ParamEditLogEntry>): ParamEditLogEntry {
+    const message = createBaseParamEditLogEntry();
+    message.paramCode = object.paramCode ?? "";
+    message.oldValue = object.oldValue ?? "";
+    message.newValue = object.newValue ?? "";
+    message.changedBy = object.changedBy ?? "";
+    message.changedAt = object.changedAt ?? "";
+    return message;
+  },
+};
+
+function createBaseListParamEditLogRequest(): ListParamEditLogRequest {
+  return { requestId: 0, routeLevel: 0 };
+}
+
+export const ListParamEditLogRequest: MessageFns<ListParamEditLogRequest> = {
+  encode(message: ListParamEditLogRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.requestId !== 0) {
+      writer.uint32(8).int64(message.requestId);
+    }
+    if (message.routeLevel !== 0) {
+      writer.uint32(16).int32(message.routeLevel);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ListParamEditLogRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListParamEditLogRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.requestId = longToNumber(reader.int64());
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.routeLevel = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListParamEditLogRequest {
+    return {
+      requestId: isSet(object.requestId)
+        ? globalThis.Number(object.requestId)
+        : isSet(object.request_id)
+        ? globalThis.Number(object.request_id)
+        : 0,
+      routeLevel: isSet(object.routeLevel)
+        ? globalThis.Number(object.routeLevel)
+        : isSet(object.route_level)
+        ? globalThis.Number(object.route_level)
+        : 0,
+    };
+  },
+
+  toJSON(message: ListParamEditLogRequest): unknown {
+    const obj: any = {};
+    if (message.requestId !== 0) {
+      obj.requestId = Math.round(message.requestId);
+    }
+    if (message.routeLevel !== 0) {
+      obj.routeLevel = Math.round(message.routeLevel);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListParamEditLogRequest>): ListParamEditLogRequest {
+    return ListParamEditLogRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ListParamEditLogRequest>): ListParamEditLogRequest {
+    const message = createBaseListParamEditLogRequest();
+    message.requestId = object.requestId ?? 0;
+    message.routeLevel = object.routeLevel ?? 0;
+    return message;
+  },
+};
+
+function createBaseListParamEditLogResponse(): ListParamEditLogResponse {
+  return { base: undefined, entries: [] };
+}
+
+export const ListParamEditLogResponse: MessageFns<ListParamEditLogResponse> = {
+  encode(message: ListParamEditLogResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    for (const v of message.entries) {
+      ParamEditLogEntry.encode(v!, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ListParamEditLogResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListParamEditLogResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.entries.push(ParamEditLogEntry.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListParamEditLogResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      entries: globalThis.Array.isArray(object?.entries)
+        ? object.entries.map((e: any) => ParamEditLogEntry.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: ListParamEditLogResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.entries?.length) {
+      obj.entries = message.entries.map((e) => ParamEditLogEntry.toJSON(e));
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListParamEditLogResponse>): ListParamEditLogResponse {
+    return ListParamEditLogResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ListParamEditLogResponse>): ListParamEditLogResponse {
+    const message = createBaseListParamEditLogResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.entries = object.entries?.map((e) => ParamEditLogEntry.fromPartial(e)) || [];
+    return message;
+  },
+};
+
 /** CostProductParameterService manages per-product static parameter values. */
 export type CostProductParameterServiceDefinition = typeof CostProductParameterServiceDefinition;
 export const CostProductParameterServiceDefinition = {
@@ -3757,6 +4463,166 @@ export const CostProductParameterServiceDefinition = {
               100,
               97,
               116,
+              101,
+            ]),
+          ],
+        },
+      },
+    },
+    /**
+     * OverrideParamValues allows authorized users to override param values on an unlocked
+     * route. Records an audit log entry, resets fill-task approval when the level has an
+     * approver configured, and emits a single notification summarizing all changed params.
+     * ListParamEditLog returns the override audit history for one fill level of a CPR.
+     * Entries are ordered newest-first. Requires finance.costing.paramvalue.update.
+     */
+    listParamEditLog: {
+      name: "ListParamEditLog",
+      requestType: ListParamEditLogRequest,
+      requestStream: false,
+      responseType: ListParamEditLogResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              50,
+              18,
+              48,
+              47,
+              97,
+              112,
+              105,
+              47,
+              118,
+              49,
+              47,
+              102,
+              105,
+              110,
+              97,
+              110,
+              99,
+              101,
+              47,
+              99,
+              111,
+              115,
+              116,
+              45,
+              112,
+              114,
+              111,
+              100,
+              117,
+              99,
+              116,
+              45,
+              112,
+              97,
+              114,
+              97,
+              109,
+              101,
+              116,
+              101,
+              114,
+              115,
+              47,
+              101,
+              100,
+              105,
+              116,
+              45,
+              108,
+              111,
+              103,
+            ]),
+          ],
+        },
+      },
+    },
+    overrideParamValues: {
+      name: "OverrideParamValues",
+      requestType: OverrideParamValuesRequest,
+      requestStream: false,
+      responseType: OverrideParamValuesResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              71,
+              58,
+              1,
+              42,
+              34,
+              66,
+              47,
+              97,
+              112,
+              105,
+              47,
+              118,
+              49,
+              47,
+              102,
+              105,
+              110,
+              97,
+              110,
+              99,
+              101,
+              47,
+              99,
+              111,
+              115,
+              116,
+              45,
+              112,
+              114,
+              111,
+              100,
+              117,
+              99,
+              116,
+              45,
+              114,
+              101,
+              113,
+              117,
+              101,
+              115,
+              116,
+              115,
+              47,
+              123,
+              114,
+              101,
+              113,
+              117,
+              101,
+              115,
+              116,
+              95,
+              105,
+              100,
+              125,
+              47,
+              112,
+              97,
+              114,
+              97,
+              109,
+              115,
+              47,
+              111,
+              118,
+              101,
+              114,
+              114,
+              105,
+              100,
               101,
             ]),
           ],

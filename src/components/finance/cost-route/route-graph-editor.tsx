@@ -16,11 +16,9 @@ import {
   ArrowLeft,
   CheckCircle2,
   Loader2,
-  Lock,
   Plus,
   Save,
   Trash2,
-  Unlock,
   X,
 } from "lucide-react"
 import Link from "next/link"
@@ -57,10 +55,8 @@ import {
 import {
   useCompleteRoute,
   useDeleteRoute,
-  useLockRoute,
   useRouteGraph,
   useSaveRouteGraph,
-  useUnlockRoute,
 } from "@/hooks/finance/use-cost-route"
 import { useRMGroups } from "@/hooks/finance/use-rm-group"
 import type {
@@ -99,8 +95,6 @@ export function RouteGraphEditor({ headId }: Props) {
 
   const saveM = useSaveRouteGraph()
   const completeM = useCompleteRoute()
-  const lockM = useLockRoute()
-  const unlockM = useUnlockRoute()
   const deleteM = useDeleteRoute()
 
   const graph = working ?? persisted ?? null
@@ -394,16 +388,6 @@ export function RouteGraphEditor({ headId }: Props) {
               <CheckCircle2 className="mr-1 h-4 w-4" /> Mark complete
             </Button>
           )}
-          {complete && (
-            <Button onClick={() => lockM.mutate({ headId })} variant="outline">
-              <Lock className="mr-1 h-4 w-4" /> Lock
-            </Button>
-          )}
-          {locked && (
-            <Button onClick={() => unlockM.mutate({ headId })} variant="outline">
-              <Unlock className="mr-1 h-4 w-4" /> Unlock
-            </Button>
-          )}
           {!locked && (
             <Button
               onClick={() => {
@@ -421,9 +405,9 @@ export function RouteGraphEditor({ headId }: Props) {
       </div>
 
       {locked && (
-        <Card className="border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-          This route is LOCKED — edits disabled. Unlock first to edit.
-        </Card>
+        <div className="absolute inset-x-0 top-0 z-10 rounded-t-md bg-amber-100 border-b border-amber-200 px-4 py-2 text-sm text-amber-800 dark:bg-amber-950/50 dark:border-amber-800 dark:text-amber-300">
+          🔒 Route is LOCKED — editing disabled. Manage lock from the product request detail page.
+        </div>
       )}
 
       {complete && (

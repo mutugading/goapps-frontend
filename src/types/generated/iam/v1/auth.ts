@@ -324,6 +324,17 @@ export interface ValidateUnlockPasswordResponse {
   base: BaseResponse | undefined;
 }
 
+/** VerifyPasswordRequest checks whether the password matches the stored hash. */
+export interface VerifyPasswordRequest {
+  userId: string;
+  password: string;
+}
+
+/** VerifyPasswordResponse returns success if password matches; error otherwise. */
+export interface VerifyPasswordResponse {
+  base: BaseResponse | undefined;
+}
+
 function createBaseLoginRequest(): LoginRequest {
   return { username: "", password: "", totpCode: "", deviceInfo: "" };
 }
@@ -3189,6 +3200,146 @@ export const ValidateUnlockPasswordResponse: MessageFns<ValidateUnlockPasswordRe
   },
 };
 
+function createBaseVerifyPasswordRequest(): VerifyPasswordRequest {
+  return { userId: "", password: "" };
+}
+
+export const VerifyPasswordRequest: MessageFns<VerifyPasswordRequest> = {
+  encode(message: VerifyPasswordRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.userId !== "") {
+      writer.uint32(10).string(message.userId);
+    }
+    if (message.password !== "") {
+      writer.uint32(18).string(message.password);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): VerifyPasswordRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseVerifyPasswordRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.userId = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.password = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): VerifyPasswordRequest {
+    return {
+      userId: isSet(object.userId)
+        ? globalThis.String(object.userId)
+        : isSet(object.user_id)
+        ? globalThis.String(object.user_id)
+        : "",
+      password: isSet(object.password) ? globalThis.String(object.password) : "",
+    };
+  },
+
+  toJSON(message: VerifyPasswordRequest): unknown {
+    const obj: any = {};
+    if (message.userId !== "") {
+      obj.userId = message.userId;
+    }
+    if (message.password !== "") {
+      obj.password = message.password;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<VerifyPasswordRequest>): VerifyPasswordRequest {
+    return VerifyPasswordRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<VerifyPasswordRequest>): VerifyPasswordRequest {
+    const message = createBaseVerifyPasswordRequest();
+    message.userId = object.userId ?? "";
+    message.password = object.password ?? "";
+    return message;
+  },
+};
+
+function createBaseVerifyPasswordResponse(): VerifyPasswordResponse {
+  return { base: undefined };
+}
+
+export const VerifyPasswordResponse: MessageFns<VerifyPasswordResponse> = {
+  encode(message: VerifyPasswordResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): VerifyPasswordResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseVerifyPasswordResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): VerifyPasswordResponse {
+    return { base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined };
+  },
+
+  toJSON(message: VerifyPasswordResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<VerifyPasswordResponse>): VerifyPasswordResponse {
+    return VerifyPasswordResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<VerifyPasswordResponse>): VerifyPasswordResponse {
+    const message = createBaseVerifyPasswordResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    return message;
+  },
+};
+
 /** AuthService handles authentication operations. */
 export type AuthServiceDefinition = typeof AuthServiceDefinition;
 export const AuthServiceDefinition = {
@@ -3970,6 +4121,19 @@ export const AuthServiceDefinition = {
           ],
         },
       },
+    },
+    /**
+     * VerifyPassword checks the user's password without changing any state.
+     * Used by the BFF to gate route lock/unlock before calling Finance.
+     * No HTTP annotation -- BFF-only, not exposed via gRPC-Gateway.
+     */
+    verifyPassword: {
+      name: "VerifyPassword",
+      requestType: VerifyPasswordRequest,
+      requestStream: false,
+      responseType: VerifyPasswordResponse,
+      responseStream: false,
+      options: {},
     },
   },
 } as const;

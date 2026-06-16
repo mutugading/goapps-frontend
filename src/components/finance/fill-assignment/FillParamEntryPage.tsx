@@ -25,6 +25,7 @@ export function FillParamEntryPage({ requestId, taskId, onDone }: Props) {
   const task = useMemo(() => tasks.find((t) => t.taskId === taskId), [tasks, taskId])
 
   const { data: graph, isLoading: graphLoading } = useRouteGraph(task?.routeHeadId)
+  const isLocked = graph?.head?.routingStatus === "LOCKED"
 
   const productsAtLevel = useMemo(() => {
     if (!graph || !task) return []
@@ -120,6 +121,7 @@ export function FillParamEntryPage({ requestId, taskId, onDone }: Props) {
           productCode={seq.productCode}
           productName={seq.productName}
           onSaved={() => markSaved(seq.productSysId)}
+          isLocked={isLocked}
         />
       ))}
 

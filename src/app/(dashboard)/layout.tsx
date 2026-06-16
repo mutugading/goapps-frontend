@@ -85,7 +85,7 @@ export default function DashboardLayout({
         <SidebarProvider>
             <BreadcrumbOverrideProvider>
             <AppSidebar />
-            <SidebarInset>
+            <SidebarInset className="min-w-0">
                 {/* Sticky header with breadcrumbs */}
                 <header className="sticky top-0 z-50 flex h-16 shrink-0 items-center gap-2 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
                     <div className="flex flex-1 items-center gap-2 px-4 min-w-0">
@@ -103,7 +103,7 @@ export default function DashboardLayout({
                     </div>
                 </header>
                 {/* Main content */}
-                <div className="flex flex-1 flex-col gap-4 p-4 pt-0 min-w-0">
+                <div className="flex flex-1 flex-col gap-4 p-4 pt-0 min-w-0 overflow-x-hidden">
                     <main className="flex-1 pt-4 min-w-0 w-full">
                         {children}
                     </main>

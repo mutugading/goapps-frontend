@@ -40,3 +40,4 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 e2e/.auth/
+.note-design-ui.txt

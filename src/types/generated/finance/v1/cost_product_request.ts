@@ -397,6 +397,54 @@ export interface UnlinkRouteResponse {
   data: CostProductRequest | undefined;
 }
 
+/** ParamValueEntry is one parameter cell in the summary. */
+export interface ParamValueEntry {
+  paramId: string;
+  paramCode: string;
+  paramName: string;
+  dataType: string;
+  hasValue: boolean;
+  valueNumeric: string;
+  valueText: string;
+  valueFlag: boolean;
+  uomCode: string;
+  isRequired: boolean;
+}
+
+/** FillLevelSummary groups params for one fill task level of a product. */
+export interface FillLevelSummary {
+  routeLevel: number;
+  taskStatus: string;
+  filledByUserId: string;
+  filledAt: string;
+  filledParams: number;
+  totalParams: number;
+  params: ParamValueEntry[];
+  /** last_edited_by is the user who last overrode a param value at this level (empty if no override). */
+  lastEditedBy: string;
+  /** last_edited_at is when the most recent override occurred at this level. */
+  lastEditedAt: string;
+}
+
+/** ProductParamSummary groups fill levels for one product in the route. */
+export interface ProductParamSummary {
+  productSysId: number;
+  productCode: string;
+  productName: string;
+  levels: FillLevelSummary[];
+}
+
+export interface GetParamSummaryRequest {
+  requestId: number;
+}
+
+export interface GetParamSummaryResponse {
+  base: BaseResponse | undefined;
+  products: ProductParamSummary[];
+  totalParams: number;
+  filledParams: number;
+}
+
 function createBaseCostProductSpec(): CostProductSpec {
   return {
     specId: 0,
@@ -6138,6 +6186,799 @@ export const UnlinkRouteResponse: MessageFns<UnlinkRouteResponse> = {
   },
 };
 
+function createBaseParamValueEntry(): ParamValueEntry {
+  return {
+    paramId: "",
+    paramCode: "",
+    paramName: "",
+    dataType: "",
+    hasValue: false,
+    valueNumeric: "",
+    valueText: "",
+    valueFlag: false,
+    uomCode: "",
+    isRequired: false,
+  };
+}
+
+export const ParamValueEntry: MessageFns<ParamValueEntry> = {
+  encode(message: ParamValueEntry, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.paramId !== "") {
+      writer.uint32(10).string(message.paramId);
+    }
+    if (message.paramCode !== "") {
+      writer.uint32(18).string(message.paramCode);
+    }
+    if (message.paramName !== "") {
+      writer.uint32(26).string(message.paramName);
+    }
+    if (message.dataType !== "") {
+      writer.uint32(34).string(message.dataType);
+    }
+    if (message.hasValue !== false) {
+      writer.uint32(40).bool(message.hasValue);
+    }
+    if (message.valueNumeric !== "") {
+      writer.uint32(50).string(message.valueNumeric);
+    }
+    if (message.valueText !== "") {
+      writer.uint32(58).string(message.valueText);
+    }
+    if (message.valueFlag !== false) {
+      writer.uint32(64).bool(message.valueFlag);
+    }
+    if (message.uomCode !== "") {
+      writer.uint32(74).string(message.uomCode);
+    }
+    if (message.isRequired !== false) {
+      writer.uint32(80).bool(message.isRequired);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ParamValueEntry {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseParamValueEntry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.paramId = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.paramCode = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.paramName = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.dataType = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.hasValue = reader.bool();
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.valueNumeric = reader.string();
+          continue;
+        }
+        case 7: {
+          if (tag !== 58) {
+            break;
+          }
+
+          message.valueText = reader.string();
+          continue;
+        }
+        case 8: {
+          if (tag !== 64) {
+            break;
+          }
+
+          message.valueFlag = reader.bool();
+          continue;
+        }
+        case 9: {
+          if (tag !== 74) {
+            break;
+          }
+
+          message.uomCode = reader.string();
+          continue;
+        }
+        case 10: {
+          if (tag !== 80) {
+            break;
+          }
+
+          message.isRequired = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ParamValueEntry {
+    return {
+      paramId: isSet(object.paramId)
+        ? globalThis.String(object.paramId)
+        : isSet(object.param_id)
+        ? globalThis.String(object.param_id)
+        : "",
+      paramCode: isSet(object.paramCode)
+        ? globalThis.String(object.paramCode)
+        : isSet(object.param_code)
+        ? globalThis.String(object.param_code)
+        : "",
+      paramName: isSet(object.paramName)
+        ? globalThis.String(object.paramName)
+        : isSet(object.param_name)
+        ? globalThis.String(object.param_name)
+        : "",
+      dataType: isSet(object.dataType)
+        ? globalThis.String(object.dataType)
+        : isSet(object.data_type)
+        ? globalThis.String(object.data_type)
+        : "",
+      hasValue: isSet(object.hasValue)
+        ? globalThis.Boolean(object.hasValue)
+        : isSet(object.has_value)
+        ? globalThis.Boolean(object.has_value)
+        : false,
+      valueNumeric: isSet(object.valueNumeric)
+        ? globalThis.String(object.valueNumeric)
+        : isSet(object.value_numeric)
+        ? globalThis.String(object.value_numeric)
+        : "",
+      valueText: isSet(object.valueText)
+        ? globalThis.String(object.valueText)
+        : isSet(object.value_text)
+        ? globalThis.String(object.value_text)
+        : "",
+      valueFlag: isSet(object.valueFlag)
+        ? globalThis.Boolean(object.valueFlag)
+        : isSet(object.value_flag)
+        ? globalThis.Boolean(object.value_flag)
+        : false,
+      uomCode: isSet(object.uomCode)
+        ? globalThis.String(object.uomCode)
+        : isSet(object.uom_code)
+        ? globalThis.String(object.uom_code)
+        : "",
+      isRequired: isSet(object.isRequired)
+        ? globalThis.Boolean(object.isRequired)
+        : isSet(object.is_required)
+        ? globalThis.Boolean(object.is_required)
+        : false,
+    };
+  },
+
+  toJSON(message: ParamValueEntry): unknown {
+    const obj: any = {};
+    if (message.paramId !== "") {
+      obj.paramId = message.paramId;
+    }
+    if (message.paramCode !== "") {
+      obj.paramCode = message.paramCode;
+    }
+    if (message.paramName !== "") {
+      obj.paramName = message.paramName;
+    }
+    if (message.dataType !== "") {
+      obj.dataType = message.dataType;
+    }
+    if (message.hasValue !== false) {
+      obj.hasValue = message.hasValue;
+    }
+    if (message.valueNumeric !== "") {
+      obj.valueNumeric = message.valueNumeric;
+    }
+    if (message.valueText !== "") {
+      obj.valueText = message.valueText;
+    }
+    if (message.valueFlag !== false) {
+      obj.valueFlag = message.valueFlag;
+    }
+    if (message.uomCode !== "") {
+      obj.uomCode = message.uomCode;
+    }
+    if (message.isRequired !== false) {
+      obj.isRequired = message.isRequired;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ParamValueEntry>): ParamValueEntry {
+    return ParamValueEntry.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ParamValueEntry>): ParamValueEntry {
+    const message = createBaseParamValueEntry();
+    message.paramId = object.paramId ?? "";
+    message.paramCode = object.paramCode ?? "";
+    message.paramName = object.paramName ?? "";
+    message.dataType = object.dataType ?? "";
+    message.hasValue = object.hasValue ?? false;
+    message.valueNumeric = object.valueNumeric ?? "";
+    message.valueText = object.valueText ?? "";
+    message.valueFlag = object.valueFlag ?? false;
+    message.uomCode = object.uomCode ?? "";
+    message.isRequired = object.isRequired ?? false;
+    return message;
+  },
+};
+
+function createBaseFillLevelSummary(): FillLevelSummary {
+  return {
+    routeLevel: 0,
+    taskStatus: "",
+    filledByUserId: "",
+    filledAt: "",
+    filledParams: 0,
+    totalParams: 0,
+    params: [],
+    lastEditedBy: "",
+    lastEditedAt: "",
+  };
+}
+
+export const FillLevelSummary: MessageFns<FillLevelSummary> = {
+  encode(message: FillLevelSummary, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.routeLevel !== 0) {
+      writer.uint32(8).int32(message.routeLevel);
+    }
+    if (message.taskStatus !== "") {
+      writer.uint32(18).string(message.taskStatus);
+    }
+    if (message.filledByUserId !== "") {
+      writer.uint32(26).string(message.filledByUserId);
+    }
+    if (message.filledAt !== "") {
+      writer.uint32(34).string(message.filledAt);
+    }
+    if (message.filledParams !== 0) {
+      writer.uint32(40).int32(message.filledParams);
+    }
+    if (message.totalParams !== 0) {
+      writer.uint32(48).int32(message.totalParams);
+    }
+    for (const v of message.params) {
+      ParamValueEntry.encode(v!, writer.uint32(58).fork()).join();
+    }
+    if (message.lastEditedBy !== "") {
+      writer.uint32(66).string(message.lastEditedBy);
+    }
+    if (message.lastEditedAt !== "") {
+      writer.uint32(74).string(message.lastEditedAt);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): FillLevelSummary {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseFillLevelSummary();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.routeLevel = reader.int32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.taskStatus = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.filledByUserId = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.filledAt = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.filledParams = reader.int32();
+          continue;
+        }
+        case 6: {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.totalParams = reader.int32();
+          continue;
+        }
+        case 7: {
+          if (tag !== 58) {
+            break;
+          }
+
+          message.params.push(ParamValueEntry.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 8: {
+          if (tag !== 66) {
+            break;
+          }
+
+          message.lastEditedBy = reader.string();
+          continue;
+        }
+        case 9: {
+          if (tag !== 74) {
+            break;
+          }
+
+          message.lastEditedAt = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): FillLevelSummary {
+    return {
+      routeLevel: isSet(object.routeLevel)
+        ? globalThis.Number(object.routeLevel)
+        : isSet(object.route_level)
+        ? globalThis.Number(object.route_level)
+        : 0,
+      taskStatus: isSet(object.taskStatus)
+        ? globalThis.String(object.taskStatus)
+        : isSet(object.task_status)
+        ? globalThis.String(object.task_status)
+        : "",
+      filledByUserId: isSet(object.filledByUserId)
+        ? globalThis.String(object.filledByUserId)
+        : isSet(object.filled_by_user_id)
+        ? globalThis.String(object.filled_by_user_id)
+        : "",
+      filledAt: isSet(object.filledAt)
+        ? globalThis.String(object.filledAt)
+        : isSet(object.filled_at)
+        ? globalThis.String(object.filled_at)
+        : "",
+      filledParams: isSet(object.filledParams)
+        ? globalThis.Number(object.filledParams)
+        : isSet(object.filled_params)
+        ? globalThis.Number(object.filled_params)
+        : 0,
+      totalParams: isSet(object.totalParams)
+        ? globalThis.Number(object.totalParams)
+        : isSet(object.total_params)
+        ? globalThis.Number(object.total_params)
+        : 0,
+      params: globalThis.Array.isArray(object?.params)
+        ? object.params.map((e: any) => ParamValueEntry.fromJSON(e))
+        : [],
+      lastEditedBy: isSet(object.lastEditedBy)
+        ? globalThis.String(object.lastEditedBy)
+        : isSet(object.last_edited_by)
+        ? globalThis.String(object.last_edited_by)
+        : "",
+      lastEditedAt: isSet(object.lastEditedAt)
+        ? globalThis.String(object.lastEditedAt)
+        : isSet(object.last_edited_at)
+        ? globalThis.String(object.last_edited_at)
+        : "",
+    };
+  },
+
+  toJSON(message: FillLevelSummary): unknown {
+    const obj: any = {};
+    if (message.routeLevel !== 0) {
+      obj.routeLevel = Math.round(message.routeLevel);
+    }
+    if (message.taskStatus !== "") {
+      obj.taskStatus = message.taskStatus;
+    }
+    if (message.filledByUserId !== "") {
+      obj.filledByUserId = message.filledByUserId;
+    }
+    if (message.filledAt !== "") {
+      obj.filledAt = message.filledAt;
+    }
+    if (message.filledParams !== 0) {
+      obj.filledParams = Math.round(message.filledParams);
+    }
+    if (message.totalParams !== 0) {
+      obj.totalParams = Math.round(message.totalParams);
+    }
+    if (message.params?.length) {
+      obj.params = message.params.map((e) => ParamValueEntry.toJSON(e));
+    }
+    if (message.lastEditedBy !== "") {
+      obj.lastEditedBy = message.lastEditedBy;
+    }
+    if (message.lastEditedAt !== "") {
+      obj.lastEditedAt = message.lastEditedAt;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<FillLevelSummary>): FillLevelSummary {
+    return FillLevelSummary.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<FillLevelSummary>): FillLevelSummary {
+    const message = createBaseFillLevelSummary();
+    message.routeLevel = object.routeLevel ?? 0;
+    message.taskStatus = object.taskStatus ?? "";
+    message.filledByUserId = object.filledByUserId ?? "";
+    message.filledAt = object.filledAt ?? "";
+    message.filledParams = object.filledParams ?? 0;
+    message.totalParams = object.totalParams ?? 0;
+    message.params = object.params?.map((e) => ParamValueEntry.fromPartial(e)) || [];
+    message.lastEditedBy = object.lastEditedBy ?? "";
+    message.lastEditedAt = object.lastEditedAt ?? "";
+    return message;
+  },
+};
+
+function createBaseProductParamSummary(): ProductParamSummary {
+  return { productSysId: 0, productCode: "", productName: "", levels: [] };
+}
+
+export const ProductParamSummary: MessageFns<ProductParamSummary> = {
+  encode(message: ProductParamSummary, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.productSysId !== 0) {
+      writer.uint32(8).int64(message.productSysId);
+    }
+    if (message.productCode !== "") {
+      writer.uint32(18).string(message.productCode);
+    }
+    if (message.productName !== "") {
+      writer.uint32(26).string(message.productName);
+    }
+    for (const v of message.levels) {
+      FillLevelSummary.encode(v!, writer.uint32(34).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ProductParamSummary {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseProductParamSummary();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.productSysId = longToNumber(reader.int64());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.productCode = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.productName = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.levels.push(FillLevelSummary.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ProductParamSummary {
+    return {
+      productSysId: isSet(object.productSysId)
+        ? globalThis.Number(object.productSysId)
+        : isSet(object.product_sys_id)
+        ? globalThis.Number(object.product_sys_id)
+        : 0,
+      productCode: isSet(object.productCode)
+        ? globalThis.String(object.productCode)
+        : isSet(object.product_code)
+        ? globalThis.String(object.product_code)
+        : "",
+      productName: isSet(object.productName)
+        ? globalThis.String(object.productName)
+        : isSet(object.product_name)
+        ? globalThis.String(object.product_name)
+        : "",
+      levels: globalThis.Array.isArray(object?.levels)
+        ? object.levels.map((e: any) => FillLevelSummary.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: ProductParamSummary): unknown {
+    const obj: any = {};
+    if (message.productSysId !== 0) {
+      obj.productSysId = Math.round(message.productSysId);
+    }
+    if (message.productCode !== "") {
+      obj.productCode = message.productCode;
+    }
+    if (message.productName !== "") {
+      obj.productName = message.productName;
+    }
+    if (message.levels?.length) {
+      obj.levels = message.levels.map((e) => FillLevelSummary.toJSON(e));
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ProductParamSummary>): ProductParamSummary {
+    return ProductParamSummary.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ProductParamSummary>): ProductParamSummary {
+    const message = createBaseProductParamSummary();
+    message.productSysId = object.productSysId ?? 0;
+    message.productCode = object.productCode ?? "";
+    message.productName = object.productName ?? "";
+    message.levels = object.levels?.map((e) => FillLevelSummary.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseGetParamSummaryRequest(): GetParamSummaryRequest {
+  return { requestId: 0 };
+}
+
+export const GetParamSummaryRequest: MessageFns<GetParamSummaryRequest> = {
+  encode(message: GetParamSummaryRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.requestId !== 0) {
+      writer.uint32(8).int64(message.requestId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetParamSummaryRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetParamSummaryRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.requestId = longToNumber(reader.int64());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetParamSummaryRequest {
+    return {
+      requestId: isSet(object.requestId)
+        ? globalThis.Number(object.requestId)
+        : isSet(object.request_id)
+        ? globalThis.Number(object.request_id)
+        : 0,
+    };
+  },
+
+  toJSON(message: GetParamSummaryRequest): unknown {
+    const obj: any = {};
+    if (message.requestId !== 0) {
+      obj.requestId = Math.round(message.requestId);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetParamSummaryRequest>): GetParamSummaryRequest {
+    return GetParamSummaryRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GetParamSummaryRequest>): GetParamSummaryRequest {
+    const message = createBaseGetParamSummaryRequest();
+    message.requestId = object.requestId ?? 0;
+    return message;
+  },
+};
+
+function createBaseGetParamSummaryResponse(): GetParamSummaryResponse {
+  return { base: undefined, products: [], totalParams: 0, filledParams: 0 };
+}
+
+export const GetParamSummaryResponse: MessageFns<GetParamSummaryResponse> = {
+  encode(message: GetParamSummaryResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    for (const v of message.products) {
+      ProductParamSummary.encode(v!, writer.uint32(18).fork()).join();
+    }
+    if (message.totalParams !== 0) {
+      writer.uint32(24).int32(message.totalParams);
+    }
+    if (message.filledParams !== 0) {
+      writer.uint32(32).int32(message.filledParams);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetParamSummaryResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetParamSummaryResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.products.push(ProductParamSummary.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.totalParams = reader.int32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.filledParams = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetParamSummaryResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      products: globalThis.Array.isArray(object?.products)
+        ? object.products.map((e: any) => ProductParamSummary.fromJSON(e))
+        : [],
+      totalParams: isSet(object.totalParams)
+        ? globalThis.Number(object.totalParams)
+        : isSet(object.total_params)
+        ? globalThis.Number(object.total_params)
+        : 0,
+      filledParams: isSet(object.filledParams)
+        ? globalThis.Number(object.filledParams)
+        : isSet(object.filled_params)
+        ? globalThis.Number(object.filled_params)
+        : 0,
+    };
+  },
+
+  toJSON(message: GetParamSummaryResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.products?.length) {
+      obj.products = message.products.map((e) => ProductParamSummary.toJSON(e));
+    }
+    if (message.totalParams !== 0) {
+      obj.totalParams = Math.round(message.totalParams);
+    }
+    if (message.filledParams !== 0) {
+      obj.filledParams = Math.round(message.filledParams);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetParamSummaryResponse>): GetParamSummaryResponse {
+    return GetParamSummaryResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GetParamSummaryResponse>): GetParamSummaryResponse {
+    const message = createBaseGetParamSummaryResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.products = object.products?.map((e) => ProductParamSummary.fromPartial(e)) || [];
+    message.totalParams = object.totalParams ?? 0;
+    message.filledParams = object.filledParams ?? 0;
+    return message;
+  },
+};
+
 export type CostProductRequestServiceDefinition = typeof CostProductRequestServiceDefinition;
 export const CostProductRequestServiceDefinition = {
   name: "CostProductRequestService",
@@ -8052,6 +8893,92 @@ export const CostProductRequestServiceDefinition = {
               115,
               116,
               111,
+              114,
+              121,
+            ]),
+          ],
+        },
+      },
+    },
+    /**
+     * GetParamSummary returns all param values for the request grouped by product
+     * and fill level. Used by ParamSummaryPanel and ConfirmActionDialog.
+     */
+    getParamSummary: {
+      name: "GetParamSummary",
+      requestType: GetParamSummaryRequest,
+      requestStream: false,
+      responseType: GetParamSummaryResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              66,
+              18,
+              64,
+              47,
+              97,
+              112,
+              105,
+              47,
+              118,
+              49,
+              47,
+              102,
+              105,
+              110,
+              97,
+              110,
+              99,
+              101,
+              47,
+              99,
+              111,
+              115,
+              116,
+              45,
+              112,
+              114,
+              111,
+              100,
+              117,
+              99,
+              116,
+              45,
+              114,
+              101,
+              113,
+              117,
+              101,
+              115,
+              116,
+              115,
+              47,
+              123,
+              114,
+              101,
+              113,
+              117,
+              101,
+              115,
+              116,
+              95,
+              105,
+              100,
+              125,
+              47,
+              112,
+              97,
+              114,
+              97,
+              109,
+              45,
+              115,
+              117,
+              109,
+              109,
+              97,
               114,
               121,
             ]),
