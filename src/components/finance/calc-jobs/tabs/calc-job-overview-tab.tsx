@@ -1,136 +1,132 @@
 "use client"
 
 import { useState } from "react"
+import { AlertTriangle, CheckCircle2, Package, XCircle } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { KpiCard } from "@/components/common/kpi-card"
+import { KpiGrid } from "@/components/common/kpi-grid"
 import { StatusBadge } from "@/components/common/status-badge"
 import { UserName } from "@/components/common/user-name"
 import type { CalJob } from "@/types/finance/cost-calc"
+
+import { fmtDate, fmtDuration, prettyJson } from "./calc-job-tab-utils"
 
 interface Props {
   job: CalJob
 }
 
-function fmtDate(ts: string | null): string {
-  if (!ts) return "—"
-  try {
-    return new Date(ts).toLocaleString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    })
-  } catch {
-    return ts
-  }
-}
-
-function fmtDuration(ms: number): string {
-  if (!ms || ms <= 0) return "—"
-  const s = Math.floor(ms / 1000)
-  if (s < 60) return `${(ms / 1000).toFixed(1)}s`
-  const m = Math.floor(s / 60)
-  const rem = s - m * 60
-  if (m < 60) return `${m}m ${rem}s`
-  const h = Math.floor(m / 60)
-  return `${h}h ${m - h * 60}m`
-}
-
-function prettyJson(s: string): string {
-  if (!s) return ""
-  try {
-    return JSON.stringify(JSON.parse(s), null, 2)
-  } catch {
-    return s
-  }
-}
-
-export function CalcJobOverviewTab({ job }: Props) {
+// Stacked label + value — mirrors request-detail-panel Field pattern
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm font-semibold">Identification</CardTitle>
-        </CardHeader>
-        <CardContent className="pt-0">
-          <Grid>
-            <Row label="Job code" value={<span className="font-mono">{job.jobCode || "—"}</span>} />
-            <Row label="Job ID" value={<span className="font-mono">{job.jobId}</span>} />
-            <Row label="Period" value={<span className="font-mono">{job.period}</span>} />
-            <Row label="Calculation type" value={job.calculationType} />
-            <Row label="Scope" value={job.scope.replace(/_/g, " ")} />
-            <Row label="Priority" value={String(job.priority)} />
-          </Grid>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm font-semibold">Lifecycle</CardTitle>
-        </CardHeader>
-        <CardContent className="pt-0">
-          <Grid>
-            <Row label="Status" value={<StatusBadge status={job.status} type="job" size="sm" />} />
-            <Row
-              label="Triggered by"
-              value={job.triggeredBy ? <UserName userId={job.triggeredBy} compact /> : "—"}
-            />
-            <Row
-              label="Created by"
-              value={job.createdBy ? <UserName userId={job.createdBy} compact /> : "—"}
-            />
-            <Row label="Queued at" value={fmtDate(job.queuedAt)} />
-            <Row label="Started at" value={fmtDate(job.startedAt)} />
-            <Row label="Completed at" value={fmtDate(job.completedAt)} />
-            <Row label="Duration" value={fmtDuration(job.durationMs)} />
-          </Grid>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm font-semibold">Counts</CardTitle>
-        </CardHeader>
-        <CardContent className="pt-0">
-          <Grid>
-            <Row label="Total products" value={String(job.totalProducts)} />
-            <Row label="Total chunks" value={String(job.totalChunks)} />
-            <Row label="Total waves" value={String(job.totalWaves)} />
-            <Row label="Processed chunks" value={String(job.processedChunks)} />
-            <Row
-              label="Success"
-              value={<span className="font-mono text-emerald-700">{job.successCount}</span>}
-            />
-            <Row
-              label="Failed"
-              value={<span className="font-mono text-red-700">{job.failedCount}</span>}
-            />
-            <Row
-              label="Blocked"
-              value={<span className="font-mono text-amber-700">{job.blockedCount}</span>}
-            />
-          </Grid>
-        </CardContent>
-      </Card>
-
-      <CollapsibleJson title="Product filter" json={job.productFilterJson} />
-      <CollapsibleJson title="Error summary" json={job.errorSummaryJson} />
+    <div className="space-y-0.5">
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div>{children}</div>
     </div>
   )
 }
 
-function Grid({ children }: { children: React.ReactNode }) {
-  return <div className="grid grid-cols-1 gap-0 md:grid-cols-2">{children}</div>
-}
-
-function Row({ label, value }: { label: string; value: React.ReactNode }) {
+export function CalcJobOverviewTab({ job }: Props) {
   return (
-    <div className="flex items-baseline justify-between gap-4 border-b border-border/40 py-2 last:border-b-0 md:[&:nth-last-child(-n+2)]:border-b-0">
-      <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="text-sm">{value}</div>
+    <div className="space-y-6">
+      {/* KPI summary — always show, loading is false since job is already loaded */}
+      <KpiGrid cols={4}>
+        <KpiCard
+          title="Success"
+          value={job.successCount}
+          variant="success"
+          icon={CheckCircle2}
+          loading={false}
+        />
+        <KpiCard
+          title="Failed"
+          value={job.failedCount}
+          variant="destructive"
+          icon={XCircle}
+          loading={false}
+        />
+        <KpiCard
+          title="Blocked"
+          value={job.blockedCount}
+          variant="warning"
+          icon={AlertTriangle}
+          loading={false}
+        />
+        <KpiCard
+          title="Total Products"
+          value={job.totalProducts}
+          icon={Package}
+          loading={false}
+        />
+      </KpiGrid>
+
+      {/* Bento 2-column grid */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {/* Left column */}
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm font-semibold">Identification</CardTitle>
+            </CardHeader>
+            {/* grid directly on CardContent — same pattern as request-detail-panel spec card */}
+            <CardContent className="grid grid-cols-2 gap-4 text-sm">
+              <Field label="Job code">
+                <span className="font-mono text-xs">{job.jobCode || "—"}</span>
+              </Field>
+              <Field label="Job ID">
+                <span className="font-mono text-xs">{job.jobId}</span>
+              </Field>
+              <Field label="Period">
+                <span className="font-mono text-xs">{job.period}</span>
+              </Field>
+              <Field label="Calculation type">{job.calculationType}</Field>
+              <Field label="Scope">{job.scope.replace(/_/g, " ")}</Field>
+              <Field label="Priority">{String(job.priority)}</Field>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm font-semibold">Processing</CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-2 gap-4 text-sm">
+              <Field label="Total waves">{String(job.totalWaves)}</Field>
+              <Field label="Total chunks">{String(job.totalChunks)}</Field>
+              <Field label="Processed chunks">{String(job.processedChunks)}</Field>
+              <Field label="Total products">{String(job.totalProducts)}</Field>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Right column */}
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm font-semibold">Lifecycle</CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-2 gap-4 text-sm">
+              <Field label="Status">
+                <StatusBadge status={job.status} type="job" size="sm" />
+              </Field>
+              <Field label="Duration">{fmtDuration(job.durationMs)}</Field>
+              <Field label="Triggered by">
+                {job.triggeredBy ? <UserName userId={job.triggeredBy} compact /> : "—"}
+              </Field>
+              <Field label="Created by">
+                {job.createdBy ? <UserName userId={job.createdBy} compact /> : "—"}
+              </Field>
+              <Field label="Queued at">{fmtDate(job.queuedAt)}</Field>
+              <Field label="Started at">{fmtDate(job.startedAt)}</Field>
+              <Field label="Completed at">{fmtDate(job.completedAt)}</Field>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Collapsible JSON — full width */}
+      <CollapsibleJson title="Product filter" json={job.productFilterJson} />
+      <CollapsibleJson title="Error summary" json={job.errorSummaryJson} />
     </div>
   )
 }
@@ -149,7 +145,7 @@ function CollapsibleJson({ title, json }: { title: string; json: string }) {
         </Button>
       </CardHeader>
       {open && (
-        <CardContent className="pt-0">
+        <CardContent>
           <pre className="overflow-x-auto rounded-md bg-muted p-3 text-xs">
             {prettyJson(json)}
           </pre>

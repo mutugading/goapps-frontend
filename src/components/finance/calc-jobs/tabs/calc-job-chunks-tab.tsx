@@ -34,6 +34,8 @@ import type {
   ListCalcJobChunksParams,
 } from "@/types/finance/cost-calc"
 
+import { fmtDuration } from "./calc-job-tab-utils"
+
 interface Props {
   jobId: number
 }
@@ -54,14 +56,6 @@ const defaultFilters: ListCalcJobChunksParams = {
   pageSize: 50,
 }
 
-function fmtDuration(ms: number): string {
-  if (!ms || ms <= 0) return "—"
-  const s = Math.floor(ms / 1000)
-  if (s < 60) return `${(ms / 1000).toFixed(1)}s`
-  const m = Math.floor(s / 60)
-  return `${m}m ${s - m * 60}s`
-}
-
 function truncate(s: string, n = 60): string {
   if (!s) return ""
   return s.length > n ? `${s.slice(0, n)}…` : s
@@ -80,9 +74,10 @@ export function CalcJobChunksTab({ jobId }: Props) {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap gap-3">
+      {/* Filter bar */}
+      <div className="flex flex-wrap items-end gap-3">
         <div className="space-y-1">
-          <div className="text-xs uppercase tracking-wide text-muted-foreground">Wave #</div>
+          <label className="text-xs text-muted-foreground">Wave #</label>
           <Input
             type="number"
             min={1}
@@ -96,7 +91,7 @@ export function CalcJobChunksTab({ jobId }: Props) {
           />
         </div>
         <div className="space-y-1">
-          <div className="text-xs uppercase tracking-wide text-muted-foreground">Status</div>
+          <label className="text-xs text-muted-foreground">Status</label>
           <Select
             value={filters.status || "all"}
             onValueChange={(v) =>
@@ -118,82 +113,82 @@ export function CalcJobChunksTab({ jobId }: Props) {
         </div>
       </div>
 
-      <Card>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-20 text-right">Chunk #</TableHead>
-              <TableHead className="w-16 text-right">Wave</TableHead>
-              <TableHead className="w-24 text-right">Products</TableHead>
-              <TableHead className="w-32">Status</TableHead>
-              <TableHead className="w-40">Worker</TableHead>
-              <TableHead className="w-20 text-right">Success</TableHead>
-              <TableHead className="w-20 text-right">Failed</TableHead>
-              <TableHead className="w-24 text-right">Duration</TableHead>
-              <TableHead className="w-16 text-right">Retries</TableHead>
-              <TableHead>Error</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading && (
+      <Card className="overflow-hidden">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={10} className="py-8 text-center text-muted-foreground">
-                  <Loader2 className="mr-2 inline h-4 w-4 animate-spin" /> Loading…
-                </TableCell>
+                <TableHead className="w-20 text-right">Chunk #</TableHead>
+                <TableHead className="w-16 text-right">Wave</TableHead>
+                <TableHead className="w-24 text-right">Products</TableHead>
+                <TableHead className="w-32">Status</TableHead>
+                <TableHead className="w-40">Worker</TableHead>
+                <TableHead className="w-20 text-right">Success</TableHead>
+                <TableHead className="w-20 text-right">Failed</TableHead>
+                <TableHead className="w-24 text-right">Duration</TableHead>
+                <TableHead className="w-20 text-right">Retries</TableHead>
+                <TableHead>Error</TableHead>
               </TableRow>
-            )}
-            {!isLoading && items.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={10} className="py-8 text-center text-muted-foreground">
-                  No chunks found.
-                </TableCell>
-              </TableRow>
-            )}
-            {items.map((c) => (
-              <TableRow key={c.chunkId} className="hover:bg-muted/50">
-                <TableCell className="text-right font-mono text-xs">
-                  {c.chunkNumber}
-                </TableCell>
-                <TableCell className="text-right font-mono text-xs">{c.waveNo}</TableCell>
-                <TableCell className="text-right font-mono text-xs">
-                  {c.productCount}
-                </TableCell>
-                <TableCell>
-                  <StatusBadge status={c.status} type="chunk" size="sm" />
-                </TableCell>
-                <TableCell className="font-mono text-xs">{c.workerId || "—"}</TableCell>
-                <TableCell className="text-right font-mono text-xs text-emerald-700">
-                  {c.successCount}
-                </TableCell>
-                <TableCell className="text-right font-mono text-xs text-red-700">
-                  {c.failedCount}
-                </TableCell>
-                <TableCell className="text-right text-xs">
-                  {fmtDuration(c.durationMs)}
-                </TableCell>
-                <TableCell className="text-right font-mono text-xs">
-                  {c.retryCount}/{c.maxRetries}
-                </TableCell>
-                <TableCell className="text-xs text-red-700">
-                  {c.errorMessage ? (
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <span className="cursor-help">{truncate(c.errorMessage)}</span>
-                        </TooltipTrigger>
-                        <TooltipContent className="max-w-md">
-                          <p className="whitespace-pre-wrap text-xs">{c.errorMessage}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  ) : (
-                    <span className="text-muted-foreground">—</span>
-                  )}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {isLoading && (
+                <TableRow>
+                  <TableCell colSpan={10} className="py-10 text-center text-sm text-muted-foreground">
+                    <Loader2 className="mr-2 inline h-4 w-4 animate-spin" /> Loading chunks…
+                  </TableCell>
+                </TableRow>
+              )}
+              {!isLoading && items.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={10} className="py-10 text-center text-sm text-muted-foreground">
+                    No chunks found.
+                  </TableCell>
+                </TableRow>
+              )}
+              {items.map((c) => (
+                <TableRow key={c.chunkId} className="hover:bg-muted/50">
+                  <TableCell className="text-right font-mono text-xs">{c.chunkNumber}</TableCell>
+                  <TableCell className="text-right font-mono text-xs">{c.waveNo}</TableCell>
+                  <TableCell className="text-right font-mono text-xs">{c.productCount}</TableCell>
+                  <TableCell>
+                    <StatusBadge status={c.status} type="chunk" size="sm" />
+                  </TableCell>
+                  <TableCell className="font-mono text-xs text-muted-foreground">
+                    {c.workerId || "—"}
+                  </TableCell>
+                  <TableCell className="text-right font-mono text-sm text-emerald-700 dark:text-emerald-400">
+                    {c.successCount}
+                  </TableCell>
+                  <TableCell className="text-right font-mono text-sm text-destructive">
+                    {c.failedCount}
+                  </TableCell>
+                  <TableCell className="text-right text-sm">{fmtDuration(c.durationMs)}</TableCell>
+                  <TableCell className="text-right font-mono text-sm">
+                    {c.retryCount}/{c.maxRetries}
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    {c.errorMessage ? (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="cursor-help text-red-600 dark:text-red-400">
+                              {truncate(c.errorMessage)}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-md">
+                            <p className="whitespace-pre-wrap text-xs">{c.errorMessage}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       </Card>
 
       {data && data.total > 0 && (

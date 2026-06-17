@@ -30,6 +30,8 @@ import type {
   ListCalcJobProductsParams,
 } from "@/types/finance/cost-calc"
 
+import { fmtDate, fmtDuration, prettyJson } from "./calc-job-tab-utils"
+
 interface Props {
   jobId: number
   totalProducts: number
@@ -50,37 +52,6 @@ const defaultFilters: ListCalcJobProductsParams & { tab: string } = {
   page: 1,
   pageSize: 50,
   tab: "products",
-}
-
-function fmtDate(ts: string | null): string {
-  if (!ts) return "—"
-  try {
-    return new Date(ts).toLocaleString("en-US", {
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    })
-  } catch {
-    return ts
-  }
-}
-
-function fmtDuration(ms: number): string {
-  if (!ms || ms <= 0) return "—"
-  const s = Math.floor(ms / 1000)
-  if (s < 60) return `${(ms / 1000).toFixed(1)}s`
-  const m = Math.floor(s / 60)
-  return `${m}m ${s - m * 60}s`
-}
-
-function prettyJson(s: string): string {
-  if (!s) return ""
-  try {
-    return JSON.stringify(JSON.parse(s), null, 2)
-  } catch {
-    return s
-  }
 }
 
 export function CalcJobProductsTab({ jobId }: Props) {
@@ -140,9 +111,10 @@ export function CalcJobProductsTab({ jobId }: Props) {
 
   return (
     <div className="space-y-4">
+      {/* Filter bar */}
       <div className="flex flex-wrap items-end gap-3">
         <div className="space-y-1">
-          <div className="text-xs uppercase tracking-wide text-muted-foreground">Status</div>
+          <label className="text-xs text-muted-foreground">Status</label>
           <Select
             value={filters.status || "all"}
             onValueChange={(v) =>
@@ -169,54 +141,56 @@ export function CalcJobProductsTab({ jobId }: Props) {
             onClick={exportBlockedCsv}
             disabled={exporting}
           >
-            <Download className="mr-1 h-3 w-3" />
+            <Download className="mr-1.5 h-3.5 w-3.5" />
             {exporting ? "Exporting…" : "Export blocked CSV"}
           </Button>
         )}
       </div>
 
-      <Card>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-10" />
-              <TableHead className="w-36">Product code</TableHead>
-              <TableHead>Product name</TableHead>
-              <TableHead className="w-16 text-right">Wave</TableHead>
-              <TableHead className="w-32">Status</TableHead>
-              <TableHead>Block / error</TableHead>
-              <TableHead className="w-24 text-right">Duration</TableHead>
-              <TableHead className="w-36">Completed at</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading && (
+      <Card className="overflow-hidden">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={8} className="py-8 text-center text-muted-foreground">
-                  <Loader2 className="mr-2 inline h-4 w-4 animate-spin" /> Loading…
-                </TableCell>
+                <TableHead className="w-10" />
+                <TableHead className="w-36">Product code</TableHead>
+                <TableHead>Product name</TableHead>
+                <TableHead className="w-16 text-right">Wave</TableHead>
+                <TableHead className="w-32">Status</TableHead>
+                <TableHead>Block / error</TableHead>
+                <TableHead className="w-24 text-right">Duration</TableHead>
+                <TableHead className="w-40">Completed at</TableHead>
               </TableRow>
-            )}
-            {!isLoading && items.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={8} className="py-8 text-center text-muted-foreground">
-                  No products found.
-                </TableCell>
-              </TableRow>
-            )}
-            {items.map((p) => {
-              const isOpen = expanded.has(p.jobProductId)
-              return (
-                <ProductRow
-                  key={p.jobProductId}
-                  p={p}
-                  isOpen={isOpen}
-                  onToggle={() => toggle(p.jobProductId)}
-                />
-              )
-            })}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {isLoading && (
+                <TableRow>
+                  <TableCell colSpan={8} className="py-10 text-center text-sm text-muted-foreground">
+                    <Loader2 className="mr-2 inline h-4 w-4 animate-spin" /> Loading products…
+                  </TableCell>
+                </TableRow>
+              )}
+              {!isLoading && items.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={8} className="py-10 text-center text-sm text-muted-foreground">
+                    No products found.
+                  </TableCell>
+                </TableRow>
+              )}
+              {items.map((p) => {
+                const isOpen = expanded.has(p.jobProductId)
+                return (
+                  <ProductRow
+                    key={p.jobProductId}
+                    p={p}
+                    isOpen={isOpen}
+                    onToggle={() => toggle(p.jobProductId)}
+                  />
+                )
+              })}
+            </TableBody>
+          </Table>
+        </div>
       </Card>
 
       {data && data.total > 0 && (
@@ -250,45 +224,43 @@ function ProductRow({
           <button
             type="button"
             onClick={onToggle}
-            className="text-muted-foreground hover:text-foreground"
+            className="text-muted-foreground hover:text-foreground disabled:opacity-30"
             disabled={!hasLog}
-            aria-label={isOpen ? "Collapse" : "Expand"}
+            aria-label={isOpen ? "Collapse log" : "Expand log"}
           >
-            {hasLog ? (
-              isOpen ? (
-                <ChevronDown className="h-4 w-4" />
-              ) : (
-                <ChevronRight className="h-4 w-4" />
-              )
+            {isOpen ? (
+              <ChevronDown className="h-4 w-4" />
             ) : (
-              <ChevronRight className="h-4 w-4 opacity-20" />
+              <ChevronRight className="h-4 w-4" />
             )}
           </button>
         </TableCell>
         <TableCell className="font-mono text-xs">{p.productCode || "—"}</TableCell>
-        <TableCell className="text-xs">{p.productName || "—"}</TableCell>
+        <TableCell className="text-sm">{p.productName || "—"}</TableCell>
         <TableCell className="text-right font-mono text-xs">{p.waveNo}</TableCell>
         <TableCell>
           <StatusBadge status={p.status} type="chunk" size="sm" />
         </TableCell>
-        <TableCell className="text-xs">
+        <TableCell className="max-w-[240px] text-sm">
           {p.status === "BLOCKED" && p.blockReason ? (
-            <span className="text-amber-700">{p.blockReason}</span>
+            <span className="text-amber-700 dark:text-amber-400">{p.blockReason}</span>
           ) : p.errorMessage ? (
-            <span className="text-red-700">{p.errorMessage}</span>
+            <span className="text-destructive">{p.errorMessage}</span>
           ) : (
             <span className="text-muted-foreground">—</span>
           )}
         </TableCell>
-        <TableCell className="text-right text-xs">{fmtDuration(p.durationMs)}</TableCell>
-        <TableCell className="text-xs">{fmtDate(p.completedAt)}</TableCell>
+        <TableCell className="text-right text-sm">{fmtDuration(p.durationMs)}</TableCell>
+        <TableCell className="text-sm">{fmtDate(p.completedAt)}</TableCell>
       </TableRow>
       {isOpen && hasLog && (
         <TableRow>
-          <TableCell colSpan={8} className="bg-muted/30">
-            <pre className="overflow-x-auto rounded bg-background p-2 text-xs">
-              {prettyJson(p.calculationLogJson)}
-            </pre>
+          <TableCell colSpan={8} className="bg-muted/30 p-0">
+            <div className="px-4 py-3">
+              <pre className="overflow-x-auto rounded-md bg-background p-3 text-xs leading-relaxed">
+                {prettyJson(p.calculationLogJson)}
+              </pre>
+            </div>
           </TableCell>
         </TableRow>
       )}
