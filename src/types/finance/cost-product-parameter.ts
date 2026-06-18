@@ -14,6 +14,8 @@ export interface RequiredParamEntry {
   ownerDepartment: string
   isRequiredForCosting: boolean
   lookupMasterCode: string
+  lookupFillGroupCode: string
+  lookupSourceColumn: string
   displayOrder: number
   displayGroup: string
   hasValue: boolean
@@ -52,6 +54,10 @@ interface RawRequiredParamEntry {
   is_required_for_costing?: boolean
   lookupMasterCode?: string
   lookup_master_code?: string
+  lookupFillGroupCode?: string
+  lookup_fill_group_code?: string
+  lookupSourceColumn?: string
+  lookup_source_column?: string
   displayOrder?: number
   display_order?: number
   displayGroup?: string
@@ -82,6 +88,8 @@ export function normalizeRequiredEntry(raw: RawRequiredParamEntry): RequiredPara
     ownerDepartment: raw.ownerDepartment ?? raw.owner_department ?? "",
     isRequiredForCosting: raw.isRequiredForCosting ?? raw.is_required_for_costing ?? false,
     lookupMasterCode: raw.lookupMasterCode ?? raw.lookup_master_code ?? "",
+    lookupFillGroupCode: raw.lookupFillGroupCode ?? raw.lookup_fill_group_code ?? "",
+    lookupSourceColumn: raw.lookupSourceColumn ?? raw.lookup_source_column ?? "",
     displayOrder: Number(raw.displayOrder ?? raw.display_order ?? 0),
     displayGroup: raw.displayGroup ?? raw.display_group ?? "",
     hasValue: raw.hasValue ?? raw.has_value ?? false,
@@ -123,6 +131,8 @@ export interface AvailableParamEntry {
   ownerDepartment: string
   isRequiredForCosting: boolean
   lookupMasterCode: string
+  lookupFillGroupCode: string
+  lookupSourceColumn: string
   displayOrder: number
   displayGroup: string
 }
@@ -140,6 +150,8 @@ export function normalizeAvailable(raw: Record<string, unknown>): AvailableParam
     ownerDepartment: (r.ownerDepartment as string) ?? (r.owner_department as string) ?? "",
     isRequiredForCosting: (r.isRequiredForCosting as boolean) ?? (r.is_required_for_costing as boolean) ?? false,
     lookupMasterCode: (r.lookupMasterCode as string) ?? (r.lookup_master_code as string) ?? "",
+    lookupFillGroupCode: (r.lookupFillGroupCode as string) ?? (r.lookup_fill_group_code as string) ?? "",
+    lookupSourceColumn: (r.lookupSourceColumn as string) ?? (r.lookup_source_column as string) ?? "",
     displayOrder: Number((r.displayOrder as number) ?? (r.display_order as number) ?? 0),
     displayGroup: (r.displayGroup as string) ?? (r.display_group as string) ?? "",
   }

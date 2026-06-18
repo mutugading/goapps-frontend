@@ -6,7 +6,8 @@
 // single batch.
 
 import { useCallback, useMemo, useState } from "react"
-import { Loader2, Save, AlertCircle, Plus, Trash2 } from "lucide-react"
+import { Loader2, Save, AlertCircle, Plus, Trash2, ArrowUp } from "lucide-react"
+import { useQueryClient } from "@tanstack/react-query"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -22,8 +23,11 @@ import {
 } from "@/hooks/finance/use-cost-product-parameter"
 import type { RequiredParamEntry, UpsertParamValuePayload } from "@/types/finance/cost-product-parameter"
 import type { LookupFillValuesResponse } from "@/types/finance/yarn-master"
+import type { RemoveApplicablePreview } from "@/types/finance/lookup-master"
 import { AddParameterDialog } from "./add-parameter-dialog"
 import { MasterLookupField } from "./master-lookup-field"
+import { ConfirmDialog } from "@/components/shared/confirm-dialog/confirm-dialog"
+import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 
 interface ParametersTabProps {
@@ -53,7 +57,13 @@ export function ProductParametersTab({ productSysId }: ParametersTabProps) {
   const { data: missing } = useMissingRequiredParams(productSysId)
   const upsertM = useUpsertProductParamValuesBatch()
   const removeM = useRemoveApplicableParam()
+  const qc = useQueryClient()
   const [addOpen, setAddOpen] = useState(false)
+
+  // Remove confirm state — used when removing a MASTER_LOOKUP trigger param.
+  const [removePreviewEntry, setRemovePreviewEntry] = useState<RequiredParamEntry | null>(null)
+  const [removePreview, setRemovePreview] = useState<RemoveApplicablePreview | null>(null)
+  const [previewLoading, setPreviewLoading] = useState(false)
 
   // Edits made by the user, indexed by paramId. Unedited rows derive their
   // draft from the loaded entries via useMemo below — no useEffect needed.
@@ -113,6 +123,46 @@ export function ProductParametersTab({ productSysId }: ParametersTabProps) {
 
   const dirtyCount = Object.values(drafts).filter((d) => d.dirty).length
   const missingCount = missing?.length ?? 0
+
+  async function handleRemoveClick(entry: RequiredParamEntry) {
+    if (entry.paramCategory === "MASTER_LOOKUP") {
+      setPreviewLoading(true)
+      setRemovePreviewEntry(entry)
+      try {
+        const res = await fetch("/api/v1/finance/cost-product-parameters/applicable/remove-preview", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ productSysId, paramId: entry.paramId }),
+        })
+        if (res.ok) {
+          const json = await res.json() as { data?: RemoveApplicablePreview }
+          setRemovePreview(json.data ?? null)
+        }
+      } finally {
+        setPreviewLoading(false)
+      }
+    } else {
+      removeM.mutate({ productSysId, paramId: entry.paramId })
+    }
+  }
+
+  async function handleRemoveWithChildren() {
+    if (!removePreviewEntry) return
+    const res = await fetch("/api/v1/finance/cost-product-parameters/applicable/remove-with-children", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ productSysId, paramId: removePreviewEntry.paramId }),
+    })
+    const body = await res.json()
+    if (!res.ok || body?.base?.isSuccess === false) {
+      toast.error(body?.base?.message || "Failed to remove parameter")
+    } else {
+      toast.success("Parameter removed")
+      qc.invalidateQueries({ queryKey: ["finance", "cost-product-parameter"] })
+    }
+    setRemovePreviewEntry(null)
+    setRemovePreview(null)
+  }
 
   async function handleSave() {
     if (!data) return
@@ -217,10 +267,8 @@ export function ProductParametersTab({ productSysId }: ParametersTabProps) {
                   entry={entry}
                   draft={draft}
                   onChange={patch}
-                  onRemove={() =>
-                    removeM.mutate({ productSysId, paramId: entry.paramId })
-                  }
-                  removing={removeM.isPending}
+                  onRemove={() => handleRemoveClick(entry)}
+                  removing={removeM.isPending || previewLoading}
                   allEntries={data}
                   onLookupChange={handleLookupChange}
                 />
@@ -234,6 +282,26 @@ export function ProductParametersTab({ productSysId }: ParametersTabProps) {
         productSysId={productSysId}
         open={addOpen}
         onOpenChange={setAddOpen}
+      />
+
+      <ConfirmDialog
+        open={!!removePreviewEntry}
+        onOpenChange={(v) => {
+          if (!v) {
+            setRemovePreviewEntry(null)
+            setRemovePreview(null)
+          }
+        }}
+        title={`Remove ${removePreviewEntry?.paramName ?? ""}?`}
+        description={
+          removePreview?.children.length
+            ? `This will also remove ${removePreview.children.length} child param(s): ${removePreview.children.map((c) => c.paramName).join(", ")}. Any filled values will be lost.`
+            : "This parameter will be removed from this product."
+        }
+        confirmText="Remove All"
+        variant="destructive"
+        isLoading={previewLoading}
+        onConfirm={handleRemoveWithChildren}
       />
     </div>
   )
@@ -302,6 +370,28 @@ function renderValueInput(
     return (
       <div className="rounded border border-dashed bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
         Calculated by engine — value is filled automatically during costing.
+      </div>
+    )
+  }
+
+  // Child params are auto-filled by their MASTER_LOOKUP trigger — render as read-only.
+  if (entry.lookupFillGroupCode) {
+    const displayValue = draft.valueNumeric || draft.valueText
+    return (
+      <div className="space-y-1">
+        <div
+          className={cn(
+            "flex h-9 w-full items-center rounded-md border border-input bg-muted/50 px-3 text-sm",
+            !displayValue ? "text-muted-foreground italic" : "",
+          )}
+        >
+          {displayValue || "—"}
+        </div>
+        <p className="flex items-center gap-1 text-[10px] text-muted-foreground">
+          <ArrowUp className="h-3 w-3" />
+          auto-filled from{" "}
+          <span className="font-mono font-medium">{entry.lookupFillGroupCode}</span>
+        </p>
       </div>
     )
   }

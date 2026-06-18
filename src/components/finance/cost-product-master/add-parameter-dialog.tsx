@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react"
 import { Loader2, Plus } from "lucide-react"
+import { useQueryClient } from "@tanstack/react-query"
+import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -16,7 +18,7 @@ import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
-import { useAddApplicableParam, useAvailableParams } from "@/hooks/finance/use-cost-product-parameter"
+import { useAvailableParams } from "@/hooks/finance/use-cost-product-parameter"
 import type { AvailableParamEntry } from "@/types/finance/cost-product-parameter"
 
 interface Props {
@@ -27,28 +29,51 @@ interface Props {
 
 export function AddParameterDialog({ productSysId, open, onOpenChange }: Props) {
   const { data: available, isLoading } = useAvailableParams(productSysId)
-  const addM = useAddApplicableParam()
+  const qc = useQueryClient()
   const [search, setSearch] = useState("")
   const [overrides, setOverrides] = useState<Record<string, boolean>>({}) // paramId → isRequired
+  const [addingId, setAddingId] = useState<string | null>(null)
+
+  // Filter out child params — they are auto-managed via MASTER_LOOKUP trigger.
+  const visibleParams = useMemo(
+    () => (available ?? []).filter((p) => !p.lookupFillGroupCode),
+    [available],
+  )
 
   const filtered = useMemo(() => {
     const s = search.trim().toLowerCase()
-    if (!s) return available ?? []
-    return (available ?? []).filter(
+    if (!s) return visibleParams
+    return visibleParams.filter(
       (p) =>
         p.paramCode.toLowerCase().includes(s) ||
         p.paramName.toLowerCase().includes(s) ||
         p.displayGroup.toLowerCase().includes(s),
     )
-  }, [available, search])
+  }, [visibleParams, search])
 
   async function handleAdd(entry: AvailableParamEntry) {
-    const isReq = overrides[entry.paramId] ?? entry.isRequiredForCosting
-    await addM.mutateAsync({
-      productSysId,
-      paramId: entry.paramId,
-      isRequired: isReq,
-    })
+    setAddingId(entry.paramId)
+    try {
+      const isReq = overrides[entry.paramId] ?? entry.isRequiredForCosting
+      const isMasterLookup = entry.paramCategory === "MASTER_LOOKUP"
+      const endpoint = isMasterLookup
+        ? "/api/v1/finance/cost-product-parameters/applicable/add-with-children"
+        : "/api/v1/finance/cost-product-parameters/applicable/add"
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ productSysId, paramId: entry.paramId, isRequired: isReq }),
+      })
+      const body = await res.json()
+      if (!res.ok || body?.base?.isSuccess === false) {
+        toast.error(body?.base?.message || "Failed to add parameter")
+      } else {
+        toast.success("Parameter added")
+        qc.invalidateQueries({ queryKey: ["finance", "cost-product-parameter"] })
+      }
+    } finally {
+      setAddingId(null)
+    }
   }
 
   return (
@@ -119,7 +144,7 @@ export function AddParameterDialog({ productSysId, open, onOpenChange }: Props) 
                   <Button
                     size="sm"
                     onClick={() => handleAdd(entry)}
-                    disabled={addM.isPending}
+                    disabled={addingId !== null}
                   >
                     <Plus className="h-3 w-3 mr-1" /> Add
                   </Button>
