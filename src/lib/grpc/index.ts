@@ -61,4 +61,5 @@ export {
   getProductGradeClient,
   getMBHeadClient,
   getYarnLookupFillClient,
+  getLookupMasterClient,
 } from "./clients"

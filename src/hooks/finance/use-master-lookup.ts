@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
-import { LOOKUP_MASTER_CONFIG } from "@/types/finance/yarn-master"
+import type { LookupMaster } from "@/types/finance/lookup-master"
 
 interface MasterOption {
   value: string // the code stored to CPP (e.g., machine code)
@@ -7,10 +7,15 @@ interface MasterOption {
 }
 
 async function fetchMasterOptions(lookupMasterCode: string): Promise<MasterOption[]> {
-  const config = LOOKUP_MASTER_CONFIG[lookupMasterCode]
+  // Get master config from API
+  const configRes = await fetch(`/api/v1/finance/lookup-masters?activeOnly=true`)
+  if (!configRes.ok) throw new Error(`Failed to fetch lookup masters: ${configRes.status}`)
+  const configJson = (await configRes.json()) as { data?: LookupMaster[] }
+  const config = (configJson.data ?? []).find((m) => m.lmCode === lookupMasterCode)
   if (!config) return []
 
-  const res = await fetch(`${config.apiPath}?pageSize=500&activeFilter=1`)
+  // Fetch options from master's own endpoint
+  const res = await fetch(`${config.lmApiPath}?pageSize=500&activeFilter=1`)
   if (!res.ok) throw new Error(`Failed to fetch ${lookupMasterCode} options: ${res.status}`)
   const json = (await res.json()) as {
     data?: { items?: Record<string, unknown>[] } | Record<string, unknown>[]
@@ -20,8 +25,8 @@ async function fetchMasterOptions(lookupMasterCode: string): Promise<MasterOptio
     : ((json.data as { items?: Record<string, unknown>[] })?.items ?? [])
   return items
     .map((item) => ({
-      value: String(item[config.codeField] ?? ""),
-      label: String(item[config.labelField] ?? item[config.codeField] ?? ""),
+      value: String(item[config.lmCodeField] ?? ""),
+      label: String(item[config.lmLabelField] ?? item[config.lmCodeField] ?? ""),
     }))
     .filter((o) => o.value !== "")
 }
