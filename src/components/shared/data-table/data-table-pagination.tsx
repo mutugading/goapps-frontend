@@ -18,7 +18,7 @@ import {
 
 import type { DataTablePaginationProps } from "./types"
 
-const DEFAULT_PAGE_SIZE_OPTIONS = [10, 25, 50, 100]
+const DEFAULT_PAGE_SIZE_OPTIONS = [10, 20, 50, 100]
 
 /**
  * Reusable pagination component for data tables
