@@ -155,6 +155,8 @@ export interface Parameter {
   displayOrder: number;
   /** Form section: Spec / Machine / Grade / Packing / Cost / etc. */
   displayGroup: string;
+  /** Descriptive notes or formula hint for this parameter (read-only, populated from seed/migration). */
+  notes: string;
 }
 
 /** CreateParameterRequest is the request for creating a new parameter. */
@@ -192,6 +194,8 @@ export interface CreateParameterRequest {
   displayOrder: number;
   /** Display group (optional, max 50 chars). E.g. 'Spec', 'Machine'. */
   displayGroup: string;
+  /** Descriptive notes or formula hint (optional, max 500 chars). */
+  notes: string;
 }
 
 /** CreateParameterResponse is the response for creating a parameter. */
@@ -284,7 +288,11 @@ export interface UpdateParameterRequest {
     | number
     | undefined;
   /** New display group (optional). Set to empty string to clear. */
-  displayGroup?: string | undefined;
+  displayGroup?:
+    | string
+    | undefined;
+  /** New notes (optional). Set to empty string to clear. */
+  notes?: string | undefined;
 }
 
 /** UpdateParameterResponse is the response for updating a parameter. */
@@ -439,6 +447,7 @@ function createBaseParameter(): Parameter {
     lookupMasterCode: "",
     displayOrder: 0,
     displayGroup: "",
+    notes: "",
   };
 }
 
@@ -503,6 +512,9 @@ export const Parameter: MessageFns<Parameter> = {
     }
     if (message.displayGroup !== "") {
       writer.uint32(234).string(message.displayGroup);
+    }
+    if (message.notes !== "") {
+      writer.uint32(242).string(message.notes);
     }
     return writer;
   },
@@ -674,6 +686,14 @@ export const Parameter: MessageFns<Parameter> = {
           message.displayGroup = reader.string();
           continue;
         }
+        case 30: {
+          if (tag !== 242) {
+            break;
+          }
+
+          message.notes = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -781,6 +801,7 @@ export const Parameter: MessageFns<Parameter> = {
         : isSet(object.display_group)
         ? globalThis.String(object.display_group)
         : "",
+      notes: isSet(object.notes) ? globalThis.String(object.notes) : "",
     };
   },
 
@@ -846,6 +867,9 @@ export const Parameter: MessageFns<Parameter> = {
     if (message.displayGroup !== "") {
       obj.displayGroup = message.displayGroup;
     }
+    if (message.notes !== "") {
+      obj.notes = message.notes;
+    }
     return obj;
   },
 
@@ -876,6 +900,7 @@ export const Parameter: MessageFns<Parameter> = {
     message.lookupMasterCode = object.lookupMasterCode ?? "";
     message.displayOrder = object.displayOrder ?? 0;
     message.displayGroup = object.displayGroup ?? "";
+    message.notes = object.notes ?? "";
     return message;
   },
 };
@@ -897,6 +922,7 @@ function createBaseCreateParameterRequest(): CreateParameterRequest {
     lookupMasterCode: "",
     displayOrder: 0,
     displayGroup: "",
+    notes: "",
   };
 }
 
@@ -946,6 +972,9 @@ export const CreateParameterRequest: MessageFns<CreateParameterRequest> = {
     }
     if (message.displayGroup !== "") {
       writer.uint32(122).string(message.displayGroup);
+    }
+    if (message.notes !== "") {
+      writer.uint32(130).string(message.notes);
     }
     return writer;
   },
@@ -1077,6 +1106,14 @@ export const CreateParameterRequest: MessageFns<CreateParameterRequest> = {
           message.displayGroup = reader.string();
           continue;
         }
+        case 16: {
+          if (tag !== 130) {
+            break;
+          }
+
+          message.notes = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1163,6 +1200,7 @@ export const CreateParameterRequest: MessageFns<CreateParameterRequest> = {
         : isSet(object.display_group)
         ? globalThis.String(object.display_group)
         : "",
+      notes: isSet(object.notes) ? globalThis.String(object.notes) : "",
     };
   },
 
@@ -1213,6 +1251,9 @@ export const CreateParameterRequest: MessageFns<CreateParameterRequest> = {
     if (message.displayGroup !== "") {
       obj.displayGroup = message.displayGroup;
     }
+    if (message.notes !== "") {
+      obj.notes = message.notes;
+    }
     return obj;
   },
 
@@ -1236,6 +1277,7 @@ export const CreateParameterRequest: MessageFns<CreateParameterRequest> = {
     message.lookupMasterCode = object.lookupMasterCode ?? "";
     message.displayOrder = object.displayOrder ?? 0;
     message.displayGroup = object.displayGroup ?? "";
+    message.notes = object.notes ?? "";
     return message;
   },
 };
@@ -1478,6 +1520,7 @@ function createBaseUpdateParameterRequest(): UpdateParameterRequest {
     lookupMasterCode: undefined,
     displayOrder: undefined,
     displayGroup: undefined,
+    notes: undefined,
   };
 }
 
@@ -1530,6 +1573,9 @@ export const UpdateParameterRequest: MessageFns<UpdateParameterRequest> = {
     }
     if (message.displayGroup !== undefined) {
       writer.uint32(130).string(message.displayGroup);
+    }
+    if (message.notes !== undefined) {
+      writer.uint32(138).string(message.notes);
     }
     return writer;
   },
@@ -1669,6 +1715,14 @@ export const UpdateParameterRequest: MessageFns<UpdateParameterRequest> = {
           message.displayGroup = reader.string();
           continue;
         }
+        case 17: {
+          if (tag !== 138) {
+            break;
+          }
+
+          message.notes = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1760,6 +1814,7 @@ export const UpdateParameterRequest: MessageFns<UpdateParameterRequest> = {
         : isSet(object.display_group)
         ? globalThis.String(object.display_group)
         : undefined,
+      notes: isSet(object.notes) ? globalThis.String(object.notes) : undefined,
     };
   },
 
@@ -1813,6 +1868,9 @@ export const UpdateParameterRequest: MessageFns<UpdateParameterRequest> = {
     if (message.displayGroup !== undefined) {
       obj.displayGroup = message.displayGroup;
     }
+    if (message.notes !== undefined) {
+      obj.notes = message.notes;
+    }
     return obj;
   },
 
@@ -1837,6 +1895,7 @@ export const UpdateParameterRequest: MessageFns<UpdateParameterRequest> = {
     message.lookupMasterCode = object.lookupMasterCode ?? undefined;
     message.displayOrder = object.displayOrder ?? undefined;
     message.displayGroup = object.displayGroup ?? undefined;
+    message.notes = object.notes ?? undefined;
     return message;
   },
 };

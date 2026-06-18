@@ -1350,7 +1350,7 @@ export interface DeleteMBSpinResponse {
 
 /** ListMBSpinsRequest is the request for listing MB Spin records under a head. */
 export interface ListMBSpinsRequest {
-  /** Parent MB Head UUID. */
+  /** Parent MB Head UUID. Optional — omit or send empty to list all spins. */
   mbhId: string;
   /** Page number (≥ 1). */
   page: number;
@@ -1440,6 +1440,45 @@ export interface DownloadMBSpinTemplateResponse {
   fileContent: Uint8Array;
   /** Excel file name. */
   fileName: string;
+}
+
+/** GetLookupFillValuesRequest requests auto-fill values from a master lookup selection. */
+export interface GetLookupFillValuesRequest {
+  /**
+   * lookup_master_code from mst_parameter.lookup_master_code.
+   * Valid values: "MACHINE" | "INTERMINGLING" | "PRODUCT_GRADE" | "MB_HEAD" | "BOX_BOBBIN_COST"
+   */
+  lookupMasterCode: string;
+  /** Key of the selected master record (e.g., mc_code, intm_code, pg_code, mbh_mb_costing, bbc_code). */
+  selectedKey: string;
+  /**
+   * Source param code that triggered the lookup — used to resolve CAP vs DEL variant for BOX_BOBBIN_COST.
+   * Optional; required only for BOX_BOBBIN_COST.
+   */
+  sourceParamCode: string;
+}
+
+/** GetLookupFillValuesResponse returns numeric and text fills to auto-populate CAPP params. */
+export interface GetLookupFillValuesResponse {
+  base:
+    | BaseResponse
+    | undefined;
+  /** param_code → numeric value to fill (e.g., {"MC_SPEED": 800.0, "MC_EFFICIENCY": 92.0}). */
+  numericFills: { [key: string]: number };
+  /** param_code → text value to fill (e.g., {"MB_DYE_NAME": "CIBA RED"}). */
+  textFills: { [key: string]: string };
+  /** Human-readable label for UI toast (e.g., "Barmag DTY Line D — 504 pos, 800 m/min"). */
+  displayLabel: string;
+}
+
+export interface GetLookupFillValuesResponse_NumericFillsEntry {
+  key: string;
+  value: number;
+}
+
+export interface GetLookupFillValuesResponse_TextFillsEntry {
+  key: string;
+  value: string;
 }
 
 function createBaseMachine(): Machine {
@@ -13329,6 +13368,452 @@ export const DownloadMBSpinTemplateResponse: MessageFns<DownloadMBSpinTemplateRe
   },
 };
 
+function createBaseGetLookupFillValuesRequest(): GetLookupFillValuesRequest {
+  return { lookupMasterCode: "", selectedKey: "", sourceParamCode: "" };
+}
+
+export const GetLookupFillValuesRequest: MessageFns<GetLookupFillValuesRequest> = {
+  encode(message: GetLookupFillValuesRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.lookupMasterCode !== "") {
+      writer.uint32(10).string(message.lookupMasterCode);
+    }
+    if (message.selectedKey !== "") {
+      writer.uint32(18).string(message.selectedKey);
+    }
+    if (message.sourceParamCode !== "") {
+      writer.uint32(26).string(message.sourceParamCode);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetLookupFillValuesRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetLookupFillValuesRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.lookupMasterCode = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.selectedKey = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.sourceParamCode = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetLookupFillValuesRequest {
+    return {
+      lookupMasterCode: isSet(object.lookupMasterCode)
+        ? globalThis.String(object.lookupMasterCode)
+        : isSet(object.lookup_master_code)
+        ? globalThis.String(object.lookup_master_code)
+        : "",
+      selectedKey: isSet(object.selectedKey)
+        ? globalThis.String(object.selectedKey)
+        : isSet(object.selected_key)
+        ? globalThis.String(object.selected_key)
+        : "",
+      sourceParamCode: isSet(object.sourceParamCode)
+        ? globalThis.String(object.sourceParamCode)
+        : isSet(object.source_param_code)
+        ? globalThis.String(object.source_param_code)
+        : "",
+    };
+  },
+
+  toJSON(message: GetLookupFillValuesRequest): unknown {
+    const obj: any = {};
+    if (message.lookupMasterCode !== "") {
+      obj.lookupMasterCode = message.lookupMasterCode;
+    }
+    if (message.selectedKey !== "") {
+      obj.selectedKey = message.selectedKey;
+    }
+    if (message.sourceParamCode !== "") {
+      obj.sourceParamCode = message.sourceParamCode;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetLookupFillValuesRequest>): GetLookupFillValuesRequest {
+    return GetLookupFillValuesRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GetLookupFillValuesRequest>): GetLookupFillValuesRequest {
+    const message = createBaseGetLookupFillValuesRequest();
+    message.lookupMasterCode = object.lookupMasterCode ?? "";
+    message.selectedKey = object.selectedKey ?? "";
+    message.sourceParamCode = object.sourceParamCode ?? "";
+    return message;
+  },
+};
+
+function createBaseGetLookupFillValuesResponse(): GetLookupFillValuesResponse {
+  return { base: undefined, numericFills: {}, textFills: {}, displayLabel: "" };
+}
+
+export const GetLookupFillValuesResponse: MessageFns<GetLookupFillValuesResponse> = {
+  encode(message: GetLookupFillValuesResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    globalThis.Object.entries(message.numericFills).forEach(([key, value]: [string, number]) => {
+      GetLookupFillValuesResponse_NumericFillsEntry.encode({ key: key as any, value }, writer.uint32(18).fork()).join();
+    });
+    globalThis.Object.entries(message.textFills).forEach(([key, value]: [string, string]) => {
+      GetLookupFillValuesResponse_TextFillsEntry.encode({ key: key as any, value }, writer.uint32(26).fork()).join();
+    });
+    if (message.displayLabel !== "") {
+      writer.uint32(34).string(message.displayLabel);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetLookupFillValuesResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetLookupFillValuesResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          const entry2 = GetLookupFillValuesResponse_NumericFillsEntry.decode(reader, reader.uint32());
+          if (entry2.value !== undefined) {
+            message.numericFills[entry2.key] = entry2.value;
+          }
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          const entry3 = GetLookupFillValuesResponse_TextFillsEntry.decode(reader, reader.uint32());
+          if (entry3.value !== undefined) {
+            message.textFills[entry3.key] = entry3.value;
+          }
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.displayLabel = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetLookupFillValuesResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      numericFills: isObject(object.numericFills)
+        ? (globalThis.Object.entries(object.numericFills) as [string, any][]).reduce(
+          (acc: { [key: string]: number }, [key, value]: [string, any]) => {
+            acc[key] = globalThis.Number(value);
+            return acc;
+          },
+          {},
+        )
+        : isObject(object.numeric_fills)
+        ? (globalThis.Object.entries(object.numeric_fills) as [string, any][]).reduce(
+          (acc: { [key: string]: number }, [key, value]: [string, any]) => {
+            acc[key] = globalThis.Number(value);
+            return acc;
+          },
+          {},
+        )
+        : {},
+      textFills: isObject(object.textFills)
+        ? (globalThis.Object.entries(object.textFills) as [string, any][]).reduce(
+          (acc: { [key: string]: string }, [key, value]: [string, any]) => {
+            acc[key] = globalThis.String(value);
+            return acc;
+          },
+          {},
+        )
+        : isObject(object.text_fills)
+        ? (globalThis.Object.entries(object.text_fills) as [string, any][]).reduce(
+          (acc: { [key: string]: string }, [key, value]: [string, any]) => {
+            acc[key] = globalThis.String(value);
+            return acc;
+          },
+          {},
+        )
+        : {},
+      displayLabel: isSet(object.displayLabel)
+        ? globalThis.String(object.displayLabel)
+        : isSet(object.display_label)
+        ? globalThis.String(object.display_label)
+        : "",
+    };
+  },
+
+  toJSON(message: GetLookupFillValuesResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.numericFills) {
+      const entries = globalThis.Object.entries(message.numericFills) as [string, number][];
+      if (entries.length > 0) {
+        obj.numericFills = {};
+        entries.forEach(([k, v]) => {
+          obj.numericFills[k] = v;
+        });
+      }
+    }
+    if (message.textFills) {
+      const entries = globalThis.Object.entries(message.textFills) as [string, string][];
+      if (entries.length > 0) {
+        obj.textFills = {};
+        entries.forEach(([k, v]) => {
+          obj.textFills[k] = v;
+        });
+      }
+    }
+    if (message.displayLabel !== "") {
+      obj.displayLabel = message.displayLabel;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetLookupFillValuesResponse>): GetLookupFillValuesResponse {
+    return GetLookupFillValuesResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GetLookupFillValuesResponse>): GetLookupFillValuesResponse {
+    const message = createBaseGetLookupFillValuesResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.numericFills = (globalThis.Object.entries(object.numericFills ?? {}) as [string, number][]).reduce(
+      (acc: { [key: string]: number }, [key, value]: [string, number]) => {
+        if (value !== undefined) {
+          acc[key] = globalThis.Number(value);
+        }
+        return acc;
+      },
+      {},
+    );
+    message.textFills = (globalThis.Object.entries(object.textFills ?? {}) as [string, string][]).reduce(
+      (acc: { [key: string]: string }, [key, value]: [string, string]) => {
+        if (value !== undefined) {
+          acc[key] = globalThis.String(value);
+        }
+        return acc;
+      },
+      {},
+    );
+    message.displayLabel = object.displayLabel ?? "";
+    return message;
+  },
+};
+
+function createBaseGetLookupFillValuesResponse_NumericFillsEntry(): GetLookupFillValuesResponse_NumericFillsEntry {
+  return { key: "", value: 0 };
+}
+
+export const GetLookupFillValuesResponse_NumericFillsEntry: MessageFns<GetLookupFillValuesResponse_NumericFillsEntry> =
+  {
+    encode(
+      message: GetLookupFillValuesResponse_NumericFillsEntry,
+      writer: BinaryWriter = new BinaryWriter(),
+    ): BinaryWriter {
+      if (message.key !== "") {
+        writer.uint32(10).string(message.key);
+      }
+      if (message.value !== 0) {
+        writer.uint32(17).double(message.value);
+      }
+      return writer;
+    },
+
+    decode(input: BinaryReader | Uint8Array, length?: number): GetLookupFillValuesResponse_NumericFillsEntry {
+      const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+      const end = length === undefined ? reader.len : reader.pos + length;
+      const message = createBaseGetLookupFillValuesResponse_NumericFillsEntry();
+      while (reader.pos < end) {
+        const tag = reader.uint32();
+        switch (tag >>> 3) {
+          case 1: {
+            if (tag !== 10) {
+              break;
+            }
+
+            message.key = reader.string();
+            continue;
+          }
+          case 2: {
+            if (tag !== 17) {
+              break;
+            }
+
+            message.value = reader.double();
+            continue;
+          }
+        }
+        if ((tag & 7) === 4 || tag === 0) {
+          break;
+        }
+        reader.skip(tag & 7);
+      }
+      return message;
+    },
+
+    fromJSON(object: any): GetLookupFillValuesResponse_NumericFillsEntry {
+      return {
+        key: isSet(object.key) ? globalThis.String(object.key) : "",
+        value: isSet(object.value) ? globalThis.Number(object.value) : 0,
+      };
+    },
+
+    toJSON(message: GetLookupFillValuesResponse_NumericFillsEntry): unknown {
+      const obj: any = {};
+      if (message.key !== "") {
+        obj.key = message.key;
+      }
+      if (message.value !== 0) {
+        obj.value = message.value;
+      }
+      return obj;
+    },
+
+    create(
+      base?: DeepPartial<GetLookupFillValuesResponse_NumericFillsEntry>,
+    ): GetLookupFillValuesResponse_NumericFillsEntry {
+      return GetLookupFillValuesResponse_NumericFillsEntry.fromPartial(base ?? {});
+    },
+    fromPartial(
+      object: DeepPartial<GetLookupFillValuesResponse_NumericFillsEntry>,
+    ): GetLookupFillValuesResponse_NumericFillsEntry {
+      const message = createBaseGetLookupFillValuesResponse_NumericFillsEntry();
+      message.key = object.key ?? "";
+      message.value = object.value ?? 0;
+      return message;
+    },
+  };
+
+function createBaseGetLookupFillValuesResponse_TextFillsEntry(): GetLookupFillValuesResponse_TextFillsEntry {
+  return { key: "", value: "" };
+}
+
+export const GetLookupFillValuesResponse_TextFillsEntry: MessageFns<GetLookupFillValuesResponse_TextFillsEntry> = {
+  encode(message: GetLookupFillValuesResponse_TextFillsEntry, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.key !== "") {
+      writer.uint32(10).string(message.key);
+    }
+    if (message.value !== "") {
+      writer.uint32(18).string(message.value);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetLookupFillValuesResponse_TextFillsEntry {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetLookupFillValuesResponse_TextFillsEntry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.key = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.value = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetLookupFillValuesResponse_TextFillsEntry {
+    return {
+      key: isSet(object.key) ? globalThis.String(object.key) : "",
+      value: isSet(object.value) ? globalThis.String(object.value) : "",
+    };
+  },
+
+  toJSON(message: GetLookupFillValuesResponse_TextFillsEntry): unknown {
+    const obj: any = {};
+    if (message.key !== "") {
+      obj.key = message.key;
+    }
+    if (message.value !== "") {
+      obj.value = message.value;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetLookupFillValuesResponse_TextFillsEntry>): GetLookupFillValuesResponse_TextFillsEntry {
+    return GetLookupFillValuesResponse_TextFillsEntry.fromPartial(base ?? {});
+  },
+  fromPartial(
+    object: DeepPartial<GetLookupFillValuesResponse_TextFillsEntry>,
+  ): GetLookupFillValuesResponse_TextFillsEntry {
+    const message = createBaseGetLookupFillValuesResponse_TextFillsEntry();
+    message.key = object.key ?? "";
+    message.value = object.value ?? "";
+    return message;
+  },
+};
+
 /** MachineService manages yarn machine master data. */
 export type MachineServiceDefinition = typeof MachineServiceDefinition;
 export const MachineServiceDefinition = {
@@ -16238,6 +16723,72 @@ export const MBSpinServiceDefinition = {
   },
 } as const;
 
+/**
+ * YarnLookupFillService provides a unified "fill from master" API used by the CAPP form.
+ * Called when the user selects a lookup param value (e.g., a machine code).
+ * Returns numeric and text fills to auto-populate related CAPP params.
+ */
+export type YarnLookupFillServiceDefinition = typeof YarnLookupFillServiceDefinition;
+export const YarnLookupFillServiceDefinition = {
+  name: "YarnLookupFillService",
+  fullName: "finance.v1.YarnLookupFillService",
+  methods: {
+    /** GetLookupFillValues returns numeric and text fills to auto-populate CAPP params. */
+    getLookupFillValues: {
+      name: "GetLookupFillValues",
+      requestType: GetLookupFillValuesRequest,
+      requestStream: false,
+      responseType: GetLookupFillValuesResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              36,
+              18,
+              34,
+              47,
+              97,
+              112,
+              105,
+              47,
+              118,
+              49,
+              47,
+              102,
+              105,
+              110,
+              97,
+              110,
+              99,
+              101,
+              47,
+              108,
+              111,
+              111,
+              107,
+              117,
+              112,
+              45,
+              102,
+              105,
+              108,
+              108,
+              45,
+              118,
+              97,
+              108,
+              117,
+              101,
+              115,
+            ]),
+          ],
+        },
+      },
+    },
+  },
+} as const;
+
 function bytesFromBase64(b64: string): Uint8Array {
   if ((globalThis as any).Buffer) {
     return Uint8Array.from(globalThis.Buffer.from(b64, "base64"));
@@ -16270,6 +16821,10 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
+
+function isObject(value: any): boolean {
+  return typeof value === "object" && value !== null;
+}
 
 function isSet(value: any): boolean {
   return value !== null && value !== undefined;
