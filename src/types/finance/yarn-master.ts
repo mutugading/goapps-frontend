@@ -17,7 +17,7 @@ export const LOOKUP_MASTER_CONFIG: Record<
   INTERMINGLING: {
     apiPath: "/api/v1/finance/interminglings",
     codeField: "interminglingCode",
-    labelField: "interminglingCode",
+    labelField: "interminglingName",
   },
   PRODUCT_GRADE: { apiPath: "/api/v1/finance/product-grades", codeField: "pgCode", labelField: "pgName" },
   MB_HEAD: { apiPath: "/api/v1/finance/mb-heads", codeField: "mbhMbCosting", labelField: "mbhMgtName" },

@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react"
 import { Check, ChevronsUpDown, Loader2 } from "lucide-react"
+import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
@@ -16,14 +17,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { useMasterLookupOptions } from "@/hooks/finance/use-master-lookup"
 import type { LookupFillValuesResponse } from "@/types/finance/yarn-master"
 import type { RequiredParamEntry } from "@/types/finance/cost-product-parameter"
-
-interface DraftValue {
-  valueNumeric: string
-  valueText: string
-  valueFlag: boolean
-  hasValueFlag: boolean
-  dirty: boolean
-}
+import type { DraftValue } from "./parameters-tab"
 
 interface MasterLookupFieldProps {
   entry: RequiredParamEntry
@@ -68,8 +62,12 @@ export function MasterLookupField({
           const json = (await res.json()) as { data?: LookupFillValuesResponse }
           onChangeLookup(entry.paramId, selectedKey, json.data ?? null)
         } else {
+          toast.error("Failed to load auto-fill values. Check master data exists.")
           onChangeLookup(entry.paramId, selectedKey, null)
         }
+      } catch {
+        toast.error("Failed to load auto-fill values.")
+        onChangeLookup(entry.paramId, selectedKey, null)
       } finally {
         setLoading(false)
       }

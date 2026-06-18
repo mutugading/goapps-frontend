@@ -11,7 +11,7 @@ async function fetchMasterOptions(lookupMasterCode: string): Promise<MasterOptio
   if (!config) return []
 
   const res = await fetch(`${config.apiPath}?pageSize=500&activeFilter=1`)
-  if (!res.ok) return []
+  if (!res.ok) throw new Error(`Failed to fetch ${lookupMasterCode} options: ${res.status}`)
   const json = (await res.json()) as {
     data?: { items?: Record<string, unknown>[] } | Record<string, unknown>[]
   }
