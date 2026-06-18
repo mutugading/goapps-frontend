@@ -59,6 +59,8 @@ export interface RequiredParamEntry {
   lookupMasterCode: string;
   displayOrder: number;
   displayGroup: string;
+  /** param_code of the MASTER_LOOKUP trigger param this child belongs to (empty = not a child param). */
+  lookupFillGroupCode: string;
   /** Existing value (zero/empty when not yet bound). */
   hasValue: boolean;
   valueNumeric: string;
@@ -152,6 +154,8 @@ export interface AvailableParamEntry {
   lookupMasterCode: string;
   displayOrder: number;
   displayGroup: string;
+  /** param_code of the MASTER_LOOKUP trigger param this child belongs to (empty = not a child param). */
+  lookupFillGroupCode: string;
 }
 
 export interface ListAvailableParamsRequest {
@@ -749,6 +753,7 @@ function createBaseRequiredParamEntry(): RequiredParamEntry {
     lookupMasterCode: "",
     displayOrder: 0,
     displayGroup: "",
+    lookupFillGroupCode: "",
     hasValue: false,
     valueNumeric: "",
     valueText: "",
@@ -795,6 +800,9 @@ export const RequiredParamEntry: MessageFns<RequiredParamEntry> = {
     }
     if (message.displayGroup !== "") {
       writer.uint32(98).string(message.displayGroup);
+    }
+    if (message.lookupFillGroupCode !== "") {
+      writer.uint32(106).string(message.lookupFillGroupCode);
     }
     if (message.hasValue !== false) {
       writer.uint32(160).bool(message.hasValue);
@@ -920,6 +928,14 @@ export const RequiredParamEntry: MessageFns<RequiredParamEntry> = {
           message.displayGroup = reader.string();
           continue;
         }
+        case 13: {
+          if (tag !== 106) {
+            break;
+          }
+
+          message.lookupFillGroupCode = reader.string();
+          continue;
+        }
         case 20: {
           if (tag !== 160) {
             break;
@@ -1039,6 +1055,11 @@ export const RequiredParamEntry: MessageFns<RequiredParamEntry> = {
         : isSet(object.display_group)
         ? globalThis.String(object.display_group)
         : "",
+      lookupFillGroupCode: isSet(object.lookupFillGroupCode)
+        ? globalThis.String(object.lookupFillGroupCode)
+        : isSet(object.lookup_fill_group_code)
+        ? globalThis.String(object.lookup_fill_group_code)
+        : "",
       hasValue: isSet(object.hasValue)
         ? globalThis.Boolean(object.hasValue)
         : isSet(object.has_value)
@@ -1110,6 +1131,9 @@ export const RequiredParamEntry: MessageFns<RequiredParamEntry> = {
     if (message.displayGroup !== "") {
       obj.displayGroup = message.displayGroup;
     }
+    if (message.lookupFillGroupCode !== "") {
+      obj.lookupFillGroupCode = message.lookupFillGroupCode;
+    }
     if (message.hasValue !== false) {
       obj.hasValue = message.hasValue;
     }
@@ -1148,6 +1172,7 @@ export const RequiredParamEntry: MessageFns<RequiredParamEntry> = {
     message.lookupMasterCode = object.lookupMasterCode ?? "";
     message.displayOrder = object.displayOrder ?? 0;
     message.displayGroup = object.displayGroup ?? "";
+    message.lookupFillGroupCode = object.lookupFillGroupCode ?? "";
     message.hasValue = object.hasValue ?? false;
     message.valueNumeric = object.valueNumeric ?? "";
     message.valueText = object.valueText ?? "";
@@ -2192,6 +2217,7 @@ function createBaseAvailableParamEntry(): AvailableParamEntry {
     lookupMasterCode: "",
     displayOrder: 0,
     displayGroup: "",
+    lookupFillGroupCode: "",
   };
 }
 
@@ -2232,6 +2258,9 @@ export const AvailableParamEntry: MessageFns<AvailableParamEntry> = {
     }
     if (message.displayGroup !== "") {
       writer.uint32(98).string(message.displayGroup);
+    }
+    if (message.lookupFillGroupCode !== "") {
+      writer.uint32(106).string(message.lookupFillGroupCode);
     }
     return writer;
   },
@@ -2339,6 +2368,14 @@ export const AvailableParamEntry: MessageFns<AvailableParamEntry> = {
           message.displayGroup = reader.string();
           continue;
         }
+        case 13: {
+          if (tag !== 106) {
+            break;
+          }
+
+          message.lookupFillGroupCode = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2410,6 +2447,11 @@ export const AvailableParamEntry: MessageFns<AvailableParamEntry> = {
         : isSet(object.display_group)
         ? globalThis.String(object.display_group)
         : "",
+      lookupFillGroupCode: isSet(object.lookupFillGroupCode)
+        ? globalThis.String(object.lookupFillGroupCode)
+        : isSet(object.lookup_fill_group_code)
+        ? globalThis.String(object.lookup_fill_group_code)
+        : "",
     };
   },
 
@@ -2451,6 +2493,9 @@ export const AvailableParamEntry: MessageFns<AvailableParamEntry> = {
     if (message.displayGroup !== "") {
       obj.displayGroup = message.displayGroup;
     }
+    if (message.lookupFillGroupCode !== "") {
+      obj.lookupFillGroupCode = message.lookupFillGroupCode;
+    }
     return obj;
   },
 
@@ -2471,6 +2516,7 @@ export const AvailableParamEntry: MessageFns<AvailableParamEntry> = {
     message.lookupMasterCode = object.lookupMasterCode ?? "";
     message.displayOrder = object.displayOrder ?? 0;
     message.displayGroup = object.displayGroup ?? "";
+    message.lookupFillGroupCode = object.lookupFillGroupCode ?? "";
     return message;
   },
 };
