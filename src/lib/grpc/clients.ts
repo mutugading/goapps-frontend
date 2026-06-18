@@ -72,6 +72,7 @@ import {
   MBSpinServiceDefinition,
   MBHeadServiceDefinition,
   ProductGradeServiceDefinition,
+  YarnLookupFillServiceDefinition,
 } from "@/types/generated/finance/v1/yarn_master"
 
 const CHANNEL_OPTIONS = {
@@ -461,5 +462,11 @@ export function getProductGradeClient() {
 export function getMBHeadClient() {
   return getOrCreate("mbHead", () =>
     createServiceClient(MBHeadServiceDefinition, SERVICE_ADDRESSES.finance, insecure, CHANNEL_OPTIONS)
+  )
+}
+
+export function getYarnLookupFillClient() {
+  return getOrCreate("yarnLookupFill", () =>
+    createServiceClient(YarnLookupFillServiceDefinition, SERVICE_ADDRESSES.finance, insecure, CHANNEL_OPTIONS)
   )
 }
