@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
+import { useLookupMasters } from "@/hooks/finance/use-lookup-master"
 import type { LookupMaster } from "@/types/finance/lookup-master"
 
 interface MasterOption {
@@ -6,17 +7,13 @@ interface MasterOption {
   label: string // display text in dropdown
 }
 
-async function fetchMasterOptions(lookupMasterCode: string): Promise<MasterOption[]> {
-  // Get master config from API
-  const configRes = await fetch(`/api/v1/finance/lookup-masters?activeOnly=true`)
-  if (!configRes.ok) throw new Error(`Failed to fetch lookup masters: ${configRes.status}`)
-  const configJson = (await configRes.json()) as { data?: LookupMaster[] }
-  const config = (configJson.data ?? []).find((m) => m.lmCode === lookupMasterCode)
-  if (!config) return []
-
-  // Fetch options from master's own endpoint
+async function fetchOptionsForMaster(config: {
+  lmApiPath: string
+  lmCodeField: string
+  lmLabelField: string
+}): Promise<MasterOption[]> {
   const res = await fetch(`${config.lmApiPath}?pageSize=500&activeFilter=1`)
-  if (!res.ok) throw new Error(`Failed to fetch ${lookupMasterCode} options: ${res.status}`)
+  if (!res.ok) throw new Error(`Failed to fetch options: ${res.status}`)
   const json = (await res.json()) as {
     data?: { items?: Record<string, unknown>[] } | Record<string, unknown>[]
   }
@@ -32,10 +29,13 @@ async function fetchMasterOptions(lookupMasterCode: string): Promise<MasterOptio
 }
 
 export function useMasterLookupOptions(lookupMasterCode: string | undefined) {
+  const { data: masters = [] } = useLookupMasters(true)
+  const config = masters.find((m: LookupMaster) => m.lmCode === lookupMasterCode)
+
   return useQuery({
     queryKey: ["finance", "master-lookup", "options", lookupMasterCode],
-    queryFn: () => fetchMasterOptions(lookupMasterCode!),
-    enabled: !!lookupMasterCode,
+    queryFn: () => fetchOptionsForMaster(config!),
+    enabled: !!lookupMasterCode && !!config,
     staleTime: 60_000,
   })
 }

@@ -64,6 +64,7 @@ export function ProductParametersTab({ productSysId }: ParametersTabProps) {
   const [removePreviewEntry, setRemovePreviewEntry] = useState<RequiredParamEntry | null>(null)
   const [removePreview, setRemovePreview] = useState<RemoveApplicablePreview | null>(null)
   const [previewLoading, setPreviewLoading] = useState(false)
+  const [removeInProgress, setRemoveInProgress] = useState(false)
 
   // Edits made by the user, indexed by paramId. Unedited rows derive their
   // draft from the loaded entries via useMemo below — no useEffect needed.
@@ -148,20 +149,30 @@ export function ProductParametersTab({ productSysId }: ParametersTabProps) {
 
   async function handleRemoveWithChildren() {
     if (!removePreviewEntry) return
-    const res = await fetch("/api/v1/finance/cost-product-parameters/applicable/remove-with-children", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ productSysId, paramId: removePreviewEntry.paramId }),
-    })
-    const body = await res.json()
-    if (!res.ok || body?.base?.isSuccess === false) {
-      toast.error(body?.base?.message || "Failed to remove parameter")
-    } else {
+    setRemoveInProgress(true)
+    try {
+      const res = await fetch(
+        "/api/v1/finance/cost-product-parameters/applicable/remove-with-children",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ productSysId, paramId: removePreviewEntry.paramId }),
+        },
+      )
+      if (!res.ok) {
+        const body = (await res.json()) as { base?: { message?: string } }
+        toast.error(body?.base?.message ?? "Failed to remove parameter")
+        return // keep dialog open for retry
+      }
       toast.success("Parameter removed")
-      qc.invalidateQueries({ queryKey: ["finance", "cost-product-parameter"] })
+      await qc.invalidateQueries({ queryKey: ["finance", "cost-product-parameter"] })
+      setRemovePreviewEntry(null)
+      setRemovePreview(null)
+    } catch {
+      toast.error("Failed to remove parameter")
+    } finally {
+      setRemoveInProgress(false)
     }
-    setRemovePreviewEntry(null)
-    setRemovePreview(null)
   }
 
   async function handleSave() {
@@ -300,7 +311,7 @@ export function ProductParametersTab({ productSysId }: ParametersTabProps) {
         }
         confirmText="Remove All"
         variant="destructive"
-        isLoading={previewLoading}
+        isLoading={previewLoading || removeInProgress}
         onConfirm={handleRemoveWithChildren}
       />
     </div>
