@@ -20,6 +20,7 @@ export async function GET(request: NextRequest) {
                 activeFilter: Number(searchParams.get("activeFilter") || searchParams.get("active_filter")) || 0,
                 sortBy: searchParams.get("sortBy") || searchParams.get("sort_by") || "",
                 sortOrder: searchParams.get("sortOrder") || searchParams.get("sort_order") || "",
+                lookupFillGroupCodeFilter: searchParams.get("lookupFillGroupCodeFilter") || "",
             },
             metadata
         )

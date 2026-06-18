@@ -91,6 +91,7 @@ export const PARAM_CATEGORY_LABELS: Record<ParamCategory, string> = {
   [ParamCategory.PARAM_CATEGORY_INPUT]: "Input",
   [ParamCategory.PARAM_CATEGORY_RATE]: "Rate",
   [ParamCategory.PARAM_CATEGORY_CALCULATED]: "Calculated",
+  [ParamCategory.PARAM_CATEGORY_MASTER_LOOKUP]: "Master Lookup",
   [ParamCategory.UNRECOGNIZED]: "Unknown",
 }
 
@@ -119,6 +120,7 @@ export const PARAM_CATEGORY_OPTIONS = [
   { value: ParamCategory.PARAM_CATEGORY_INPUT, label: "Input" },
   { value: ParamCategory.PARAM_CATEGORY_RATE, label: "Rate" },
   { value: ParamCategory.PARAM_CATEGORY_CALCULATED, label: "Calculated" },
+  { value: ParamCategory.PARAM_CATEGORY_MASTER_LOOKUP, label: "Master Lookup" },
 ]
 
 /**

@@ -240,6 +240,8 @@ export function ParameterFormDialog({
           isRequiredForCosting: values.isRequiredForCosting,
           isPeriodDependent: values.isPeriodDependent,
           lookupMasterCode: values.lookupMasterCode,
+          lookupFillGroupCode: "",
+          lookupSourceColumn: "",
           displayOrder: values.displayOrder,
           displayGroup: values.displayGroup,
           notes: values.notes,
