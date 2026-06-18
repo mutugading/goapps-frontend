@@ -65,6 +65,14 @@ import {
   CostFillTaskServiceDefinition,
 } from "@/types/generated/finance/v1/cost_fill_assignment"
 import { CostDataImportServiceDefinition } from "@/types/generated/finance/v1/cost_import"
+import {
+  InterminglingServiceDefinition,
+  BoxBobbinCostServiceDefinition,
+  MachineServiceDefinition,
+  MBSpinServiceDefinition,
+  MBHeadServiceDefinition,
+  ProductGradeServiceDefinition,
+} from "@/types/generated/finance/v1/yarn_master"
 
 const CHANNEL_OPTIONS = {
   "grpc.keepalive_time_ms": 120000,
@@ -419,3 +427,39 @@ export function getCostDataImportClient() {
   )
 }
 
+// Yarn Master service clients (Finance service).
+export function getInterminglingClient() {
+  return getOrCreate("intermingling", () =>
+    createServiceClient(InterminglingServiceDefinition, SERVICE_ADDRESSES.finance, insecure, CHANNEL_OPTIONS)
+  )
+}
+
+export function getBoxBobbinCostClient() {
+  return getOrCreate("boxBobbinCost", () =>
+    createServiceClient(BoxBobbinCostServiceDefinition, SERVICE_ADDRESSES.finance, insecure, CHANNEL_OPTIONS)
+  )
+}
+
+export function getMachineClient() {
+  return getOrCreate("machine", () =>
+    createServiceClient(MachineServiceDefinition, SERVICE_ADDRESSES.finance, insecure, CHANNEL_OPTIONS)
+  )
+}
+
+export function getMBSpinClient() {
+  return getOrCreate("mbSpin", () =>
+    createServiceClient(MBSpinServiceDefinition, SERVICE_ADDRESSES.finance, insecure, CHANNEL_OPTIONS)
+  )
+}
+
+export function getProductGradeClient() {
+  return getOrCreate("productGrade", () =>
+    createServiceClient(ProductGradeServiceDefinition, SERVICE_ADDRESSES.finance, insecure, CHANNEL_OPTIONS)
+  )
+}
+
+export function getMBHeadClient() {
+  return getOrCreate("mbHead", () =>
+    createServiceClient(MBHeadServiceDefinition, SERVICE_ADDRESSES.finance, insecure, CHANNEL_OPTIONS)
+  )
+}

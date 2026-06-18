@@ -20,15 +20,26 @@ interface Props {
   jobId: number
 }
 
+function humanize(s: string) {
+  return s.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase())
+}
+
 export function CalcJobDetailClient({ jobId }: Props) {
   const { data: job, isLoading, error } = useCalcJob(jobId)
 
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <Skeleton className="h-8 w-64" />
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-32" />
+          <Skeleton className="h-7 w-64" />
+          <Skeleton className="h-4 w-48" />
+        </div>
         <Skeleton className="h-24 w-full" />
-        <Skeleton className="h-96 w-full" />
+        <div className="space-y-2">
+          <Skeleton className="h-9 w-80" />
+          <Skeleton className="h-64 w-full" />
+        </div>
       </div>
     )
   }
@@ -56,13 +67,11 @@ export function CalcJobDetailClient({ jobId }: Props) {
     )
   }
 
-  const scope = job.scope.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase())
-
   return (
     <div className="space-y-6">
       <PageHeader
         title={job.jobCode || `Job #${job.jobId}`}
-        subtitle={`Period ${job.period} · ${job.calculationType} · ${scope}`}
+        subtitle={`Period ${job.period} · ${humanize(job.calculationType)} · ${humanize(job.scope)}`}
       >
         <Button asChild variant="outline">
           <Link href="/finance/calc-jobs">
@@ -76,8 +85,12 @@ export function CalcJobDetailClient({ jobId }: Props) {
       <Tabs defaultValue="overview">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="products">Products ({job.totalProducts})</TabsTrigger>
-          <TabsTrigger value="chunks">Chunks ({job.totalChunks})</TabsTrigger>
+          <TabsTrigger value="products">
+            Products{job.totalProducts > 0 ? ` (${job.totalProducts})` : ""}
+          </TabsTrigger>
+          <TabsTrigger value="chunks">
+            Chunks{job.totalChunks > 0 ? ` (${job.totalChunks})` : ""}
+          </TabsTrigger>
           <TabsTrigger value="audit">Audit</TabsTrigger>
         </TabsList>
         <TabsContent value="overview" className="mt-4">

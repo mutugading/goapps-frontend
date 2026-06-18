@@ -14,7 +14,7 @@ type SeededUser = "superadmin" | "finance" | "viewer"
 
 const CREDENTIALS: Record<SeededUser, { email: string; password: string }> = {
   // Adjust to match the seeded test users (see PLAN_PRODUCT_ORDER_v3 §S7.12c).
-  superadmin: { email: "admin@goapps.dev", password: "admin123" },
+  superadmin: { email: "admin@goapps.local", password: "admin123" },
   finance: { email: "finance@goapps.dev", password: "finance123" },
   viewer: { email: "viewer@goapps.dev", password: "viewer123" },
 }

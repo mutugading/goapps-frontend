@@ -1,9 +1,16 @@
 "use client"
 
-import { Loader2 } from "lucide-react"
+import { useState } from "react"
+import { ChevronRight, Loader2 } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
 import {
   Table,
   TableBody,
@@ -18,30 +25,15 @@ import { useAuditLogs } from "@/hooks/finance/use-cost-audit-log"
 import { useUrlState } from "@/lib/hooks"
 import type { ListCostAuditLogsParams } from "@/types/finance/cost-audit-log"
 
+import { fmtDate } from "./calc-job-tab-utils"
+
 interface Props {
   jobId: number
 }
 
 // Backend writes calc-job audit rows under cal_job (consistent with the cost_*
-// snake-cased entity_type values already in use). If the backend later renames,
-// adjust here. Empty results just render an empty state — not a hard error.
+// snake-cased entity_type values already in use).
 const ENTITY_TYPE = "cal_job"
-
-function fmtDate(ts: string | null | undefined): string {
-  if (!ts) return "—"
-  try {
-    return new Date(ts).toLocaleString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    })
-  } catch {
-    return ts
-  }
-}
 
 export function CalcJobAuditTab({ jobId }: Props) {
   const [filters, setFilters] = useUrlState<ListCostAuditLogsParams>({
@@ -66,75 +58,59 @@ export function CalcJobAuditTab({ jobId }: Props) {
   return (
     <div className="space-y-4">
       <p className="text-xs text-muted-foreground">
-        Audit trail for this calc job. Backend writes entries on lifecycle transitions
-        (trigger, status change, cancel). Empty if no audit rows have been persisted yet.
+        Audit trail for this calc job. Entries are written on lifecycle transitions (trigger,
+        status change, cancel).
       </p>
 
-      <Card>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-44">When</TableHead>
-              <TableHead className="w-40">Operation</TableHead>
-              <TableHead className="w-40">User</TableHead>
-              <TableHead>Before → after</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading && (
+      <Card className="overflow-hidden">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={4} className="py-8 text-center text-muted-foreground">
-                  <Loader2 className="mr-2 inline h-4 w-4 animate-spin" /> Loading…
-                </TableCell>
+                <TableHead className="w-44">When</TableHead>
+                <TableHead className="w-40">Operation</TableHead>
+                <TableHead className="w-40">User</TableHead>
+                <TableHead>Before → after</TableHead>
               </TableRow>
-            )}
-            {!isLoading && items.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={4} className="py-8 text-center text-muted-foreground">
-                  No audit entries for this job.
-                </TableCell>
-              </TableRow>
-            )}
-            {items.map((row) => (
-              <TableRow key={row.logId} className="hover:bg-muted/50">
-                <TableCell className="text-xs">{fmtDate(row.performedAt)}</TableCell>
-                <TableCell>
-                  <Badge variant="outline">{row.operation}</Badge>
-                </TableCell>
-                <TableCell className="text-xs">
-                  {row.userId ? <UserName userId={row.userId} compact /> : "—"}
-                </TableCell>
-                <TableCell className="font-mono text-xs">
-                  {row.beforeData || row.afterData ? (
-                    <details>
-                      <summary className="cursor-pointer text-primary">view diff</summary>
-                      <div className="mt-2 grid grid-cols-2 gap-2">
-                        <div>
-                          <div className="mb-1 text-[10px] uppercase text-muted-foreground">
-                            before
-                          </div>
-                          <pre className="overflow-x-auto rounded bg-muted p-2 text-xs">
-                            {row.beforeData ?? "—"}
-                          </pre>
-                        </div>
-                        <div>
-                          <div className="mb-1 text-[10px] uppercase text-muted-foreground">
-                            after
-                          </div>
-                          <pre className="overflow-x-auto rounded bg-muted p-2 text-xs">
-                            {row.afterData ?? "—"}
-                          </pre>
-                        </div>
-                      </div>
-                    </details>
-                  ) : (
-                    <span className="text-muted-foreground">—</span>
-                  )}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {isLoading && (
+                <TableRow>
+                  <TableCell colSpan={4} className="py-10 text-center text-sm text-muted-foreground">
+                    <Loader2 className="mr-2 inline h-4 w-4 animate-spin" /> Loading audit log…
+                  </TableCell>
+                </TableRow>
+              )}
+              {!isLoading && items.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={4} className="py-10 text-center text-sm text-muted-foreground">
+                    No audit entries for this job.
+                  </TableCell>
+                </TableRow>
+              )}
+              {items.map((row) => (
+                <TableRow key={row.logId} className="hover:bg-muted/50 align-top">
+                  <TableCell className="text-sm">{fmtDate(row.performedAt)}</TableCell>
+                  <TableCell>
+                    <Badge variant="secondary" className="font-mono text-[11px] font-normal">
+                      {row.operation}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    {row.userId ? <UserName userId={row.userId} compact /> : "—"}
+                  </TableCell>
+                  <TableCell>
+                    {row.beforeData || row.afterData ? (
+                      <DiffCollapsible before={row.beforeData} after={row.afterData} />
+                    ) : (
+                      <span className="text-xs text-muted-foreground">—</span>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       </Card>
 
       {totalItems > 0 && (
@@ -148,5 +124,40 @@ export function CalcJobAuditTab({ jobId }: Props) {
         />
       )}
     </div>
+  )
+}
+
+function DiffCollapsible({
+  before,
+  after,
+}: {
+  before: string | null | undefined
+  after: string | null | undefined
+}) {
+  const [open, setOpen] = useState(false)
+  return (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <CollapsibleTrigger asChild>
+        <Button variant="ghost" size="sm" className="h-6 gap-1 px-2 text-xs text-primary">
+          View diff
+          <ChevronRight
+            className="h-3 w-3 transition-transform duration-150 data-[state=open]:rotate-90"
+            data-state={open ? "open" : "closed"}
+          />
+        </Button>
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <div className="mt-2 grid grid-cols-2 gap-2">
+          <div>
+            <p className="mb-1 text-[10px] uppercase tracking-wide text-muted-foreground">Before</p>
+            <pre className="overflow-x-auto rounded-md bg-muted p-2 text-xs">{before ?? "—"}</pre>
+          </div>
+          <div>
+            <p className="mb-1 text-[10px] uppercase tracking-wide text-muted-foreground">After</p>
+            <pre className="overflow-x-auto rounded-md bg-muted p-2 text-xs">{after ?? "—"}</pre>
+          </div>
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
   )
 }

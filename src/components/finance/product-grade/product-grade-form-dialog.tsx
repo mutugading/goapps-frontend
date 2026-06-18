@@ -1,0 +1,254 @@
+"use client"
+
+import { useEffect } from "react"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { z } from "zod"
+import { Loader2 } from "lucide-react"
+
+import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form"
+import { Input } from "@/components/ui/input"
+import { Switch } from "@/components/ui/switch"
+
+import type { ProductGrade } from "@/types/finance/product-grade"
+import { useCreateProductGrade, useUpdateProductGrade } from "@/hooks/finance/use-product-grade"
+
+const formSchema = z.object({
+  pgCode: z
+    .string()
+    .min(1, "Code is required")
+    .max(10)
+    .regex(/^[A-Z][A-Z0-9]*$/, "Uppercase letters and digits only"),
+  pgName: z.string().min(1, "Name is required").max(100),
+  pgDescription: z.string().max(500).optional(),
+  bcPerc: z.coerce.number().min(0).max(100),
+  nonStdPerc: z.coerce.number().min(0).max(100),
+  bcRecoveryRate: z.coerce.number().min(0).max(1),
+  notes: z.string().max(500).optional(),
+  isActive: z.boolean(),
+})
+
+type FormValues = z.infer<typeof formSchema>
+
+interface ProductGradeFormDialogProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  productGrade?: ProductGrade | null
+  onSuccess?: () => void
+}
+
+export function ProductGradeFormDialog({ open, onOpenChange, productGrade, onSuccess }: ProductGradeFormDialogProps) {
+  const isEditing = !!productGrade
+  const createMutation = useCreateProductGrade()
+  const updateMutation = useUpdateProductGrade()
+
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema) as never,
+    defaultValues: {
+      pgCode: "", pgName: "", pgDescription: "", bcPerc: 0, nonStdPerc: 0, bcRecoveryRate: 0.85, notes: "", isActive: true,
+    },
+  })
+
+  useEffect(() => {
+    if (open) {
+      form.reset(
+        productGrade
+          ? {
+              pgCode: productGrade.pgCode,
+              pgName: productGrade.pgName,
+              pgDescription: productGrade.pgDescription || "",
+              bcPerc: productGrade.bcPerc ?? 0,
+              nonStdPerc: productGrade.nonStdPerc ?? 0,
+              bcRecoveryRate: productGrade.bcRecoveryRate ?? 0.85,
+              notes: productGrade.notes || "",
+              isActive: productGrade.isActive ?? true,
+            }
+          : { pgCode: "", pgName: "", pgDescription: "", bcPerc: 0, nonStdPerc: 0, bcRecoveryRate: 0.85, notes: "", isActive: true }
+      )
+    }
+  }, [open, productGrade, form])
+
+  const onSubmit = async (values: FormValues) => {
+    try {
+      if (isEditing && productGrade) {
+        await updateMutation.mutateAsync({
+          id: productGrade.pgId,
+          data: {
+            pgId: productGrade.pgId,
+            pgName: values.pgName,
+            pgDescription: values.pgDescription,
+            bcPerc: values.bcPerc,
+            nonStdPerc: values.nonStdPerc,
+            bcRecoveryRate: values.bcRecoveryRate,
+            notes: values.notes,
+            isActive: values.isActive,
+          },
+        })
+      } else {
+        await createMutation.mutateAsync({
+          pgCode: values.pgCode,
+          pgName: values.pgName,
+          pgDescription: values.pgDescription || "",
+          bcPerc: values.bcPerc,
+          nonStdPerc: values.nonStdPerc,
+          bcRecoveryRate: values.bcRecoveryRate,
+          notes: values.notes || "",
+        })
+      }
+      onOpenChange(false)
+      onSuccess?.()
+    } catch {
+      // toast handled in hook
+    }
+  }
+
+  const isPending = createMutation.isPending || updateMutation.isPending
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[520px]">
+        <DialogHeader>
+          <DialogTitle>{isEditing ? "Edit Product Grade" : "Add Product Grade"}</DialogTitle>
+          <DialogDescription>
+            {isEditing ? "Update grade details." : "Create a new yarn product grade."}
+          </DialogDescription>
+        </DialogHeader>
+
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="pgCode"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Code <span className="text-destructive">*</span></FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="A / B / AA" disabled={isEditing || isPending}
+                        onChange={(e) => field.onChange(e.target.value.toUpperCase())} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="pgName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Name <span className="text-destructive">*</span></FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Grade A" disabled={isPending} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="bcPerc"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>BC % <span className="text-destructive">*</span></FormLabel>
+                    <FormControl>
+                      <Input {...field} type="number" step="0.01" min="0" max="100" disabled={isPending} />
+                    </FormControl>
+                    <FormDescription>% output as BC grade</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="nonStdPerc"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Non-Std %</FormLabel>
+                    <FormControl>
+                      <Input {...field} type="number" step="0.01" min="0" max="100" disabled={isPending} />
+                    </FormControl>
+                    <FormDescription>% output as non-standard</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="bcRecoveryRate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>BC Recovery Rate</FormLabel>
+                    <FormControl>
+                      <Input {...field} type="number" step="0.001" min="0" max="1" placeholder="0.85" disabled={isPending} />
+                    </FormControl>
+                    <FormDescription>0–1 (e.g. 0.85 = 85%)</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <FormField
+              control={form.control}
+              name="pgDescription"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Description</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Optional description" disabled={isPending} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {isEditing && (
+              <FormField
+                control={form.control}
+                name="isActive"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                      <FormLabel>Active</FormLabel>
+                      <FormDescription>Inactive grades are excluded from costing.</FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch checked={field.value} onCheckedChange={field.onChange} disabled={isPending} />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+            )}
+
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isPending}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isPending}>
+                {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isEditing ? "Update" : "Create"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  )
+}

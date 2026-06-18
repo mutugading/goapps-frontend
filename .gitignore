@@ -24,6 +24,10 @@
 .DS_Store
 *.pem
 
+# tool-generated directories
+.claude/
+test-results/
+
 # debug
 npm-debug.log*
 yarn-debug.log*

@@ -20,6 +20,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { StatusBadge } from "@/components/common/status-badge"
 import { useCancelCalcJob } from "@/hooks/finance/use-cost-calc"
 import { usePermissionContext } from "@/providers/permission-provider"
+import { cn } from "@/lib/utils"
 import type { CalJob, CalcJobStatus } from "@/types/finance/cost-calc"
 
 interface Props {
@@ -52,38 +53,48 @@ export function CalcJobHeader({ job }: Props) {
 
   return (
     <Card>
-      <CardContent className="pt-6 pb-5">
-        <div className="flex flex-wrap items-start justify-between gap-6">
-          {/* Status + progress */}
-          <div className="flex flex-wrap items-start gap-6">
-            <div className="space-y-1.5">
-              <div className="text-xs uppercase tracking-wide text-muted-foreground">Status</div>
+      <CardContent className="p-6">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          {/* Left: Status + Progress */}
+          <div className="flex flex-wrap items-center gap-6">
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground">Status</p>
               <StatusBadge status={job.status} type="job" />
             </div>
-
-            <div className="space-y-1.5">
-              <div className="text-xs uppercase tracking-wide text-muted-foreground">Progress</div>
-              <div className="flex items-center gap-2">
-                <Progress value={pct} className="h-2 w-36" />
-                <span className="text-sm tabular-nums">
-                  {job.processedChunks}/{job.totalChunks || "—"}
-                </span>
-                <span className="text-xs text-muted-foreground">({pct}%)</span>
-              </div>
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground">
+                Progress — {job.processedChunks}/{job.totalChunks || "—"} chunks ({pct}%)
+              </p>
+              <Progress value={pct} className="h-2 w-48" />
             </div>
           </div>
 
-          {/* Count stats + cancel */}
-          <div className="flex flex-wrap items-end gap-6">
-            <Stat label="Success" value={job.successCount} colorClass="text-emerald-600" />
-            <Stat label="Failed" value={job.failedCount} colorClass="text-red-600" />
-            <Stat label="Blocked" value={job.blockedCount} colorClass="text-amber-600" />
-            <Stat label="Total" value={job.totalProducts} />
+          {/* Right: Mini stat tiles + cancel */}
+          <div className="flex flex-wrap items-center gap-2">
+            <StatTile
+              label="Success"
+              value={job.successCount}
+              colorClass="text-emerald-700 dark:text-emerald-400"
+              bgClass="bg-emerald-100 dark:bg-emerald-500/15 border-emerald-200 dark:border-emerald-500/20"
+            />
+            <StatTile
+              label="Failed"
+              value={job.failedCount}
+              colorClass="text-destructive"
+              bgClass="bg-destructive/10 border-destructive/20"
+            />
+            <StatTile
+              label="Blocked"
+              value={job.blockedCount}
+              colorClass="text-amber-700 dark:text-amber-400"
+              bgClass="bg-amber-100 dark:bg-amber-500/15 border-amber-200 dark:border-amber-500/20"
+            />
+            <StatTile label="Total" value={job.totalProducts} />
             {canCancel && (
               <Button
                 variant="outline"
                 size="sm"
-                className="text-destructive hover:text-destructive"
+                className="ml-2 text-destructive hover:text-destructive"
                 onClick={() => setOpen(true)}
                 disabled={cancel.isPending}
               >
@@ -126,19 +137,23 @@ export function CalcJobHeader({ job }: Props) {
   )
 }
 
-function Stat({
+function StatTile({
   label,
   value,
   colorClass,
+  bgClass,
 }: {
   label: string
   value: number
   colorClass?: string
+  bgClass?: string
 }) {
   return (
-    <div className="text-center">
-      <div className="text-xs uppercase tracking-wide text-muted-foreground">{label}</div>
-      <div className={`mt-0.5 text-xl font-semibold tabular-nums ${colorClass ?? ""}`}>{value}</div>
+    <div className={cn("rounded-lg border px-3 py-2 text-center min-w-[64px]", bgClass ?? "bg-muted/40")}>
+      <p className="text-[10px] text-muted-foreground">{label}</p>
+      <p className={cn("mt-0.5 text-lg font-semibold tabular-nums leading-none", colorClass ?? "text-foreground")}>
+        {value}
+      </p>
     </div>
   )
 }

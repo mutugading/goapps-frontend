@@ -54,4 +54,10 @@ export {
   getFillConfigClient,
   getFillTaskClient,
   getCostDataImportClient,
+  getInterminglingClient,
+  getBoxBobbinCostClient,
+  getMachineClient,
+  getMBSpinClient,
+  getProductGradeClient,
+  getMBHeadClient,
 } from "./clients"
