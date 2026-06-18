@@ -13,8 +13,7 @@ import {
 } from "@/components/ui/select"
 import { DebouncedSearchInput } from "@/components/common"
 
-import { ActiveFilter } from "@/types/finance/box-bobbin-cost"
-import { ACTIVE_FILTER_OPTIONS, type ListBoxBobbinCostsParams } from "@/types/finance/box-bobbin-cost"
+import { ActiveFilter, ACTIVE_FILTER_OPTIONS, type ListBoxBobbinCostsParams } from "@/types/finance/box-bobbin-cost"
 
 interface BoxBobbinCostFiltersProps {
   filters: ListBoxBobbinCostsParams
@@ -54,7 +53,7 @@ export function BoxBobbinCostFilters({ filters, onFiltersChange }: BoxBobbinCost
   }
 
   const hasActiveFilters =
-    filters.search ||
+    !!filters.search ||
     (filters.activeFilter !== undefined && filters.activeFilter !== ActiveFilter.ACTIVE_FILTER_UNSPECIFIED)
 
   const currentSort = `${filters.sortBy || "code"}-${filters.sortOrder || "asc"}`

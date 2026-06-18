@@ -56,7 +56,7 @@ export function BoxBobbinCostTable({ data, isLoading, onEdit, onDelete }: BoxBob
       cell: (row) => (
         <StatusBadge
           status={row.isActive ? "ACTIVE" : "INACTIVE"}
-          type="generic"
+          type="product"
           size="sm"
         />
       ),

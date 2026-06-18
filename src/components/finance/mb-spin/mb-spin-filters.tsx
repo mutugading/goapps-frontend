@@ -48,7 +48,7 @@ export function MBSpinFilters({ filters, onFiltersChange }: MBSpinFiltersProps) 
   }
 
   const hasActiveFilters =
-    filters.search ||
+    !!filters.search ||
     (filters.activeFilter !== undefined &&
       filters.activeFilter !== ActiveFilter.ACTIVE_FILTER_UNSPECIFIED)
 

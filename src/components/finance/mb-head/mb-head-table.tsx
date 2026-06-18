@@ -46,7 +46,7 @@ export function MBHeadTable({ data, isLoading, onEdit, onDelete }: MBHeadTablePr
       header: "Status",
       width: "w-[100px]",
       cell: (row) => (
-        <StatusBadge status={row.mbhIsActive ? "ACTIVE" : "INACTIVE"} type="generic" size="sm" />
+        <StatusBadge status={row.mbhIsActive ? "ACTIVE" : "INACTIVE"} type="product" size="sm" />
       ),
     },
   ]

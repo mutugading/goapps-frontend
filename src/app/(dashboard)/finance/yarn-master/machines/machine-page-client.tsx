@@ -37,7 +37,7 @@ import {
 
 const defaultFilters: ListMachinesParams = {
   page: 1,
-  pageSize: 10,
+  pageSize: 20,
   search: "",
   activeFilter: ActiveFilter.ACTIVE_FILTER_UNSPECIFIED,
   sortBy: "code",

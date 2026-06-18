@@ -52,7 +52,7 @@ export function ProductGradeTable({ data, isLoading, onEdit, onDelete }: Product
       header: "Status",
       width: "w-[100px]",
       cell: (row) => (
-        <StatusBadge status={row.isActive ? "ACTIVE" : "INACTIVE"} type="generic" size="sm" />
+        <StatusBadge status={row.isActive ? "ACTIVE" : "INACTIVE"} type="product" size="sm" />
       ),
     },
   ]

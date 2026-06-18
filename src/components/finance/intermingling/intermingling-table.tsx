@@ -47,7 +47,7 @@ export function InterminglingTable({ data, isLoading, onEdit, onDelete }: Interm
       header: "Status",
       width: "w-[100px]",
       cell: (row) => (
-        <StatusBadge status={row.isActive ? "ACTIVE" : "INACTIVE"} type="generic" size="sm" />
+        <StatusBadge status={row.isActive ? "ACTIVE" : "INACTIVE"} type="product" size="sm" />
       ),
     },
   ]

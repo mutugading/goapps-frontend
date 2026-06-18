@@ -46,7 +46,7 @@ export function MBSpinTable({ data, isLoading, onEdit, onDelete }: MBSpinTablePr
       header: "Status",
       width: "w-[100px]",
       cell: (row) => (
-        <StatusBadge status={row.mbsIsActive ? "ACTIVE" : "INACTIVE"} type="generic" size="sm" />
+        <StatusBadge status={row.mbsIsActive ? "ACTIVE" : "INACTIVE"} type="product" size="sm" />
       ),
     },
   ]
