@@ -1481,6 +1481,47 @@ export interface GetLookupFillValuesResponse_TextFillsEntry {
   value: string;
 }
 
+/** LookupMaster describes a named master table available for MASTER_LOOKUP param dropdowns. */
+export interface LookupMaster {
+  lmCode: string;
+  lmDisplayName: string;
+  lmApiPath: string;
+  lmCodeField: string;
+  lmLabelField: string;
+  lmIsActive: boolean;
+}
+
+/** ListLookupMastersRequest is the request for listing lookup masters. */
+export interface ListLookupMastersRequest {
+  activeOnly: boolean;
+}
+
+/** ListLookupMastersResponse is the response for listing lookup masters. */
+export interface ListLookupMastersResponse {
+  base: BaseResponse | undefined;
+  data: LookupMaster[];
+}
+
+/** LookupMasterColumn describes one selectable column from a lookup master table. */
+export interface LookupMasterColumn {
+  lmcMasterCode: string;
+  lmcColumnName: string;
+  lmcDisplayName: string;
+  lmcDataType: string;
+  lmcSortOrder: number;
+}
+
+/** ListLookupMasterColumnsRequest is the request for listing columns of a lookup master. */
+export interface ListLookupMasterColumnsRequest {
+  masterCode: string;
+}
+
+/** ListLookupMasterColumnsResponse is the response for listing lookup master columns. */
+export interface ListLookupMasterColumnsResponse {
+  base: BaseResponse | undefined;
+  data: LookupMasterColumn[];
+}
+
 function createBaseMachine(): Machine {
   return {
     machineId: "",
@@ -13814,6 +13855,598 @@ export const GetLookupFillValuesResponse_TextFillsEntry: MessageFns<GetLookupFil
   },
 };
 
+function createBaseLookupMaster(): LookupMaster {
+  return { lmCode: "", lmDisplayName: "", lmApiPath: "", lmCodeField: "", lmLabelField: "", lmIsActive: false };
+}
+
+export const LookupMaster: MessageFns<LookupMaster> = {
+  encode(message: LookupMaster, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.lmCode !== "") {
+      writer.uint32(10).string(message.lmCode);
+    }
+    if (message.lmDisplayName !== "") {
+      writer.uint32(18).string(message.lmDisplayName);
+    }
+    if (message.lmApiPath !== "") {
+      writer.uint32(26).string(message.lmApiPath);
+    }
+    if (message.lmCodeField !== "") {
+      writer.uint32(34).string(message.lmCodeField);
+    }
+    if (message.lmLabelField !== "") {
+      writer.uint32(42).string(message.lmLabelField);
+    }
+    if (message.lmIsActive !== false) {
+      writer.uint32(48).bool(message.lmIsActive);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): LookupMaster {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseLookupMaster();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.lmCode = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.lmDisplayName = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.lmApiPath = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.lmCodeField = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.lmLabelField = reader.string();
+          continue;
+        }
+        case 6: {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.lmIsActive = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): LookupMaster {
+    return {
+      lmCode: isSet(object.lmCode)
+        ? globalThis.String(object.lmCode)
+        : isSet(object.lm_code)
+        ? globalThis.String(object.lm_code)
+        : "",
+      lmDisplayName: isSet(object.lmDisplayName)
+        ? globalThis.String(object.lmDisplayName)
+        : isSet(object.lm_display_name)
+        ? globalThis.String(object.lm_display_name)
+        : "",
+      lmApiPath: isSet(object.lmApiPath)
+        ? globalThis.String(object.lmApiPath)
+        : isSet(object.lm_api_path)
+        ? globalThis.String(object.lm_api_path)
+        : "",
+      lmCodeField: isSet(object.lmCodeField)
+        ? globalThis.String(object.lmCodeField)
+        : isSet(object.lm_code_field)
+        ? globalThis.String(object.lm_code_field)
+        : "",
+      lmLabelField: isSet(object.lmLabelField)
+        ? globalThis.String(object.lmLabelField)
+        : isSet(object.lm_label_field)
+        ? globalThis.String(object.lm_label_field)
+        : "",
+      lmIsActive: isSet(object.lmIsActive)
+        ? globalThis.Boolean(object.lmIsActive)
+        : isSet(object.lm_is_active)
+        ? globalThis.Boolean(object.lm_is_active)
+        : false,
+    };
+  },
+
+  toJSON(message: LookupMaster): unknown {
+    const obj: any = {};
+    if (message.lmCode !== "") {
+      obj.lmCode = message.lmCode;
+    }
+    if (message.lmDisplayName !== "") {
+      obj.lmDisplayName = message.lmDisplayName;
+    }
+    if (message.lmApiPath !== "") {
+      obj.lmApiPath = message.lmApiPath;
+    }
+    if (message.lmCodeField !== "") {
+      obj.lmCodeField = message.lmCodeField;
+    }
+    if (message.lmLabelField !== "") {
+      obj.lmLabelField = message.lmLabelField;
+    }
+    if (message.lmIsActive !== false) {
+      obj.lmIsActive = message.lmIsActive;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<LookupMaster>): LookupMaster {
+    return LookupMaster.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<LookupMaster>): LookupMaster {
+    const message = createBaseLookupMaster();
+    message.lmCode = object.lmCode ?? "";
+    message.lmDisplayName = object.lmDisplayName ?? "";
+    message.lmApiPath = object.lmApiPath ?? "";
+    message.lmCodeField = object.lmCodeField ?? "";
+    message.lmLabelField = object.lmLabelField ?? "";
+    message.lmIsActive = object.lmIsActive ?? false;
+    return message;
+  },
+};
+
+function createBaseListLookupMastersRequest(): ListLookupMastersRequest {
+  return { activeOnly: false };
+}
+
+export const ListLookupMastersRequest: MessageFns<ListLookupMastersRequest> = {
+  encode(message: ListLookupMastersRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.activeOnly !== false) {
+      writer.uint32(8).bool(message.activeOnly);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ListLookupMastersRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListLookupMastersRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.activeOnly = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListLookupMastersRequest {
+    return {
+      activeOnly: isSet(object.activeOnly)
+        ? globalThis.Boolean(object.activeOnly)
+        : isSet(object.active_only)
+        ? globalThis.Boolean(object.active_only)
+        : false,
+    };
+  },
+
+  toJSON(message: ListLookupMastersRequest): unknown {
+    const obj: any = {};
+    if (message.activeOnly !== false) {
+      obj.activeOnly = message.activeOnly;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListLookupMastersRequest>): ListLookupMastersRequest {
+    return ListLookupMastersRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ListLookupMastersRequest>): ListLookupMastersRequest {
+    const message = createBaseListLookupMastersRequest();
+    message.activeOnly = object.activeOnly ?? false;
+    return message;
+  },
+};
+
+function createBaseListLookupMastersResponse(): ListLookupMastersResponse {
+  return { base: undefined, data: [] };
+}
+
+export const ListLookupMastersResponse: MessageFns<ListLookupMastersResponse> = {
+  encode(message: ListLookupMastersResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    for (const v of message.data) {
+      LookupMaster.encode(v!, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ListLookupMastersResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListLookupMastersResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.data.push(LookupMaster.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListLookupMastersResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      data: globalThis.Array.isArray(object?.data) ? object.data.map((e: any) => LookupMaster.fromJSON(e)) : [],
+    };
+  },
+
+  toJSON(message: ListLookupMastersResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.data?.length) {
+      obj.data = message.data.map((e) => LookupMaster.toJSON(e));
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListLookupMastersResponse>): ListLookupMastersResponse {
+    return ListLookupMastersResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ListLookupMastersResponse>): ListLookupMastersResponse {
+    const message = createBaseListLookupMastersResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.data = object.data?.map((e) => LookupMaster.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseLookupMasterColumn(): LookupMasterColumn {
+  return { lmcMasterCode: "", lmcColumnName: "", lmcDisplayName: "", lmcDataType: "", lmcSortOrder: 0 };
+}
+
+export const LookupMasterColumn: MessageFns<LookupMasterColumn> = {
+  encode(message: LookupMasterColumn, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.lmcMasterCode !== "") {
+      writer.uint32(10).string(message.lmcMasterCode);
+    }
+    if (message.lmcColumnName !== "") {
+      writer.uint32(18).string(message.lmcColumnName);
+    }
+    if (message.lmcDisplayName !== "") {
+      writer.uint32(26).string(message.lmcDisplayName);
+    }
+    if (message.lmcDataType !== "") {
+      writer.uint32(34).string(message.lmcDataType);
+    }
+    if (message.lmcSortOrder !== 0) {
+      writer.uint32(40).int32(message.lmcSortOrder);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): LookupMasterColumn {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseLookupMasterColumn();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.lmcMasterCode = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.lmcColumnName = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.lmcDisplayName = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.lmcDataType = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.lmcSortOrder = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): LookupMasterColumn {
+    return {
+      lmcMasterCode: isSet(object.lmcMasterCode)
+        ? globalThis.String(object.lmcMasterCode)
+        : isSet(object.lmc_master_code)
+        ? globalThis.String(object.lmc_master_code)
+        : "",
+      lmcColumnName: isSet(object.lmcColumnName)
+        ? globalThis.String(object.lmcColumnName)
+        : isSet(object.lmc_column_name)
+        ? globalThis.String(object.lmc_column_name)
+        : "",
+      lmcDisplayName: isSet(object.lmcDisplayName)
+        ? globalThis.String(object.lmcDisplayName)
+        : isSet(object.lmc_display_name)
+        ? globalThis.String(object.lmc_display_name)
+        : "",
+      lmcDataType: isSet(object.lmcDataType)
+        ? globalThis.String(object.lmcDataType)
+        : isSet(object.lmc_data_type)
+        ? globalThis.String(object.lmc_data_type)
+        : "",
+      lmcSortOrder: isSet(object.lmcSortOrder)
+        ? globalThis.Number(object.lmcSortOrder)
+        : isSet(object.lmc_sort_order)
+        ? globalThis.Number(object.lmc_sort_order)
+        : 0,
+    };
+  },
+
+  toJSON(message: LookupMasterColumn): unknown {
+    const obj: any = {};
+    if (message.lmcMasterCode !== "") {
+      obj.lmcMasterCode = message.lmcMasterCode;
+    }
+    if (message.lmcColumnName !== "") {
+      obj.lmcColumnName = message.lmcColumnName;
+    }
+    if (message.lmcDisplayName !== "") {
+      obj.lmcDisplayName = message.lmcDisplayName;
+    }
+    if (message.lmcDataType !== "") {
+      obj.lmcDataType = message.lmcDataType;
+    }
+    if (message.lmcSortOrder !== 0) {
+      obj.lmcSortOrder = Math.round(message.lmcSortOrder);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<LookupMasterColumn>): LookupMasterColumn {
+    return LookupMasterColumn.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<LookupMasterColumn>): LookupMasterColumn {
+    const message = createBaseLookupMasterColumn();
+    message.lmcMasterCode = object.lmcMasterCode ?? "";
+    message.lmcColumnName = object.lmcColumnName ?? "";
+    message.lmcDisplayName = object.lmcDisplayName ?? "";
+    message.lmcDataType = object.lmcDataType ?? "";
+    message.lmcSortOrder = object.lmcSortOrder ?? 0;
+    return message;
+  },
+};
+
+function createBaseListLookupMasterColumnsRequest(): ListLookupMasterColumnsRequest {
+  return { masterCode: "" };
+}
+
+export const ListLookupMasterColumnsRequest: MessageFns<ListLookupMasterColumnsRequest> = {
+  encode(message: ListLookupMasterColumnsRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.masterCode !== "") {
+      writer.uint32(10).string(message.masterCode);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ListLookupMasterColumnsRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListLookupMasterColumnsRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.masterCode = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListLookupMasterColumnsRequest {
+    return {
+      masterCode: isSet(object.masterCode)
+        ? globalThis.String(object.masterCode)
+        : isSet(object.master_code)
+        ? globalThis.String(object.master_code)
+        : "",
+    };
+  },
+
+  toJSON(message: ListLookupMasterColumnsRequest): unknown {
+    const obj: any = {};
+    if (message.masterCode !== "") {
+      obj.masterCode = message.masterCode;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListLookupMasterColumnsRequest>): ListLookupMasterColumnsRequest {
+    return ListLookupMasterColumnsRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ListLookupMasterColumnsRequest>): ListLookupMasterColumnsRequest {
+    const message = createBaseListLookupMasterColumnsRequest();
+    message.masterCode = object.masterCode ?? "";
+    return message;
+  },
+};
+
+function createBaseListLookupMasterColumnsResponse(): ListLookupMasterColumnsResponse {
+  return { base: undefined, data: [] };
+}
+
+export const ListLookupMasterColumnsResponse: MessageFns<ListLookupMasterColumnsResponse> = {
+  encode(message: ListLookupMasterColumnsResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    for (const v of message.data) {
+      LookupMasterColumn.encode(v!, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ListLookupMasterColumnsResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListLookupMasterColumnsResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.data.push(LookupMasterColumn.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListLookupMasterColumnsResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      data: globalThis.Array.isArray(object?.data) ? object.data.map((e: any) => LookupMasterColumn.fromJSON(e)) : [],
+    };
+  },
+
+  toJSON(message: ListLookupMasterColumnsResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.data?.length) {
+      obj.data = message.data.map((e) => LookupMasterColumn.toJSON(e));
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListLookupMasterColumnsResponse>): ListLookupMasterColumnsResponse {
+    return ListLookupMasterColumnsResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ListLookupMasterColumnsResponse>): ListLookupMasterColumnsResponse {
+    const message = createBaseListLookupMasterColumnsResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.data = object.data?.map((e) => LookupMasterColumn.fromPartial(e)) || [];
+    return message;
+  },
+};
+
 /** MachineService manages yarn machine master data. */
 export type MachineServiceDefinition = typeof MachineServiceDefinition;
 export const MachineServiceDefinition = {
@@ -16715,6 +17348,120 @@ export const MBSpinServiceDefinition = {
               97,
               116,
               101,
+            ]),
+          ],
+        },
+      },
+    },
+  },
+} as const;
+
+/** LookupMasterService provides lookup master registry for MASTER_LOOKUP param dropdowns. */
+export type LookupMasterServiceDefinition = typeof LookupMasterServiceDefinition;
+export const LookupMasterServiceDefinition = {
+  name: "LookupMasterService",
+  fullName: "finance.v1.LookupMasterService",
+  methods: {
+    /** ListLookupMasters returns all registered lookup masters. */
+    listLookupMasters: {
+      name: "ListLookupMasters",
+      requestType: ListLookupMastersRequest,
+      requestStream: false,
+      responseType: ListLookupMastersResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              32,
+              18,
+              30,
+              47,
+              97,
+              112,
+              105,
+              47,
+              118,
+              49,
+              47,
+              102,
+              105,
+              110,
+              97,
+              110,
+              99,
+              101,
+              47,
+              108,
+              111,
+              111,
+              107,
+              117,
+              112,
+              45,
+              109,
+              97,
+              115,
+              116,
+              101,
+              114,
+              115,
+            ]),
+          ],
+        },
+      },
+    },
+    /** ListLookupMasterColumns returns the selectable columns for one lookup master. */
+    listLookupMasterColumns: {
+      name: "ListLookupMasterColumns",
+      requestType: ListLookupMasterColumnsRequest,
+      requestStream: false,
+      responseType: ListLookupMasterColumnsResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              39,
+              18,
+              37,
+              47,
+              97,
+              112,
+              105,
+              47,
+              118,
+              49,
+              47,
+              102,
+              105,
+              110,
+              97,
+              110,
+              99,
+              101,
+              47,
+              108,
+              111,
+              111,
+              107,
+              117,
+              112,
+              45,
+              109,
+              97,
+              115,
+              116,
+              101,
+              114,
+              45,
+              99,
+              111,
+              108,
+              117,
+              109,
+              110,
+              115,
             ]),
           ],
         },

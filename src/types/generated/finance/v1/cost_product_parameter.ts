@@ -195,6 +195,52 @@ export interface UpdateApplicableParamResponse {
   base: BaseResponse | undefined;
 }
 
+/** ParamWithValue carries param code, name, and current display value for the remove-preview dialog. */
+export interface ParamWithValue {
+  paramCode: string;
+  paramName: string;
+  currentValue: string;
+}
+
+/** AddApplicableParamWithChildrenRequest adds a MASTER_LOOKUP param and all its child params atomically. */
+export interface AddApplicableParamWithChildrenRequest {
+  productSysId: number;
+  paramId: string;
+  isRequired: boolean;
+  /** 0 means inherit mst_parameter.display_order. */
+  displayOrder: number;
+}
+
+/** AddApplicableParamWithChildrenResponse is the response for adding a MASTER_LOOKUP param with children. */
+export interface AddApplicableParamWithChildrenResponse {
+  base: BaseResponse | undefined;
+}
+
+/** GetRemoveApplicablePreviewRequest is the request for previewing the params to be removed. */
+export interface GetRemoveApplicablePreviewRequest {
+  productSysId: number;
+  paramId: string;
+}
+
+/** GetRemoveApplicablePreviewResponse lists trigger + children for the confirm-delete dialog. */
+export interface GetRemoveApplicablePreviewResponse {
+  base: BaseResponse | undefined;
+  triggerParamCode: string;
+  triggerParamName: string;
+  children: ParamWithValue[];
+}
+
+/** RemoveApplicableParamWithChildrenRequest removes a MASTER_LOOKUP param and all its children. */
+export interface RemoveApplicableParamWithChildrenRequest {
+  productSysId: number;
+  paramId: string;
+}
+
+/** RemoveApplicableParamWithChildrenResponse is the response for removing a MASTER_LOOKUP param with children. */
+export interface RemoveApplicableParamWithChildrenResponse {
+  base: BaseResponse | undefined;
+}
+
 /** OverrideParamValueItem holds the new value for a single product+param pair. */
 export interface OverrideParamValueItem {
   productSysId: number;
@@ -3083,6 +3129,644 @@ export const UpdateApplicableParamResponse: MessageFns<UpdateApplicableParamResp
   },
 };
 
+function createBaseParamWithValue(): ParamWithValue {
+  return { paramCode: "", paramName: "", currentValue: "" };
+}
+
+export const ParamWithValue: MessageFns<ParamWithValue> = {
+  encode(message: ParamWithValue, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.paramCode !== "") {
+      writer.uint32(10).string(message.paramCode);
+    }
+    if (message.paramName !== "") {
+      writer.uint32(18).string(message.paramName);
+    }
+    if (message.currentValue !== "") {
+      writer.uint32(26).string(message.currentValue);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ParamWithValue {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseParamWithValue();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.paramCode = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.paramName = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.currentValue = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ParamWithValue {
+    return {
+      paramCode: isSet(object.paramCode)
+        ? globalThis.String(object.paramCode)
+        : isSet(object.param_code)
+        ? globalThis.String(object.param_code)
+        : "",
+      paramName: isSet(object.paramName)
+        ? globalThis.String(object.paramName)
+        : isSet(object.param_name)
+        ? globalThis.String(object.param_name)
+        : "",
+      currentValue: isSet(object.currentValue)
+        ? globalThis.String(object.currentValue)
+        : isSet(object.current_value)
+        ? globalThis.String(object.current_value)
+        : "",
+    };
+  },
+
+  toJSON(message: ParamWithValue): unknown {
+    const obj: any = {};
+    if (message.paramCode !== "") {
+      obj.paramCode = message.paramCode;
+    }
+    if (message.paramName !== "") {
+      obj.paramName = message.paramName;
+    }
+    if (message.currentValue !== "") {
+      obj.currentValue = message.currentValue;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ParamWithValue>): ParamWithValue {
+    return ParamWithValue.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ParamWithValue>): ParamWithValue {
+    const message = createBaseParamWithValue();
+    message.paramCode = object.paramCode ?? "";
+    message.paramName = object.paramName ?? "";
+    message.currentValue = object.currentValue ?? "";
+    return message;
+  },
+};
+
+function createBaseAddApplicableParamWithChildrenRequest(): AddApplicableParamWithChildrenRequest {
+  return { productSysId: 0, paramId: "", isRequired: false, displayOrder: 0 };
+}
+
+export const AddApplicableParamWithChildrenRequest: MessageFns<AddApplicableParamWithChildrenRequest> = {
+  encode(message: AddApplicableParamWithChildrenRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.productSysId !== 0) {
+      writer.uint32(8).int64(message.productSysId);
+    }
+    if (message.paramId !== "") {
+      writer.uint32(18).string(message.paramId);
+    }
+    if (message.isRequired !== false) {
+      writer.uint32(24).bool(message.isRequired);
+    }
+    if (message.displayOrder !== 0) {
+      writer.uint32(32).int32(message.displayOrder);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): AddApplicableParamWithChildrenRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAddApplicableParamWithChildrenRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.productSysId = longToNumber(reader.int64());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.paramId = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.isRequired = reader.bool();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.displayOrder = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AddApplicableParamWithChildrenRequest {
+    return {
+      productSysId: isSet(object.productSysId)
+        ? globalThis.Number(object.productSysId)
+        : isSet(object.product_sys_id)
+        ? globalThis.Number(object.product_sys_id)
+        : 0,
+      paramId: isSet(object.paramId)
+        ? globalThis.String(object.paramId)
+        : isSet(object.param_id)
+        ? globalThis.String(object.param_id)
+        : "",
+      isRequired: isSet(object.isRequired)
+        ? globalThis.Boolean(object.isRequired)
+        : isSet(object.is_required)
+        ? globalThis.Boolean(object.is_required)
+        : false,
+      displayOrder: isSet(object.displayOrder)
+        ? globalThis.Number(object.displayOrder)
+        : isSet(object.display_order)
+        ? globalThis.Number(object.display_order)
+        : 0,
+    };
+  },
+
+  toJSON(message: AddApplicableParamWithChildrenRequest): unknown {
+    const obj: any = {};
+    if (message.productSysId !== 0) {
+      obj.productSysId = Math.round(message.productSysId);
+    }
+    if (message.paramId !== "") {
+      obj.paramId = message.paramId;
+    }
+    if (message.isRequired !== false) {
+      obj.isRequired = message.isRequired;
+    }
+    if (message.displayOrder !== 0) {
+      obj.displayOrder = Math.round(message.displayOrder);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<AddApplicableParamWithChildrenRequest>): AddApplicableParamWithChildrenRequest {
+    return AddApplicableParamWithChildrenRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<AddApplicableParamWithChildrenRequest>): AddApplicableParamWithChildrenRequest {
+    const message = createBaseAddApplicableParamWithChildrenRequest();
+    message.productSysId = object.productSysId ?? 0;
+    message.paramId = object.paramId ?? "";
+    message.isRequired = object.isRequired ?? false;
+    message.displayOrder = object.displayOrder ?? 0;
+    return message;
+  },
+};
+
+function createBaseAddApplicableParamWithChildrenResponse(): AddApplicableParamWithChildrenResponse {
+  return { base: undefined };
+}
+
+export const AddApplicableParamWithChildrenResponse: MessageFns<AddApplicableParamWithChildrenResponse> = {
+  encode(message: AddApplicableParamWithChildrenResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): AddApplicableParamWithChildrenResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAddApplicableParamWithChildrenResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AddApplicableParamWithChildrenResponse {
+    return { base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined };
+  },
+
+  toJSON(message: AddApplicableParamWithChildrenResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<AddApplicableParamWithChildrenResponse>): AddApplicableParamWithChildrenResponse {
+    return AddApplicableParamWithChildrenResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<AddApplicableParamWithChildrenResponse>): AddApplicableParamWithChildrenResponse {
+    const message = createBaseAddApplicableParamWithChildrenResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseGetRemoveApplicablePreviewRequest(): GetRemoveApplicablePreviewRequest {
+  return { productSysId: 0, paramId: "" };
+}
+
+export const GetRemoveApplicablePreviewRequest: MessageFns<GetRemoveApplicablePreviewRequest> = {
+  encode(message: GetRemoveApplicablePreviewRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.productSysId !== 0) {
+      writer.uint32(8).int64(message.productSysId);
+    }
+    if (message.paramId !== "") {
+      writer.uint32(18).string(message.paramId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetRemoveApplicablePreviewRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetRemoveApplicablePreviewRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.productSysId = longToNumber(reader.int64());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.paramId = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetRemoveApplicablePreviewRequest {
+    return {
+      productSysId: isSet(object.productSysId)
+        ? globalThis.Number(object.productSysId)
+        : isSet(object.product_sys_id)
+        ? globalThis.Number(object.product_sys_id)
+        : 0,
+      paramId: isSet(object.paramId)
+        ? globalThis.String(object.paramId)
+        : isSet(object.param_id)
+        ? globalThis.String(object.param_id)
+        : "",
+    };
+  },
+
+  toJSON(message: GetRemoveApplicablePreviewRequest): unknown {
+    const obj: any = {};
+    if (message.productSysId !== 0) {
+      obj.productSysId = Math.round(message.productSysId);
+    }
+    if (message.paramId !== "") {
+      obj.paramId = message.paramId;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetRemoveApplicablePreviewRequest>): GetRemoveApplicablePreviewRequest {
+    return GetRemoveApplicablePreviewRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GetRemoveApplicablePreviewRequest>): GetRemoveApplicablePreviewRequest {
+    const message = createBaseGetRemoveApplicablePreviewRequest();
+    message.productSysId = object.productSysId ?? 0;
+    message.paramId = object.paramId ?? "";
+    return message;
+  },
+};
+
+function createBaseGetRemoveApplicablePreviewResponse(): GetRemoveApplicablePreviewResponse {
+  return { base: undefined, triggerParamCode: "", triggerParamName: "", children: [] };
+}
+
+export const GetRemoveApplicablePreviewResponse: MessageFns<GetRemoveApplicablePreviewResponse> = {
+  encode(message: GetRemoveApplicablePreviewResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    if (message.triggerParamCode !== "") {
+      writer.uint32(18).string(message.triggerParamCode);
+    }
+    if (message.triggerParamName !== "") {
+      writer.uint32(26).string(message.triggerParamName);
+    }
+    for (const v of message.children) {
+      ParamWithValue.encode(v!, writer.uint32(34).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetRemoveApplicablePreviewResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetRemoveApplicablePreviewResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.triggerParamCode = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.triggerParamName = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.children.push(ParamWithValue.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetRemoveApplicablePreviewResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      triggerParamCode: isSet(object.triggerParamCode)
+        ? globalThis.String(object.triggerParamCode)
+        : isSet(object.trigger_param_code)
+        ? globalThis.String(object.trigger_param_code)
+        : "",
+      triggerParamName: isSet(object.triggerParamName)
+        ? globalThis.String(object.triggerParamName)
+        : isSet(object.trigger_param_name)
+        ? globalThis.String(object.trigger_param_name)
+        : "",
+      children: globalThis.Array.isArray(object?.children)
+        ? object.children.map((e: any) => ParamWithValue.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: GetRemoveApplicablePreviewResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.triggerParamCode !== "") {
+      obj.triggerParamCode = message.triggerParamCode;
+    }
+    if (message.triggerParamName !== "") {
+      obj.triggerParamName = message.triggerParamName;
+    }
+    if (message.children?.length) {
+      obj.children = message.children.map((e) => ParamWithValue.toJSON(e));
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetRemoveApplicablePreviewResponse>): GetRemoveApplicablePreviewResponse {
+    return GetRemoveApplicablePreviewResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GetRemoveApplicablePreviewResponse>): GetRemoveApplicablePreviewResponse {
+    const message = createBaseGetRemoveApplicablePreviewResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.triggerParamCode = object.triggerParamCode ?? "";
+    message.triggerParamName = object.triggerParamName ?? "";
+    message.children = object.children?.map((e) => ParamWithValue.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseRemoveApplicableParamWithChildrenRequest(): RemoveApplicableParamWithChildrenRequest {
+  return { productSysId: 0, paramId: "" };
+}
+
+export const RemoveApplicableParamWithChildrenRequest: MessageFns<RemoveApplicableParamWithChildrenRequest> = {
+  encode(message: RemoveApplicableParamWithChildrenRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.productSysId !== 0) {
+      writer.uint32(8).int64(message.productSysId);
+    }
+    if (message.paramId !== "") {
+      writer.uint32(18).string(message.paramId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): RemoveApplicableParamWithChildrenRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRemoveApplicableParamWithChildrenRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.productSysId = longToNumber(reader.int64());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.paramId = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RemoveApplicableParamWithChildrenRequest {
+    return {
+      productSysId: isSet(object.productSysId)
+        ? globalThis.Number(object.productSysId)
+        : isSet(object.product_sys_id)
+        ? globalThis.Number(object.product_sys_id)
+        : 0,
+      paramId: isSet(object.paramId)
+        ? globalThis.String(object.paramId)
+        : isSet(object.param_id)
+        ? globalThis.String(object.param_id)
+        : "",
+    };
+  },
+
+  toJSON(message: RemoveApplicableParamWithChildrenRequest): unknown {
+    const obj: any = {};
+    if (message.productSysId !== 0) {
+      obj.productSysId = Math.round(message.productSysId);
+    }
+    if (message.paramId !== "") {
+      obj.paramId = message.paramId;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<RemoveApplicableParamWithChildrenRequest>): RemoveApplicableParamWithChildrenRequest {
+    return RemoveApplicableParamWithChildrenRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<RemoveApplicableParamWithChildrenRequest>): RemoveApplicableParamWithChildrenRequest {
+    const message = createBaseRemoveApplicableParamWithChildrenRequest();
+    message.productSysId = object.productSysId ?? 0;
+    message.paramId = object.paramId ?? "";
+    return message;
+  },
+};
+
+function createBaseRemoveApplicableParamWithChildrenResponse(): RemoveApplicableParamWithChildrenResponse {
+  return { base: undefined };
+}
+
+export const RemoveApplicableParamWithChildrenResponse: MessageFns<RemoveApplicableParamWithChildrenResponse> = {
+  encode(message: RemoveApplicableParamWithChildrenResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): RemoveApplicableParamWithChildrenResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRemoveApplicableParamWithChildrenResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RemoveApplicableParamWithChildrenResponse {
+    return { base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined };
+  },
+
+  toJSON(message: RemoveApplicableParamWithChildrenResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<RemoveApplicableParamWithChildrenResponse>): RemoveApplicableParamWithChildrenResponse {
+    return RemoveApplicableParamWithChildrenResponse.fromPartial(base ?? {});
+  },
+  fromPartial(
+    object: DeepPartial<RemoveApplicableParamWithChildrenResponse>,
+  ): RemoveApplicableParamWithChildrenResponse {
+    const message = createBaseRemoveApplicableParamWithChildrenResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    return message;
+  },
+};
+
 function createBaseOverrideParamValueItem(): OverrideParamValueItem {
   return { productSysId: 0, paramId: "", valueNumeric: "", valueText: "", valueFlag: false, hasValueFlag: false };
 }
@@ -4385,6 +5069,276 @@ export const CostProductParameterServiceDefinition = {
               111,
               118,
               101,
+            ]),
+          ],
+        },
+      },
+    },
+    /** AddApplicableParamWithChildren adds a MASTER_LOOKUP param + all its child params atomically. */
+    addApplicableParamWithChildren: {
+      name: "AddApplicableParamWithChildren",
+      requestType: AddApplicableParamWithChildrenRequest,
+      requestStream: false,
+      responseType: AddApplicableParamWithChildrenResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              73,
+              58,
+              1,
+              42,
+              34,
+              68,
+              47,
+              97,
+              112,
+              105,
+              47,
+              118,
+              49,
+              47,
+              102,
+              105,
+              110,
+              97,
+              110,
+              99,
+              101,
+              47,
+              99,
+              111,
+              115,
+              116,
+              45,
+              112,
+              114,
+              111,
+              100,
+              117,
+              99,
+              116,
+              45,
+              112,
+              97,
+              114,
+              97,
+              109,
+              101,
+              116,
+              101,
+              114,
+              115,
+              47,
+              97,
+              112,
+              112,
+              108,
+              105,
+              99,
+              97,
+              98,
+              108,
+              101,
+              47,
+              97,
+              100,
+              100,
+              45,
+              119,
+              105,
+              116,
+              104,
+              45,
+              99,
+              104,
+              105,
+              108,
+              100,
+              114,
+              101,
+              110,
+            ]),
+          ],
+        },
+      },
+    },
+    /** GetRemoveApplicablePreview returns trigger + children for the confirm-delete dialog. */
+    getRemoveApplicablePreview: {
+      name: "GetRemoveApplicablePreview",
+      requestType: GetRemoveApplicablePreviewRequest,
+      requestStream: false,
+      responseType: GetRemoveApplicablePreviewResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              70,
+              58,
+              1,
+              42,
+              34,
+              65,
+              47,
+              97,
+              112,
+              105,
+              47,
+              118,
+              49,
+              47,
+              102,
+              105,
+              110,
+              97,
+              110,
+              99,
+              101,
+              47,
+              99,
+              111,
+              115,
+              116,
+              45,
+              112,
+              114,
+              111,
+              100,
+              117,
+              99,
+              116,
+              45,
+              112,
+              97,
+              114,
+              97,
+              109,
+              101,
+              116,
+              101,
+              114,
+              115,
+              47,
+              97,
+              112,
+              112,
+              108,
+              105,
+              99,
+              97,
+              98,
+              108,
+              101,
+              47,
+              114,
+              101,
+              109,
+              111,
+              118,
+              101,
+              45,
+              112,
+              114,
+              101,
+              118,
+              105,
+              101,
+              119,
+            ]),
+          ],
+        },
+      },
+    },
+    /** RemoveApplicableParamWithChildren removes a MASTER_LOOKUP param + all children + CPP values atomically. */
+    removeApplicableParamWithChildren: {
+      name: "RemoveApplicableParamWithChildren",
+      requestType: RemoveApplicableParamWithChildrenRequest,
+      requestStream: false,
+      responseType: RemoveApplicableParamWithChildrenResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              76,
+              58,
+              1,
+              42,
+              34,
+              71,
+              47,
+              97,
+              112,
+              105,
+              47,
+              118,
+              49,
+              47,
+              102,
+              105,
+              110,
+              97,
+              110,
+              99,
+              101,
+              47,
+              99,
+              111,
+              115,
+              116,
+              45,
+              112,
+              114,
+              111,
+              100,
+              117,
+              99,
+              116,
+              45,
+              112,
+              97,
+              114,
+              97,
+              109,
+              101,
+              116,
+              101,
+              114,
+              115,
+              47,
+              97,
+              112,
+              112,
+              108,
+              105,
+              99,
+              97,
+              98,
+              108,
+              101,
+              47,
+              114,
+              101,
+              109,
+              111,
+              118,
+              101,
+              45,
+              119,
+              105,
+              116,
+              104,
+              45,
+              99,
+              104,
+              105,
+              108,
+              100,
+              114,
+              101,
+              110,
             ]),
           ],
         },

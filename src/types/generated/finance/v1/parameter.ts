@@ -71,6 +71,8 @@ export enum ParamCategory {
   PARAM_CATEGORY_RATE = 2,
   /** PARAM_CATEGORY_CALCULATED - Calculated parameter - computed from other parameters. */
   PARAM_CATEGORY_CALCULATED = 3,
+  /** PARAM_CATEGORY_MASTER_LOOKUP - PARAM_CATEGORY_MASTER_LOOKUP: selector from a master table; triggers auto-fill of child params. */
+  PARAM_CATEGORY_MASTER_LOOKUP = 4,
   UNRECOGNIZED = -1,
 }
 
@@ -88,6 +90,9 @@ export function paramCategoryFromJSON(object: any): ParamCategory {
     case 3:
     case "PARAM_CATEGORY_CALCULATED":
       return ParamCategory.PARAM_CATEGORY_CALCULATED;
+    case 4:
+    case "PARAM_CATEGORY_MASTER_LOOKUP":
+      return ParamCategory.PARAM_CATEGORY_MASTER_LOOKUP;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -105,6 +110,8 @@ export function paramCategoryToJSON(object: ParamCategory): string {
       return "PARAM_CATEGORY_RATE";
     case ParamCategory.PARAM_CATEGORY_CALCULATED:
       return "PARAM_CATEGORY_CALCULATED";
+    case ParamCategory.PARAM_CATEGORY_MASTER_LOOKUP:
+      return "PARAM_CATEGORY_MASTER_LOOKUP";
     case ParamCategory.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -157,6 +164,10 @@ export interface Parameter {
   displayGroup: string;
   /** Descriptive notes or formula hint for this parameter (read-only, populated from seed/migration). */
   notes: string;
+  /** param_code of the MASTER_LOOKUP trigger param this child belongs to (empty = not a child param). */
+  lookupFillGroupCode: string;
+  /** Column name in the master entity to read value from (e.g., "mc_speed"). */
+  lookupSourceColumn: string;
 }
 
 /** CreateParameterRequest is the request for creating a new parameter. */
@@ -196,6 +207,10 @@ export interface CreateParameterRequest {
   displayGroup: string;
   /** Descriptive notes or formula hint (optional, max 500 chars). */
   notes: string;
+  /** Fill group: param_code of the parent MASTER_LOOKUP param (optional, max 20 chars). */
+  lookupFillGroupCode: string;
+  /** Source column in the master table (optional, max 50 chars). */
+  lookupSourceColumn: string;
 }
 
 /** CreateParameterResponse is the response for creating a parameter. */
@@ -292,7 +307,15 @@ export interface UpdateParameterRequest {
     | string
     | undefined;
   /** New notes (optional). Set to empty string to clear. */
-  notes?: string | undefined;
+  notes?:
+    | string
+    | undefined;
+  /** New fill group code (optional). Set to empty string to clear. */
+  lookupFillGroupCode?:
+    | string
+    | undefined;
+  /** New source column (optional). Set to empty string to clear. */
+  lookupSourceColumn?: string | undefined;
 }
 
 /** UpdateParameterResponse is the response for updating a parameter. */
@@ -345,6 +368,8 @@ export interface ListParametersRequest {
   sortBy: string;
   /** Sort order: "asc", "desc" (default: "asc"). */
   sortOrder: string;
+  /** Filter by lookup_fill_group_code. Empty string = no filter. */
+  lookupFillGroupCodeFilter: string;
 }
 
 /** ListParametersResponse is the response for listing parameters. */
@@ -448,6 +473,8 @@ function createBaseParameter(): Parameter {
     displayOrder: 0,
     displayGroup: "",
     notes: "",
+    lookupFillGroupCode: "",
+    lookupSourceColumn: "",
   };
 }
 
@@ -515,6 +542,12 @@ export const Parameter: MessageFns<Parameter> = {
     }
     if (message.notes !== "") {
       writer.uint32(242).string(message.notes);
+    }
+    if (message.lookupFillGroupCode !== "") {
+      writer.uint32(250).string(message.lookupFillGroupCode);
+    }
+    if (message.lookupSourceColumn !== "") {
+      writer.uint32(258).string(message.lookupSourceColumn);
     }
     return writer;
   },
@@ -694,6 +727,22 @@ export const Parameter: MessageFns<Parameter> = {
           message.notes = reader.string();
           continue;
         }
+        case 31: {
+          if (tag !== 250) {
+            break;
+          }
+
+          message.lookupFillGroupCode = reader.string();
+          continue;
+        }
+        case 32: {
+          if (tag !== 258) {
+            break;
+          }
+
+          message.lookupSourceColumn = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -802,6 +851,16 @@ export const Parameter: MessageFns<Parameter> = {
         ? globalThis.String(object.display_group)
         : "",
       notes: isSet(object.notes) ? globalThis.String(object.notes) : "",
+      lookupFillGroupCode: isSet(object.lookupFillGroupCode)
+        ? globalThis.String(object.lookupFillGroupCode)
+        : isSet(object.lookup_fill_group_code)
+        ? globalThis.String(object.lookup_fill_group_code)
+        : "",
+      lookupSourceColumn: isSet(object.lookupSourceColumn)
+        ? globalThis.String(object.lookupSourceColumn)
+        : isSet(object.lookup_source_column)
+        ? globalThis.String(object.lookup_source_column)
+        : "",
     };
   },
 
@@ -870,6 +929,12 @@ export const Parameter: MessageFns<Parameter> = {
     if (message.notes !== "") {
       obj.notes = message.notes;
     }
+    if (message.lookupFillGroupCode !== "") {
+      obj.lookupFillGroupCode = message.lookupFillGroupCode;
+    }
+    if (message.lookupSourceColumn !== "") {
+      obj.lookupSourceColumn = message.lookupSourceColumn;
+    }
     return obj;
   },
 
@@ -901,6 +966,8 @@ export const Parameter: MessageFns<Parameter> = {
     message.displayOrder = object.displayOrder ?? 0;
     message.displayGroup = object.displayGroup ?? "";
     message.notes = object.notes ?? "";
+    message.lookupFillGroupCode = object.lookupFillGroupCode ?? "";
+    message.lookupSourceColumn = object.lookupSourceColumn ?? "";
     return message;
   },
 };
@@ -923,6 +990,8 @@ function createBaseCreateParameterRequest(): CreateParameterRequest {
     displayOrder: 0,
     displayGroup: "",
     notes: "",
+    lookupFillGroupCode: "",
+    lookupSourceColumn: "",
   };
 }
 
@@ -975,6 +1044,12 @@ export const CreateParameterRequest: MessageFns<CreateParameterRequest> = {
     }
     if (message.notes !== "") {
       writer.uint32(130).string(message.notes);
+    }
+    if (message.lookupFillGroupCode !== "") {
+      writer.uint32(138).string(message.lookupFillGroupCode);
+    }
+    if (message.lookupSourceColumn !== "") {
+      writer.uint32(146).string(message.lookupSourceColumn);
     }
     return writer;
   },
@@ -1114,6 +1189,22 @@ export const CreateParameterRequest: MessageFns<CreateParameterRequest> = {
           message.notes = reader.string();
           continue;
         }
+        case 17: {
+          if (tag !== 138) {
+            break;
+          }
+
+          message.lookupFillGroupCode = reader.string();
+          continue;
+        }
+        case 18: {
+          if (tag !== 146) {
+            break;
+          }
+
+          message.lookupSourceColumn = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1201,6 +1292,16 @@ export const CreateParameterRequest: MessageFns<CreateParameterRequest> = {
         ? globalThis.String(object.display_group)
         : "",
       notes: isSet(object.notes) ? globalThis.String(object.notes) : "",
+      lookupFillGroupCode: isSet(object.lookupFillGroupCode)
+        ? globalThis.String(object.lookupFillGroupCode)
+        : isSet(object.lookup_fill_group_code)
+        ? globalThis.String(object.lookup_fill_group_code)
+        : "",
+      lookupSourceColumn: isSet(object.lookupSourceColumn)
+        ? globalThis.String(object.lookupSourceColumn)
+        : isSet(object.lookup_source_column)
+        ? globalThis.String(object.lookup_source_column)
+        : "",
     };
   },
 
@@ -1254,6 +1355,12 @@ export const CreateParameterRequest: MessageFns<CreateParameterRequest> = {
     if (message.notes !== "") {
       obj.notes = message.notes;
     }
+    if (message.lookupFillGroupCode !== "") {
+      obj.lookupFillGroupCode = message.lookupFillGroupCode;
+    }
+    if (message.lookupSourceColumn !== "") {
+      obj.lookupSourceColumn = message.lookupSourceColumn;
+    }
     return obj;
   },
 
@@ -1278,6 +1385,8 @@ export const CreateParameterRequest: MessageFns<CreateParameterRequest> = {
     message.displayOrder = object.displayOrder ?? 0;
     message.displayGroup = object.displayGroup ?? "";
     message.notes = object.notes ?? "";
+    message.lookupFillGroupCode = object.lookupFillGroupCode ?? "";
+    message.lookupSourceColumn = object.lookupSourceColumn ?? "";
     return message;
   },
 };
@@ -1521,6 +1630,8 @@ function createBaseUpdateParameterRequest(): UpdateParameterRequest {
     displayOrder: undefined,
     displayGroup: undefined,
     notes: undefined,
+    lookupFillGroupCode: undefined,
+    lookupSourceColumn: undefined,
   };
 }
 
@@ -1576,6 +1687,12 @@ export const UpdateParameterRequest: MessageFns<UpdateParameterRequest> = {
     }
     if (message.notes !== undefined) {
       writer.uint32(138).string(message.notes);
+    }
+    if (message.lookupFillGroupCode !== undefined) {
+      writer.uint32(146).string(message.lookupFillGroupCode);
+    }
+    if (message.lookupSourceColumn !== undefined) {
+      writer.uint32(154).string(message.lookupSourceColumn);
     }
     return writer;
   },
@@ -1723,6 +1840,22 @@ export const UpdateParameterRequest: MessageFns<UpdateParameterRequest> = {
           message.notes = reader.string();
           continue;
         }
+        case 18: {
+          if (tag !== 146) {
+            break;
+          }
+
+          message.lookupFillGroupCode = reader.string();
+          continue;
+        }
+        case 19: {
+          if (tag !== 154) {
+            break;
+          }
+
+          message.lookupSourceColumn = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1815,6 +1948,16 @@ export const UpdateParameterRequest: MessageFns<UpdateParameterRequest> = {
         ? globalThis.String(object.display_group)
         : undefined,
       notes: isSet(object.notes) ? globalThis.String(object.notes) : undefined,
+      lookupFillGroupCode: isSet(object.lookupFillGroupCode)
+        ? globalThis.String(object.lookupFillGroupCode)
+        : isSet(object.lookup_fill_group_code)
+        ? globalThis.String(object.lookup_fill_group_code)
+        : undefined,
+      lookupSourceColumn: isSet(object.lookupSourceColumn)
+        ? globalThis.String(object.lookupSourceColumn)
+        : isSet(object.lookup_source_column)
+        ? globalThis.String(object.lookup_source_column)
+        : undefined,
     };
   },
 
@@ -1871,6 +2014,12 @@ export const UpdateParameterRequest: MessageFns<UpdateParameterRequest> = {
     if (message.notes !== undefined) {
       obj.notes = message.notes;
     }
+    if (message.lookupFillGroupCode !== undefined) {
+      obj.lookupFillGroupCode = message.lookupFillGroupCode;
+    }
+    if (message.lookupSourceColumn !== undefined) {
+      obj.lookupSourceColumn = message.lookupSourceColumn;
+    }
     return obj;
   },
 
@@ -1896,6 +2045,8 @@ export const UpdateParameterRequest: MessageFns<UpdateParameterRequest> = {
     message.displayOrder = object.displayOrder ?? undefined;
     message.displayGroup = object.displayGroup ?? undefined;
     message.notes = object.notes ?? undefined;
+    message.lookupFillGroupCode = object.lookupFillGroupCode ?? undefined;
+    message.lookupSourceColumn = object.lookupSourceColumn ?? undefined;
     return message;
   },
 };
@@ -2112,6 +2263,7 @@ function createBaseListParametersRequest(): ListParametersRequest {
     activeFilter: 0,
     sortBy: "",
     sortOrder: "",
+    lookupFillGroupCodeFilter: "",
   };
 }
 
@@ -2140,6 +2292,9 @@ export const ListParametersRequest: MessageFns<ListParametersRequest> = {
     }
     if (message.sortOrder !== "") {
       writer.uint32(66).string(message.sortOrder);
+    }
+    if (message.lookupFillGroupCodeFilter !== "") {
+      writer.uint32(74).string(message.lookupFillGroupCodeFilter);
     }
     return writer;
   },
@@ -2215,6 +2370,14 @@ export const ListParametersRequest: MessageFns<ListParametersRequest> = {
           message.sortOrder = reader.string();
           continue;
         }
+        case 9: {
+          if (tag !== 74) {
+            break;
+          }
+
+          message.lookupFillGroupCodeFilter = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2258,6 +2421,11 @@ export const ListParametersRequest: MessageFns<ListParametersRequest> = {
         : isSet(object.sort_order)
         ? globalThis.String(object.sort_order)
         : "",
+      lookupFillGroupCodeFilter: isSet(object.lookupFillGroupCodeFilter)
+        ? globalThis.String(object.lookupFillGroupCodeFilter)
+        : isSet(object.lookup_fill_group_code_filter)
+        ? globalThis.String(object.lookup_fill_group_code_filter)
+        : "",
     };
   },
 
@@ -2287,6 +2455,9 @@ export const ListParametersRequest: MessageFns<ListParametersRequest> = {
     if (message.sortOrder !== "") {
       obj.sortOrder = message.sortOrder;
     }
+    if (message.lookupFillGroupCodeFilter !== "") {
+      obj.lookupFillGroupCodeFilter = message.lookupFillGroupCodeFilter;
+    }
     return obj;
   },
 
@@ -2303,6 +2474,7 @@ export const ListParametersRequest: MessageFns<ListParametersRequest> = {
     message.activeFilter = object.activeFilter ?? 0;
     message.sortBy = object.sortBy ?? "";
     message.sortOrder = object.sortOrder ?? "";
+    message.lookupFillGroupCodeFilter = object.lookupFillGroupCodeFilter ?? "";
     return message;
   },
 };
