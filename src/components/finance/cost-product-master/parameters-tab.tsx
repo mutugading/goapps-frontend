@@ -5,7 +5,7 @@
 // display_group, lets the responsible user fill values, and saves them in a
 // single batch.
 
-import { useMemo, useState } from "react"
+import { useCallback, useMemo, useState } from "react"
 import { Loader2, Save, AlertCircle, Plus, Trash2 } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
@@ -21,13 +21,16 @@ import {
   useRemoveApplicableParam,
 } from "@/hooks/finance/use-cost-product-parameter"
 import type { RequiredParamEntry, UpsertParamValuePayload } from "@/types/finance/cost-product-parameter"
+import type { LookupFillValuesResponse } from "@/types/finance/yarn-master"
 import { AddParameterDialog } from "./add-parameter-dialog"
+import { MasterLookupField } from "./master-lookup-field"
+import { toast } from "sonner"
 
 interface ParametersTabProps {
   productSysId: number
 }
 
-interface DraftValue {
+export interface DraftValue {
   valueNumeric: string
   valueText: string
   valueFlag: boolean
@@ -64,12 +67,39 @@ export function ProductParametersTab({ productSysId }: ParametersTabProps) {
     return out
   }, [data, edits])
 
-  function patch(paramId: string, p: Partial<DraftValue>) {
-    setEdits((prev) => ({
-      ...prev,
-      [paramId]: { ...(prev[paramId] ?? drafts[paramId]), ...p, dirty: true },
-    }))
-  }
+  const patch = useCallback(
+    (paramId: string, p: Partial<DraftValue>) => {
+      setEdits((prev) => ({
+        ...prev,
+        [paramId]: { ...(prev[paramId] ?? drafts[paramId]), ...p, dirty: true },
+      }))
+    },
+    [drafts],
+  )
+
+  const handleLookupChange = useCallback(
+    (
+      triggerParamId: string,
+      selectedKey: string,
+      fills: LookupFillValuesResponse | null,
+    ) => {
+      patch(triggerParamId, { valueText: selectedKey })
+      if (!fills || !data) return
+
+      for (const [paramCode, numVal] of Object.entries(fills.numericFills)) {
+        const target = data.find((e) => e.paramCode === paramCode)
+        if (target) patch(target.paramId, { valueNumeric: String(numVal) })
+      }
+      for (const [paramCode, textVal] of Object.entries(fills.textFills)) {
+        const target = data.find((e) => e.paramCode === paramCode)
+        if (target) patch(target.paramId, { valueText: textVal })
+      }
+      if (fills.displayLabel) {
+        toast.success(`Auto-filled from: ${fills.displayLabel}`)
+      }
+    },
+    [patch, data],
+  )
 
   const grouped = useMemo(() => {
     const out = new Map<string, RequiredParamEntry[]>()
@@ -191,6 +221,8 @@ export function ProductParametersTab({ productSysId }: ParametersTabProps) {
                     removeM.mutate({ productSysId, paramId: entry.paramId })
                   }
                   removing={removeM.isPending}
+                  allEntries={data}
+                  onLookupChange={handleLookupChange}
                 />
               )
             })}
@@ -213,9 +245,11 @@ interface ParamRowProps {
   onRemove: () => void
   removing: boolean
   onChange: (paramId: string, p: Partial<DraftValue>) => void
+  allEntries?: RequiredParamEntry[]
+  onLookupChange?: (triggerParamId: string, selectedKey: string, fills: LookupFillValuesResponse | null) => void
 }
 
-function ParamRow({ entry, draft, onChange, onRemove, removing }: ParamRowProps) {
+function ParamRow({ entry, draft, onChange, onRemove, removing, allEntries, onLookupChange }: ParamRowProps) {
   return (
     <div className="grid grid-cols-12 gap-3 items-start">
       <div className="col-span-5">
@@ -241,7 +275,7 @@ function ParamRow({ entry, draft, onChange, onRemove, removing }: ParamRowProps)
           )}
         </div>
       </div>
-      <div className="col-span-6">{renderValueInput(entry, draft, onChange)}</div>
+      <div className="col-span-6">{renderValueInput(entry, draft, onChange, allEntries, onLookupChange)}</div>
       <div className="col-span-1 text-right">
         <Button
           size="icon"
@@ -261,6 +295,8 @@ function renderValueInput(
   entry: RequiredParamEntry,
   draft: DraftValue,
   onChange: (paramId: string, p: Partial<DraftValue>) => void,
+  allEntries?: RequiredParamEntry[],
+  onLookupChange?: (triggerParamId: string, selectedKey: string, fills: LookupFillValuesResponse | null) => void,
 ) {
   if (entry.paramCategory === "CALCULATED") {
     return (
@@ -270,19 +306,24 @@ function renderValueInput(
     )
   }
 
-  // LOOKUP master: free-text fallback until master is built (S7.5g backlog).
   if (entry.lookupMasterCode) {
-    return (
-      <div className="space-y-1">
-        <Input
-          value={draft.valueText}
-          placeholder={`Type ${entry.lookupMasterCode} key (combobox pending master build)`}
-          onChange={(e) => onChange(entry.paramId, { valueText: e.target.value })}
+    if (onLookupChange && allEntries) {
+      return (
+        <MasterLookupField
+          entry={entry}
+          draft={draft}
+          allEntries={allEntries}
+          onChangeLookup={onLookupChange}
         />
-        <p className="text-[10px] text-muted-foreground">
-          ⚠ Free-text fallback — upgrade to dropdown when {entry.lookupMasterCode} master ships.
-        </p>
-      </div>
+      )
+    }
+    // Fallback (should not happen in practice)
+    return (
+      <Input
+        value={draft.valueText}
+        placeholder={`Select ${entry.lookupMasterCode}…`}
+        onChange={(e) => onChange(entry.paramId, { valueText: e.target.value })}
+      />
     )
   }
 
