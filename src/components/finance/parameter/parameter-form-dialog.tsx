@@ -25,6 +25,7 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import {
   Select,
   SelectContent,
@@ -63,6 +64,7 @@ interface ParameterFormValues {
   lookupMasterCode: string
   displayOrder: number
   displayGroup: string
+  notes: string
 }
 
 const parameterFormSchema = z.object({
@@ -98,6 +100,7 @@ const parameterFormSchema = z.object({
   lookupMasterCode: z.string().max(30),
   displayOrder: z.coerce.number().int().gte(0),
   displayGroup: z.string().max(50),
+  notes: z.string().max(500),
 })
 
 interface ParameterFormDialogProps {
@@ -147,6 +150,7 @@ export function ParameterFormDialog({
       lookupMasterCode: "",
       displayOrder: 0,
       displayGroup: "",
+      notes: "",
     },
   })
 
@@ -170,6 +174,7 @@ export function ParameterFormDialog({
           lookupMasterCode: parameter.lookupMasterCode || "",
           displayOrder: parameter.displayOrder ?? 0,
           displayGroup: parameter.displayGroup || "",
+          notes: parameter.notes || "",
         })
       } else {
         form.reset({
@@ -189,6 +194,7 @@ export function ParameterFormDialog({
           lookupMasterCode: "",
           displayOrder: 0,
           displayGroup: "",
+          notes: "",
         })
       }
     }
@@ -216,6 +222,7 @@ export function ParameterFormDialog({
             lookupMasterCode: values.lookupMasterCode,
             displayOrder: values.displayOrder,
             displayGroup: values.displayGroup,
+            notes: values.notes,
           },
         })
       } else {
@@ -235,6 +242,7 @@ export function ParameterFormDialog({
           lookupMasterCode: values.lookupMasterCode,
           displayOrder: values.displayOrder,
           displayGroup: values.displayGroup,
+          notes: values.notes,
         })
       }
       onOpenChange(false)
@@ -638,6 +646,29 @@ export function ParameterFormDialog({
                 />
               </div>
             </div>
+
+            <FormField
+              control={form.control}
+              name="notes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Notes</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Formula hint or description (optional, max 500 chars)"
+                      rows={3}
+                      {...field}
+                      value={field.value || ""}
+                      disabled={isPending}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Free-text notes or formula hint. Pre-filled from Excel spec.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             {isEditing && (
               <FormField

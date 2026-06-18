@@ -181,6 +181,7 @@ export interface ParameterFormData {
   lookupMasterCode: string
   displayOrder: number
   displayGroup: string
+  notes: string
 }
 
 /**
@@ -203,6 +204,7 @@ export const DEFAULT_PARAMETER_FORM_VALUES: ParameterFormData = {
   lookupMasterCode: "",
   displayOrder: 0,
   displayGroup: "",
+  notes: "",
 }
 
 /**

@@ -28,6 +28,7 @@ interface DraftValue {
 interface MasterLookupFieldProps {
   entry: RequiredParamEntry
   draft: DraftValue
+  // allEntries is passed for context but auto-population happens in the parent via onChangeLookup.
   allEntries: RequiredParamEntry[]
   onChangeLookup: (
     triggerParamId: string,
@@ -116,7 +117,7 @@ export function MasterLookupField({
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading…
                 </div>
               )}
-              <CommandEmpty>No results found.</CommandEmpty>
+              {!optionsLoading && <CommandEmpty>No results found.</CommandEmpty>}
               <CommandGroup>
                 {options.map((opt) => (
                   <CommandItem key={opt.value} value={opt.value} onSelect={handleSelect}>
