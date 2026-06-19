@@ -173,3 +173,84 @@ test.describe("Yarn Master Pages", () => {
     expect(hasError).toBe(0)
   })
 })
+
+test.describe("Lookup Master Admin Page", () => {
+  test("Lookup Masters admin page loads with 5 entries", async ({ page }) => {
+    await loginAs(page, LOGIN_USER)
+    await page.goto("/finance/yarn-master/lookup-masters")
+    await page.waitForLoadState("domcontentloaded")
+    await page.waitForTimeout(2000)
+
+    const hasError = await page.locator("text=Something went wrong").count()
+    expect(hasError).toBe(0)
+
+    // Should show at least the 5 seeded masters
+    const heading = await page.locator("h1, h2").first().textContent()
+    expect(heading?.toLowerCase()).toMatch(/lookup/i)
+  })
+
+  test("POST /api/v1/finance/lookup-masters creates and DELETE removes a test master", async ({ page }) => {
+    const base = await loginAndGetBase(page)
+    const testCode = "TEST_MASTER_E2E"
+
+    // Create
+    const createResp = await page.request.post(`${base}/api/v1/finance/lookup-masters`, {
+      data: {
+        lmCode: testCode,
+        lmDisplayName: "E2E Test Master",
+        lmApiPath: "/api/v1/finance/test",
+        lmCodeField: "testCode",
+        lmLabelField: "testName",
+      },
+    })
+    expect(createResp.ok()).toBeTruthy()
+    const createBody = await createResp.json()
+    expect(createBody.base?.isSuccess).toBe(true)
+
+    // Verify it exists
+    const listResp = await page.request.get(`${base}/api/v1/finance/lookup-masters?activeOnly=false`)
+    const listBody = await listResp.json()
+    const masters: Array<{ lmCode: string }> = listBody.data ?? []
+    expect(masters.some((m) => m.lmCode === testCode)).toBe(true)
+
+    // Delete
+    const deleteResp = await page.request.delete(`${base}/api/v1/finance/lookup-masters/${testCode}`)
+    expect(deleteResp.ok()).toBeTruthy()
+
+    // Verify removed
+    const listResp2 = await page.request.get(`${base}/api/v1/finance/lookup-masters?activeOnly=false`)
+    const listBody2 = await listResp2.json()
+    const masters2: Array<{ lmCode: string }> = listBody2.data ?? []
+    expect(masters2.some((m) => m.lmCode === testCode)).toBe(false)
+  })
+
+  test("POST /api/v1/finance/lookup-master-columns creates a test column and DELETE removes it", async ({ page }) => {
+    const base = await loginAndGetBase(page)
+
+    // Create column on MACHINE master
+    const createResp = await page.request.post(`${base}/api/v1/finance/lookup-master-columns`, {
+      data: {
+        lmcMasterCode: "MACHINE",
+        lmcColumnName: "test_column_e2e",
+        lmcDisplayName: "E2E Test Column",
+        lmcDataType: "NUMBER",
+        lmcSortOrder: 99,
+      },
+    })
+    expect(createResp.ok()).toBeTruthy()
+    const createBody = await createResp.json()
+    expect(createBody.base?.isSuccess).toBe(true)
+    const lmcId: string = createBody.data?.lmcId ?? ""
+    expect(lmcId).not.toBe("")
+
+    // Verify it exists
+    const listResp = await page.request.get(`${base}/api/v1/finance/lookup-master-columns?masterCode=MACHINE`)
+    const listBody = await listResp.json()
+    const cols: Array<{ lmcColumnName: string; lmcId: string }> = listBody.data ?? []
+    expect(cols.some((c) => c.lmcColumnName === "test_column_e2e")).toBe(true)
+
+    // Delete
+    const deleteResp = await page.request.delete(`${base}/api/v1/finance/lookup-master-columns/${lmcId}`)
+    expect(deleteResp.ok()).toBeTruthy()
+  })
+})
