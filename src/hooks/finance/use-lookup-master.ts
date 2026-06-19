@@ -193,6 +193,7 @@ export function useExportLookupMasters() {
       a.click()
       URL.revokeObjectURL(url)
     },
+    onSuccess: () => toast.success("Export downloaded"),
     onError: (e: Error) => toast.error(e.message),
   })
 }
