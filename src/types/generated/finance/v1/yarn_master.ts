@@ -1489,6 +1489,8 @@ export interface LookupMaster {
   lmCodeField: string;
   lmLabelField: string;
   lmIsActive: boolean;
+  /** PostgreSQL table name for DB introspection (e.g., "mst_machine"). */
+  lmTableName: string;
 }
 
 /** ListLookupMastersRequest is the request for listing lookup masters. */
@@ -1531,6 +1533,8 @@ export interface CreateLookupMasterRequest {
   lmApiPath: string;
   lmCodeField: string;
   lmLabelField: string;
+  /** PostgreSQL table name for DB introspection (optional, max 63 chars). */
+  lmTableName?: string | undefined;
 }
 
 /** CreateLookupMasterResponse is the response for adding a new master. */
@@ -1572,6 +1576,90 @@ export interface DeleteLookupMasterColumnRequest {
 /** DeleteLookupMasterColumnResponse is the response for removing a column. */
 export interface DeleteLookupMasterColumnResponse {
   base: BaseResponse | undefined;
+}
+
+/** UpdateLookupMasterRequest updates mutable fields of an existing lookup master. */
+export interface UpdateLookupMasterRequest {
+  lmCode: string;
+  lmDisplayName?: string | undefined;
+  lmTableName?: string | undefined;
+  lmIsActive?: boolean | undefined;
+}
+
+/** UpdateLookupMasterResponse is the response for UpdateLookupMaster. */
+export interface UpdateLookupMasterResponse {
+  base: BaseResponse | undefined;
+  data: LookupMaster | undefined;
+}
+
+/** TableColumn is one column from information_schema introspection. */
+export interface TableColumn {
+  /** PostgreSQL column name (e.g., "mc_speed"). */
+  columnName: string;
+  /** Mapped type: "NUMBER" or "TEXT". */
+  dataType: string;
+  /** Original PostgreSQL type (e.g., "numeric", "character varying"). */
+  rawType: string;
+  /** Position in the table (from information_schema). */
+  ordinalPosition: number;
+}
+
+/** ListTableColumnsRequest introspects a registered PostgreSQL table's columns. */
+export interface ListTableColumnsRequest {
+  /** Table name — must match an lm_table_name value in mst_lookup_master for safety. */
+  tableName: string;
+}
+
+/** ListTableColumnsResponse is the response for ListTableColumns. */
+export interface ListTableColumnsResponse {
+  base: BaseResponse | undefined;
+  data: TableColumn[];
+}
+
+/** MasterOption is one combobox entry (code + label) for the MasterLookupField dropdown. */
+export interface MasterOption {
+  /** The "code" field value stored as the param's text value. */
+  value: string;
+  /** The "label" field value displayed to the user. */
+  label: string;
+}
+
+/** ListMasterOptionsRequest queries the registered table to populate a combobox. */
+export interface ListMasterOptionsRequest {
+  /** lookup_master_code (e.g., "MACHINE") — used to resolve table_name + code/label fields. */
+  masterCode: string;
+}
+
+/** ListMasterOptionsResponse is the response for ListMasterOptions. */
+export interface ListMasterOptionsResponse {
+  base: BaseResponse | undefined;
+  data: MasterOption[];
+}
+
+/** ExportLookupMastersRequest is the request for exporting registry to Excel. */
+export interface ExportLookupMastersRequest {
+}
+
+/** ExportLookupMastersResponse carries the Excel workbook bytes. */
+export interface ExportLookupMastersResponse {
+  base: BaseResponse | undefined;
+  fileContent: Uint8Array;
+  fileName: string;
+}
+
+/** ImportLookupMastersRequest carries an Excel workbook to import registry entries. */
+export interface ImportLookupMastersRequest {
+  fileContent: Uint8Array;
+  fileName: string;
+}
+
+/** ImportLookupMastersResponse summarizes the import result. */
+export interface ImportLookupMastersResponse {
+  base: BaseResponse | undefined;
+  successCount: number;
+  skippedCount: number;
+  failedCount: number;
+  errors: string[];
 }
 
 function createBaseMachine(): Machine {
@@ -13908,7 +13996,15 @@ export const GetLookupFillValuesResponse_TextFillsEntry: MessageFns<GetLookupFil
 };
 
 function createBaseLookupMaster(): LookupMaster {
-  return { lmCode: "", lmDisplayName: "", lmApiPath: "", lmCodeField: "", lmLabelField: "", lmIsActive: false };
+  return {
+    lmCode: "",
+    lmDisplayName: "",
+    lmApiPath: "",
+    lmCodeField: "",
+    lmLabelField: "",
+    lmIsActive: false,
+    lmTableName: "",
+  };
 }
 
 export const LookupMaster: MessageFns<LookupMaster> = {
@@ -13930,6 +14026,9 @@ export const LookupMaster: MessageFns<LookupMaster> = {
     }
     if (message.lmIsActive !== false) {
       writer.uint32(48).bool(message.lmIsActive);
+    }
+    if (message.lmTableName !== "") {
+      writer.uint32(58).string(message.lmTableName);
     }
     return writer;
   },
@@ -13989,6 +14088,14 @@ export const LookupMaster: MessageFns<LookupMaster> = {
           message.lmIsActive = reader.bool();
           continue;
         }
+        case 7: {
+          if (tag !== 58) {
+            break;
+          }
+
+          message.lmTableName = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -14030,6 +14137,11 @@ export const LookupMaster: MessageFns<LookupMaster> = {
         : isSet(object.lm_is_active)
         ? globalThis.Boolean(object.lm_is_active)
         : false,
+      lmTableName: isSet(object.lmTableName)
+        ? globalThis.String(object.lmTableName)
+        : isSet(object.lm_table_name)
+        ? globalThis.String(object.lm_table_name)
+        : "",
     };
   },
 
@@ -14053,6 +14165,9 @@ export const LookupMaster: MessageFns<LookupMaster> = {
     if (message.lmIsActive !== false) {
       obj.lmIsActive = message.lmIsActive;
     }
+    if (message.lmTableName !== "") {
+      obj.lmTableName = message.lmTableName;
+    }
     return obj;
   },
 
@@ -14067,6 +14182,7 @@ export const LookupMaster: MessageFns<LookupMaster> = {
     message.lmCodeField = object.lmCodeField ?? "";
     message.lmLabelField = object.lmLabelField ?? "";
     message.lmIsActive = object.lmIsActive ?? false;
+    message.lmTableName = object.lmTableName ?? "";
     return message;
   },
 };
@@ -14520,7 +14636,7 @@ export const ListLookupMasterColumnsResponse: MessageFns<ListLookupMasterColumns
 };
 
 function createBaseCreateLookupMasterRequest(): CreateLookupMasterRequest {
-  return { lmCode: "", lmDisplayName: "", lmApiPath: "", lmCodeField: "", lmLabelField: "" };
+  return { lmCode: "", lmDisplayName: "", lmApiPath: "", lmCodeField: "", lmLabelField: "", lmTableName: undefined };
 }
 
 export const CreateLookupMasterRequest: MessageFns<CreateLookupMasterRequest> = {
@@ -14539,6 +14655,9 @@ export const CreateLookupMasterRequest: MessageFns<CreateLookupMasterRequest> = 
     }
     if (message.lmLabelField !== "") {
       writer.uint32(42).string(message.lmLabelField);
+    }
+    if (message.lmTableName !== undefined) {
+      writer.uint32(50).string(message.lmTableName);
     }
     return writer;
   },
@@ -14590,6 +14709,14 @@ export const CreateLookupMasterRequest: MessageFns<CreateLookupMasterRequest> = 
           message.lmLabelField = reader.string();
           continue;
         }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.lmTableName = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -14626,6 +14753,11 @@ export const CreateLookupMasterRequest: MessageFns<CreateLookupMasterRequest> = 
         : isSet(object.lm_label_field)
         ? globalThis.String(object.lm_label_field)
         : "",
+      lmTableName: isSet(object.lmTableName)
+        ? globalThis.String(object.lmTableName)
+        : isSet(object.lm_table_name)
+        ? globalThis.String(object.lm_table_name)
+        : undefined,
     };
   },
 
@@ -14646,6 +14778,9 @@ export const CreateLookupMasterRequest: MessageFns<CreateLookupMasterRequest> = 
     if (message.lmLabelField !== "") {
       obj.lmLabelField = message.lmLabelField;
     }
+    if (message.lmTableName !== undefined) {
+      obj.lmTableName = message.lmTableName;
+    }
     return obj;
   },
 
@@ -14659,6 +14794,7 @@ export const CreateLookupMasterRequest: MessageFns<CreateLookupMasterRequest> = 
     message.lmApiPath = object.lmApiPath ?? "";
     message.lmCodeField = object.lmCodeField ?? "";
     message.lmLabelField = object.lmLabelField ?? "";
+    message.lmTableName = object.lmTableName ?? undefined;
     return message;
   },
 };
@@ -15211,6 +15347,1061 @@ export const DeleteLookupMasterColumnResponse: MessageFns<DeleteLookupMasterColu
     message.base = (object.base !== undefined && object.base !== null)
       ? BaseResponse.fromPartial(object.base)
       : undefined;
+    return message;
+  },
+};
+
+function createBaseUpdateLookupMasterRequest(): UpdateLookupMasterRequest {
+  return { lmCode: "", lmDisplayName: undefined, lmTableName: undefined, lmIsActive: undefined };
+}
+
+export const UpdateLookupMasterRequest: MessageFns<UpdateLookupMasterRequest> = {
+  encode(message: UpdateLookupMasterRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.lmCode !== "") {
+      writer.uint32(10).string(message.lmCode);
+    }
+    if (message.lmDisplayName !== undefined) {
+      writer.uint32(18).string(message.lmDisplayName);
+    }
+    if (message.lmTableName !== undefined) {
+      writer.uint32(26).string(message.lmTableName);
+    }
+    if (message.lmIsActive !== undefined) {
+      writer.uint32(32).bool(message.lmIsActive);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): UpdateLookupMasterRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUpdateLookupMasterRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.lmCode = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.lmDisplayName = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.lmTableName = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.lmIsActive = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UpdateLookupMasterRequest {
+    return {
+      lmCode: isSet(object.lmCode)
+        ? globalThis.String(object.lmCode)
+        : isSet(object.lm_code)
+        ? globalThis.String(object.lm_code)
+        : "",
+      lmDisplayName: isSet(object.lmDisplayName)
+        ? globalThis.String(object.lmDisplayName)
+        : isSet(object.lm_display_name)
+        ? globalThis.String(object.lm_display_name)
+        : undefined,
+      lmTableName: isSet(object.lmTableName)
+        ? globalThis.String(object.lmTableName)
+        : isSet(object.lm_table_name)
+        ? globalThis.String(object.lm_table_name)
+        : undefined,
+      lmIsActive: isSet(object.lmIsActive)
+        ? globalThis.Boolean(object.lmIsActive)
+        : isSet(object.lm_is_active)
+        ? globalThis.Boolean(object.lm_is_active)
+        : undefined,
+    };
+  },
+
+  toJSON(message: UpdateLookupMasterRequest): unknown {
+    const obj: any = {};
+    if (message.lmCode !== "") {
+      obj.lmCode = message.lmCode;
+    }
+    if (message.lmDisplayName !== undefined) {
+      obj.lmDisplayName = message.lmDisplayName;
+    }
+    if (message.lmTableName !== undefined) {
+      obj.lmTableName = message.lmTableName;
+    }
+    if (message.lmIsActive !== undefined) {
+      obj.lmIsActive = message.lmIsActive;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<UpdateLookupMasterRequest>): UpdateLookupMasterRequest {
+    return UpdateLookupMasterRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<UpdateLookupMasterRequest>): UpdateLookupMasterRequest {
+    const message = createBaseUpdateLookupMasterRequest();
+    message.lmCode = object.lmCode ?? "";
+    message.lmDisplayName = object.lmDisplayName ?? undefined;
+    message.lmTableName = object.lmTableName ?? undefined;
+    message.lmIsActive = object.lmIsActive ?? undefined;
+    return message;
+  },
+};
+
+function createBaseUpdateLookupMasterResponse(): UpdateLookupMasterResponse {
+  return { base: undefined, data: undefined };
+}
+
+export const UpdateLookupMasterResponse: MessageFns<UpdateLookupMasterResponse> = {
+  encode(message: UpdateLookupMasterResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    if (message.data !== undefined) {
+      LookupMaster.encode(message.data, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): UpdateLookupMasterResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUpdateLookupMasterResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.data = LookupMaster.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UpdateLookupMasterResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      data: isSet(object.data) ? LookupMaster.fromJSON(object.data) : undefined,
+    };
+  },
+
+  toJSON(message: UpdateLookupMasterResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.data !== undefined) {
+      obj.data = LookupMaster.toJSON(message.data);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<UpdateLookupMasterResponse>): UpdateLookupMasterResponse {
+    return UpdateLookupMasterResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<UpdateLookupMasterResponse>): UpdateLookupMasterResponse {
+    const message = createBaseUpdateLookupMasterResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.data = (object.data !== undefined && object.data !== null)
+      ? LookupMaster.fromPartial(object.data)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseTableColumn(): TableColumn {
+  return { columnName: "", dataType: "", rawType: "", ordinalPosition: 0 };
+}
+
+export const TableColumn: MessageFns<TableColumn> = {
+  encode(message: TableColumn, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.columnName !== "") {
+      writer.uint32(10).string(message.columnName);
+    }
+    if (message.dataType !== "") {
+      writer.uint32(18).string(message.dataType);
+    }
+    if (message.rawType !== "") {
+      writer.uint32(26).string(message.rawType);
+    }
+    if (message.ordinalPosition !== 0) {
+      writer.uint32(32).int32(message.ordinalPosition);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): TableColumn {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseTableColumn();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.columnName = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.dataType = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.rawType = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.ordinalPosition = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): TableColumn {
+    return {
+      columnName: isSet(object.columnName)
+        ? globalThis.String(object.columnName)
+        : isSet(object.column_name)
+        ? globalThis.String(object.column_name)
+        : "",
+      dataType: isSet(object.dataType)
+        ? globalThis.String(object.dataType)
+        : isSet(object.data_type)
+        ? globalThis.String(object.data_type)
+        : "",
+      rawType: isSet(object.rawType)
+        ? globalThis.String(object.rawType)
+        : isSet(object.raw_type)
+        ? globalThis.String(object.raw_type)
+        : "",
+      ordinalPosition: isSet(object.ordinalPosition)
+        ? globalThis.Number(object.ordinalPosition)
+        : isSet(object.ordinal_position)
+        ? globalThis.Number(object.ordinal_position)
+        : 0,
+    };
+  },
+
+  toJSON(message: TableColumn): unknown {
+    const obj: any = {};
+    if (message.columnName !== "") {
+      obj.columnName = message.columnName;
+    }
+    if (message.dataType !== "") {
+      obj.dataType = message.dataType;
+    }
+    if (message.rawType !== "") {
+      obj.rawType = message.rawType;
+    }
+    if (message.ordinalPosition !== 0) {
+      obj.ordinalPosition = Math.round(message.ordinalPosition);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<TableColumn>): TableColumn {
+    return TableColumn.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<TableColumn>): TableColumn {
+    const message = createBaseTableColumn();
+    message.columnName = object.columnName ?? "";
+    message.dataType = object.dataType ?? "";
+    message.rawType = object.rawType ?? "";
+    message.ordinalPosition = object.ordinalPosition ?? 0;
+    return message;
+  },
+};
+
+function createBaseListTableColumnsRequest(): ListTableColumnsRequest {
+  return { tableName: "" };
+}
+
+export const ListTableColumnsRequest: MessageFns<ListTableColumnsRequest> = {
+  encode(message: ListTableColumnsRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.tableName !== "") {
+      writer.uint32(10).string(message.tableName);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ListTableColumnsRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListTableColumnsRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.tableName = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListTableColumnsRequest {
+    return {
+      tableName: isSet(object.tableName)
+        ? globalThis.String(object.tableName)
+        : isSet(object.table_name)
+        ? globalThis.String(object.table_name)
+        : "",
+    };
+  },
+
+  toJSON(message: ListTableColumnsRequest): unknown {
+    const obj: any = {};
+    if (message.tableName !== "") {
+      obj.tableName = message.tableName;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListTableColumnsRequest>): ListTableColumnsRequest {
+    return ListTableColumnsRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ListTableColumnsRequest>): ListTableColumnsRequest {
+    const message = createBaseListTableColumnsRequest();
+    message.tableName = object.tableName ?? "";
+    return message;
+  },
+};
+
+function createBaseListTableColumnsResponse(): ListTableColumnsResponse {
+  return { base: undefined, data: [] };
+}
+
+export const ListTableColumnsResponse: MessageFns<ListTableColumnsResponse> = {
+  encode(message: ListTableColumnsResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    for (const v of message.data) {
+      TableColumn.encode(v!, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ListTableColumnsResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListTableColumnsResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.data.push(TableColumn.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListTableColumnsResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      data: globalThis.Array.isArray(object?.data) ? object.data.map((e: any) => TableColumn.fromJSON(e)) : [],
+    };
+  },
+
+  toJSON(message: ListTableColumnsResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.data?.length) {
+      obj.data = message.data.map((e) => TableColumn.toJSON(e));
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListTableColumnsResponse>): ListTableColumnsResponse {
+    return ListTableColumnsResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ListTableColumnsResponse>): ListTableColumnsResponse {
+    const message = createBaseListTableColumnsResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.data = object.data?.map((e) => TableColumn.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseMasterOption(): MasterOption {
+  return { value: "", label: "" };
+}
+
+export const MasterOption: MessageFns<MasterOption> = {
+  encode(message: MasterOption, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.value !== "") {
+      writer.uint32(10).string(message.value);
+    }
+    if (message.label !== "") {
+      writer.uint32(18).string(message.label);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): MasterOption {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMasterOption();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.value = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.label = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): MasterOption {
+    return {
+      value: isSet(object.value) ? globalThis.String(object.value) : "",
+      label: isSet(object.label) ? globalThis.String(object.label) : "",
+    };
+  },
+
+  toJSON(message: MasterOption): unknown {
+    const obj: any = {};
+    if (message.value !== "") {
+      obj.value = message.value;
+    }
+    if (message.label !== "") {
+      obj.label = message.label;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<MasterOption>): MasterOption {
+    return MasterOption.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<MasterOption>): MasterOption {
+    const message = createBaseMasterOption();
+    message.value = object.value ?? "";
+    message.label = object.label ?? "";
+    return message;
+  },
+};
+
+function createBaseListMasterOptionsRequest(): ListMasterOptionsRequest {
+  return { masterCode: "" };
+}
+
+export const ListMasterOptionsRequest: MessageFns<ListMasterOptionsRequest> = {
+  encode(message: ListMasterOptionsRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.masterCode !== "") {
+      writer.uint32(10).string(message.masterCode);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ListMasterOptionsRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListMasterOptionsRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.masterCode = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListMasterOptionsRequest {
+    return {
+      masterCode: isSet(object.masterCode)
+        ? globalThis.String(object.masterCode)
+        : isSet(object.master_code)
+        ? globalThis.String(object.master_code)
+        : "",
+    };
+  },
+
+  toJSON(message: ListMasterOptionsRequest): unknown {
+    const obj: any = {};
+    if (message.masterCode !== "") {
+      obj.masterCode = message.masterCode;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListMasterOptionsRequest>): ListMasterOptionsRequest {
+    return ListMasterOptionsRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ListMasterOptionsRequest>): ListMasterOptionsRequest {
+    const message = createBaseListMasterOptionsRequest();
+    message.masterCode = object.masterCode ?? "";
+    return message;
+  },
+};
+
+function createBaseListMasterOptionsResponse(): ListMasterOptionsResponse {
+  return { base: undefined, data: [] };
+}
+
+export const ListMasterOptionsResponse: MessageFns<ListMasterOptionsResponse> = {
+  encode(message: ListMasterOptionsResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    for (const v of message.data) {
+      MasterOption.encode(v!, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ListMasterOptionsResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListMasterOptionsResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.data.push(MasterOption.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListMasterOptionsResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      data: globalThis.Array.isArray(object?.data) ? object.data.map((e: any) => MasterOption.fromJSON(e)) : [],
+    };
+  },
+
+  toJSON(message: ListMasterOptionsResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.data?.length) {
+      obj.data = message.data.map((e) => MasterOption.toJSON(e));
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListMasterOptionsResponse>): ListMasterOptionsResponse {
+    return ListMasterOptionsResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ListMasterOptionsResponse>): ListMasterOptionsResponse {
+    const message = createBaseListMasterOptionsResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.data = object.data?.map((e) => MasterOption.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseExportLookupMastersRequest(): ExportLookupMastersRequest {
+  return {};
+}
+
+export const ExportLookupMastersRequest: MessageFns<ExportLookupMastersRequest> = {
+  encode(_: ExportLookupMastersRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ExportLookupMastersRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseExportLookupMastersRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): ExportLookupMastersRequest {
+    return {};
+  },
+
+  toJSON(_: ExportLookupMastersRequest): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create(base?: DeepPartial<ExportLookupMastersRequest>): ExportLookupMastersRequest {
+    return ExportLookupMastersRequest.fromPartial(base ?? {});
+  },
+  fromPartial(_: DeepPartial<ExportLookupMastersRequest>): ExportLookupMastersRequest {
+    const message = createBaseExportLookupMastersRequest();
+    return message;
+  },
+};
+
+function createBaseExportLookupMastersResponse(): ExportLookupMastersResponse {
+  return { base: undefined, fileContent: new Uint8Array(0), fileName: "" };
+}
+
+export const ExportLookupMastersResponse: MessageFns<ExportLookupMastersResponse> = {
+  encode(message: ExportLookupMastersResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    if (message.fileContent.length !== 0) {
+      writer.uint32(18).bytes(message.fileContent);
+    }
+    if (message.fileName !== "") {
+      writer.uint32(26).string(message.fileName);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ExportLookupMastersResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseExportLookupMastersResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.fileContent = reader.bytes();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.fileName = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ExportLookupMastersResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      fileContent: isSet(object.fileContent)
+        ? bytesFromBase64(object.fileContent)
+        : isSet(object.file_content)
+        ? bytesFromBase64(object.file_content)
+        : new Uint8Array(0),
+      fileName: isSet(object.fileName)
+        ? globalThis.String(object.fileName)
+        : isSet(object.file_name)
+        ? globalThis.String(object.file_name)
+        : "",
+    };
+  },
+
+  toJSON(message: ExportLookupMastersResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.fileContent.length !== 0) {
+      obj.fileContent = base64FromBytes(message.fileContent);
+    }
+    if (message.fileName !== "") {
+      obj.fileName = message.fileName;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ExportLookupMastersResponse>): ExportLookupMastersResponse {
+    return ExportLookupMastersResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ExportLookupMastersResponse>): ExportLookupMastersResponse {
+    const message = createBaseExportLookupMastersResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.fileContent = object.fileContent ?? new Uint8Array(0);
+    message.fileName = object.fileName ?? "";
+    return message;
+  },
+};
+
+function createBaseImportLookupMastersRequest(): ImportLookupMastersRequest {
+  return { fileContent: new Uint8Array(0), fileName: "" };
+}
+
+export const ImportLookupMastersRequest: MessageFns<ImportLookupMastersRequest> = {
+  encode(message: ImportLookupMastersRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.fileContent.length !== 0) {
+      writer.uint32(10).bytes(message.fileContent);
+    }
+    if (message.fileName !== "") {
+      writer.uint32(18).string(message.fileName);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ImportLookupMastersRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseImportLookupMastersRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.fileContent = reader.bytes();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.fileName = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ImportLookupMastersRequest {
+    return {
+      fileContent: isSet(object.fileContent)
+        ? bytesFromBase64(object.fileContent)
+        : isSet(object.file_content)
+        ? bytesFromBase64(object.file_content)
+        : new Uint8Array(0),
+      fileName: isSet(object.fileName)
+        ? globalThis.String(object.fileName)
+        : isSet(object.file_name)
+        ? globalThis.String(object.file_name)
+        : "",
+    };
+  },
+
+  toJSON(message: ImportLookupMastersRequest): unknown {
+    const obj: any = {};
+    if (message.fileContent.length !== 0) {
+      obj.fileContent = base64FromBytes(message.fileContent);
+    }
+    if (message.fileName !== "") {
+      obj.fileName = message.fileName;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ImportLookupMastersRequest>): ImportLookupMastersRequest {
+    return ImportLookupMastersRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ImportLookupMastersRequest>): ImportLookupMastersRequest {
+    const message = createBaseImportLookupMastersRequest();
+    message.fileContent = object.fileContent ?? new Uint8Array(0);
+    message.fileName = object.fileName ?? "";
+    return message;
+  },
+};
+
+function createBaseImportLookupMastersResponse(): ImportLookupMastersResponse {
+  return { base: undefined, successCount: 0, skippedCount: 0, failedCount: 0, errors: [] };
+}
+
+export const ImportLookupMastersResponse: MessageFns<ImportLookupMastersResponse> = {
+  encode(message: ImportLookupMastersResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    if (message.successCount !== 0) {
+      writer.uint32(16).int32(message.successCount);
+    }
+    if (message.skippedCount !== 0) {
+      writer.uint32(24).int32(message.skippedCount);
+    }
+    if (message.failedCount !== 0) {
+      writer.uint32(32).int32(message.failedCount);
+    }
+    for (const v of message.errors) {
+      writer.uint32(42).string(v!);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ImportLookupMastersResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseImportLookupMastersResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.successCount = reader.int32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.skippedCount = reader.int32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.failedCount = reader.int32();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.errors.push(reader.string());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ImportLookupMastersResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      successCount: isSet(object.successCount)
+        ? globalThis.Number(object.successCount)
+        : isSet(object.success_count)
+        ? globalThis.Number(object.success_count)
+        : 0,
+      skippedCount: isSet(object.skippedCount)
+        ? globalThis.Number(object.skippedCount)
+        : isSet(object.skipped_count)
+        ? globalThis.Number(object.skipped_count)
+        : 0,
+      failedCount: isSet(object.failedCount)
+        ? globalThis.Number(object.failedCount)
+        : isSet(object.failed_count)
+        ? globalThis.Number(object.failed_count)
+        : 0,
+      errors: globalThis.Array.isArray(object?.errors) ? object.errors.map((e: any) => globalThis.String(e)) : [],
+    };
+  },
+
+  toJSON(message: ImportLookupMastersResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.successCount !== 0) {
+      obj.successCount = Math.round(message.successCount);
+    }
+    if (message.skippedCount !== 0) {
+      obj.skippedCount = Math.round(message.skippedCount);
+    }
+    if (message.failedCount !== 0) {
+      obj.failedCount = Math.round(message.failedCount);
+    }
+    if (message.errors?.length) {
+      obj.errors = message.errors;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ImportLookupMastersResponse>): ImportLookupMastersResponse {
+    return ImportLookupMastersResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ImportLookupMastersResponse>): ImportLookupMastersResponse {
+    const message = createBaseImportLookupMastersResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.successCount = object.successCount ?? 0;
+    message.skippedCount = object.skippedCount ?? 0;
+    message.failedCount = object.failedCount ?? 0;
+    message.errors = object.errors?.map((e) => e) || [];
     return message;
   },
 };
@@ -18465,6 +19656,301 @@ export const LookupMasterServiceDefinition = {
               105,
               100,
               125,
+            ]),
+          ],
+        },
+      },
+    },
+    /** UpdateLookupMaster updates display_name, table_name, and/or is_active of an existing master. */
+    updateLookupMaster: {
+      name: "UpdateLookupMaster",
+      requestType: UpdateLookupMasterRequest,
+      requestStream: false,
+      responseType: UpdateLookupMasterResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              45,
+              58,
+              1,
+              42,
+              26,
+              40,
+              47,
+              97,
+              112,
+              105,
+              47,
+              118,
+              49,
+              47,
+              102,
+              105,
+              110,
+              97,
+              110,
+              99,
+              101,
+              47,
+              108,
+              111,
+              111,
+              107,
+              117,
+              112,
+              45,
+              109,
+              97,
+              115,
+              116,
+              101,
+              114,
+              115,
+              47,
+              123,
+              108,
+              109,
+              95,
+              99,
+              111,
+              100,
+              101,
+              125,
+            ]),
+          ],
+        },
+      },
+    },
+    /** ListTableColumns introspects a registered PostgreSQL table's columns via information_schema. */
+    listTableColumns: {
+      name: "ListTableColumns",
+      requestType: ListTableColumnsRequest,
+      requestStream: false,
+      responseType: ListTableColumnsResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              45,
+              18,
+              43,
+              47,
+              97,
+              112,
+              105,
+              47,
+              118,
+              49,
+              47,
+              102,
+              105,
+              110,
+              97,
+              110,
+              99,
+              101,
+              47,
+              108,
+              111,
+              111,
+              107,
+              117,
+              112,
+              45,
+              109,
+              97,
+              115,
+              116,
+              101,
+              114,
+              45,
+              116,
+              97,
+              98,
+              108,
+              101,
+              45,
+              99,
+              111,
+              108,
+              117,
+              109,
+              110,
+              115,
+            ]),
+          ],
+        },
+      },
+    },
+    /** ListMasterOptions returns combobox options (value+label) by querying the registered table. */
+    listMasterOptions: {
+      name: "ListMasterOptions",
+      requestType: ListMasterOptionsRequest,
+      requestStream: false,
+      responseType: ListMasterOptionsResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              39,
+              18,
+              37,
+              47,
+              97,
+              112,
+              105,
+              47,
+              118,
+              49,
+              47,
+              102,
+              105,
+              110,
+              97,
+              110,
+              99,
+              101,
+              47,
+              108,
+              111,
+              111,
+              107,
+              117,
+              112,
+              45,
+              109,
+              97,
+              115,
+              116,
+              101,
+              114,
+              45,
+              111,
+              112,
+              116,
+              105,
+              111,
+              110,
+              115,
+            ]),
+          ],
+        },
+      },
+    },
+    /** ExportLookupMasters exports all masters and columns to an Excel workbook. */
+    exportLookupMasters: {
+      name: "ExportLookupMasters",
+      requestType: ExportLookupMastersRequest,
+      requestStream: false,
+      responseType: ExportLookupMastersResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              39,
+              18,
+              37,
+              47,
+              97,
+              112,
+              105,
+              47,
+              118,
+              49,
+              47,
+              102,
+              105,
+              110,
+              97,
+              110,
+              99,
+              101,
+              47,
+              108,
+              111,
+              111,
+              107,
+              117,
+              112,
+              45,
+              109,
+              97,
+              115,
+              116,
+              101,
+              114,
+              115,
+              47,
+              101,
+              120,
+              112,
+              111,
+              114,
+              116,
+            ]),
+          ],
+        },
+      },
+    },
+    /** ImportLookupMasters imports masters and columns from an Excel workbook. */
+    importLookupMasters: {
+      name: "ImportLookupMasters",
+      requestType: ImportLookupMastersRequest,
+      requestStream: false,
+      responseType: ImportLookupMastersResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              42,
+              58,
+              1,
+              42,
+              34,
+              37,
+              47,
+              97,
+              112,
+              105,
+              47,
+              118,
+              49,
+              47,
+              102,
+              105,
+              110,
+              97,
+              110,
+              99,
+              101,
+              47,
+              108,
+              111,
+              111,
+              107,
+              117,
+              112,
+              45,
+              109,
+              97,
+              115,
+              116,
+              101,
+              114,
+              115,
+              47,
+              105,
+              109,
+              112,
+              111,
+              114,
+              116,
             ]),
           ],
         },
