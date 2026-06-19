@@ -281,8 +281,10 @@ export function ParameterFormDialog({
     queryFn: async () => {
       const res = await fetch(`/api/v1/finance/parameters?paramCategory=${ParamCategory.PARAM_CATEGORY_MASTER_LOOKUP}&pageSize=100`)
       if (!res.ok) return []
-      const json = await res.json() as { data?: { items?: Array<{ paramCode: string; paramName: string; lookupMasterCode: string }> } }
-      return json.data?.items ?? []
+      // ListParametersResponse.data is repeated Parameter (direct array, not nested items)
+      const json = await res.json() as { data?: Array<{ paramCode: string; paramName: string; lookupMasterCode: string }> | { items?: Array<{ paramCode: string; paramName: string; lookupMasterCode: string }> } }
+      const data = json.data
+      return Array.isArray(data) ? data : (data?.items ?? [])
     },
     staleTime: 60_000,
     enabled: watchedCategory !== ParamCategory.PARAM_CATEGORY_MASTER_LOOKUP,
@@ -290,7 +292,7 @@ export function ParameterFormDialog({
 
   // Derive master code from selected trigger param for cascading source-column dropdown
   const masterCodeForColumns = useMemo(() => {
-    if (!watchedFillGroup || !triggerParams) return ""
+    if (!watchedFillGroup || watchedFillGroup === "__none__" || !triggerParams) return ""
     const trigger = triggerParams.find((p) => p.paramCode === watchedFillGroup)
     return trigger?.lookupMasterCode ?? ""
   }, [watchedFillGroup, triggerParams])
@@ -700,7 +702,7 @@ export function ParameterFormDialog({
                 )}
 
                 {/* Source Column — cascades from fill group selection */}
-                {watchedFillGroup && (
+                {watchedFillGroup && watchedFillGroup !== "__none__" && (
                   <FormField
                     control={form.control}
                     name="lookupSourceColumn"

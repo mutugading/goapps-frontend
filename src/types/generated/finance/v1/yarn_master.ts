@@ -1509,6 +1509,8 @@ export interface LookupMasterColumn {
   lmcDisplayName: string;
   lmcDataType: string;
   lmcSortOrder: number;
+  /** UUID primary key — needed for delete. */
+  lmcId: string;
 }
 
 /** ListLookupMasterColumnsRequest is the request for listing columns of a lookup master. */
@@ -1520,6 +1522,56 @@ export interface ListLookupMasterColumnsRequest {
 export interface ListLookupMasterColumnsResponse {
   base: BaseResponse | undefined;
   data: LookupMasterColumn[];
+}
+
+/** CreateLookupMasterRequest is the request for adding a new master to the registry. */
+export interface CreateLookupMasterRequest {
+  lmCode: string;
+  lmDisplayName: string;
+  lmApiPath: string;
+  lmCodeField: string;
+  lmLabelField: string;
+}
+
+/** CreateLookupMasterResponse is the response for adding a new master. */
+export interface CreateLookupMasterResponse {
+  base: BaseResponse | undefined;
+  data: LookupMaster | undefined;
+}
+
+/** DeleteLookupMasterRequest is the request for removing a master from the registry. */
+export interface DeleteLookupMasterRequest {
+  lmCode: string;
+}
+
+/** DeleteLookupMasterResponse is the response for removing a master. */
+export interface DeleteLookupMasterResponse {
+  base: BaseResponse | undefined;
+}
+
+/** CreateLookupMasterColumnRequest is the request for adding a fillable column to a master. */
+export interface CreateLookupMasterColumnRequest {
+  lmcMasterCode: string;
+  lmcColumnName: string;
+  lmcDisplayName: string;
+  lmcDataType: string;
+  lmcSortOrder: number;
+}
+
+/** CreateLookupMasterColumnResponse is the response for adding a column. */
+export interface CreateLookupMasterColumnResponse {
+  base: BaseResponse | undefined;
+  data: LookupMasterColumn | undefined;
+}
+
+/** DeleteLookupMasterColumnRequest is the request for removing a column from a master. */
+export interface DeleteLookupMasterColumnRequest {
+  lmcId: string;
+}
+
+/** DeleteLookupMasterColumnResponse is the response for removing a column. */
+export interface DeleteLookupMasterColumnResponse {
+  base: BaseResponse | undefined;
 }
 
 function createBaseMachine(): Machine {
@@ -14162,7 +14214,7 @@ export const ListLookupMastersResponse: MessageFns<ListLookupMastersResponse> = 
 };
 
 function createBaseLookupMasterColumn(): LookupMasterColumn {
-  return { lmcMasterCode: "", lmcColumnName: "", lmcDisplayName: "", lmcDataType: "", lmcSortOrder: 0 };
+  return { lmcMasterCode: "", lmcColumnName: "", lmcDisplayName: "", lmcDataType: "", lmcSortOrder: 0, lmcId: "" };
 }
 
 export const LookupMasterColumn: MessageFns<LookupMasterColumn> = {
@@ -14181,6 +14233,9 @@ export const LookupMasterColumn: MessageFns<LookupMasterColumn> = {
     }
     if (message.lmcSortOrder !== 0) {
       writer.uint32(40).int32(message.lmcSortOrder);
+    }
+    if (message.lmcId !== "") {
+      writer.uint32(50).string(message.lmcId);
     }
     return writer;
   },
@@ -14232,6 +14287,14 @@ export const LookupMasterColumn: MessageFns<LookupMasterColumn> = {
           message.lmcSortOrder = reader.int32();
           continue;
         }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.lmcId = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -14268,6 +14331,11 @@ export const LookupMasterColumn: MessageFns<LookupMasterColumn> = {
         : isSet(object.lmc_sort_order)
         ? globalThis.Number(object.lmc_sort_order)
         : 0,
+      lmcId: isSet(object.lmcId)
+        ? globalThis.String(object.lmcId)
+        : isSet(object.lmc_id)
+        ? globalThis.String(object.lmc_id)
+        : "",
     };
   },
 
@@ -14288,6 +14356,9 @@ export const LookupMasterColumn: MessageFns<LookupMasterColumn> = {
     if (message.lmcSortOrder !== 0) {
       obj.lmcSortOrder = Math.round(message.lmcSortOrder);
     }
+    if (message.lmcId !== "") {
+      obj.lmcId = message.lmcId;
+    }
     return obj;
   },
 
@@ -14301,6 +14372,7 @@ export const LookupMasterColumn: MessageFns<LookupMasterColumn> = {
     message.lmcDisplayName = object.lmcDisplayName ?? "";
     message.lmcDataType = object.lmcDataType ?? "";
     message.lmcSortOrder = object.lmcSortOrder ?? 0;
+    message.lmcId = object.lmcId ?? "";
     return message;
   },
 };
@@ -14443,6 +14515,702 @@ export const ListLookupMasterColumnsResponse: MessageFns<ListLookupMasterColumns
       ? BaseResponse.fromPartial(object.base)
       : undefined;
     message.data = object.data?.map((e) => LookupMasterColumn.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseCreateLookupMasterRequest(): CreateLookupMasterRequest {
+  return { lmCode: "", lmDisplayName: "", lmApiPath: "", lmCodeField: "", lmLabelField: "" };
+}
+
+export const CreateLookupMasterRequest: MessageFns<CreateLookupMasterRequest> = {
+  encode(message: CreateLookupMasterRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.lmCode !== "") {
+      writer.uint32(10).string(message.lmCode);
+    }
+    if (message.lmDisplayName !== "") {
+      writer.uint32(18).string(message.lmDisplayName);
+    }
+    if (message.lmApiPath !== "") {
+      writer.uint32(26).string(message.lmApiPath);
+    }
+    if (message.lmCodeField !== "") {
+      writer.uint32(34).string(message.lmCodeField);
+    }
+    if (message.lmLabelField !== "") {
+      writer.uint32(42).string(message.lmLabelField);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CreateLookupMasterRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCreateLookupMasterRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.lmCode = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.lmDisplayName = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.lmApiPath = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.lmCodeField = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.lmLabelField = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CreateLookupMasterRequest {
+    return {
+      lmCode: isSet(object.lmCode)
+        ? globalThis.String(object.lmCode)
+        : isSet(object.lm_code)
+        ? globalThis.String(object.lm_code)
+        : "",
+      lmDisplayName: isSet(object.lmDisplayName)
+        ? globalThis.String(object.lmDisplayName)
+        : isSet(object.lm_display_name)
+        ? globalThis.String(object.lm_display_name)
+        : "",
+      lmApiPath: isSet(object.lmApiPath)
+        ? globalThis.String(object.lmApiPath)
+        : isSet(object.lm_api_path)
+        ? globalThis.String(object.lm_api_path)
+        : "",
+      lmCodeField: isSet(object.lmCodeField)
+        ? globalThis.String(object.lmCodeField)
+        : isSet(object.lm_code_field)
+        ? globalThis.String(object.lm_code_field)
+        : "",
+      lmLabelField: isSet(object.lmLabelField)
+        ? globalThis.String(object.lmLabelField)
+        : isSet(object.lm_label_field)
+        ? globalThis.String(object.lm_label_field)
+        : "",
+    };
+  },
+
+  toJSON(message: CreateLookupMasterRequest): unknown {
+    const obj: any = {};
+    if (message.lmCode !== "") {
+      obj.lmCode = message.lmCode;
+    }
+    if (message.lmDisplayName !== "") {
+      obj.lmDisplayName = message.lmDisplayName;
+    }
+    if (message.lmApiPath !== "") {
+      obj.lmApiPath = message.lmApiPath;
+    }
+    if (message.lmCodeField !== "") {
+      obj.lmCodeField = message.lmCodeField;
+    }
+    if (message.lmLabelField !== "") {
+      obj.lmLabelField = message.lmLabelField;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<CreateLookupMasterRequest>): CreateLookupMasterRequest {
+    return CreateLookupMasterRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<CreateLookupMasterRequest>): CreateLookupMasterRequest {
+    const message = createBaseCreateLookupMasterRequest();
+    message.lmCode = object.lmCode ?? "";
+    message.lmDisplayName = object.lmDisplayName ?? "";
+    message.lmApiPath = object.lmApiPath ?? "";
+    message.lmCodeField = object.lmCodeField ?? "";
+    message.lmLabelField = object.lmLabelField ?? "";
+    return message;
+  },
+};
+
+function createBaseCreateLookupMasterResponse(): CreateLookupMasterResponse {
+  return { base: undefined, data: undefined };
+}
+
+export const CreateLookupMasterResponse: MessageFns<CreateLookupMasterResponse> = {
+  encode(message: CreateLookupMasterResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    if (message.data !== undefined) {
+      LookupMaster.encode(message.data, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CreateLookupMasterResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCreateLookupMasterResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.data = LookupMaster.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CreateLookupMasterResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      data: isSet(object.data) ? LookupMaster.fromJSON(object.data) : undefined,
+    };
+  },
+
+  toJSON(message: CreateLookupMasterResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.data !== undefined) {
+      obj.data = LookupMaster.toJSON(message.data);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<CreateLookupMasterResponse>): CreateLookupMasterResponse {
+    return CreateLookupMasterResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<CreateLookupMasterResponse>): CreateLookupMasterResponse {
+    const message = createBaseCreateLookupMasterResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.data = (object.data !== undefined && object.data !== null)
+      ? LookupMaster.fromPartial(object.data)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseDeleteLookupMasterRequest(): DeleteLookupMasterRequest {
+  return { lmCode: "" };
+}
+
+export const DeleteLookupMasterRequest: MessageFns<DeleteLookupMasterRequest> = {
+  encode(message: DeleteLookupMasterRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.lmCode !== "") {
+      writer.uint32(10).string(message.lmCode);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): DeleteLookupMasterRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDeleteLookupMasterRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.lmCode = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DeleteLookupMasterRequest {
+    return {
+      lmCode: isSet(object.lmCode)
+        ? globalThis.String(object.lmCode)
+        : isSet(object.lm_code)
+        ? globalThis.String(object.lm_code)
+        : "",
+    };
+  },
+
+  toJSON(message: DeleteLookupMasterRequest): unknown {
+    const obj: any = {};
+    if (message.lmCode !== "") {
+      obj.lmCode = message.lmCode;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<DeleteLookupMasterRequest>): DeleteLookupMasterRequest {
+    return DeleteLookupMasterRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<DeleteLookupMasterRequest>): DeleteLookupMasterRequest {
+    const message = createBaseDeleteLookupMasterRequest();
+    message.lmCode = object.lmCode ?? "";
+    return message;
+  },
+};
+
+function createBaseDeleteLookupMasterResponse(): DeleteLookupMasterResponse {
+  return { base: undefined };
+}
+
+export const DeleteLookupMasterResponse: MessageFns<DeleteLookupMasterResponse> = {
+  encode(message: DeleteLookupMasterResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): DeleteLookupMasterResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDeleteLookupMasterResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DeleteLookupMasterResponse {
+    return { base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined };
+  },
+
+  toJSON(message: DeleteLookupMasterResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<DeleteLookupMasterResponse>): DeleteLookupMasterResponse {
+    return DeleteLookupMasterResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<DeleteLookupMasterResponse>): DeleteLookupMasterResponse {
+    const message = createBaseDeleteLookupMasterResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseCreateLookupMasterColumnRequest(): CreateLookupMasterColumnRequest {
+  return { lmcMasterCode: "", lmcColumnName: "", lmcDisplayName: "", lmcDataType: "", lmcSortOrder: 0 };
+}
+
+export const CreateLookupMasterColumnRequest: MessageFns<CreateLookupMasterColumnRequest> = {
+  encode(message: CreateLookupMasterColumnRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.lmcMasterCode !== "") {
+      writer.uint32(10).string(message.lmcMasterCode);
+    }
+    if (message.lmcColumnName !== "") {
+      writer.uint32(18).string(message.lmcColumnName);
+    }
+    if (message.lmcDisplayName !== "") {
+      writer.uint32(26).string(message.lmcDisplayName);
+    }
+    if (message.lmcDataType !== "") {
+      writer.uint32(34).string(message.lmcDataType);
+    }
+    if (message.lmcSortOrder !== 0) {
+      writer.uint32(40).int32(message.lmcSortOrder);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CreateLookupMasterColumnRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCreateLookupMasterColumnRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.lmcMasterCode = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.lmcColumnName = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.lmcDisplayName = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.lmcDataType = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.lmcSortOrder = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CreateLookupMasterColumnRequest {
+    return {
+      lmcMasterCode: isSet(object.lmcMasterCode)
+        ? globalThis.String(object.lmcMasterCode)
+        : isSet(object.lmc_master_code)
+        ? globalThis.String(object.lmc_master_code)
+        : "",
+      lmcColumnName: isSet(object.lmcColumnName)
+        ? globalThis.String(object.lmcColumnName)
+        : isSet(object.lmc_column_name)
+        ? globalThis.String(object.lmc_column_name)
+        : "",
+      lmcDisplayName: isSet(object.lmcDisplayName)
+        ? globalThis.String(object.lmcDisplayName)
+        : isSet(object.lmc_display_name)
+        ? globalThis.String(object.lmc_display_name)
+        : "",
+      lmcDataType: isSet(object.lmcDataType)
+        ? globalThis.String(object.lmcDataType)
+        : isSet(object.lmc_data_type)
+        ? globalThis.String(object.lmc_data_type)
+        : "",
+      lmcSortOrder: isSet(object.lmcSortOrder)
+        ? globalThis.Number(object.lmcSortOrder)
+        : isSet(object.lmc_sort_order)
+        ? globalThis.Number(object.lmc_sort_order)
+        : 0,
+    };
+  },
+
+  toJSON(message: CreateLookupMasterColumnRequest): unknown {
+    const obj: any = {};
+    if (message.lmcMasterCode !== "") {
+      obj.lmcMasterCode = message.lmcMasterCode;
+    }
+    if (message.lmcColumnName !== "") {
+      obj.lmcColumnName = message.lmcColumnName;
+    }
+    if (message.lmcDisplayName !== "") {
+      obj.lmcDisplayName = message.lmcDisplayName;
+    }
+    if (message.lmcDataType !== "") {
+      obj.lmcDataType = message.lmcDataType;
+    }
+    if (message.lmcSortOrder !== 0) {
+      obj.lmcSortOrder = Math.round(message.lmcSortOrder);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<CreateLookupMasterColumnRequest>): CreateLookupMasterColumnRequest {
+    return CreateLookupMasterColumnRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<CreateLookupMasterColumnRequest>): CreateLookupMasterColumnRequest {
+    const message = createBaseCreateLookupMasterColumnRequest();
+    message.lmcMasterCode = object.lmcMasterCode ?? "";
+    message.lmcColumnName = object.lmcColumnName ?? "";
+    message.lmcDisplayName = object.lmcDisplayName ?? "";
+    message.lmcDataType = object.lmcDataType ?? "";
+    message.lmcSortOrder = object.lmcSortOrder ?? 0;
+    return message;
+  },
+};
+
+function createBaseCreateLookupMasterColumnResponse(): CreateLookupMasterColumnResponse {
+  return { base: undefined, data: undefined };
+}
+
+export const CreateLookupMasterColumnResponse: MessageFns<CreateLookupMasterColumnResponse> = {
+  encode(message: CreateLookupMasterColumnResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    if (message.data !== undefined) {
+      LookupMasterColumn.encode(message.data, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CreateLookupMasterColumnResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCreateLookupMasterColumnResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.data = LookupMasterColumn.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CreateLookupMasterColumnResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      data: isSet(object.data) ? LookupMasterColumn.fromJSON(object.data) : undefined,
+    };
+  },
+
+  toJSON(message: CreateLookupMasterColumnResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.data !== undefined) {
+      obj.data = LookupMasterColumn.toJSON(message.data);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<CreateLookupMasterColumnResponse>): CreateLookupMasterColumnResponse {
+    return CreateLookupMasterColumnResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<CreateLookupMasterColumnResponse>): CreateLookupMasterColumnResponse {
+    const message = createBaseCreateLookupMasterColumnResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.data = (object.data !== undefined && object.data !== null)
+      ? LookupMasterColumn.fromPartial(object.data)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseDeleteLookupMasterColumnRequest(): DeleteLookupMasterColumnRequest {
+  return { lmcId: "" };
+}
+
+export const DeleteLookupMasterColumnRequest: MessageFns<DeleteLookupMasterColumnRequest> = {
+  encode(message: DeleteLookupMasterColumnRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.lmcId !== "") {
+      writer.uint32(10).string(message.lmcId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): DeleteLookupMasterColumnRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDeleteLookupMasterColumnRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.lmcId = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DeleteLookupMasterColumnRequest {
+    return {
+      lmcId: isSet(object.lmcId)
+        ? globalThis.String(object.lmcId)
+        : isSet(object.lmc_id)
+        ? globalThis.String(object.lmc_id)
+        : "",
+    };
+  },
+
+  toJSON(message: DeleteLookupMasterColumnRequest): unknown {
+    const obj: any = {};
+    if (message.lmcId !== "") {
+      obj.lmcId = message.lmcId;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<DeleteLookupMasterColumnRequest>): DeleteLookupMasterColumnRequest {
+    return DeleteLookupMasterColumnRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<DeleteLookupMasterColumnRequest>): DeleteLookupMasterColumnRequest {
+    const message = createBaseDeleteLookupMasterColumnRequest();
+    message.lmcId = object.lmcId ?? "";
+    return message;
+  },
+};
+
+function createBaseDeleteLookupMasterColumnResponse(): DeleteLookupMasterColumnResponse {
+  return { base: undefined };
+}
+
+export const DeleteLookupMasterColumnResponse: MessageFns<DeleteLookupMasterColumnResponse> = {
+  encode(message: DeleteLookupMasterColumnResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): DeleteLookupMasterColumnResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDeleteLookupMasterColumnResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DeleteLookupMasterColumnResponse {
+    return { base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined };
+  },
+
+  toJSON(message: DeleteLookupMasterColumnResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<DeleteLookupMasterColumnResponse>): DeleteLookupMasterColumnResponse {
+    return DeleteLookupMasterColumnResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<DeleteLookupMasterColumnResponse>): DeleteLookupMasterColumnResponse {
+    const message = createBaseDeleteLookupMasterColumnResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
     return message;
   },
 };
@@ -17462,6 +18230,241 @@ export const LookupMasterServiceDefinition = {
               109,
               110,
               115,
+            ]),
+          ],
+        },
+      },
+    },
+    /** CreateLookupMaster adds a new master to the registry. */
+    createLookupMaster: {
+      name: "CreateLookupMaster",
+      requestType: CreateLookupMasterRequest,
+      requestStream: false,
+      responseType: CreateLookupMasterResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              35,
+              58,
+              1,
+              42,
+              34,
+              30,
+              47,
+              97,
+              112,
+              105,
+              47,
+              118,
+              49,
+              47,
+              102,
+              105,
+              110,
+              97,
+              110,
+              99,
+              101,
+              47,
+              108,
+              111,
+              111,
+              107,
+              117,
+              112,
+              45,
+              109,
+              97,
+              115,
+              116,
+              101,
+              114,
+              115,
+            ]),
+          ],
+        },
+      },
+    },
+    /** DeleteLookupMaster removes a master from the registry. */
+    deleteLookupMaster: {
+      name: "DeleteLookupMaster",
+      requestType: DeleteLookupMasterRequest,
+      requestStream: false,
+      responseType: DeleteLookupMasterResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              42,
+              42,
+              40,
+              47,
+              97,
+              112,
+              105,
+              47,
+              118,
+              49,
+              47,
+              102,
+              105,
+              110,
+              97,
+              110,
+              99,
+              101,
+              47,
+              108,
+              111,
+              111,
+              107,
+              117,
+              112,
+              45,
+              109,
+              97,
+              115,
+              116,
+              101,
+              114,
+              115,
+              47,
+              123,
+              108,
+              109,
+              95,
+              99,
+              111,
+              100,
+              101,
+              125,
+            ]),
+          ],
+        },
+      },
+    },
+    /** CreateLookupMasterColumn adds a fillable column to a master. */
+    createLookupMasterColumn: {
+      name: "CreateLookupMasterColumn",
+      requestType: CreateLookupMasterColumnRequest,
+      requestStream: false,
+      responseType: CreateLookupMasterColumnResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              42,
+              58,
+              1,
+              42,
+              34,
+              37,
+              47,
+              97,
+              112,
+              105,
+              47,
+              118,
+              49,
+              47,
+              102,
+              105,
+              110,
+              97,
+              110,
+              99,
+              101,
+              47,
+              108,
+              111,
+              111,
+              107,
+              117,
+              112,
+              45,
+              109,
+              97,
+              115,
+              116,
+              101,
+              114,
+              45,
+              99,
+              111,
+              108,
+              117,
+              109,
+              110,
+              115,
+            ]),
+          ],
+        },
+      },
+    },
+    /** DeleteLookupMasterColumn removes a column from a master. */
+    deleteLookupMasterColumn: {
+      name: "DeleteLookupMasterColumn",
+      requestType: DeleteLookupMasterColumnRequest,
+      requestStream: false,
+      responseType: DeleteLookupMasterColumnResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              48,
+              42,
+              46,
+              47,
+              97,
+              112,
+              105,
+              47,
+              118,
+              49,
+              47,
+              102,
+              105,
+              110,
+              97,
+              110,
+              99,
+              101,
+              47,
+              108,
+              111,
+              111,
+              107,
+              117,
+              112,
+              45,
+              109,
+              97,
+              115,
+              116,
+              101,
+              114,
+              45,
+              99,
+              111,
+              108,
+              117,
+              109,
+              110,
+              115,
+              47,
+              123,
+              108,
+              109,
+              99,
+              95,
+              105,
+              100,
+              125,
             ]),
           ],
         },

@@ -8,6 +8,7 @@ export interface LookupMaster {
 }
 
 export interface LookupMasterColumn {
+  lmcId: string
   lmcMasterCode: string
   lmcColumnName: string
   lmcDisplayName: string
