@@ -180,7 +180,7 @@ export function ParameterFormDialog({
           isRequiredForCosting: parameter.isRequiredForCosting ?? false,
           isPeriodDependent: parameter.isPeriodDependent ?? false,
           lookupMasterCode: parameter.lookupMasterCode || "",
-          lookupFillGroupCode: parameter.lookupFillGroupCode || "",
+          lookupFillGroupCode: parameter.lookupFillGroupCode || "__none__",
           lookupSourceColumn: parameter.lookupSourceColumn || "",
           displayOrder: parameter.displayOrder ?? 0,
           displayGroup: parameter.displayGroup || "",
@@ -232,7 +232,7 @@ export function ParameterFormDialog({
             isRequiredForCosting: values.isRequiredForCosting,
             isPeriodDependent: values.isPeriodDependent,
             lookupMasterCode: values.lookupMasterCode,
-            lookupFillGroupCode: values.lookupFillGroupCode || undefined,
+            lookupFillGroupCode: values.lookupFillGroupCode === "__none__" ? undefined : (values.lookupFillGroupCode || undefined),
             lookupSourceColumn: values.lookupSourceColumn || undefined,
             displayOrder: values.displayOrder,
             displayGroup: values.displayGroup,
@@ -254,7 +254,7 @@ export function ParameterFormDialog({
           isRequiredForCosting: values.isRequiredForCosting,
           isPeriodDependent: values.isPeriodDependent,
           lookupMasterCode: values.lookupMasterCode,
-          lookupFillGroupCode: values.lookupFillGroupCode,
+          lookupFillGroupCode: values.lookupFillGroupCode === "__none__" ? "" : values.lookupFillGroupCode,
           lookupSourceColumn: values.lookupSourceColumn,
           displayOrder: values.displayOrder,
           displayGroup: values.displayGroup,
@@ -682,7 +682,7 @@ export function ParameterFormDialog({
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="">None</SelectItem>
+                            <SelectItem value="__none__">— None —</SelectItem>
                             {(triggerParams ?? []).map((p) => (
                               <SelectItem key={p.paramCode} value={p.paramCode}>
                                 {p.paramCode} — {p.paramName}

@@ -43,6 +43,8 @@ const formSchema = z.object({
   noOfEnd: z.coerce.number().int().min(1).default(1),
   mcSpeed: z.coerce.number().min(0).default(0),
   mcEfficiency: z.coerce.number().min(0).max(100).default(95),
+  machineRpm: z.coerce.number().min(0).optional().nullable(),
+  powerPerDay: z.coerce.number().min(0).optional().nullable(),
   notes: z.string().max(500).optional(),
   isActive: z.boolean(),
 })
@@ -65,7 +67,8 @@ export function MachineFormDialog({ open, onOpenChange, machine, onSuccess }: Ma
     resolver: zodResolver(formSchema) as never,
     defaultValues: {
       machineCode: "", machineName: "", mcType: "", mcLocation: "",
-      noOfPosition: 0, noOfEnd: 1, mcSpeed: 0, mcEfficiency: 95, notes: "", isActive: true,
+      noOfPosition: 0, noOfEnd: 1, mcSpeed: 0, mcEfficiency: 95,
+      machineRpm: null, powerPerDay: null, notes: "", isActive: true,
     },
   })
 
@@ -82,12 +85,15 @@ export function MachineFormDialog({ open, onOpenChange, machine, onSuccess }: Ma
               noOfEnd: machine.noOfEnd ?? 1,
               mcSpeed: machine.mcSpeed ?? 0,
               mcEfficiency: machine.mcEfficiency ?? 95,
+              machineRpm: machine.machineRpm ?? null,
+              powerPerDay: machine.powerPerDay ?? null,
               notes: machine.notes || "",
               isActive: machine.isActive ?? true,
             }
           : {
               machineCode: "", machineName: "", mcType: "", mcLocation: "",
-              noOfPosition: 0, noOfEnd: 1, mcSpeed: 0, mcEfficiency: 95, notes: "", isActive: true,
+              noOfPosition: 0, noOfEnd: 1, mcSpeed: 0, mcEfficiency: 95,
+              machineRpm: null, powerPerDay: null, notes: "", isActive: true,
             }
       )
     }
@@ -107,6 +113,8 @@ export function MachineFormDialog({ open, onOpenChange, machine, onSuccess }: Ma
             noOfEnd: values.noOfEnd,
             mcSpeed: values.mcSpeed,
             mcEfficiency: values.mcEfficiency,
+            machineRpm: values.machineRpm ?? undefined,
+            powerPerDay: values.powerPerDay ?? undefined,
             notes: values.notes,
             isActive: values.isActive,
           },
@@ -121,6 +129,8 @@ export function MachineFormDialog({ open, onOpenChange, machine, onSuccess }: Ma
           noOfEnd: values.noOfEnd,
           mcSpeed: values.mcSpeed,
           mcEfficiency: values.mcEfficiency,
+          machineRpm: values.machineRpm ?? undefined,
+          powerPerDay: values.powerPerDay ?? undefined,
           notes: values.notes || "",
         })
       }
@@ -247,6 +257,50 @@ export function MachineFormDialog({ open, onOpenChange, machine, onSuccess }: Ma
                     <FormLabel>Efficiency (%)</FormLabel>
                     <FormControl>
                       <Input {...field} type="number" min="0" max="100" step="0.1" disabled={isPending} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="machineRpm"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Machine RPM <span className="text-muted-foreground text-xs">(optional)</span></FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        placeholder="e.g., 3000"
+                        disabled={isPending}
+                        value={field.value ?? ""}
+                        onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="powerPerDay"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Power/Day (USD) <span className="text-muted-foreground text-xs">(optional)</span></FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        placeholder="e.g., 120.00"
+                        disabled={isPending}
+                        value={field.value ?? ""}
+                        onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

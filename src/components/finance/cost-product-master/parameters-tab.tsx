@@ -356,15 +356,28 @@ function ParamRow({ entry, draft, onChange, onRemove, removing, allEntries, onLo
       </div>
       <div className="col-span-6">{renderValueInput(entry, draft, onChange, allEntries, onLookupChange)}</div>
       <div className="col-span-1 text-right">
-        <Button
-          size="icon"
-          variant="ghost"
-          title="Remove parameter from this product"
-          disabled={removing}
-          onClick={onRemove}
-        >
-          <Trash2 className="h-4 w-4 text-destructive" />
-        </Button>
+        {entry.lookupFillGroupCode ? (
+          /* Child params are managed via their parent — no individual delete */
+          <Button
+            size="icon"
+            variant="ghost"
+            title={`Managed by ${entry.lookupFillGroupCode} — remove that param to remove all children`}
+            disabled
+            className="cursor-not-allowed opacity-30"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        ) : (
+          <Button
+            size="icon"
+            variant="ghost"
+            title="Remove parameter from this product"
+            disabled={removing}
+            onClick={onRemove}
+          >
+            <Trash2 className="h-4 w-4 text-destructive" />
+          </Button>
+        )}
       </div>
     </div>
   )
