@@ -43,14 +43,19 @@ export function useCreateLookupMaster() {
     mutationFn: async (data: {
       lmCode: string
       lmDisplayName: string
-      lmApiPath: string
-      lmCodeField: string
-      lmLabelField: string
+      lmTableName?: string
     }) => {
       const res = await fetch("/api/v1/finance/lookup-masters", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          lmCode: data.lmCode,
+          lmDisplayName: data.lmDisplayName,
+          lmApiPath: "",
+          lmCodeField: "",
+          lmLabelField: "",
+          lmTableName: data.lmTableName,
+        }),
       })
       const json = (await res.json()) as { base?: { isSuccess?: boolean; message?: string } }
       if (!json.base?.isSuccess) throw new Error(json.base?.message ?? "Failed to create lookup master")

@@ -1,75 +1,448 @@
 "use client"
 
-import { useState } from "react"
-import { ChevronDown, ChevronUp, Plus, Trash2 } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
+import { useState, useRef } from "react"
+import { Plus, Pencil, Trash2, ChevronDown, ChevronUp, Download, Upload } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Switch } from "@/components/ui/switch"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { PageHeader } from "@/components/common/page-header"
 import { ConfirmDialog } from "@/components/shared/confirm-dialog"
 import {
-  useLookupMasterColumns,
   useLookupMasters,
+  useLookupMasterColumns,
+  useTableColumns,
   useCreateLookupMaster,
+  useUpdateLookupMaster,
   useDeleteLookupMaster,
   useCreateLookupMasterColumn,
   useDeleteLookupMasterColumn,
+  useExportLookupMasters,
+  useImportLookupMasters,
 } from "@/hooks/finance/use-lookup-master"
 import type { LookupMaster, LookupMasterColumn } from "@/types/finance/lookup-master"
 
-// ──────────────────────────────────────────────
-// Sub-component: inline columns panel per master
-// ──────────────────────────────────────────────
-
-interface ColumnsPanelProps {
-  masterCode: string
+// Auto-generate code from display name: "Machine Master" → "MACHINE_MASTER"
+function nameToCode(name: string): string {
+  return name
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, "_")
+    .replace(/^_|_$/g, "")
 }
 
-function ColumnsPanel({ masterCode }: ColumnsPanelProps) {
-  const { data: columns, isLoading } = useLookupMasterColumns(masterCode)
-  const createColumn = useCreateLookupMasterColumn()
-  const deleteColumn = useDeleteLookupMasterColumn()
+// ──────────────────────────────────────────────
+// Add Master Dialog (inner form — remounts on open via key)
+// ──────────────────────────────────────────────
 
-  const [addOpen, setAddOpen] = useState(false)
-  const [deleteTarget, setDeleteTarget] = useState<LookupMasterColumn | null>(null)
+function AddMasterForm({ onClose }: { onClose: () => void }) {
+  const create = useCreateLookupMaster()
+  const [code, setCode] = useState("")
+  const [displayName, setDisplayName] = useState("")
+  const [tableName, setTableName] = useState("")
 
-  // Form state for add column dialog
-  const [colName, setColName] = useState("")
-  const [colDisplay, setColDisplay] = useState("")
-  const [colType, setColType] = useState<"NUMBER" | "TEXT">("NUMBER")
-  const [colSort, setColSort] = useState(0)
-
-  function handleOpenAdd() {
-    setColName("")
-    setColDisplay("")
-    setColType("NUMBER")
-    setColSort(0)
-    setAddOpen(true)
+  function handleNameChange(name: string) {
+    setDisplayName(name)
+    setCode(nameToCode(name))
   }
 
-  async function handleAddColumn() {
-    await createColumn.mutateAsync({
-      lmcMasterCode: masterCode,
-      lmcColumnName: colName,
-      lmcDisplayName: colDisplay,
-      lmcDataType: colType,
-      lmcSortOrder: colSort,
+  async function handleSubmit() {
+    if (!code || !displayName) return
+    await create.mutateAsync({
+      lmCode: code,
+      lmDisplayName: displayName,
+      lmTableName: tableName || undefined,
     })
-    setAddOpen(false)
+    onClose()
   }
 
   return (
-    <div className="border-t bg-muted/30 px-4 pb-4 pt-3">
-      <div className="mb-3 flex items-center justify-between">
-        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-          Fillable Columns
+    <>
+      <div className="space-y-4 py-2">
+        <div className="space-y-1">
+          <Label>
+            Display Name <span className="text-destructive">*</span>
+          </Label>
+          <Input
+            placeholder="e.g., Yarn Type"
+            value={displayName}
+            onChange={(e) => handleNameChange(e.target.value)}
+          />
+        </div>
+        <div className="space-y-1">
+          <Label>
+            Code{" "}
+            <span className="text-xs text-muted-foreground">(auto-generated)</span>
+          </Label>
+          <Input
+            value={code}
+            onChange={(e) =>
+              setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, ""))
+            }
+            placeholder="YARN_TYPE"
+            className="font-mono"
+          />
+          <p className="text-xs text-muted-foreground">
+            Unique identifier. Auto-filled from name, can be edited.
+          </p>
+        </div>
+        <div className="space-y-1">
+          <Label>
+            Table Name{" "}
+            <span className="text-xs text-muted-foreground">
+              (optional — for column introspection)
+            </span>
+          </Label>
+          <Input
+            placeholder="mst_yarn_type"
+            value={tableName}
+            onChange={(e) => setTableName(e.target.value)}
+            className="font-mono"
+          />
+          <p className="text-xs text-muted-foreground">
+            PostgreSQL table name. Used to auto-discover columns and populate dropdowns.
+          </p>
+        </div>
+      </div>
+      <DialogFooter>
+        <Button variant="outline" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button onClick={handleSubmit} disabled={!code || !displayName || create.isPending}>
+          Register
+        </Button>
+      </DialogFooter>
+    </>
+  )
+}
+
+function AddMasterDialog({
+  open,
+  onOpenChange,
+}: {
+  open: boolean
+  onOpenChange: (v: boolean) => void
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[480px]">
+        <DialogHeader>
+          <DialogTitle>Register New Lookup Master</DialogTitle>
+        </DialogHeader>
+        {/* key forces remount (and thus state reset) each time dialog opens */}
+        {open && <AddMasterForm key="add-master-form" onClose={() => onOpenChange(false)} />}
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// ──────────────────────────────────────────────
+// Edit Master Dialog (inner form — remounts on master change via key)
+// ──────────────────────────────────────────────
+
+function EditMasterForm({
+  master,
+  onClose,
+}: {
+  master: LookupMaster
+  onClose: () => void
+}) {
+  const update = useUpdateLookupMaster()
+  const [displayName, setDisplayName] = useState(master.lmDisplayName)
+  const [tableName, setTableName] = useState(master.lmTableName ?? "")
+  const [isActive, setIsActive] = useState(master.lmIsActive)
+
+  async function handleSave() {
+    await update.mutateAsync({
+      lmCode: master.lmCode,
+      lmDisplayName: displayName,
+      lmTableName: tableName,
+      lmIsActive: isActive,
+    })
+    onClose()
+  }
+
+  return (
+    <>
+      <div className="space-y-4 py-2">
+        <div className="space-y-1">
+          <Label>Display Name</Label>
+          <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
+        </div>
+        <div className="space-y-1">
+          <Label>Table Name</Label>
+          <Input
+            value={tableName}
+            onChange={(e) => setTableName(e.target.value)}
+            className="font-mono"
+            placeholder="mst_machine"
+          />
+          <p className="text-xs text-muted-foreground">
+            PostgreSQL table name. Used to auto-discover columns and populate dropdowns.
+          </p>
+        </div>
+        <div className="flex items-center justify-between rounded-lg border p-3">
+          <div className="space-y-0.5">
+            <Label>Active</Label>
+            <p className="text-xs text-muted-foreground">
+              Inactive masters don&apos;t appear in param form dropdowns.
+            </p>
+          </div>
+          <Switch checked={isActive} onCheckedChange={setIsActive} />
+        </div>
+      </div>
+      <DialogFooter>
+        <Button variant="outline" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button onClick={handleSave} disabled={!displayName || update.isPending}>
+          Save
+        </Button>
+      </DialogFooter>
+    </>
+  )
+}
+
+function EditMasterDialog({
+  master,
+  open,
+  onOpenChange,
+}: {
+  master: LookupMaster | null
+  open: boolean
+  onOpenChange: (v: boolean) => void
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[480px]">
+        <DialogHeader>
+          <DialogTitle>Edit {master?.lmCode}</DialogTitle>
+        </DialogHeader>
+        {/* key forces remount so form state resets when switching between masters */}
+        {open && master && (
+          <EditMasterForm
+            key={master.lmCode}
+            master={master}
+            onClose={() => onOpenChange(false)}
+          />
+        )}
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// ──────────────────────────────────────────────
+// Add Column Dialog (with table introspection)
+// ──────────────────────────────────────────────
+
+function AddColumnForm({
+  masterCode,
+  tableName,
+  onClose,
+}: {
+  masterCode: string
+  tableName: string
+  onClose: () => void
+}) {
+  const createColumn = useCreateLookupMasterColumn()
+  const { data: tableColumns = [] } = useTableColumns(tableName || undefined)
+  const [selectedCol, setSelectedCol] = useState("")
+  const [displayName, setDisplayName] = useState("")
+  const [dataType, setDataType] = useState<"NUMBER" | "TEXT">("NUMBER")
+  const [sortOrder, setSortOrder] = useState(0)
+
+  function handleColumnSelect(colName: string) {
+    setSelectedCol(colName)
+    const col = tableColumns.find((c) => c.columnName === colName)
+    if (col) {
+      setDataType(col.dataType)
+      setDisplayName(
+        colName
+          .replace(/_/g, " ")
+          .replace(/\b\w/g, (c) => c.toUpperCase()),
+      )
+    }
+  }
+
+  async function handleAdd() {
+    if (!selectedCol) return
+    await createColumn.mutateAsync({
+      lmcMasterCode: masterCode,
+      lmcColumnName: selectedCol,
+      lmcDisplayName: displayName,
+      lmcDataType: dataType,
+      lmcSortOrder: sortOrder,
+    })
+    onClose()
+  }
+
+  const hasTable = !!tableName
+
+  return (
+    <>
+      {!hasTable && (
+        <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-600">
+          No table name configured for this master. Set it via Edit to enable column
+          auto-discovery.
         </p>
-        <Button size="sm" variant="outline" className="h-7 gap-1.5 text-xs" onClick={handleOpenAdd}>
-          <Plus className="h-3.5 w-3.5" />
+      )}
+      <div className="space-y-4 py-2">
+        <div className="space-y-1">
+          <Label>
+            Column Name{" "}
+            {hasTable && (
+              <span className="text-xs text-muted-foreground">(from table)</span>
+            )}
+          </Label>
+          {hasTable ? (
+            <Select value={selectedCol} onValueChange={handleColumnSelect}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select column…" />
+              </SelectTrigger>
+              <SelectContent>
+                {tableColumns.map((c) => (
+                  <SelectItem key={c.columnName} value={c.columnName}>
+                    <span className="font-mono">{c.columnName}</span>
+                    <span className="ml-2 text-xs text-muted-foreground">
+                      ({c.rawType})
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <Input
+              value={selectedCol}
+              onChange={(e) => setSelectedCol(e.target.value)}
+              placeholder="mc_speed"
+              className="font-mono"
+            />
+          )}
+        </div>
+        <div className="space-y-1">
+          <Label>Display Name</Label>
+          <Input
+            value={displayName}
+            onChange={(e) => setDisplayName(e.target.value)}
+            placeholder="Machine Speed (m/min)"
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <Label>
+              Data Type{" "}
+              {hasTable && selectedCol && (
+                <span className="text-xs text-green-600">(auto-detected)</span>
+              )}
+            </Label>
+            <Select
+              value={dataType}
+              onValueChange={(v) => setDataType(v as "NUMBER" | "TEXT")}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="NUMBER">NUMBER</SelectItem>
+                <SelectItem value="TEXT">TEXT</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <Label>Sort Order</Label>
+            <Input
+              type="number"
+              value={sortOrder}
+              onChange={(e) => setSortOrder(Number(e.target.value))}
+            />
+          </div>
+        </div>
+      </div>
+      <DialogFooter>
+        <Button variant="outline" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button
+          onClick={handleAdd}
+          disabled={!selectedCol || !displayName || createColumn.isPending}
+        >
+          Add
+        </Button>
+      </DialogFooter>
+    </>
+  )
+}
+
+function AddColumnDialog({
+  masterCode,
+  tableName,
+  open,
+  onOpenChange,
+}: {
+  masterCode: string
+  tableName: string
+  open: boolean
+  onOpenChange: (v: boolean) => void
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[480px]">
+        <DialogHeader>
+          <DialogTitle>Add Column to {masterCode}</DialogTitle>
+        </DialogHeader>
+        {/* key forces remount so form state resets on each open */}
+        {open && (
+          <AddColumnForm
+            key={`${masterCode}-add-col`}
+            masterCode={masterCode}
+            tableName={tableName}
+            onClose={() => onOpenChange(false)}
+          />
+        )}
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// ──────────────────────────────────────────────
+// Columns Panel
+// ──────────────────────────────────────────────
+
+function ColumnsPanel({
+  masterCode,
+  tableName,
+}: {
+  masterCode: string
+  tableName: string
+}) {
+  const { data: columns, isLoading } = useLookupMasterColumns(masterCode)
+  const deleteColumn = useDeleteLookupMasterColumn()
+  const [addOpen, setAddOpen] = useState(false)
+  const [deleteColTarget, setDeleteColTarget] = useState<LookupMasterColumn | null>(null)
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <span className="text-xs uppercase tracking-wide text-muted-foreground">
+          Fillable Columns
+        </span>
+        <Button size="sm" variant="outline" onClick={() => setAddOpen(true)}>
+          <Plus className="mr-1.5 h-3.5 w-3.5" />
           Add Column
         </Button>
       </div>
@@ -77,128 +450,57 @@ function ColumnsPanel({ masterCode }: ColumnsPanelProps) {
       {isLoading && (
         <div className="space-y-2">
           {Array.from({ length: 2 }).map((_, i) => (
-            <div key={i} className="h-8 animate-pulse rounded bg-muted" />
+            <div key={i} className="h-8 animate-pulse rounded-md bg-muted" />
           ))}
         </div>
       )}
 
-      {!isLoading && (!columns || columns.length === 0) && (
-        <p className="py-2 text-center text-xs text-muted-foreground">No columns configured yet.</p>
-      )}
-
-      {!isLoading && columns && columns.length > 0 && (
-        <div className="divide-y rounded-md border bg-background">
-          {columns.map((col) => (
-            <div key={col.lmcId || col.lmcColumnName} className="flex items-center gap-3 px-3 py-2">
-              <div className="flex-1 min-w-0">
-                <span className="text-sm font-medium">{col.lmcDisplayName}</span>
-                <span className="ml-2 font-mono text-xs text-muted-foreground">{col.lmcColumnName}</span>
-              </div>
-              <Badge variant={col.lmcDataType === "NUMBER" ? "secondary" : "outline"} className="text-xs">
+      {!isLoading &&
+        (columns ?? []).map((col) => (
+          <div
+            key={col.lmcId}
+            className="flex items-center justify-between rounded-md border px-3 py-2 text-sm"
+          >
+            <div className="flex items-center gap-3">
+              <span className="font-mono text-xs">{col.lmcColumnName}</span>
+              <span className="text-muted-foreground">{col.lmcDisplayName}</span>
+              <Badge variant="outline" className="text-xs">
                 {col.lmcDataType}
               </Badge>
-              <span className="text-xs text-muted-foreground w-10 text-right">#{col.lmcSortOrder}</span>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 text-destructive hover:bg-destructive/10"
-                onClick={() => setDeleteTarget(col)}
-                disabled={!col.lmcId}
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-                <span className="sr-only">Delete column</span>
-              </Button>
             </div>
-          ))}
-        </div>
-      )}
-
-      {/* Add Column Dialog */}
-      <Dialog open={addOpen} onOpenChange={setAddOpen}>
-        <DialogContent className="sm:max-w-[420px]">
-          <DialogHeader>
-            <DialogTitle>Add Column to {masterCode}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="space-y-1.5">
-              <Label htmlFor="col-name">
-                Column Name <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="col-name"
-                placeholder="e.g. mc_speed"
-                value={colName}
-                onChange={(e) => setColName(e.target.value)}
-              />
-              <p className="text-xs text-muted-foreground">The actual database column name from the master table.</p>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="col-display">
-                Display Name <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="col-display"
-                placeholder="e.g. Machine Speed"
-                value={colDisplay}
-                onChange={(e) => setColDisplay(e.target.value)}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label>
-                Data Type <span className="text-destructive">*</span>
-              </Label>
-              <Select value={colType} onValueChange={(v) => setColType(v as "NUMBER" | "TEXT")}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="NUMBER">NUMBER — numeric value (fills numeric CAPP params)</SelectItem>
-                  <SelectItem value="TEXT">TEXT — text value (fills text CAPP params)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="col-sort">Sort Order</Label>
-              <Input
-                id="col-sort"
-                type="number"
-                placeholder="0"
-                value={colSort}
-                onChange={(e) => setColSort(Number(e.target.value))}
-              />
-              <p className="text-xs text-muted-foreground">Lower numbers appear first in the column picker.</p>
-            </div>
+            <Button size="icon" variant="ghost" onClick={() => setDeleteColTarget(col)}>
+              <Trash2 className="h-3.5 w-3.5 text-destructive" />
+            </Button>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setAddOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleAddColumn}
-              disabled={!colName || !colDisplay || createColumn.isPending}
-            >
-              {createColumn.isPending ? "Adding…" : "Add Column"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        ))}
 
-      {/* Confirm delete column */}
-      {deleteTarget && (
-        <ConfirmDialog
-          open={!!deleteTarget}
-          onOpenChange={(open) => { if (!open) setDeleteTarget(null) }}
-          title="Delete Column"
-          description={`Remove column "${deleteTarget.lmcDisplayName}" (${deleteTarget.lmcColumnName}) from ${masterCode}? This may affect cost parameters that reference this column.`}
-          variant="destructive"
-          confirmText="Delete"
-          isLoading={deleteColumn.isPending}
-          onConfirm={async () => {
-            await deleteColumn.mutateAsync({ lmcId: deleteTarget.lmcId, masterCode })
-            setDeleteTarget(null)
-          }}
-        />
+      {!isLoading && (columns ?? []).length === 0 && (
+        <p className="text-xs italic text-muted-foreground">No columns registered yet.</p>
       )}
+
+      <AddColumnDialog
+        masterCode={masterCode}
+        tableName={tableName}
+        open={addOpen}
+        onOpenChange={setAddOpen}
+      />
+
+      <ConfirmDialog
+        open={!!deleteColTarget}
+        onOpenChange={(v) => {
+          if (!v) setDeleteColTarget(null)
+        }}
+        title={`Remove column ${deleteColTarget?.lmcColumnName ?? ""}?`}
+        description="This column will no longer appear in the source-column dropdown for param assignment."
+        confirmText="Remove"
+        variant="destructive"
+        onConfirm={() => {
+          if (deleteColTarget) {
+            deleteColumn.mutate({ lmcId: deleteColTarget.lmcId, masterCode })
+          }
+          setDeleteColTarget(null)
+        }}
+      />
     </div>
   )
 }
@@ -208,260 +510,172 @@ function ColumnsPanel({ masterCode }: ColumnsPanelProps) {
 // ──────────────────────────────────────────────
 
 export function LookupMastersPageClient() {
-  const { data: masters, isLoading } = useLookupMasters(false)
-  const createMaster = useCreateLookupMaster()
+  const { data: masters = [], isLoading } = useLookupMasters(false)
   const deleteMaster = useDeleteLookupMaster()
+  const exportM = useExportLookupMasters()
+  const importM = useImportLookupMasters()
 
-  const [expandedCode, setExpandedCode] = useState<string | null>(null)
+  const importInputRef = useRef<HTMLInputElement>(null)
+
   const [addOpen, setAddOpen] = useState(false)
+  const [editTarget, setEditTarget] = useState<LookupMaster | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<LookupMaster | null>(null)
+  const [expanded, setExpanded] = useState<Set<string>>(new Set())
 
-  // Form state for add master dialog
-  const [code, setCode] = useState("")
-  const [displayName, setDisplayName] = useState("")
-  const [apiPath, setApiPath] = useState("")
-  const [codeField, setCodeField] = useState("")
-  const [labelField, setLabelField] = useState("")
-
-  function handleOpenAdd() {
-    setCode("")
-    setDisplayName("")
-    setApiPath("")
-    setCodeField("")
-    setLabelField("")
-    setAddOpen(true)
-  }
-
-  async function handleAddMaster() {
-    await createMaster.mutateAsync({
-      lmCode: code,
-      lmDisplayName: displayName,
-      lmApiPath: apiPath,
-      lmCodeField: codeField,
-      lmLabelField: labelField,
+  function toggleExpand(code: string) {
+    setExpanded((prev) => {
+      const next = new Set(prev)
+      if (next.has(code)) {
+        next.delete(code)
+      } else {
+        next.add(code)
+      }
+      return next
     })
-    setAddOpen(false)
   }
 
-  function toggleExpand(lmCode: string) {
-    setExpandedCode((prev) => (prev === lmCode ? null : lmCode))
+  function handleImport(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (file) importM.mutate(file)
+    e.target.value = ""
   }
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Lookup Masters"
-        subtitle="Registry of master tables available for MASTER_LOOKUP parameter dropdowns in costing."
+        subtitle="Manage the registry of master tables used by MASTER_LOOKUP params"
       >
-        <Button onClick={handleOpenAdd}>
-          <Plus className="mr-2 h-4 w-4" />
-          Add Master
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => exportM.mutate()}
+            disabled={exportM.isPending}
+          >
+            <Download className="mr-1.5 h-4 w-4" />
+            Export
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => importInputRef.current?.click()}
+            disabled={importM.isPending}
+          >
+            <Upload className="mr-1.5 h-4 w-4" />
+            Import
+          </Button>
+          <input
+            ref={importInputRef}
+            type="file"
+            accept=".xlsx,.xls"
+            className="hidden"
+            onChange={handleImport}
+          />
+          <Button onClick={() => setAddOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Register Master
+          </Button>
+        </div>
       </PageHeader>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm font-semibold">Registered Masters</CardTitle>
-          <CardDescription>
-            Each master entry maps a backend table to a dropdown in the CAPP form. Columns define
-            which fields can be auto-filled when a user selects a lookup value.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-0">
-          {isLoading && (
-            <div className="space-y-2 p-4">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="h-14 animate-pulse rounded bg-muted" />
-              ))}
-            </div>
-          )}
-
-          {!isLoading && (!masters || masters.length === 0) && (
-            <p className="p-6 text-center text-sm text-muted-foreground">
-              No lookup masters registered yet. Add one to enable MASTER_LOOKUP parameters.
-            </p>
-          )}
-
-          {!isLoading && masters && masters.length > 0 && (
-            <div className="divide-y">
-              {masters.map((master) => {
-                const isExpanded = expandedCode === master.lmCode
-                return (
-                  <div key={master.lmCode}>
-                    {/* Master row */}
-                    <div className="flex flex-wrap items-center gap-3 px-4 py-3">
-                      {/* Code badge */}
-                      <Badge variant="secondary" className="font-mono text-xs">
-                        {master.lmCode}
-                      </Badge>
-
-                      {/* Name + path */}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium">{master.lmDisplayName}</p>
-                        <p className="font-mono text-xs text-muted-foreground">{master.lmApiPath}</p>
-                      </div>
-
-                      {/* Code / label fields */}
-                      <div className="hidden md:flex gap-4 text-xs text-muted-foreground">
-                        <span>
-                          Code: <code className="font-mono">{master.lmCodeField}</code>
-                        </span>
-                        <span>
-                          Label: <code className="font-mono">{master.lmLabelField}</code>
-                        </span>
-                      </div>
-
-                      {/* Active badge */}
-                      <Badge variant={master.lmIsActive ? "default" : "outline"} className="text-xs">
-                        {master.lmIsActive ? "Active" : "Inactive"}
-                      </Badge>
-
-                      {/* Actions */}
-                      <div className="flex items-center gap-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 gap-1.5 text-xs"
-                          onClick={() => toggleExpand(master.lmCode)}
-                        >
-                          {isExpanded ? (
-                            <>
-                              <ChevronUp className="h-3.5 w-3.5" />
-                              Hide Columns
-                            </>
-                          ) : (
-                            <>
-                              <ChevronDown className="h-3.5 w-3.5" />
-                              Manage Columns
-                            </>
-                          )}
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-destructive hover:bg-destructive/10"
-                          onClick={() => setDeleteTarget(master)}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                          <span className="sr-only">Delete master</span>
-                        </Button>
-                      </div>
-                    </div>
-
-                    {/* Expanded columns panel */}
-                    {isExpanded && <ColumnsPanel masterCode={master.lmCode} />}
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Add Master Dialog */}
-      <Dialog open={addOpen} onOpenChange={setAddOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Add Lookup Master</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="space-y-1.5">
-              <Label htmlFor="lm-code">
-                Code <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="lm-code"
-                placeholder="e.g. MACHINE"
-                value={code}
-                onChange={(e) => setCode(e.target.value.toUpperCase())}
-              />
-              <p className="text-xs text-muted-foreground">
-                Uppercase letters, digits, underscores. This is the identifier used in param definitions
-                (e.g., <code className="font-mono">MACHINE</code>, <code className="font-mono">INTERMINGLING</code>).
-              </p>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="lm-display">
-                Display Name <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="lm-display"
-                placeholder="e.g. Yarn Machine"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="lm-api">
-                API Path <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="lm-api"
-                placeholder="e.g. /api/v1/finance/machines"
-                value={apiPath}
-                onChange={(e) => setApiPath(e.target.value)}
-              />
-              <p className="text-xs text-muted-foreground">
-                The BFF endpoint that returns the list of items for the dropdown.
-              </p>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="lm-code-field">
-                  Code Field <span className="text-destructive">*</span>
-                </Label>
-                <Input
-                  id="lm-code-field"
-                  placeholder="e.g. machineCode"
-                  value={codeField}
-                  onChange={(e) => setCodeField(e.target.value)}
-                />
-                <p className="text-xs text-muted-foreground">JSON field used as the option value.</p>
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="lm-label-field">
-                  Label Field <span className="text-destructive">*</span>
-                </Label>
-                <Input
-                  id="lm-label-field"
-                  placeholder="e.g. machineName"
-                  value={labelField}
-                  onChange={(e) => setLabelField(e.target.value)}
-                />
-                <p className="text-xs text-muted-foreground">JSON field displayed as the option label.</p>
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setAddOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleAddMaster}
-              disabled={!code || !displayName || !apiPath || !codeField || !labelField || createMaster.isPending}
-            >
-              {createMaster.isPending ? "Creating…" : "Create Master"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Confirm delete master */}
-      {deleteTarget && (
-        <ConfirmDialog
-          open={!!deleteTarget}
-          onOpenChange={(open) => { if (!open) setDeleteTarget(null) }}
-          title="Delete Lookup Master"
-          description={`Remove "${deleteTarget.lmDisplayName}" (${deleteTarget.lmCode}) from the registry? All columns configured for this master will also be removed. Any parameters that reference this master code will stop working.`}
-          variant="destructive"
-          confirmText="Delete"
-          isLoading={deleteMaster.isPending}
-          onConfirm={async () => {
-            await deleteMaster.mutateAsync(deleteTarget.lmCode)
-            setDeleteTarget(null)
-          }}
-        />
+      {isLoading && (
+        <div className="space-y-2">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="h-14 animate-pulse rounded-md bg-muted" />
+          ))}
+        </div>
       )}
+
+      {!isLoading && masters.length === 0 && (
+        <div className="rounded-lg border border-dashed p-8 text-center">
+          <p className="text-sm text-muted-foreground">
+            No lookup masters registered yet. Register one to enable MASTER_LOOKUP parameters.
+          </p>
+        </div>
+      )}
+
+      <div className="space-y-3">
+        {masters.map((master) => (
+          <Card key={master.lmCode} className={!master.lmIsActive ? "opacity-60" : ""}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3">
+                <span className="font-mono text-sm font-semibold">{master.lmCode}</span>
+                <span className="text-sm text-muted-foreground">{master.lmDisplayName}</span>
+                {master.lmTableName && (
+                  <Badge variant="outline" className="font-mono text-xs">
+                    {master.lmTableName}
+                  </Badge>
+                )}
+                {!master.lmIsActive && <Badge variant="secondary">Inactive</Badge>}
+              </div>
+              <div className="flex shrink-0 items-center gap-1">
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => toggleExpand(master.lmCode)}
+                  title="Manage columns"
+                >
+                  {expanded.has(master.lmCode) ? (
+                    <ChevronUp className="h-4 w-4" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" />
+                  )}
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => setEditTarget(master)}
+                  title="Edit master"
+                >
+                  <Pencil className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => setDeleteTarget(master)}
+                  title="Delete master"
+                >
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+              </div>
+            </CardHeader>
+            {expanded.has(master.lmCode) && (
+              <CardContent>
+                <ColumnsPanel
+                  masterCode={master.lmCode}
+                  tableName={master.lmTableName ?? ""}
+                />
+              </CardContent>
+            )}
+          </Card>
+        ))}
+      </div>
+
+      <AddMasterDialog open={addOpen} onOpenChange={setAddOpen} />
+
+      <EditMasterDialog
+        master={editTarget}
+        open={!!editTarget}
+        onOpenChange={(v) => {
+          if (!v) setEditTarget(null)
+        }}
+      />
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(v) => {
+          if (!v) setDeleteTarget(null)
+        }}
+        title={`Remove ${deleteTarget?.lmCode ?? ""}?`}
+        description={`This removes "${deleteTarget?.lmDisplayName ?? ""}" and all its column definitions from the registry. Param assignments using this master will still work but no new columns can be selected.`}
+        confirmText="Remove"
+        variant="destructive"
+        onConfirm={() => {
+          if (deleteTarget) deleteMaster.mutate(deleteTarget.lmCode)
+          setDeleteTarget(null)
+        }}
+      />
     </div>
   )
 }

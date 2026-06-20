@@ -473,7 +473,7 @@ export function getYarnLookupFillClient() {
 }
 
 export function getLookupMasterClient() {
-  return getOrCreate("lookupMaster", () =>
+  return getOrCreate("lookupMaster_v2", () =>
     createServiceClient(LookupMasterServiceDefinition, SERVICE_ADDRESSES.finance, insecure, CHANNEL_OPTIONS)
   )
 }
