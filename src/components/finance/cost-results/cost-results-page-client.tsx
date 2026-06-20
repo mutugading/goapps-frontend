@@ -66,7 +66,12 @@ export function CostResultsPageClient() {
   const items = useMemo(() => data?.items ?? [], [data])
   const pagination = data?.pagination
   const totalItems = Number(pagination?.totalItems ?? 0)
-  const resolvedPeriod = data?.resolvedPeriod || filters.period || "—"
+  const rawPeriod = data?.resolvedPeriod || filters.period || ""
+  const resolvedPeriod = rawPeriod.length === 4
+    ? `year ${rawPeriod}`
+    : rawPeriod.length === 6
+      ? `period ${rawPeriod}`
+      : "—"
 
   const kpis = useMemo(() => {
     const verified = items.filter((r) => r.status === "VERIFIED" || r.status === "APPROVED").length
@@ -81,7 +86,7 @@ export function CostResultsPageClient() {
     <div className="space-y-6">
       <PageHeader
         title="Cost results"
-        subtitle={`Per-product unit costs · period ${resolvedPeriod}`}
+        subtitle={`Per-product unit costs · ${resolvedPeriod}`}
       />
 
       <KpiGrid>
@@ -200,7 +205,7 @@ function Input6Period({ value, onChange }: { value: string; onChange: (v: string
       type="text"
       inputMode="numeric"
       maxLength={6}
-      placeholder="Period YYYYMM (latest)"
+      placeholder="Period YYYYMM (default: this year)"
       defaultValue={value}
       onBlur={(e) => {
         const v = e.target.value.trim()
