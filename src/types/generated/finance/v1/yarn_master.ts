@@ -1350,7 +1350,7 @@ export interface DeleteMBSpinResponse {
 
 /** ListMBSpinsRequest is the request for listing MB Spin records under a head. */
 export interface ListMBSpinsRequest {
-  /** Parent MB Head UUID. */
+  /** Parent MB Head UUID. Optional — omit or send empty to list all spins. */
   mbhId: string;
   /** Page number (≥ 1). */
   page: number;
@@ -1440,6 +1440,229 @@ export interface DownloadMBSpinTemplateResponse {
   fileContent: Uint8Array;
   /** Excel file name. */
   fileName: string;
+}
+
+/** GetLookupFillValuesRequest requests auto-fill values from a master lookup selection. */
+export interface GetLookupFillValuesRequest {
+  /**
+   * lookup_master_code from mst_parameter.lookup_master_code.
+   * Valid values: "MACHINE" | "INTERMINGLING" | "PRODUCT_GRADE" | "MB_HEAD" | "BOX_BOBBIN_COST"
+   */
+  lookupMasterCode: string;
+  /** Key of the selected master record (e.g., mc_code, intm_code, pg_code, mbh_mb_costing, bbc_code). */
+  selectedKey: string;
+  /**
+   * Source param code that triggered the lookup — used to resolve CAP vs DEL variant for BOX_BOBBIN_COST.
+   * Optional; required only for BOX_BOBBIN_COST.
+   */
+  sourceParamCode: string;
+}
+
+/** GetLookupFillValuesResponse returns numeric and text fills to auto-populate CAPP params. */
+export interface GetLookupFillValuesResponse {
+  base:
+    | BaseResponse
+    | undefined;
+  /** param_code → numeric value to fill (e.g., {"MC_SPEED": 800.0, "MC_EFFICIENCY": 92.0}). */
+  numericFills: { [key: string]: number };
+  /** param_code → text value to fill (e.g., {"MB_DYE_NAME": "CIBA RED"}). */
+  textFills: { [key: string]: string };
+  /** Human-readable label for UI toast (e.g., "Barmag DTY Line D — 504 pos, 800 m/min"). */
+  displayLabel: string;
+}
+
+export interface GetLookupFillValuesResponse_NumericFillsEntry {
+  key: string;
+  value: number;
+}
+
+export interface GetLookupFillValuesResponse_TextFillsEntry {
+  key: string;
+  value: string;
+}
+
+/** LookupMaster describes a named master table available for MASTER_LOOKUP param dropdowns. */
+export interface LookupMaster {
+  lmCode: string;
+  lmDisplayName: string;
+  lmApiPath: string;
+  lmCodeField: string;
+  lmLabelField: string;
+  lmIsActive: boolean;
+  /** PostgreSQL table name for DB introspection (e.g., "mst_machine"). */
+  lmTableName: string;
+}
+
+/** ListLookupMastersRequest is the request for listing lookup masters. */
+export interface ListLookupMastersRequest {
+  activeOnly: boolean;
+}
+
+/** ListLookupMastersResponse is the response for listing lookup masters. */
+export interface ListLookupMastersResponse {
+  base: BaseResponse | undefined;
+  data: LookupMaster[];
+}
+
+/** LookupMasterColumn describes one selectable column from a lookup master table. */
+export interface LookupMasterColumn {
+  lmcMasterCode: string;
+  lmcColumnName: string;
+  lmcDisplayName: string;
+  lmcDataType: string;
+  lmcSortOrder: number;
+  /** UUID primary key — needed for delete. */
+  lmcId: string;
+}
+
+/** ListLookupMasterColumnsRequest is the request for listing columns of a lookup master. */
+export interface ListLookupMasterColumnsRequest {
+  masterCode: string;
+}
+
+/** ListLookupMasterColumnsResponse is the response for listing lookup master columns. */
+export interface ListLookupMasterColumnsResponse {
+  base: BaseResponse | undefined;
+  data: LookupMasterColumn[];
+}
+
+/** CreateLookupMasterRequest is the request for adding a new master to the registry. */
+export interface CreateLookupMasterRequest {
+  lmCode: string;
+  lmDisplayName: string;
+  /** Deprecated: no longer required. Send empty string or omit. */
+  lmApiPath: string;
+  /** Deprecated: no longer required. Send empty string or omit. */
+  lmCodeField: string;
+  /** Deprecated: no longer required. Send empty string or omit. */
+  lmLabelField: string;
+  /** PostgreSQL table name for DB introspection (optional, max 63 chars). */
+  lmTableName?: string | undefined;
+}
+
+/** CreateLookupMasterResponse is the response for adding a new master. */
+export interface CreateLookupMasterResponse {
+  base: BaseResponse | undefined;
+  data: LookupMaster | undefined;
+}
+
+/** DeleteLookupMasterRequest is the request for removing a master from the registry. */
+export interface DeleteLookupMasterRequest {
+  lmCode: string;
+}
+
+/** DeleteLookupMasterResponse is the response for removing a master. */
+export interface DeleteLookupMasterResponse {
+  base: BaseResponse | undefined;
+}
+
+/** CreateLookupMasterColumnRequest is the request for adding a fillable column to a master. */
+export interface CreateLookupMasterColumnRequest {
+  lmcMasterCode: string;
+  lmcColumnName: string;
+  lmcDisplayName: string;
+  lmcDataType: string;
+  lmcSortOrder: number;
+}
+
+/** CreateLookupMasterColumnResponse is the response for adding a column. */
+export interface CreateLookupMasterColumnResponse {
+  base: BaseResponse | undefined;
+  data: LookupMasterColumn | undefined;
+}
+
+/** DeleteLookupMasterColumnRequest is the request for removing a column from a master. */
+export interface DeleteLookupMasterColumnRequest {
+  lmcId: string;
+}
+
+/** DeleteLookupMasterColumnResponse is the response for removing a column. */
+export interface DeleteLookupMasterColumnResponse {
+  base: BaseResponse | undefined;
+}
+
+/** UpdateLookupMasterRequest updates mutable fields of an existing lookup master. */
+export interface UpdateLookupMasterRequest {
+  lmCode: string;
+  lmDisplayName?: string | undefined;
+  lmTableName?: string | undefined;
+  lmIsActive?: boolean | undefined;
+}
+
+/** UpdateLookupMasterResponse is the response for UpdateLookupMaster. */
+export interface UpdateLookupMasterResponse {
+  base: BaseResponse | undefined;
+  data: LookupMaster | undefined;
+}
+
+/** TableColumn is one column from information_schema introspection. */
+export interface TableColumn {
+  /** PostgreSQL column name (e.g., "mc_speed"). */
+  columnName: string;
+  /** Mapped type: "NUMBER" or "TEXT". */
+  dataType: string;
+  /** Original PostgreSQL type (e.g., "numeric", "character varying"). */
+  rawType: string;
+  /** Position in the table (from information_schema). */
+  ordinalPosition: number;
+}
+
+/** ListTableColumnsRequest introspects a registered PostgreSQL table's columns. */
+export interface ListTableColumnsRequest {
+  /** Table name — must match an lm_table_name value in mst_lookup_master for safety. */
+  tableName: string;
+}
+
+/** ListTableColumnsResponse is the response for ListTableColumns. */
+export interface ListTableColumnsResponse {
+  base: BaseResponse | undefined;
+  data: TableColumn[];
+}
+
+/** MasterOption is one combobox entry (code + label) for the MasterLookupField dropdown. */
+export interface MasterOption {
+  /** The "code" field value stored as the param's text value. */
+  value: string;
+  /** The "label" field value displayed to the user. */
+  label: string;
+}
+
+/** ListMasterOptionsRequest queries the registered table to populate a combobox. */
+export interface ListMasterOptionsRequest {
+  /** lookup_master_code (e.g., "MACHINE") — used to resolve table_name + code/label fields. */
+  masterCode: string;
+}
+
+/** ListMasterOptionsResponse is the response for ListMasterOptions. */
+export interface ListMasterOptionsResponse {
+  base: BaseResponse | undefined;
+  data: MasterOption[];
+}
+
+/** ExportLookupMastersRequest is the request for exporting registry to Excel. */
+export interface ExportLookupMastersRequest {
+}
+
+/** ExportLookupMastersResponse carries the Excel workbook bytes. */
+export interface ExportLookupMastersResponse {
+  base: BaseResponse | undefined;
+  fileContent: Uint8Array;
+  fileName: string;
+}
+
+/** ImportLookupMastersRequest carries an Excel workbook to import registry entries. */
+export interface ImportLookupMastersRequest {
+  fileContent: Uint8Array;
+  fileName: string;
+}
+
+/** ImportLookupMastersResponse summarizes the import result. */
+export interface ImportLookupMastersResponse {
+  base: BaseResponse | undefined;
+  successCount: number;
+  skippedCount: number;
+  failedCount: number;
+  errors: string[];
 }
 
 function createBaseMachine(): Machine {
@@ -13329,6 +13552,2863 @@ export const DownloadMBSpinTemplateResponse: MessageFns<DownloadMBSpinTemplateRe
   },
 };
 
+function createBaseGetLookupFillValuesRequest(): GetLookupFillValuesRequest {
+  return { lookupMasterCode: "", selectedKey: "", sourceParamCode: "" };
+}
+
+export const GetLookupFillValuesRequest: MessageFns<GetLookupFillValuesRequest> = {
+  encode(message: GetLookupFillValuesRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.lookupMasterCode !== "") {
+      writer.uint32(10).string(message.lookupMasterCode);
+    }
+    if (message.selectedKey !== "") {
+      writer.uint32(18).string(message.selectedKey);
+    }
+    if (message.sourceParamCode !== "") {
+      writer.uint32(26).string(message.sourceParamCode);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetLookupFillValuesRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetLookupFillValuesRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.lookupMasterCode = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.selectedKey = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.sourceParamCode = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetLookupFillValuesRequest {
+    return {
+      lookupMasterCode: isSet(object.lookupMasterCode)
+        ? globalThis.String(object.lookupMasterCode)
+        : isSet(object.lookup_master_code)
+        ? globalThis.String(object.lookup_master_code)
+        : "",
+      selectedKey: isSet(object.selectedKey)
+        ? globalThis.String(object.selectedKey)
+        : isSet(object.selected_key)
+        ? globalThis.String(object.selected_key)
+        : "",
+      sourceParamCode: isSet(object.sourceParamCode)
+        ? globalThis.String(object.sourceParamCode)
+        : isSet(object.source_param_code)
+        ? globalThis.String(object.source_param_code)
+        : "",
+    };
+  },
+
+  toJSON(message: GetLookupFillValuesRequest): unknown {
+    const obj: any = {};
+    if (message.lookupMasterCode !== "") {
+      obj.lookupMasterCode = message.lookupMasterCode;
+    }
+    if (message.selectedKey !== "") {
+      obj.selectedKey = message.selectedKey;
+    }
+    if (message.sourceParamCode !== "") {
+      obj.sourceParamCode = message.sourceParamCode;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetLookupFillValuesRequest>): GetLookupFillValuesRequest {
+    return GetLookupFillValuesRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GetLookupFillValuesRequest>): GetLookupFillValuesRequest {
+    const message = createBaseGetLookupFillValuesRequest();
+    message.lookupMasterCode = object.lookupMasterCode ?? "";
+    message.selectedKey = object.selectedKey ?? "";
+    message.sourceParamCode = object.sourceParamCode ?? "";
+    return message;
+  },
+};
+
+function createBaseGetLookupFillValuesResponse(): GetLookupFillValuesResponse {
+  return { base: undefined, numericFills: {}, textFills: {}, displayLabel: "" };
+}
+
+export const GetLookupFillValuesResponse: MessageFns<GetLookupFillValuesResponse> = {
+  encode(message: GetLookupFillValuesResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    globalThis.Object.entries(message.numericFills).forEach(([key, value]: [string, number]) => {
+      GetLookupFillValuesResponse_NumericFillsEntry.encode({ key: key as any, value }, writer.uint32(18).fork()).join();
+    });
+    globalThis.Object.entries(message.textFills).forEach(([key, value]: [string, string]) => {
+      GetLookupFillValuesResponse_TextFillsEntry.encode({ key: key as any, value }, writer.uint32(26).fork()).join();
+    });
+    if (message.displayLabel !== "") {
+      writer.uint32(34).string(message.displayLabel);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetLookupFillValuesResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetLookupFillValuesResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          const entry2 = GetLookupFillValuesResponse_NumericFillsEntry.decode(reader, reader.uint32());
+          if (entry2.value !== undefined) {
+            message.numericFills[entry2.key] = entry2.value;
+          }
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          const entry3 = GetLookupFillValuesResponse_TextFillsEntry.decode(reader, reader.uint32());
+          if (entry3.value !== undefined) {
+            message.textFills[entry3.key] = entry3.value;
+          }
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.displayLabel = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetLookupFillValuesResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      numericFills: isObject(object.numericFills)
+        ? (globalThis.Object.entries(object.numericFills) as [string, any][]).reduce(
+          (acc: { [key: string]: number }, [key, value]: [string, any]) => {
+            acc[key] = globalThis.Number(value);
+            return acc;
+          },
+          {},
+        )
+        : isObject(object.numeric_fills)
+        ? (globalThis.Object.entries(object.numeric_fills) as [string, any][]).reduce(
+          (acc: { [key: string]: number }, [key, value]: [string, any]) => {
+            acc[key] = globalThis.Number(value);
+            return acc;
+          },
+          {},
+        )
+        : {},
+      textFills: isObject(object.textFills)
+        ? (globalThis.Object.entries(object.textFills) as [string, any][]).reduce(
+          (acc: { [key: string]: string }, [key, value]: [string, any]) => {
+            acc[key] = globalThis.String(value);
+            return acc;
+          },
+          {},
+        )
+        : isObject(object.text_fills)
+        ? (globalThis.Object.entries(object.text_fills) as [string, any][]).reduce(
+          (acc: { [key: string]: string }, [key, value]: [string, any]) => {
+            acc[key] = globalThis.String(value);
+            return acc;
+          },
+          {},
+        )
+        : {},
+      displayLabel: isSet(object.displayLabel)
+        ? globalThis.String(object.displayLabel)
+        : isSet(object.display_label)
+        ? globalThis.String(object.display_label)
+        : "",
+    };
+  },
+
+  toJSON(message: GetLookupFillValuesResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.numericFills) {
+      const entries = globalThis.Object.entries(message.numericFills) as [string, number][];
+      if (entries.length > 0) {
+        obj.numericFills = {};
+        entries.forEach(([k, v]) => {
+          obj.numericFills[k] = v;
+        });
+      }
+    }
+    if (message.textFills) {
+      const entries = globalThis.Object.entries(message.textFills) as [string, string][];
+      if (entries.length > 0) {
+        obj.textFills = {};
+        entries.forEach(([k, v]) => {
+          obj.textFills[k] = v;
+        });
+      }
+    }
+    if (message.displayLabel !== "") {
+      obj.displayLabel = message.displayLabel;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetLookupFillValuesResponse>): GetLookupFillValuesResponse {
+    return GetLookupFillValuesResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GetLookupFillValuesResponse>): GetLookupFillValuesResponse {
+    const message = createBaseGetLookupFillValuesResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.numericFills = (globalThis.Object.entries(object.numericFills ?? {}) as [string, number][]).reduce(
+      (acc: { [key: string]: number }, [key, value]: [string, number]) => {
+        if (value !== undefined) {
+          acc[key] = globalThis.Number(value);
+        }
+        return acc;
+      },
+      {},
+    );
+    message.textFills = (globalThis.Object.entries(object.textFills ?? {}) as [string, string][]).reduce(
+      (acc: { [key: string]: string }, [key, value]: [string, string]) => {
+        if (value !== undefined) {
+          acc[key] = globalThis.String(value);
+        }
+        return acc;
+      },
+      {},
+    );
+    message.displayLabel = object.displayLabel ?? "";
+    return message;
+  },
+};
+
+function createBaseGetLookupFillValuesResponse_NumericFillsEntry(): GetLookupFillValuesResponse_NumericFillsEntry {
+  return { key: "", value: 0 };
+}
+
+export const GetLookupFillValuesResponse_NumericFillsEntry: MessageFns<GetLookupFillValuesResponse_NumericFillsEntry> =
+  {
+    encode(
+      message: GetLookupFillValuesResponse_NumericFillsEntry,
+      writer: BinaryWriter = new BinaryWriter(),
+    ): BinaryWriter {
+      if (message.key !== "") {
+        writer.uint32(10).string(message.key);
+      }
+      if (message.value !== 0) {
+        writer.uint32(17).double(message.value);
+      }
+      return writer;
+    },
+
+    decode(input: BinaryReader | Uint8Array, length?: number): GetLookupFillValuesResponse_NumericFillsEntry {
+      const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+      const end = length === undefined ? reader.len : reader.pos + length;
+      const message = createBaseGetLookupFillValuesResponse_NumericFillsEntry();
+      while (reader.pos < end) {
+        const tag = reader.uint32();
+        switch (tag >>> 3) {
+          case 1: {
+            if (tag !== 10) {
+              break;
+            }
+
+            message.key = reader.string();
+            continue;
+          }
+          case 2: {
+            if (tag !== 17) {
+              break;
+            }
+
+            message.value = reader.double();
+            continue;
+          }
+        }
+        if ((tag & 7) === 4 || tag === 0) {
+          break;
+        }
+        reader.skip(tag & 7);
+      }
+      return message;
+    },
+
+    fromJSON(object: any): GetLookupFillValuesResponse_NumericFillsEntry {
+      return {
+        key: isSet(object.key) ? globalThis.String(object.key) : "",
+        value: isSet(object.value) ? globalThis.Number(object.value) : 0,
+      };
+    },
+
+    toJSON(message: GetLookupFillValuesResponse_NumericFillsEntry): unknown {
+      const obj: any = {};
+      if (message.key !== "") {
+        obj.key = message.key;
+      }
+      if (message.value !== 0) {
+        obj.value = message.value;
+      }
+      return obj;
+    },
+
+    create(
+      base?: DeepPartial<GetLookupFillValuesResponse_NumericFillsEntry>,
+    ): GetLookupFillValuesResponse_NumericFillsEntry {
+      return GetLookupFillValuesResponse_NumericFillsEntry.fromPartial(base ?? {});
+    },
+    fromPartial(
+      object: DeepPartial<GetLookupFillValuesResponse_NumericFillsEntry>,
+    ): GetLookupFillValuesResponse_NumericFillsEntry {
+      const message = createBaseGetLookupFillValuesResponse_NumericFillsEntry();
+      message.key = object.key ?? "";
+      message.value = object.value ?? 0;
+      return message;
+    },
+  };
+
+function createBaseGetLookupFillValuesResponse_TextFillsEntry(): GetLookupFillValuesResponse_TextFillsEntry {
+  return { key: "", value: "" };
+}
+
+export const GetLookupFillValuesResponse_TextFillsEntry: MessageFns<GetLookupFillValuesResponse_TextFillsEntry> = {
+  encode(message: GetLookupFillValuesResponse_TextFillsEntry, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.key !== "") {
+      writer.uint32(10).string(message.key);
+    }
+    if (message.value !== "") {
+      writer.uint32(18).string(message.value);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetLookupFillValuesResponse_TextFillsEntry {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetLookupFillValuesResponse_TextFillsEntry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.key = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.value = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetLookupFillValuesResponse_TextFillsEntry {
+    return {
+      key: isSet(object.key) ? globalThis.String(object.key) : "",
+      value: isSet(object.value) ? globalThis.String(object.value) : "",
+    };
+  },
+
+  toJSON(message: GetLookupFillValuesResponse_TextFillsEntry): unknown {
+    const obj: any = {};
+    if (message.key !== "") {
+      obj.key = message.key;
+    }
+    if (message.value !== "") {
+      obj.value = message.value;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetLookupFillValuesResponse_TextFillsEntry>): GetLookupFillValuesResponse_TextFillsEntry {
+    return GetLookupFillValuesResponse_TextFillsEntry.fromPartial(base ?? {});
+  },
+  fromPartial(
+    object: DeepPartial<GetLookupFillValuesResponse_TextFillsEntry>,
+  ): GetLookupFillValuesResponse_TextFillsEntry {
+    const message = createBaseGetLookupFillValuesResponse_TextFillsEntry();
+    message.key = object.key ?? "";
+    message.value = object.value ?? "";
+    return message;
+  },
+};
+
+function createBaseLookupMaster(): LookupMaster {
+  return {
+    lmCode: "",
+    lmDisplayName: "",
+    lmApiPath: "",
+    lmCodeField: "",
+    lmLabelField: "",
+    lmIsActive: false,
+    lmTableName: "",
+  };
+}
+
+export const LookupMaster: MessageFns<LookupMaster> = {
+  encode(message: LookupMaster, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.lmCode !== "") {
+      writer.uint32(10).string(message.lmCode);
+    }
+    if (message.lmDisplayName !== "") {
+      writer.uint32(18).string(message.lmDisplayName);
+    }
+    if (message.lmApiPath !== "") {
+      writer.uint32(26).string(message.lmApiPath);
+    }
+    if (message.lmCodeField !== "") {
+      writer.uint32(34).string(message.lmCodeField);
+    }
+    if (message.lmLabelField !== "") {
+      writer.uint32(42).string(message.lmLabelField);
+    }
+    if (message.lmIsActive !== false) {
+      writer.uint32(48).bool(message.lmIsActive);
+    }
+    if (message.lmTableName !== "") {
+      writer.uint32(58).string(message.lmTableName);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): LookupMaster {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseLookupMaster();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.lmCode = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.lmDisplayName = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.lmApiPath = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.lmCodeField = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.lmLabelField = reader.string();
+          continue;
+        }
+        case 6: {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.lmIsActive = reader.bool();
+          continue;
+        }
+        case 7: {
+          if (tag !== 58) {
+            break;
+          }
+
+          message.lmTableName = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): LookupMaster {
+    return {
+      lmCode: isSet(object.lmCode)
+        ? globalThis.String(object.lmCode)
+        : isSet(object.lm_code)
+        ? globalThis.String(object.lm_code)
+        : "",
+      lmDisplayName: isSet(object.lmDisplayName)
+        ? globalThis.String(object.lmDisplayName)
+        : isSet(object.lm_display_name)
+        ? globalThis.String(object.lm_display_name)
+        : "",
+      lmApiPath: isSet(object.lmApiPath)
+        ? globalThis.String(object.lmApiPath)
+        : isSet(object.lm_api_path)
+        ? globalThis.String(object.lm_api_path)
+        : "",
+      lmCodeField: isSet(object.lmCodeField)
+        ? globalThis.String(object.lmCodeField)
+        : isSet(object.lm_code_field)
+        ? globalThis.String(object.lm_code_field)
+        : "",
+      lmLabelField: isSet(object.lmLabelField)
+        ? globalThis.String(object.lmLabelField)
+        : isSet(object.lm_label_field)
+        ? globalThis.String(object.lm_label_field)
+        : "",
+      lmIsActive: isSet(object.lmIsActive)
+        ? globalThis.Boolean(object.lmIsActive)
+        : isSet(object.lm_is_active)
+        ? globalThis.Boolean(object.lm_is_active)
+        : false,
+      lmTableName: isSet(object.lmTableName)
+        ? globalThis.String(object.lmTableName)
+        : isSet(object.lm_table_name)
+        ? globalThis.String(object.lm_table_name)
+        : "",
+    };
+  },
+
+  toJSON(message: LookupMaster): unknown {
+    const obj: any = {};
+    if (message.lmCode !== "") {
+      obj.lmCode = message.lmCode;
+    }
+    if (message.lmDisplayName !== "") {
+      obj.lmDisplayName = message.lmDisplayName;
+    }
+    if (message.lmApiPath !== "") {
+      obj.lmApiPath = message.lmApiPath;
+    }
+    if (message.lmCodeField !== "") {
+      obj.lmCodeField = message.lmCodeField;
+    }
+    if (message.lmLabelField !== "") {
+      obj.lmLabelField = message.lmLabelField;
+    }
+    if (message.lmIsActive !== false) {
+      obj.lmIsActive = message.lmIsActive;
+    }
+    if (message.lmTableName !== "") {
+      obj.lmTableName = message.lmTableName;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<LookupMaster>): LookupMaster {
+    return LookupMaster.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<LookupMaster>): LookupMaster {
+    const message = createBaseLookupMaster();
+    message.lmCode = object.lmCode ?? "";
+    message.lmDisplayName = object.lmDisplayName ?? "";
+    message.lmApiPath = object.lmApiPath ?? "";
+    message.lmCodeField = object.lmCodeField ?? "";
+    message.lmLabelField = object.lmLabelField ?? "";
+    message.lmIsActive = object.lmIsActive ?? false;
+    message.lmTableName = object.lmTableName ?? "";
+    return message;
+  },
+};
+
+function createBaseListLookupMastersRequest(): ListLookupMastersRequest {
+  return { activeOnly: false };
+}
+
+export const ListLookupMastersRequest: MessageFns<ListLookupMastersRequest> = {
+  encode(message: ListLookupMastersRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.activeOnly !== false) {
+      writer.uint32(8).bool(message.activeOnly);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ListLookupMastersRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListLookupMastersRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.activeOnly = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListLookupMastersRequest {
+    return {
+      activeOnly: isSet(object.activeOnly)
+        ? globalThis.Boolean(object.activeOnly)
+        : isSet(object.active_only)
+        ? globalThis.Boolean(object.active_only)
+        : false,
+    };
+  },
+
+  toJSON(message: ListLookupMastersRequest): unknown {
+    const obj: any = {};
+    if (message.activeOnly !== false) {
+      obj.activeOnly = message.activeOnly;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListLookupMastersRequest>): ListLookupMastersRequest {
+    return ListLookupMastersRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ListLookupMastersRequest>): ListLookupMastersRequest {
+    const message = createBaseListLookupMastersRequest();
+    message.activeOnly = object.activeOnly ?? false;
+    return message;
+  },
+};
+
+function createBaseListLookupMastersResponse(): ListLookupMastersResponse {
+  return { base: undefined, data: [] };
+}
+
+export const ListLookupMastersResponse: MessageFns<ListLookupMastersResponse> = {
+  encode(message: ListLookupMastersResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    for (const v of message.data) {
+      LookupMaster.encode(v!, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ListLookupMastersResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListLookupMastersResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.data.push(LookupMaster.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListLookupMastersResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      data: globalThis.Array.isArray(object?.data) ? object.data.map((e: any) => LookupMaster.fromJSON(e)) : [],
+    };
+  },
+
+  toJSON(message: ListLookupMastersResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.data?.length) {
+      obj.data = message.data.map((e) => LookupMaster.toJSON(e));
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListLookupMastersResponse>): ListLookupMastersResponse {
+    return ListLookupMastersResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ListLookupMastersResponse>): ListLookupMastersResponse {
+    const message = createBaseListLookupMastersResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.data = object.data?.map((e) => LookupMaster.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseLookupMasterColumn(): LookupMasterColumn {
+  return { lmcMasterCode: "", lmcColumnName: "", lmcDisplayName: "", lmcDataType: "", lmcSortOrder: 0, lmcId: "" };
+}
+
+export const LookupMasterColumn: MessageFns<LookupMasterColumn> = {
+  encode(message: LookupMasterColumn, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.lmcMasterCode !== "") {
+      writer.uint32(10).string(message.lmcMasterCode);
+    }
+    if (message.lmcColumnName !== "") {
+      writer.uint32(18).string(message.lmcColumnName);
+    }
+    if (message.lmcDisplayName !== "") {
+      writer.uint32(26).string(message.lmcDisplayName);
+    }
+    if (message.lmcDataType !== "") {
+      writer.uint32(34).string(message.lmcDataType);
+    }
+    if (message.lmcSortOrder !== 0) {
+      writer.uint32(40).int32(message.lmcSortOrder);
+    }
+    if (message.lmcId !== "") {
+      writer.uint32(50).string(message.lmcId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): LookupMasterColumn {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseLookupMasterColumn();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.lmcMasterCode = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.lmcColumnName = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.lmcDisplayName = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.lmcDataType = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.lmcSortOrder = reader.int32();
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.lmcId = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): LookupMasterColumn {
+    return {
+      lmcMasterCode: isSet(object.lmcMasterCode)
+        ? globalThis.String(object.lmcMasterCode)
+        : isSet(object.lmc_master_code)
+        ? globalThis.String(object.lmc_master_code)
+        : "",
+      lmcColumnName: isSet(object.lmcColumnName)
+        ? globalThis.String(object.lmcColumnName)
+        : isSet(object.lmc_column_name)
+        ? globalThis.String(object.lmc_column_name)
+        : "",
+      lmcDisplayName: isSet(object.lmcDisplayName)
+        ? globalThis.String(object.lmcDisplayName)
+        : isSet(object.lmc_display_name)
+        ? globalThis.String(object.lmc_display_name)
+        : "",
+      lmcDataType: isSet(object.lmcDataType)
+        ? globalThis.String(object.lmcDataType)
+        : isSet(object.lmc_data_type)
+        ? globalThis.String(object.lmc_data_type)
+        : "",
+      lmcSortOrder: isSet(object.lmcSortOrder)
+        ? globalThis.Number(object.lmcSortOrder)
+        : isSet(object.lmc_sort_order)
+        ? globalThis.Number(object.lmc_sort_order)
+        : 0,
+      lmcId: isSet(object.lmcId)
+        ? globalThis.String(object.lmcId)
+        : isSet(object.lmc_id)
+        ? globalThis.String(object.lmc_id)
+        : "",
+    };
+  },
+
+  toJSON(message: LookupMasterColumn): unknown {
+    const obj: any = {};
+    if (message.lmcMasterCode !== "") {
+      obj.lmcMasterCode = message.lmcMasterCode;
+    }
+    if (message.lmcColumnName !== "") {
+      obj.lmcColumnName = message.lmcColumnName;
+    }
+    if (message.lmcDisplayName !== "") {
+      obj.lmcDisplayName = message.lmcDisplayName;
+    }
+    if (message.lmcDataType !== "") {
+      obj.lmcDataType = message.lmcDataType;
+    }
+    if (message.lmcSortOrder !== 0) {
+      obj.lmcSortOrder = Math.round(message.lmcSortOrder);
+    }
+    if (message.lmcId !== "") {
+      obj.lmcId = message.lmcId;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<LookupMasterColumn>): LookupMasterColumn {
+    return LookupMasterColumn.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<LookupMasterColumn>): LookupMasterColumn {
+    const message = createBaseLookupMasterColumn();
+    message.lmcMasterCode = object.lmcMasterCode ?? "";
+    message.lmcColumnName = object.lmcColumnName ?? "";
+    message.lmcDisplayName = object.lmcDisplayName ?? "";
+    message.lmcDataType = object.lmcDataType ?? "";
+    message.lmcSortOrder = object.lmcSortOrder ?? 0;
+    message.lmcId = object.lmcId ?? "";
+    return message;
+  },
+};
+
+function createBaseListLookupMasterColumnsRequest(): ListLookupMasterColumnsRequest {
+  return { masterCode: "" };
+}
+
+export const ListLookupMasterColumnsRequest: MessageFns<ListLookupMasterColumnsRequest> = {
+  encode(message: ListLookupMasterColumnsRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.masterCode !== "") {
+      writer.uint32(10).string(message.masterCode);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ListLookupMasterColumnsRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListLookupMasterColumnsRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.masterCode = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListLookupMasterColumnsRequest {
+    return {
+      masterCode: isSet(object.masterCode)
+        ? globalThis.String(object.masterCode)
+        : isSet(object.master_code)
+        ? globalThis.String(object.master_code)
+        : "",
+    };
+  },
+
+  toJSON(message: ListLookupMasterColumnsRequest): unknown {
+    const obj: any = {};
+    if (message.masterCode !== "") {
+      obj.masterCode = message.masterCode;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListLookupMasterColumnsRequest>): ListLookupMasterColumnsRequest {
+    return ListLookupMasterColumnsRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ListLookupMasterColumnsRequest>): ListLookupMasterColumnsRequest {
+    const message = createBaseListLookupMasterColumnsRequest();
+    message.masterCode = object.masterCode ?? "";
+    return message;
+  },
+};
+
+function createBaseListLookupMasterColumnsResponse(): ListLookupMasterColumnsResponse {
+  return { base: undefined, data: [] };
+}
+
+export const ListLookupMasterColumnsResponse: MessageFns<ListLookupMasterColumnsResponse> = {
+  encode(message: ListLookupMasterColumnsResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    for (const v of message.data) {
+      LookupMasterColumn.encode(v!, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ListLookupMasterColumnsResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListLookupMasterColumnsResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.data.push(LookupMasterColumn.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListLookupMasterColumnsResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      data: globalThis.Array.isArray(object?.data) ? object.data.map((e: any) => LookupMasterColumn.fromJSON(e)) : [],
+    };
+  },
+
+  toJSON(message: ListLookupMasterColumnsResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.data?.length) {
+      obj.data = message.data.map((e) => LookupMasterColumn.toJSON(e));
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListLookupMasterColumnsResponse>): ListLookupMasterColumnsResponse {
+    return ListLookupMasterColumnsResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ListLookupMasterColumnsResponse>): ListLookupMasterColumnsResponse {
+    const message = createBaseListLookupMasterColumnsResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.data = object.data?.map((e) => LookupMasterColumn.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseCreateLookupMasterRequest(): CreateLookupMasterRequest {
+  return { lmCode: "", lmDisplayName: "", lmApiPath: "", lmCodeField: "", lmLabelField: "", lmTableName: undefined };
+}
+
+export const CreateLookupMasterRequest: MessageFns<CreateLookupMasterRequest> = {
+  encode(message: CreateLookupMasterRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.lmCode !== "") {
+      writer.uint32(10).string(message.lmCode);
+    }
+    if (message.lmDisplayName !== "") {
+      writer.uint32(18).string(message.lmDisplayName);
+    }
+    if (message.lmApiPath !== "") {
+      writer.uint32(26).string(message.lmApiPath);
+    }
+    if (message.lmCodeField !== "") {
+      writer.uint32(34).string(message.lmCodeField);
+    }
+    if (message.lmLabelField !== "") {
+      writer.uint32(42).string(message.lmLabelField);
+    }
+    if (message.lmTableName !== undefined) {
+      writer.uint32(50).string(message.lmTableName);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CreateLookupMasterRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCreateLookupMasterRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.lmCode = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.lmDisplayName = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.lmApiPath = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.lmCodeField = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.lmLabelField = reader.string();
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.lmTableName = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CreateLookupMasterRequest {
+    return {
+      lmCode: isSet(object.lmCode)
+        ? globalThis.String(object.lmCode)
+        : isSet(object.lm_code)
+        ? globalThis.String(object.lm_code)
+        : "",
+      lmDisplayName: isSet(object.lmDisplayName)
+        ? globalThis.String(object.lmDisplayName)
+        : isSet(object.lm_display_name)
+        ? globalThis.String(object.lm_display_name)
+        : "",
+      lmApiPath: isSet(object.lmApiPath)
+        ? globalThis.String(object.lmApiPath)
+        : isSet(object.lm_api_path)
+        ? globalThis.String(object.lm_api_path)
+        : "",
+      lmCodeField: isSet(object.lmCodeField)
+        ? globalThis.String(object.lmCodeField)
+        : isSet(object.lm_code_field)
+        ? globalThis.String(object.lm_code_field)
+        : "",
+      lmLabelField: isSet(object.lmLabelField)
+        ? globalThis.String(object.lmLabelField)
+        : isSet(object.lm_label_field)
+        ? globalThis.String(object.lm_label_field)
+        : "",
+      lmTableName: isSet(object.lmTableName)
+        ? globalThis.String(object.lmTableName)
+        : isSet(object.lm_table_name)
+        ? globalThis.String(object.lm_table_name)
+        : undefined,
+    };
+  },
+
+  toJSON(message: CreateLookupMasterRequest): unknown {
+    const obj: any = {};
+    if (message.lmCode !== "") {
+      obj.lmCode = message.lmCode;
+    }
+    if (message.lmDisplayName !== "") {
+      obj.lmDisplayName = message.lmDisplayName;
+    }
+    if (message.lmApiPath !== "") {
+      obj.lmApiPath = message.lmApiPath;
+    }
+    if (message.lmCodeField !== "") {
+      obj.lmCodeField = message.lmCodeField;
+    }
+    if (message.lmLabelField !== "") {
+      obj.lmLabelField = message.lmLabelField;
+    }
+    if (message.lmTableName !== undefined) {
+      obj.lmTableName = message.lmTableName;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<CreateLookupMasterRequest>): CreateLookupMasterRequest {
+    return CreateLookupMasterRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<CreateLookupMasterRequest>): CreateLookupMasterRequest {
+    const message = createBaseCreateLookupMasterRequest();
+    message.lmCode = object.lmCode ?? "";
+    message.lmDisplayName = object.lmDisplayName ?? "";
+    message.lmApiPath = object.lmApiPath ?? "";
+    message.lmCodeField = object.lmCodeField ?? "";
+    message.lmLabelField = object.lmLabelField ?? "";
+    message.lmTableName = object.lmTableName ?? undefined;
+    return message;
+  },
+};
+
+function createBaseCreateLookupMasterResponse(): CreateLookupMasterResponse {
+  return { base: undefined, data: undefined };
+}
+
+export const CreateLookupMasterResponse: MessageFns<CreateLookupMasterResponse> = {
+  encode(message: CreateLookupMasterResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    if (message.data !== undefined) {
+      LookupMaster.encode(message.data, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CreateLookupMasterResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCreateLookupMasterResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.data = LookupMaster.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CreateLookupMasterResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      data: isSet(object.data) ? LookupMaster.fromJSON(object.data) : undefined,
+    };
+  },
+
+  toJSON(message: CreateLookupMasterResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.data !== undefined) {
+      obj.data = LookupMaster.toJSON(message.data);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<CreateLookupMasterResponse>): CreateLookupMasterResponse {
+    return CreateLookupMasterResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<CreateLookupMasterResponse>): CreateLookupMasterResponse {
+    const message = createBaseCreateLookupMasterResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.data = (object.data !== undefined && object.data !== null)
+      ? LookupMaster.fromPartial(object.data)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseDeleteLookupMasterRequest(): DeleteLookupMasterRequest {
+  return { lmCode: "" };
+}
+
+export const DeleteLookupMasterRequest: MessageFns<DeleteLookupMasterRequest> = {
+  encode(message: DeleteLookupMasterRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.lmCode !== "") {
+      writer.uint32(10).string(message.lmCode);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): DeleteLookupMasterRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDeleteLookupMasterRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.lmCode = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DeleteLookupMasterRequest {
+    return {
+      lmCode: isSet(object.lmCode)
+        ? globalThis.String(object.lmCode)
+        : isSet(object.lm_code)
+        ? globalThis.String(object.lm_code)
+        : "",
+    };
+  },
+
+  toJSON(message: DeleteLookupMasterRequest): unknown {
+    const obj: any = {};
+    if (message.lmCode !== "") {
+      obj.lmCode = message.lmCode;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<DeleteLookupMasterRequest>): DeleteLookupMasterRequest {
+    return DeleteLookupMasterRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<DeleteLookupMasterRequest>): DeleteLookupMasterRequest {
+    const message = createBaseDeleteLookupMasterRequest();
+    message.lmCode = object.lmCode ?? "";
+    return message;
+  },
+};
+
+function createBaseDeleteLookupMasterResponse(): DeleteLookupMasterResponse {
+  return { base: undefined };
+}
+
+export const DeleteLookupMasterResponse: MessageFns<DeleteLookupMasterResponse> = {
+  encode(message: DeleteLookupMasterResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): DeleteLookupMasterResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDeleteLookupMasterResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DeleteLookupMasterResponse {
+    return { base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined };
+  },
+
+  toJSON(message: DeleteLookupMasterResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<DeleteLookupMasterResponse>): DeleteLookupMasterResponse {
+    return DeleteLookupMasterResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<DeleteLookupMasterResponse>): DeleteLookupMasterResponse {
+    const message = createBaseDeleteLookupMasterResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseCreateLookupMasterColumnRequest(): CreateLookupMasterColumnRequest {
+  return { lmcMasterCode: "", lmcColumnName: "", lmcDisplayName: "", lmcDataType: "", lmcSortOrder: 0 };
+}
+
+export const CreateLookupMasterColumnRequest: MessageFns<CreateLookupMasterColumnRequest> = {
+  encode(message: CreateLookupMasterColumnRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.lmcMasterCode !== "") {
+      writer.uint32(10).string(message.lmcMasterCode);
+    }
+    if (message.lmcColumnName !== "") {
+      writer.uint32(18).string(message.lmcColumnName);
+    }
+    if (message.lmcDisplayName !== "") {
+      writer.uint32(26).string(message.lmcDisplayName);
+    }
+    if (message.lmcDataType !== "") {
+      writer.uint32(34).string(message.lmcDataType);
+    }
+    if (message.lmcSortOrder !== 0) {
+      writer.uint32(40).int32(message.lmcSortOrder);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CreateLookupMasterColumnRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCreateLookupMasterColumnRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.lmcMasterCode = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.lmcColumnName = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.lmcDisplayName = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.lmcDataType = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.lmcSortOrder = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CreateLookupMasterColumnRequest {
+    return {
+      lmcMasterCode: isSet(object.lmcMasterCode)
+        ? globalThis.String(object.lmcMasterCode)
+        : isSet(object.lmc_master_code)
+        ? globalThis.String(object.lmc_master_code)
+        : "",
+      lmcColumnName: isSet(object.lmcColumnName)
+        ? globalThis.String(object.lmcColumnName)
+        : isSet(object.lmc_column_name)
+        ? globalThis.String(object.lmc_column_name)
+        : "",
+      lmcDisplayName: isSet(object.lmcDisplayName)
+        ? globalThis.String(object.lmcDisplayName)
+        : isSet(object.lmc_display_name)
+        ? globalThis.String(object.lmc_display_name)
+        : "",
+      lmcDataType: isSet(object.lmcDataType)
+        ? globalThis.String(object.lmcDataType)
+        : isSet(object.lmc_data_type)
+        ? globalThis.String(object.lmc_data_type)
+        : "",
+      lmcSortOrder: isSet(object.lmcSortOrder)
+        ? globalThis.Number(object.lmcSortOrder)
+        : isSet(object.lmc_sort_order)
+        ? globalThis.Number(object.lmc_sort_order)
+        : 0,
+    };
+  },
+
+  toJSON(message: CreateLookupMasterColumnRequest): unknown {
+    const obj: any = {};
+    if (message.lmcMasterCode !== "") {
+      obj.lmcMasterCode = message.lmcMasterCode;
+    }
+    if (message.lmcColumnName !== "") {
+      obj.lmcColumnName = message.lmcColumnName;
+    }
+    if (message.lmcDisplayName !== "") {
+      obj.lmcDisplayName = message.lmcDisplayName;
+    }
+    if (message.lmcDataType !== "") {
+      obj.lmcDataType = message.lmcDataType;
+    }
+    if (message.lmcSortOrder !== 0) {
+      obj.lmcSortOrder = Math.round(message.lmcSortOrder);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<CreateLookupMasterColumnRequest>): CreateLookupMasterColumnRequest {
+    return CreateLookupMasterColumnRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<CreateLookupMasterColumnRequest>): CreateLookupMasterColumnRequest {
+    const message = createBaseCreateLookupMasterColumnRequest();
+    message.lmcMasterCode = object.lmcMasterCode ?? "";
+    message.lmcColumnName = object.lmcColumnName ?? "";
+    message.lmcDisplayName = object.lmcDisplayName ?? "";
+    message.lmcDataType = object.lmcDataType ?? "";
+    message.lmcSortOrder = object.lmcSortOrder ?? 0;
+    return message;
+  },
+};
+
+function createBaseCreateLookupMasterColumnResponse(): CreateLookupMasterColumnResponse {
+  return { base: undefined, data: undefined };
+}
+
+export const CreateLookupMasterColumnResponse: MessageFns<CreateLookupMasterColumnResponse> = {
+  encode(message: CreateLookupMasterColumnResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    if (message.data !== undefined) {
+      LookupMasterColumn.encode(message.data, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CreateLookupMasterColumnResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCreateLookupMasterColumnResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.data = LookupMasterColumn.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CreateLookupMasterColumnResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      data: isSet(object.data) ? LookupMasterColumn.fromJSON(object.data) : undefined,
+    };
+  },
+
+  toJSON(message: CreateLookupMasterColumnResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.data !== undefined) {
+      obj.data = LookupMasterColumn.toJSON(message.data);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<CreateLookupMasterColumnResponse>): CreateLookupMasterColumnResponse {
+    return CreateLookupMasterColumnResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<CreateLookupMasterColumnResponse>): CreateLookupMasterColumnResponse {
+    const message = createBaseCreateLookupMasterColumnResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.data = (object.data !== undefined && object.data !== null)
+      ? LookupMasterColumn.fromPartial(object.data)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseDeleteLookupMasterColumnRequest(): DeleteLookupMasterColumnRequest {
+  return { lmcId: "" };
+}
+
+export const DeleteLookupMasterColumnRequest: MessageFns<DeleteLookupMasterColumnRequest> = {
+  encode(message: DeleteLookupMasterColumnRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.lmcId !== "") {
+      writer.uint32(10).string(message.lmcId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): DeleteLookupMasterColumnRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDeleteLookupMasterColumnRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.lmcId = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DeleteLookupMasterColumnRequest {
+    return {
+      lmcId: isSet(object.lmcId)
+        ? globalThis.String(object.lmcId)
+        : isSet(object.lmc_id)
+        ? globalThis.String(object.lmc_id)
+        : "",
+    };
+  },
+
+  toJSON(message: DeleteLookupMasterColumnRequest): unknown {
+    const obj: any = {};
+    if (message.lmcId !== "") {
+      obj.lmcId = message.lmcId;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<DeleteLookupMasterColumnRequest>): DeleteLookupMasterColumnRequest {
+    return DeleteLookupMasterColumnRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<DeleteLookupMasterColumnRequest>): DeleteLookupMasterColumnRequest {
+    const message = createBaseDeleteLookupMasterColumnRequest();
+    message.lmcId = object.lmcId ?? "";
+    return message;
+  },
+};
+
+function createBaseDeleteLookupMasterColumnResponse(): DeleteLookupMasterColumnResponse {
+  return { base: undefined };
+}
+
+export const DeleteLookupMasterColumnResponse: MessageFns<DeleteLookupMasterColumnResponse> = {
+  encode(message: DeleteLookupMasterColumnResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): DeleteLookupMasterColumnResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDeleteLookupMasterColumnResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DeleteLookupMasterColumnResponse {
+    return { base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined };
+  },
+
+  toJSON(message: DeleteLookupMasterColumnResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<DeleteLookupMasterColumnResponse>): DeleteLookupMasterColumnResponse {
+    return DeleteLookupMasterColumnResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<DeleteLookupMasterColumnResponse>): DeleteLookupMasterColumnResponse {
+    const message = createBaseDeleteLookupMasterColumnResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseUpdateLookupMasterRequest(): UpdateLookupMasterRequest {
+  return { lmCode: "", lmDisplayName: undefined, lmTableName: undefined, lmIsActive: undefined };
+}
+
+export const UpdateLookupMasterRequest: MessageFns<UpdateLookupMasterRequest> = {
+  encode(message: UpdateLookupMasterRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.lmCode !== "") {
+      writer.uint32(10).string(message.lmCode);
+    }
+    if (message.lmDisplayName !== undefined) {
+      writer.uint32(18).string(message.lmDisplayName);
+    }
+    if (message.lmTableName !== undefined) {
+      writer.uint32(26).string(message.lmTableName);
+    }
+    if (message.lmIsActive !== undefined) {
+      writer.uint32(32).bool(message.lmIsActive);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): UpdateLookupMasterRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUpdateLookupMasterRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.lmCode = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.lmDisplayName = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.lmTableName = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.lmIsActive = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UpdateLookupMasterRequest {
+    return {
+      lmCode: isSet(object.lmCode)
+        ? globalThis.String(object.lmCode)
+        : isSet(object.lm_code)
+        ? globalThis.String(object.lm_code)
+        : "",
+      lmDisplayName: isSet(object.lmDisplayName)
+        ? globalThis.String(object.lmDisplayName)
+        : isSet(object.lm_display_name)
+        ? globalThis.String(object.lm_display_name)
+        : undefined,
+      lmTableName: isSet(object.lmTableName)
+        ? globalThis.String(object.lmTableName)
+        : isSet(object.lm_table_name)
+        ? globalThis.String(object.lm_table_name)
+        : undefined,
+      lmIsActive: isSet(object.lmIsActive)
+        ? globalThis.Boolean(object.lmIsActive)
+        : isSet(object.lm_is_active)
+        ? globalThis.Boolean(object.lm_is_active)
+        : undefined,
+    };
+  },
+
+  toJSON(message: UpdateLookupMasterRequest): unknown {
+    const obj: any = {};
+    if (message.lmCode !== "") {
+      obj.lmCode = message.lmCode;
+    }
+    if (message.lmDisplayName !== undefined) {
+      obj.lmDisplayName = message.lmDisplayName;
+    }
+    if (message.lmTableName !== undefined) {
+      obj.lmTableName = message.lmTableName;
+    }
+    if (message.lmIsActive !== undefined) {
+      obj.lmIsActive = message.lmIsActive;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<UpdateLookupMasterRequest>): UpdateLookupMasterRequest {
+    return UpdateLookupMasterRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<UpdateLookupMasterRequest>): UpdateLookupMasterRequest {
+    const message = createBaseUpdateLookupMasterRequest();
+    message.lmCode = object.lmCode ?? "";
+    message.lmDisplayName = object.lmDisplayName ?? undefined;
+    message.lmTableName = object.lmTableName ?? undefined;
+    message.lmIsActive = object.lmIsActive ?? undefined;
+    return message;
+  },
+};
+
+function createBaseUpdateLookupMasterResponse(): UpdateLookupMasterResponse {
+  return { base: undefined, data: undefined };
+}
+
+export const UpdateLookupMasterResponse: MessageFns<UpdateLookupMasterResponse> = {
+  encode(message: UpdateLookupMasterResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    if (message.data !== undefined) {
+      LookupMaster.encode(message.data, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): UpdateLookupMasterResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUpdateLookupMasterResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.data = LookupMaster.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UpdateLookupMasterResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      data: isSet(object.data) ? LookupMaster.fromJSON(object.data) : undefined,
+    };
+  },
+
+  toJSON(message: UpdateLookupMasterResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.data !== undefined) {
+      obj.data = LookupMaster.toJSON(message.data);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<UpdateLookupMasterResponse>): UpdateLookupMasterResponse {
+    return UpdateLookupMasterResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<UpdateLookupMasterResponse>): UpdateLookupMasterResponse {
+    const message = createBaseUpdateLookupMasterResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.data = (object.data !== undefined && object.data !== null)
+      ? LookupMaster.fromPartial(object.data)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseTableColumn(): TableColumn {
+  return { columnName: "", dataType: "", rawType: "", ordinalPosition: 0 };
+}
+
+export const TableColumn: MessageFns<TableColumn> = {
+  encode(message: TableColumn, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.columnName !== "") {
+      writer.uint32(10).string(message.columnName);
+    }
+    if (message.dataType !== "") {
+      writer.uint32(18).string(message.dataType);
+    }
+    if (message.rawType !== "") {
+      writer.uint32(26).string(message.rawType);
+    }
+    if (message.ordinalPosition !== 0) {
+      writer.uint32(32).int32(message.ordinalPosition);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): TableColumn {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseTableColumn();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.columnName = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.dataType = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.rawType = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.ordinalPosition = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): TableColumn {
+    return {
+      columnName: isSet(object.columnName)
+        ? globalThis.String(object.columnName)
+        : isSet(object.column_name)
+        ? globalThis.String(object.column_name)
+        : "",
+      dataType: isSet(object.dataType)
+        ? globalThis.String(object.dataType)
+        : isSet(object.data_type)
+        ? globalThis.String(object.data_type)
+        : "",
+      rawType: isSet(object.rawType)
+        ? globalThis.String(object.rawType)
+        : isSet(object.raw_type)
+        ? globalThis.String(object.raw_type)
+        : "",
+      ordinalPosition: isSet(object.ordinalPosition)
+        ? globalThis.Number(object.ordinalPosition)
+        : isSet(object.ordinal_position)
+        ? globalThis.Number(object.ordinal_position)
+        : 0,
+    };
+  },
+
+  toJSON(message: TableColumn): unknown {
+    const obj: any = {};
+    if (message.columnName !== "") {
+      obj.columnName = message.columnName;
+    }
+    if (message.dataType !== "") {
+      obj.dataType = message.dataType;
+    }
+    if (message.rawType !== "") {
+      obj.rawType = message.rawType;
+    }
+    if (message.ordinalPosition !== 0) {
+      obj.ordinalPosition = Math.round(message.ordinalPosition);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<TableColumn>): TableColumn {
+    return TableColumn.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<TableColumn>): TableColumn {
+    const message = createBaseTableColumn();
+    message.columnName = object.columnName ?? "";
+    message.dataType = object.dataType ?? "";
+    message.rawType = object.rawType ?? "";
+    message.ordinalPosition = object.ordinalPosition ?? 0;
+    return message;
+  },
+};
+
+function createBaseListTableColumnsRequest(): ListTableColumnsRequest {
+  return { tableName: "" };
+}
+
+export const ListTableColumnsRequest: MessageFns<ListTableColumnsRequest> = {
+  encode(message: ListTableColumnsRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.tableName !== "") {
+      writer.uint32(10).string(message.tableName);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ListTableColumnsRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListTableColumnsRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.tableName = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListTableColumnsRequest {
+    return {
+      tableName: isSet(object.tableName)
+        ? globalThis.String(object.tableName)
+        : isSet(object.table_name)
+        ? globalThis.String(object.table_name)
+        : "",
+    };
+  },
+
+  toJSON(message: ListTableColumnsRequest): unknown {
+    const obj: any = {};
+    if (message.tableName !== "") {
+      obj.tableName = message.tableName;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListTableColumnsRequest>): ListTableColumnsRequest {
+    return ListTableColumnsRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ListTableColumnsRequest>): ListTableColumnsRequest {
+    const message = createBaseListTableColumnsRequest();
+    message.tableName = object.tableName ?? "";
+    return message;
+  },
+};
+
+function createBaseListTableColumnsResponse(): ListTableColumnsResponse {
+  return { base: undefined, data: [] };
+}
+
+export const ListTableColumnsResponse: MessageFns<ListTableColumnsResponse> = {
+  encode(message: ListTableColumnsResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    for (const v of message.data) {
+      TableColumn.encode(v!, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ListTableColumnsResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListTableColumnsResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.data.push(TableColumn.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListTableColumnsResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      data: globalThis.Array.isArray(object?.data) ? object.data.map((e: any) => TableColumn.fromJSON(e)) : [],
+    };
+  },
+
+  toJSON(message: ListTableColumnsResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.data?.length) {
+      obj.data = message.data.map((e) => TableColumn.toJSON(e));
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListTableColumnsResponse>): ListTableColumnsResponse {
+    return ListTableColumnsResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ListTableColumnsResponse>): ListTableColumnsResponse {
+    const message = createBaseListTableColumnsResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.data = object.data?.map((e) => TableColumn.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseMasterOption(): MasterOption {
+  return { value: "", label: "" };
+}
+
+export const MasterOption: MessageFns<MasterOption> = {
+  encode(message: MasterOption, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.value !== "") {
+      writer.uint32(10).string(message.value);
+    }
+    if (message.label !== "") {
+      writer.uint32(18).string(message.label);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): MasterOption {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMasterOption();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.value = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.label = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): MasterOption {
+    return {
+      value: isSet(object.value) ? globalThis.String(object.value) : "",
+      label: isSet(object.label) ? globalThis.String(object.label) : "",
+    };
+  },
+
+  toJSON(message: MasterOption): unknown {
+    const obj: any = {};
+    if (message.value !== "") {
+      obj.value = message.value;
+    }
+    if (message.label !== "") {
+      obj.label = message.label;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<MasterOption>): MasterOption {
+    return MasterOption.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<MasterOption>): MasterOption {
+    const message = createBaseMasterOption();
+    message.value = object.value ?? "";
+    message.label = object.label ?? "";
+    return message;
+  },
+};
+
+function createBaseListMasterOptionsRequest(): ListMasterOptionsRequest {
+  return { masterCode: "" };
+}
+
+export const ListMasterOptionsRequest: MessageFns<ListMasterOptionsRequest> = {
+  encode(message: ListMasterOptionsRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.masterCode !== "") {
+      writer.uint32(10).string(message.masterCode);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ListMasterOptionsRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListMasterOptionsRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.masterCode = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListMasterOptionsRequest {
+    return {
+      masterCode: isSet(object.masterCode)
+        ? globalThis.String(object.masterCode)
+        : isSet(object.master_code)
+        ? globalThis.String(object.master_code)
+        : "",
+    };
+  },
+
+  toJSON(message: ListMasterOptionsRequest): unknown {
+    const obj: any = {};
+    if (message.masterCode !== "") {
+      obj.masterCode = message.masterCode;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListMasterOptionsRequest>): ListMasterOptionsRequest {
+    return ListMasterOptionsRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ListMasterOptionsRequest>): ListMasterOptionsRequest {
+    const message = createBaseListMasterOptionsRequest();
+    message.masterCode = object.masterCode ?? "";
+    return message;
+  },
+};
+
+function createBaseListMasterOptionsResponse(): ListMasterOptionsResponse {
+  return { base: undefined, data: [] };
+}
+
+export const ListMasterOptionsResponse: MessageFns<ListMasterOptionsResponse> = {
+  encode(message: ListMasterOptionsResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    for (const v of message.data) {
+      MasterOption.encode(v!, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ListMasterOptionsResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListMasterOptionsResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.data.push(MasterOption.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListMasterOptionsResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      data: globalThis.Array.isArray(object?.data) ? object.data.map((e: any) => MasterOption.fromJSON(e)) : [],
+    };
+  },
+
+  toJSON(message: ListMasterOptionsResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.data?.length) {
+      obj.data = message.data.map((e) => MasterOption.toJSON(e));
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListMasterOptionsResponse>): ListMasterOptionsResponse {
+    return ListMasterOptionsResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ListMasterOptionsResponse>): ListMasterOptionsResponse {
+    const message = createBaseListMasterOptionsResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.data = object.data?.map((e) => MasterOption.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseExportLookupMastersRequest(): ExportLookupMastersRequest {
+  return {};
+}
+
+export const ExportLookupMastersRequest: MessageFns<ExportLookupMastersRequest> = {
+  encode(_: ExportLookupMastersRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ExportLookupMastersRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseExportLookupMastersRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): ExportLookupMastersRequest {
+    return {};
+  },
+
+  toJSON(_: ExportLookupMastersRequest): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create(base?: DeepPartial<ExportLookupMastersRequest>): ExportLookupMastersRequest {
+    return ExportLookupMastersRequest.fromPartial(base ?? {});
+  },
+  fromPartial(_: DeepPartial<ExportLookupMastersRequest>): ExportLookupMastersRequest {
+    const message = createBaseExportLookupMastersRequest();
+    return message;
+  },
+};
+
+function createBaseExportLookupMastersResponse(): ExportLookupMastersResponse {
+  return { base: undefined, fileContent: new Uint8Array(0), fileName: "" };
+}
+
+export const ExportLookupMastersResponse: MessageFns<ExportLookupMastersResponse> = {
+  encode(message: ExportLookupMastersResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    if (message.fileContent.length !== 0) {
+      writer.uint32(18).bytes(message.fileContent);
+    }
+    if (message.fileName !== "") {
+      writer.uint32(26).string(message.fileName);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ExportLookupMastersResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseExportLookupMastersResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.fileContent = reader.bytes();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.fileName = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ExportLookupMastersResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      fileContent: isSet(object.fileContent)
+        ? bytesFromBase64(object.fileContent)
+        : isSet(object.file_content)
+        ? bytesFromBase64(object.file_content)
+        : new Uint8Array(0),
+      fileName: isSet(object.fileName)
+        ? globalThis.String(object.fileName)
+        : isSet(object.file_name)
+        ? globalThis.String(object.file_name)
+        : "",
+    };
+  },
+
+  toJSON(message: ExportLookupMastersResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.fileContent.length !== 0) {
+      obj.fileContent = base64FromBytes(message.fileContent);
+    }
+    if (message.fileName !== "") {
+      obj.fileName = message.fileName;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ExportLookupMastersResponse>): ExportLookupMastersResponse {
+    return ExportLookupMastersResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ExportLookupMastersResponse>): ExportLookupMastersResponse {
+    const message = createBaseExportLookupMastersResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.fileContent = object.fileContent ?? new Uint8Array(0);
+    message.fileName = object.fileName ?? "";
+    return message;
+  },
+};
+
+function createBaseImportLookupMastersRequest(): ImportLookupMastersRequest {
+  return { fileContent: new Uint8Array(0), fileName: "" };
+}
+
+export const ImportLookupMastersRequest: MessageFns<ImportLookupMastersRequest> = {
+  encode(message: ImportLookupMastersRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.fileContent.length !== 0) {
+      writer.uint32(10).bytes(message.fileContent);
+    }
+    if (message.fileName !== "") {
+      writer.uint32(18).string(message.fileName);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ImportLookupMastersRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseImportLookupMastersRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.fileContent = reader.bytes();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.fileName = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ImportLookupMastersRequest {
+    return {
+      fileContent: isSet(object.fileContent)
+        ? bytesFromBase64(object.fileContent)
+        : isSet(object.file_content)
+        ? bytesFromBase64(object.file_content)
+        : new Uint8Array(0),
+      fileName: isSet(object.fileName)
+        ? globalThis.String(object.fileName)
+        : isSet(object.file_name)
+        ? globalThis.String(object.file_name)
+        : "",
+    };
+  },
+
+  toJSON(message: ImportLookupMastersRequest): unknown {
+    const obj: any = {};
+    if (message.fileContent.length !== 0) {
+      obj.fileContent = base64FromBytes(message.fileContent);
+    }
+    if (message.fileName !== "") {
+      obj.fileName = message.fileName;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ImportLookupMastersRequest>): ImportLookupMastersRequest {
+    return ImportLookupMastersRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ImportLookupMastersRequest>): ImportLookupMastersRequest {
+    const message = createBaseImportLookupMastersRequest();
+    message.fileContent = object.fileContent ?? new Uint8Array(0);
+    message.fileName = object.fileName ?? "";
+    return message;
+  },
+};
+
+function createBaseImportLookupMastersResponse(): ImportLookupMastersResponse {
+  return { base: undefined, successCount: 0, skippedCount: 0, failedCount: 0, errors: [] };
+}
+
+export const ImportLookupMastersResponse: MessageFns<ImportLookupMastersResponse> = {
+  encode(message: ImportLookupMastersResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    if (message.successCount !== 0) {
+      writer.uint32(16).int32(message.successCount);
+    }
+    if (message.skippedCount !== 0) {
+      writer.uint32(24).int32(message.skippedCount);
+    }
+    if (message.failedCount !== 0) {
+      writer.uint32(32).int32(message.failedCount);
+    }
+    for (const v of message.errors) {
+      writer.uint32(42).string(v!);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ImportLookupMastersResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseImportLookupMastersResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.successCount = reader.int32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.skippedCount = reader.int32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.failedCount = reader.int32();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.errors.push(reader.string());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ImportLookupMastersResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      successCount: isSet(object.successCount)
+        ? globalThis.Number(object.successCount)
+        : isSet(object.success_count)
+        ? globalThis.Number(object.success_count)
+        : 0,
+      skippedCount: isSet(object.skippedCount)
+        ? globalThis.Number(object.skippedCount)
+        : isSet(object.skipped_count)
+        ? globalThis.Number(object.skipped_count)
+        : 0,
+      failedCount: isSet(object.failedCount)
+        ? globalThis.Number(object.failedCount)
+        : isSet(object.failed_count)
+        ? globalThis.Number(object.failed_count)
+        : 0,
+      errors: globalThis.Array.isArray(object?.errors) ? object.errors.map((e: any) => globalThis.String(e)) : [],
+    };
+  },
+
+  toJSON(message: ImportLookupMastersResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.successCount !== 0) {
+      obj.successCount = Math.round(message.successCount);
+    }
+    if (message.skippedCount !== 0) {
+      obj.skippedCount = Math.round(message.skippedCount);
+    }
+    if (message.failedCount !== 0) {
+      obj.failedCount = Math.round(message.failedCount);
+    }
+    if (message.errors?.length) {
+      obj.errors = message.errors;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ImportLookupMastersResponse>): ImportLookupMastersResponse {
+    return ImportLookupMastersResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ImportLookupMastersResponse>): ImportLookupMastersResponse {
+    const message = createBaseImportLookupMastersResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.successCount = object.successCount ?? 0;
+    message.skippedCount = object.skippedCount ?? 0;
+    message.failedCount = object.failedCount ?? 0;
+    message.errors = object.errors?.map((e) => e) || [];
+    return message;
+  },
+};
+
 /** MachineService manages yarn machine master data. */
 export type MachineServiceDefinition = typeof MachineServiceDefinition;
 export const MachineServiceDefinition = {
@@ -13342,44 +16422,7 @@ export const MachineServiceDefinition = {
       requestStream: false,
       responseType: CreateMachineResponse,
       responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              29,
-              58,
-              1,
-              42,
-              34,
-              24,
-              47,
-              97,
-              112,
-              105,
-              47,
-              118,
-              49,
-              47,
-              102,
-              105,
-              110,
-              97,
-              110,
-              99,
-              101,
-              47,
-              109,
-              97,
-              99,
-              104,
-              105,
-              110,
-              101,
-              115,
-            ]),
-          ],
-        },
-      },
+      options: {},
     },
     /** GetMachine retrieves a machine by ID. */
     getMachine: {
@@ -13388,54 +16431,7 @@ export const MachineServiceDefinition = {
       requestStream: false,
       responseType: GetMachineResponse,
       responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              39,
-              18,
-              37,
-              47,
-              97,
-              112,
-              105,
-              47,
-              118,
-              49,
-              47,
-              102,
-              105,
-              110,
-              97,
-              110,
-              99,
-              101,
-              47,
-              109,
-              97,
-              99,
-              104,
-              105,
-              110,
-              101,
-              115,
-              47,
-              123,
-              109,
-              97,
-              99,
-              104,
-              105,
-              110,
-              101,
-              95,
-              105,
-              100,
-              125,
-            ]),
-          ],
-        },
-      },
+      options: {},
     },
     /** ListMachines lists machine records with search, filter, and pagination. */
     listMachines: {
@@ -13444,41 +16440,7 @@ export const MachineServiceDefinition = {
       requestStream: false,
       responseType: ListMachinesResponse,
       responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              26,
-              18,
-              24,
-              47,
-              97,
-              112,
-              105,
-              47,
-              118,
-              49,
-              47,
-              102,
-              105,
-              110,
-              97,
-              110,
-              99,
-              101,
-              47,
-              109,
-              97,
-              99,
-              104,
-              105,
-              110,
-              101,
-              115,
-            ]),
-          ],
-        },
-      },
+      options: {},
     },
     /** UpdateMachine updates an existing machine record. */
     updateMachine: {
@@ -13487,57 +16449,7 @@ export const MachineServiceDefinition = {
       requestStream: false,
       responseType: UpdateMachineResponse,
       responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              42,
-              58,
-              1,
-              42,
-              26,
-              37,
-              47,
-              97,
-              112,
-              105,
-              47,
-              118,
-              49,
-              47,
-              102,
-              105,
-              110,
-              97,
-              110,
-              99,
-              101,
-              47,
-              109,
-              97,
-              99,
-              104,
-              105,
-              110,
-              101,
-              115,
-              47,
-              123,
-              109,
-              97,
-              99,
-              104,
-              105,
-              110,
-              101,
-              95,
-              105,
-              100,
-              125,
-            ]),
-          ],
-        },
-      },
+      options: {},
     },
     /** DeleteMachine soft-deletes a machine record. */
     deleteMachine: {
@@ -13546,54 +16458,7 @@ export const MachineServiceDefinition = {
       requestStream: false,
       responseType: DeleteMachineResponse,
       responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              39,
-              42,
-              37,
-              47,
-              97,
-              112,
-              105,
-              47,
-              118,
-              49,
-              47,
-              102,
-              105,
-              110,
-              97,
-              110,
-              99,
-              101,
-              47,
-              109,
-              97,
-              99,
-              104,
-              105,
-              110,
-              101,
-              115,
-              47,
-              123,
-              109,
-              97,
-              99,
-              104,
-              105,
-              110,
-              101,
-              95,
-              105,
-              100,
-              125,
-            ]),
-          ],
-        },
-      },
+      options: {},
     },
     /** ExportMachines exports machine records to Excel. */
     exportMachines: {
@@ -13602,48 +16467,7 @@ export const MachineServiceDefinition = {
       requestStream: false,
       responseType: ExportMachinesResponse,
       responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              33,
-              18,
-              31,
-              47,
-              97,
-              112,
-              105,
-              47,
-              118,
-              49,
-              47,
-              102,
-              105,
-              110,
-              97,
-              110,
-              99,
-              101,
-              47,
-              109,
-              97,
-              99,
-              104,
-              105,
-              110,
-              101,
-              115,
-              47,
-              101,
-              120,
-              112,
-              111,
-              114,
-              116,
-            ]),
-          ],
-        },
-      },
+      options: {},
     },
     /** ImportMachines imports machine records from Excel. */
     importMachines: {
@@ -13652,51 +16476,7 @@ export const MachineServiceDefinition = {
       requestStream: false,
       responseType: ImportMachinesResponse,
       responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              36,
-              58,
-              1,
-              42,
-              34,
-              31,
-              47,
-              97,
-              112,
-              105,
-              47,
-              118,
-              49,
-              47,
-              102,
-              105,
-              110,
-              97,
-              110,
-              99,
-              101,
-              47,
-              109,
-              97,
-              99,
-              104,
-              105,
-              110,
-              101,
-              115,
-              47,
-              105,
-              109,
-              112,
-              111,
-              114,
-              116,
-            ]),
-          ],
-        },
-      },
+      options: {},
     },
     /** DownloadMachineTemplate downloads the Excel import template. */
     downloadMachineTemplate: {
@@ -13705,50 +16485,7 @@ export const MachineServiceDefinition = {
       requestStream: false,
       responseType: DownloadMachineTemplateResponse,
       responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              35,
-              18,
-              33,
-              47,
-              97,
-              112,
-              105,
-              47,
-              118,
-              49,
-              47,
-              102,
-              105,
-              110,
-              97,
-              110,
-              99,
-              101,
-              47,
-              109,
-              97,
-              99,
-              104,
-              105,
-              110,
-              101,
-              115,
-              47,
-              116,
-              101,
-              109,
-              112,
-              108,
-              97,
-              116,
-              101,
-            ]),
-          ],
-        },
-      },
+      options: {},
     },
   },
 } as const;
@@ -13766,52 +16503,7 @@ export const BoxBobbinCostServiceDefinition = {
       requestStream: false,
       responseType: CreateBoxBobbinCostResponse,
       responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              37,
-              58,
-              1,
-              42,
-              34,
-              32,
-              47,
-              97,
-              112,
-              105,
-              47,
-              118,
-              49,
-              47,
-              102,
-              105,
-              110,
-              97,
-              110,
-              99,
-              101,
-              47,
-              98,
-              111,
-              120,
-              45,
-              98,
-              111,
-              98,
-              98,
-              105,
-              110,
-              45,
-              99,
-              111,
-              115,
-              116,
-              115,
-            ]),
-          ],
-        },
-      },
+      options: {},
     },
     /** GetBoxBobbinCost retrieves a config by ID (includes rates). */
     getBoxBobbinCost: {
@@ -13820,58 +16512,7 @@ export const BoxBobbinCostServiceDefinition = {
       requestStream: false,
       responseType: GetBoxBobbinCostResponse,
       responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              43,
-              18,
-              41,
-              47,
-              97,
-              112,
-              105,
-              47,
-              118,
-              49,
-              47,
-              102,
-              105,
-              110,
-              97,
-              110,
-              99,
-              101,
-              47,
-              98,
-              111,
-              120,
-              45,
-              98,
-              111,
-              98,
-              98,
-              105,
-              110,
-              45,
-              99,
-              111,
-              115,
-              116,
-              115,
-              47,
-              123,
-              98,
-              98,
-              99,
-              95,
-              105,
-              100,
-              125,
-            ]),
-          ],
-        },
-      },
+      options: {},
     },
     /** ListBoxBobbinCosts lists configs with search, filter, and pagination. */
     listBoxBobbinCosts: {
@@ -13880,49 +16521,7 @@ export const BoxBobbinCostServiceDefinition = {
       requestStream: false,
       responseType: ListBoxBobbinCostsResponse,
       responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              34,
-              18,
-              32,
-              47,
-              97,
-              112,
-              105,
-              47,
-              118,
-              49,
-              47,
-              102,
-              105,
-              110,
-              97,
-              110,
-              99,
-              101,
-              47,
-              98,
-              111,
-              120,
-              45,
-              98,
-              111,
-              98,
-              98,
-              105,
-              110,
-              45,
-              99,
-              111,
-              115,
-              116,
-              115,
-            ]),
-          ],
-        },
-      },
+      options: {},
     },
     /** UpdateBoxBobbinCost updates an existing config. */
     updateBoxBobbinCost: {
@@ -13931,61 +16530,7 @@ export const BoxBobbinCostServiceDefinition = {
       requestStream: false,
       responseType: UpdateBoxBobbinCostResponse,
       responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              46,
-              58,
-              1,
-              42,
-              26,
-              41,
-              47,
-              97,
-              112,
-              105,
-              47,
-              118,
-              49,
-              47,
-              102,
-              105,
-              110,
-              97,
-              110,
-              99,
-              101,
-              47,
-              98,
-              111,
-              120,
-              45,
-              98,
-              111,
-              98,
-              98,
-              105,
-              110,
-              45,
-              99,
-              111,
-              115,
-              116,
-              115,
-              47,
-              123,
-              98,
-              98,
-              99,
-              95,
-              105,
-              100,
-              125,
-            ]),
-          ],
-        },
-      },
+      options: {},
     },
     /** DeleteBoxBobbinCost soft-deletes a config. */
     deleteBoxBobbinCost: {
@@ -13994,58 +16539,7 @@ export const BoxBobbinCostServiceDefinition = {
       requestStream: false,
       responseType: DeleteBoxBobbinCostResponse,
       responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              43,
-              42,
-              41,
-              47,
-              97,
-              112,
-              105,
-              47,
-              118,
-              49,
-              47,
-              102,
-              105,
-              110,
-              97,
-              110,
-              99,
-              101,
-              47,
-              98,
-              111,
-              120,
-              45,
-              98,
-              111,
-              98,
-              98,
-              105,
-              110,
-              45,
-              99,
-              111,
-              115,
-              116,
-              115,
-              47,
-              123,
-              98,
-              98,
-              99,
-              95,
-              105,
-              100,
-              125,
-            ]),
-          ],
-        },
-      },
+      options: {},
     },
     /** CreateBoxBobbinCostRate adds a period rate entry to a config. */
     createBoxBobbinCostRate: {
@@ -14054,67 +16548,7 @@ export const BoxBobbinCostServiceDefinition = {
       requestStream: false,
       responseType: CreateBoxBobbinCostRateResponse,
       responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              52,
-              58,
-              1,
-              42,
-              34,
-              47,
-              47,
-              97,
-              112,
-              105,
-              47,
-              118,
-              49,
-              47,
-              102,
-              105,
-              110,
-              97,
-              110,
-              99,
-              101,
-              47,
-              98,
-              111,
-              120,
-              45,
-              98,
-              111,
-              98,
-              98,
-              105,
-              110,
-              45,
-              99,
-              111,
-              115,
-              116,
-              115,
-              47,
-              123,
-              98,
-              98,
-              99,
-              95,
-              105,
-              100,
-              125,
-              47,
-              114,
-              97,
-              116,
-              101,
-              115,
-            ]),
-          ],
-        },
-      },
+      options: {},
     },
     /** DeleteBoxBobbinCostRate removes a period rate entry. */
     deleteBoxBobbinCostRate: {
@@ -14123,74 +16557,7 @@ export const BoxBobbinCostServiceDefinition = {
       requestStream: false,
       responseType: DeleteBoxBobbinCostRateResponse,
       responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              59,
-              42,
-              57,
-              47,
-              97,
-              112,
-              105,
-              47,
-              118,
-              49,
-              47,
-              102,
-              105,
-              110,
-              97,
-              110,
-              99,
-              101,
-              47,
-              98,
-              111,
-              120,
-              45,
-              98,
-              111,
-              98,
-              98,
-              105,
-              110,
-              45,
-              99,
-              111,
-              115,
-              116,
-              115,
-              47,
-              123,
-              98,
-              98,
-              99,
-              95,
-              105,
-              100,
-              125,
-              47,
-              114,
-              97,
-              116,
-              101,
-              115,
-              47,
-              123,
-              98,
-              98,
-              99,
-              114,
-              95,
-              105,
-              100,
-              125,
-            ]),
-          ],
-        },
-      },
+      options: {},
     },
     /** ExportBoxBobbinCosts exports configs to Excel. */
     exportBoxBobbinCosts: {
@@ -14199,56 +16566,7 @@ export const BoxBobbinCostServiceDefinition = {
       requestStream: false,
       responseType: ExportBoxBobbinCostsResponse,
       responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              41,
-              18,
-              39,
-              47,
-              97,
-              112,
-              105,
-              47,
-              118,
-              49,
-              47,
-              102,
-              105,
-              110,
-              97,
-              110,
-              99,
-              101,
-              47,
-              98,
-              111,
-              120,
-              45,
-              98,
-              111,
-              98,
-              98,
-              105,
-              110,
-              45,
-              99,
-              111,
-              115,
-              116,
-              115,
-              47,
-              101,
-              120,
-              112,
-              111,
-              114,
-              116,
-            ]),
-          ],
-        },
-      },
+      options: {},
     },
     /** ImportBoxBobbinCosts imports configs from Excel. */
     importBoxBobbinCosts: {
@@ -14257,59 +16575,7 @@ export const BoxBobbinCostServiceDefinition = {
       requestStream: false,
       responseType: ImportBoxBobbinCostsResponse,
       responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              44,
-              58,
-              1,
-              42,
-              34,
-              39,
-              47,
-              97,
-              112,
-              105,
-              47,
-              118,
-              49,
-              47,
-              102,
-              105,
-              110,
-              97,
-              110,
-              99,
-              101,
-              47,
-              98,
-              111,
-              120,
-              45,
-              98,
-              111,
-              98,
-              98,
-              105,
-              110,
-              45,
-              99,
-              111,
-              115,
-              116,
-              115,
-              47,
-              105,
-              109,
-              112,
-              111,
-              114,
-              116,
-            ]),
-          ],
-        },
-      },
+      options: {},
     },
     /** DownloadBoxBobbinCostTemplate downloads the Excel import template. */
     downloadBoxBobbinCostTemplate: {
@@ -14318,58 +16584,7 @@ export const BoxBobbinCostServiceDefinition = {
       requestStream: false,
       responseType: DownloadBoxBobbinCostTemplateResponse,
       responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              43,
-              18,
-              41,
-              47,
-              97,
-              112,
-              105,
-              47,
-              118,
-              49,
-              47,
-              102,
-              105,
-              110,
-              97,
-              110,
-              99,
-              101,
-              47,
-              98,
-              111,
-              120,
-              45,
-              98,
-              111,
-              98,
-              98,
-              105,
-              110,
-              45,
-              99,
-              111,
-              115,
-              116,
-              115,
-              47,
-              116,
-              101,
-              109,
-              112,
-              108,
-              97,
-              116,
-              101,
-            ]),
-          ],
-        },
-      },
+      options: {},
     },
   },
 } as const;
@@ -14387,50 +16602,7 @@ export const InterminglingServiceDefinition = {
       requestStream: false,
       responseType: CreateInterminglingResponse,
       responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              35,
-              58,
-              1,
-              42,
-              34,
-              30,
-              47,
-              97,
-              112,
-              105,
-              47,
-              118,
-              49,
-              47,
-              102,
-              105,
-              110,
-              97,
-              110,
-              99,
-              101,
-              47,
-              105,
-              110,
-              116,
-              101,
-              114,
-              109,
-              105,
-              110,
-              103,
-              108,
-              105,
-              110,
-              103,
-              115,
-            ]),
-          ],
-        },
-      },
+      options: {},
     },
     /** GetIntermingling retrieves an intermingling record by ID. */
     getIntermingling: {
@@ -14439,57 +16611,7 @@ export const InterminglingServiceDefinition = {
       requestStream: false,
       responseType: GetInterminglingResponse,
       responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              42,
-              18,
-              40,
-              47,
-              97,
-              112,
-              105,
-              47,
-              118,
-              49,
-              47,
-              102,
-              105,
-              110,
-              97,
-              110,
-              99,
-              101,
-              47,
-              105,
-              110,
-              116,
-              101,
-              114,
-              109,
-              105,
-              110,
-              103,
-              108,
-              105,
-              110,
-              103,
-              115,
-              47,
-              123,
-              105,
-              110,
-              116,
-              109,
-              95,
-              105,
-              100,
-              125,
-            ]),
-          ],
-        },
-      },
+      options: {},
     },
     /** ListInterminglings lists intermingling records with search, filter, and pagination. */
     listInterminglings: {
@@ -14498,47 +16620,7 @@ export const InterminglingServiceDefinition = {
       requestStream: false,
       responseType: ListInterminglingsResponse,
       responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              32,
-              18,
-              30,
-              47,
-              97,
-              112,
-              105,
-              47,
-              118,
-              49,
-              47,
-              102,
-              105,
-              110,
-              97,
-              110,
-              99,
-              101,
-              47,
-              105,
-              110,
-              116,
-              101,
-              114,
-              109,
-              105,
-              110,
-              103,
-              108,
-              105,
-              110,
-              103,
-              115,
-            ]),
-          ],
-        },
-      },
+      options: {},
     },
     /** UpdateIntermingling updates an existing intermingling record. */
     updateIntermingling: {
@@ -14547,60 +16629,7 @@ export const InterminglingServiceDefinition = {
       requestStream: false,
       responseType: UpdateInterminglingResponse,
       responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              45,
-              58,
-              1,
-              42,
-              26,
-              40,
-              47,
-              97,
-              112,
-              105,
-              47,
-              118,
-              49,
-              47,
-              102,
-              105,
-              110,
-              97,
-              110,
-              99,
-              101,
-              47,
-              105,
-              110,
-              116,
-              101,
-              114,
-              109,
-              105,
-              110,
-              103,
-              108,
-              105,
-              110,
-              103,
-              115,
-              47,
-              123,
-              105,
-              110,
-              116,
-              109,
-              95,
-              105,
-              100,
-              125,
-            ]),
-          ],
-        },
-      },
+      options: {},
     },
     /** DeleteIntermingling soft-deletes an intermingling record. */
     deleteIntermingling: {
@@ -14609,57 +16638,7 @@ export const InterminglingServiceDefinition = {
       requestStream: false,
       responseType: DeleteInterminglingResponse,
       responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              42,
-              42,
-              40,
-              47,
-              97,
-              112,
-              105,
-              47,
-              118,
-              49,
-              47,
-              102,
-              105,
-              110,
-              97,
-              110,
-              99,
-              101,
-              47,
-              105,
-              110,
-              116,
-              101,
-              114,
-              109,
-              105,
-              110,
-              103,
-              108,
-              105,
-              110,
-              103,
-              115,
-              47,
-              123,
-              105,
-              110,
-              116,
-              109,
-              95,
-              105,
-              100,
-              125,
-            ]),
-          ],
-        },
-      },
+      options: {},
     },
     /** ExportInterminglings exports records to Excel. */
     exportInterminglings: {
@@ -14668,54 +16647,7 @@ export const InterminglingServiceDefinition = {
       requestStream: false,
       responseType: ExportInterminglingsResponse,
       responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              39,
-              18,
-              37,
-              47,
-              97,
-              112,
-              105,
-              47,
-              118,
-              49,
-              47,
-              102,
-              105,
-              110,
-              97,
-              110,
-              99,
-              101,
-              47,
-              105,
-              110,
-              116,
-              101,
-              114,
-              109,
-              105,
-              110,
-              103,
-              108,
-              105,
-              110,
-              103,
-              115,
-              47,
-              101,
-              120,
-              112,
-              111,
-              114,
-              116,
-            ]),
-          ],
-        },
-      },
+      options: {},
     },
     /** ImportInterminglings imports records from Excel. */
     importInterminglings: {
@@ -14724,57 +16656,7 @@ export const InterminglingServiceDefinition = {
       requestStream: false,
       responseType: ImportInterminglingsResponse,
       responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              42,
-              58,
-              1,
-              42,
-              34,
-              37,
-              47,
-              97,
-              112,
-              105,
-              47,
-              118,
-              49,
-              47,
-              102,
-              105,
-              110,
-              97,
-              110,
-              99,
-              101,
-              47,
-              105,
-              110,
-              116,
-              101,
-              114,
-              109,
-              105,
-              110,
-              103,
-              108,
-              105,
-              110,
-              103,
-              115,
-              47,
-              105,
-              109,
-              112,
-              111,
-              114,
-              116,
-            ]),
-          ],
-        },
-      },
+      options: {},
     },
     /** DownloadInterminglingTemplate downloads the Excel import template. */
     downloadInterminglingTemplate: {
@@ -14783,56 +16665,7 @@ export const InterminglingServiceDefinition = {
       requestStream: false,
       responseType: DownloadInterminglingTemplateResponse,
       responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              41,
-              18,
-              39,
-              47,
-              97,
-              112,
-              105,
-              47,
-              118,
-              49,
-              47,
-              102,
-              105,
-              110,
-              97,
-              110,
-              99,
-              101,
-              47,
-              105,
-              110,
-              116,
-              101,
-              114,
-              109,
-              105,
-              110,
-              103,
-              108,
-              105,
-              110,
-              103,
-              115,
-              47,
-              116,
-              101,
-              109,
-              112,
-              108,
-              97,
-              116,
-              101,
-            ]),
-          ],
-        },
-      },
+      options: {},
     },
   },
 } as const;
@@ -14850,50 +16683,7 @@ export const ProductGradeServiceDefinition = {
       requestStream: false,
       responseType: CreateProductGradeResponse,
       responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              35,
-              58,
-              1,
-              42,
-              34,
-              30,
-              47,
-              97,
-              112,
-              105,
-              47,
-              118,
-              49,
-              47,
-              102,
-              105,
-              110,
-              97,
-              110,
-              99,
-              101,
-              47,
-              112,
-              114,
-              111,
-              100,
-              117,
-              99,
-              116,
-              45,
-              103,
-              114,
-              97,
-              100,
-              101,
-              115,
-            ]),
-          ],
-        },
-      },
+      options: {},
     },
     /** GetProductGrade retrieves a Product Grade by ID. */
     getProductGrade: {
@@ -14902,55 +16692,7 @@ export const ProductGradeServiceDefinition = {
       requestStream: false,
       responseType: GetProductGradeResponse,
       responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              40,
-              18,
-              38,
-              47,
-              97,
-              112,
-              105,
-              47,
-              118,
-              49,
-              47,
-              102,
-              105,
-              110,
-              97,
-              110,
-              99,
-              101,
-              47,
-              112,
-              114,
-              111,
-              100,
-              117,
-              99,
-              116,
-              45,
-              103,
-              114,
-              97,
-              100,
-              101,
-              115,
-              47,
-              123,
-              112,
-              103,
-              95,
-              105,
-              100,
-              125,
-            ]),
-          ],
-        },
-      },
+      options: {},
     },
     /** ListProductGrades lists Product Grades with search, filter, and pagination. */
     listProductGrades: {
@@ -14959,47 +16701,7 @@ export const ProductGradeServiceDefinition = {
       requestStream: false,
       responseType: ListProductGradesResponse,
       responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              32,
-              18,
-              30,
-              47,
-              97,
-              112,
-              105,
-              47,
-              118,
-              49,
-              47,
-              102,
-              105,
-              110,
-              97,
-              110,
-              99,
-              101,
-              47,
-              112,
-              114,
-              111,
-              100,
-              117,
-              99,
-              116,
-              45,
-              103,
-              114,
-              97,
-              100,
-              101,
-              115,
-            ]),
-          ],
-        },
-      },
+      options: {},
     },
     /** UpdateProductGrade updates an existing Product Grade. */
     updateProductGrade: {
@@ -15008,58 +16710,7 @@ export const ProductGradeServiceDefinition = {
       requestStream: false,
       responseType: UpdateProductGradeResponse,
       responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              43,
-              58,
-              1,
-              42,
-              26,
-              38,
-              47,
-              97,
-              112,
-              105,
-              47,
-              118,
-              49,
-              47,
-              102,
-              105,
-              110,
-              97,
-              110,
-              99,
-              101,
-              47,
-              112,
-              114,
-              111,
-              100,
-              117,
-              99,
-              116,
-              45,
-              103,
-              114,
-              97,
-              100,
-              101,
-              115,
-              47,
-              123,
-              112,
-              103,
-              95,
-              105,
-              100,
-              125,
-            ]),
-          ],
-        },
-      },
+      options: {},
     },
     /** DeleteProductGrade soft-deletes a Product Grade. */
     deleteProductGrade: {
@@ -15068,55 +16719,7 @@ export const ProductGradeServiceDefinition = {
       requestStream: false,
       responseType: DeleteProductGradeResponse,
       responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              40,
-              42,
-              38,
-              47,
-              97,
-              112,
-              105,
-              47,
-              118,
-              49,
-              47,
-              102,
-              105,
-              110,
-              97,
-              110,
-              99,
-              101,
-              47,
-              112,
-              114,
-              111,
-              100,
-              117,
-              99,
-              116,
-              45,
-              103,
-              114,
-              97,
-              100,
-              101,
-              115,
-              47,
-              123,
-              112,
-              103,
-              95,
-              105,
-              100,
-              125,
-            ]),
-          ],
-        },
-      },
+      options: {},
     },
     /** ExportProductGrades exports Product Grades to Excel. */
     exportProductGrades: {
@@ -15125,54 +16728,7 @@ export const ProductGradeServiceDefinition = {
       requestStream: false,
       responseType: ExportProductGradesResponse,
       responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              39,
-              18,
-              37,
-              47,
-              97,
-              112,
-              105,
-              47,
-              118,
-              49,
-              47,
-              102,
-              105,
-              110,
-              97,
-              110,
-              99,
-              101,
-              47,
-              112,
-              114,
-              111,
-              100,
-              117,
-              99,
-              116,
-              45,
-              103,
-              114,
-              97,
-              100,
-              101,
-              115,
-              47,
-              101,
-              120,
-              112,
-              111,
-              114,
-              116,
-            ]),
-          ],
-        },
-      },
+      options: {},
     },
     /** ImportProductGrades imports Product Grades from Excel. */
     importProductGrades: {
@@ -15181,57 +16737,7 @@ export const ProductGradeServiceDefinition = {
       requestStream: false,
       responseType: ImportProductGradesResponse,
       responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              42,
-              58,
-              1,
-              42,
-              34,
-              37,
-              47,
-              97,
-              112,
-              105,
-              47,
-              118,
-              49,
-              47,
-              102,
-              105,
-              110,
-              97,
-              110,
-              99,
-              101,
-              47,
-              112,
-              114,
-              111,
-              100,
-              117,
-              99,
-              116,
-              45,
-              103,
-              114,
-              97,
-              100,
-              101,
-              115,
-              47,
-              105,
-              109,
-              112,
-              111,
-              114,
-              116,
-            ]),
-          ],
-        },
-      },
+      options: {},
     },
     /** DownloadProductGradeTemplate downloads the Excel import template. */
     downloadProductGradeTemplate: {
@@ -15240,56 +16746,7 @@ export const ProductGradeServiceDefinition = {
       requestStream: false,
       responseType: DownloadProductGradeTemplateResponse,
       responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              41,
-              18,
-              39,
-              47,
-              97,
-              112,
-              105,
-              47,
-              118,
-              49,
-              47,
-              102,
-              105,
-              110,
-              97,
-              110,
-              99,
-              101,
-              47,
-              112,
-              114,
-              111,
-              100,
-              117,
-              99,
-              116,
-              45,
-              103,
-              114,
-              97,
-              100,
-              101,
-              115,
-              47,
-              116,
-              101,
-              109,
-              112,
-              108,
-              97,
-              116,
-              101,
-            ]),
-          ],
-        },
-      },
+      options: {},
     },
   },
 } as const;
@@ -15307,44 +16764,7 @@ export const MBHeadServiceDefinition = {
       requestStream: false,
       responseType: CreateMBHeadResponse,
       responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              29,
-              58,
-              1,
-              42,
-              34,
-              24,
-              47,
-              97,
-              112,
-              105,
-              47,
-              118,
-              49,
-              47,
-              102,
-              105,
-              110,
-              97,
-              110,
-              99,
-              101,
-              47,
-              109,
-              98,
-              45,
-              104,
-              101,
-              97,
-              100,
-              115,
-            ]),
-          ],
-        },
-      },
+      options: {},
     },
     /** GetMBHead retrieves an MB Head record by ID. */
     getMBHead: {
@@ -15353,50 +16773,7 @@ export const MBHeadServiceDefinition = {
       requestStream: false,
       responseType: GetMBHeadResponse,
       responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              35,
-              18,
-              33,
-              47,
-              97,
-              112,
-              105,
-              47,
-              118,
-              49,
-              47,
-              102,
-              105,
-              110,
-              97,
-              110,
-              99,
-              101,
-              47,
-              109,
-              98,
-              45,
-              104,
-              101,
-              97,
-              100,
-              115,
-              47,
-              123,
-              109,
-              98,
-              104,
-              95,
-              105,
-              100,
-              125,
-            ]),
-          ],
-        },
-      },
+      options: {},
     },
     /** ListMBHeads lists MB Head records with search, filter, and pagination. */
     listMBHeads: {
@@ -15405,41 +16782,7 @@ export const MBHeadServiceDefinition = {
       requestStream: false,
       responseType: ListMBHeadsResponse,
       responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              26,
-              18,
-              24,
-              47,
-              97,
-              112,
-              105,
-              47,
-              118,
-              49,
-              47,
-              102,
-              105,
-              110,
-              97,
-              110,
-              99,
-              101,
-              47,
-              109,
-              98,
-              45,
-              104,
-              101,
-              97,
-              100,
-              115,
-            ]),
-          ],
-        },
-      },
+      options: {},
     },
     /** UpdateMBHead updates an existing MB Head record. */
     updateMBHead: {
@@ -15448,53 +16791,7 @@ export const MBHeadServiceDefinition = {
       requestStream: false,
       responseType: UpdateMBHeadResponse,
       responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              38,
-              58,
-              1,
-              42,
-              26,
-              33,
-              47,
-              97,
-              112,
-              105,
-              47,
-              118,
-              49,
-              47,
-              102,
-              105,
-              110,
-              97,
-              110,
-              99,
-              101,
-              47,
-              109,
-              98,
-              45,
-              104,
-              101,
-              97,
-              100,
-              115,
-              47,
-              123,
-              109,
-              98,
-              104,
-              95,
-              105,
-              100,
-              125,
-            ]),
-          ],
-        },
-      },
+      options: {},
     },
     /** DeleteMBHead soft-deletes an MB Head record. */
     deleteMBHead: {
@@ -15503,50 +16800,7 @@ export const MBHeadServiceDefinition = {
       requestStream: false,
       responseType: DeleteMBHeadResponse,
       responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              35,
-              42,
-              33,
-              47,
-              97,
-              112,
-              105,
-              47,
-              118,
-              49,
-              47,
-              102,
-              105,
-              110,
-              97,
-              110,
-              99,
-              101,
-              47,
-              109,
-              98,
-              45,
-              104,
-              101,
-              97,
-              100,
-              115,
-              47,
-              123,
-              109,
-              98,
-              104,
-              95,
-              105,
-              100,
-              125,
-            ]),
-          ],
-        },
-      },
+      options: {},
     },
     /** ExportMBHeads exports MB Head records to Excel. */
     exportMBHeads: {
@@ -15555,48 +16809,7 @@ export const MBHeadServiceDefinition = {
       requestStream: false,
       responseType: ExportMBHeadsResponse,
       responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              33,
-              18,
-              31,
-              47,
-              97,
-              112,
-              105,
-              47,
-              118,
-              49,
-              47,
-              102,
-              105,
-              110,
-              97,
-              110,
-              99,
-              101,
-              47,
-              109,
-              98,
-              45,
-              104,
-              101,
-              97,
-              100,
-              115,
-              47,
-              101,
-              120,
-              112,
-              111,
-              114,
-              116,
-            ]),
-          ],
-        },
-      },
+      options: {},
     },
     /** ImportMBHeads imports MB Head records from Excel. */
     importMBHeads: {
@@ -15605,51 +16818,7 @@ export const MBHeadServiceDefinition = {
       requestStream: false,
       responseType: ImportMBHeadsResponse,
       responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              36,
-              58,
-              1,
-              42,
-              34,
-              31,
-              47,
-              97,
-              112,
-              105,
-              47,
-              118,
-              49,
-              47,
-              102,
-              105,
-              110,
-              97,
-              110,
-              99,
-              101,
-              47,
-              109,
-              98,
-              45,
-              104,
-              101,
-              97,
-              100,
-              115,
-              47,
-              105,
-              109,
-              112,
-              111,
-              114,
-              116,
-            ]),
-          ],
-        },
-      },
+      options: {},
     },
     /** DownloadMBHeadTemplate downloads the Excel import template. */
     downloadMBHeadTemplate: {
@@ -15658,50 +16827,7 @@ export const MBHeadServiceDefinition = {
       requestStream: false,
       responseType: DownloadMBHeadTemplateResponse,
       responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              35,
-              18,
-              33,
-              47,
-              97,
-              112,
-              105,
-              47,
-              118,
-              49,
-              47,
-              102,
-              105,
-              110,
-              97,
-              110,
-              99,
-              101,
-              47,
-              109,
-              98,
-              45,
-              104,
-              101,
-              97,
-              100,
-              115,
-              47,
-              116,
-              101,
-              109,
-              112,
-              108,
-              97,
-              116,
-              101,
-            ]),
-          ],
-        },
-      },
+      options: {},
     },
   },
 } as const;
@@ -15719,59 +16845,7 @@ export const MBSpinServiceDefinition = {
       requestStream: false,
       responseType: CreateMBSpinResponse,
       responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              44,
-              58,
-              1,
-              42,
-              34,
-              39,
-              47,
-              97,
-              112,
-              105,
-              47,
-              118,
-              49,
-              47,
-              102,
-              105,
-              110,
-              97,
-              110,
-              99,
-              101,
-              47,
-              109,
-              98,
-              45,
-              104,
-              101,
-              97,
-              100,
-              115,
-              47,
-              123,
-              109,
-              98,
-              104,
-              95,
-              105,
-              100,
-              125,
-              47,
-              115,
-              112,
-              105,
-              110,
-              115,
-            ]),
-          ],
-        },
-      },
+      options: {},
     },
     /** GetMBSpin retrieves an MB Spin record by ID. */
     getMBSpin: {
@@ -15780,65 +16854,7 @@ export const MBSpinServiceDefinition = {
       requestStream: false,
       responseType: GetMBSpinResponse,
       responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              50,
-              18,
-              48,
-              47,
-              97,
-              112,
-              105,
-              47,
-              118,
-              49,
-              47,
-              102,
-              105,
-              110,
-              97,
-              110,
-              99,
-              101,
-              47,
-              109,
-              98,
-              45,
-              104,
-              101,
-              97,
-              100,
-              115,
-              47,
-              123,
-              109,
-              98,
-              104,
-              95,
-              105,
-              100,
-              125,
-              47,
-              115,
-              112,
-              105,
-              110,
-              115,
-              47,
-              123,
-              109,
-              98,
-              115,
-              95,
-              105,
-              100,
-              125,
-            ]),
-          ],
-        },
-      },
+      options: {},
     },
     /** ListMBSpins lists MB Spin records under a head. */
     listMBSpins: {
@@ -15847,56 +16863,7 @@ export const MBSpinServiceDefinition = {
       requestStream: false,
       responseType: ListMBSpinsResponse,
       responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              41,
-              18,
-              39,
-              47,
-              97,
-              112,
-              105,
-              47,
-              118,
-              49,
-              47,
-              102,
-              105,
-              110,
-              97,
-              110,
-              99,
-              101,
-              47,
-              109,
-              98,
-              45,
-              104,
-              101,
-              97,
-              100,
-              115,
-              47,
-              123,
-              109,
-              98,
-              104,
-              95,
-              105,
-              100,
-              125,
-              47,
-              115,
-              112,
-              105,
-              110,
-              115,
-            ]),
-          ],
-        },
-      },
+      options: {},
     },
     /** UpdateMBSpin updates an existing MB Spin record. */
     updateMBSpin: {
@@ -15905,68 +16872,7 @@ export const MBSpinServiceDefinition = {
       requestStream: false,
       responseType: UpdateMBSpinResponse,
       responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              53,
-              58,
-              1,
-              42,
-              26,
-              48,
-              47,
-              97,
-              112,
-              105,
-              47,
-              118,
-              49,
-              47,
-              102,
-              105,
-              110,
-              97,
-              110,
-              99,
-              101,
-              47,
-              109,
-              98,
-              45,
-              104,
-              101,
-              97,
-              100,
-              115,
-              47,
-              123,
-              109,
-              98,
-              104,
-              95,
-              105,
-              100,
-              125,
-              47,
-              115,
-              112,
-              105,
-              110,
-              115,
-              47,
-              123,
-              109,
-              98,
-              115,
-              95,
-              105,
-              100,
-              125,
-            ]),
-          ],
-        },
-      },
+      options: {},
     },
     /** DeleteMBSpin soft-deletes an MB Spin record. */
     deleteMBSpin: {
@@ -15975,65 +16881,7 @@ export const MBSpinServiceDefinition = {
       requestStream: false,
       responseType: DeleteMBSpinResponse,
       responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              50,
-              42,
-              48,
-              47,
-              97,
-              112,
-              105,
-              47,
-              118,
-              49,
-              47,
-              102,
-              105,
-              110,
-              97,
-              110,
-              99,
-              101,
-              47,
-              109,
-              98,
-              45,
-              104,
-              101,
-              97,
-              100,
-              115,
-              47,
-              123,
-              109,
-              98,
-              104,
-              95,
-              105,
-              100,
-              125,
-              47,
-              115,
-              112,
-              105,
-              110,
-              115,
-              47,
-              123,
-              109,
-              98,
-              115,
-              95,
-              105,
-              100,
-              125,
-            ]),
-          ],
-        },
-      },
+      options: {},
     },
     /** ExportMBSpins exports MB Spin records to Excel. */
     exportMBSpins: {
@@ -16042,63 +16890,7 @@ export const MBSpinServiceDefinition = {
       requestStream: false,
       responseType: ExportMBSpinsResponse,
       responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              48,
-              18,
-              46,
-              47,
-              97,
-              112,
-              105,
-              47,
-              118,
-              49,
-              47,
-              102,
-              105,
-              110,
-              97,
-              110,
-              99,
-              101,
-              47,
-              109,
-              98,
-              45,
-              104,
-              101,
-              97,
-              100,
-              115,
-              47,
-              123,
-              109,
-              98,
-              104,
-              95,
-              105,
-              100,
-              125,
-              47,
-              115,
-              112,
-              105,
-              110,
-              115,
-              47,
-              101,
-              120,
-              112,
-              111,
-              114,
-              116,
-            ]),
-          ],
-        },
-      },
+      options: {},
     },
     /** ImportMBSpins imports MB Spin records from Excel. */
     importMBSpins: {
@@ -16107,66 +16899,7 @@ export const MBSpinServiceDefinition = {
       requestStream: false,
       responseType: ImportMBSpinsResponse,
       responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              51,
-              58,
-              1,
-              42,
-              34,
-              46,
-              47,
-              97,
-              112,
-              105,
-              47,
-              118,
-              49,
-              47,
-              102,
-              105,
-              110,
-              97,
-              110,
-              99,
-              101,
-              47,
-              109,
-              98,
-              45,
-              104,
-              101,
-              97,
-              100,
-              115,
-              47,
-              123,
-              109,
-              98,
-              104,
-              95,
-              105,
-              100,
-              125,
-              47,
-              115,
-              112,
-              105,
-              110,
-              115,
-              47,
-              105,
-              109,
-              112,
-              111,
-              114,
-              116,
-            ]),
-          ],
-        },
-      },
+      options: {},
     },
     /** DownloadMBSpinTemplate downloads the Excel import template. */
     downloadMBSpinTemplate: {
@@ -16175,65 +16908,137 @@ export const MBSpinServiceDefinition = {
       requestStream: false,
       responseType: DownloadMBSpinTemplateResponse,
       responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              50,
-              18,
-              48,
-              47,
-              97,
-              112,
-              105,
-              47,
-              118,
-              49,
-              47,
-              102,
-              105,
-              110,
-              97,
-              110,
-              99,
-              101,
-              47,
-              109,
-              98,
-              45,
-              104,
-              101,
-              97,
-              100,
-              115,
-              47,
-              123,
-              109,
-              98,
-              104,
-              95,
-              105,
-              100,
-              125,
-              47,
-              115,
-              112,
-              105,
-              110,
-              115,
-              47,
-              116,
-              101,
-              109,
-              112,
-              108,
-              97,
-              116,
-              101,
-            ]),
-          ],
-        },
-      },
+      options: {},
+    },
+  },
+} as const;
+
+/** LookupMasterService provides lookup master registry for MASTER_LOOKUP param dropdowns. */
+export type LookupMasterServiceDefinition = typeof LookupMasterServiceDefinition;
+export const LookupMasterServiceDefinition = {
+  name: "LookupMasterService",
+  fullName: "finance.v1.LookupMasterService",
+  methods: {
+    /** ListLookupMasters returns all registered lookup masters. */
+    listLookupMasters: {
+      name: "ListLookupMasters",
+      requestType: ListLookupMastersRequest,
+      requestStream: false,
+      responseType: ListLookupMastersResponse,
+      responseStream: false,
+      options: {},
+    },
+    /** ListLookupMasterColumns returns the selectable columns for one lookup master. */
+    listLookupMasterColumns: {
+      name: "ListLookupMasterColumns",
+      requestType: ListLookupMasterColumnsRequest,
+      requestStream: false,
+      responseType: ListLookupMasterColumnsResponse,
+      responseStream: false,
+      options: {},
+    },
+    /** CreateLookupMaster adds a new master to the registry. */
+    createLookupMaster: {
+      name: "CreateLookupMaster",
+      requestType: CreateLookupMasterRequest,
+      requestStream: false,
+      responseType: CreateLookupMasterResponse,
+      responseStream: false,
+      options: {},
+    },
+    /** DeleteLookupMaster removes a master from the registry. */
+    deleteLookupMaster: {
+      name: "DeleteLookupMaster",
+      requestType: DeleteLookupMasterRequest,
+      requestStream: false,
+      responseType: DeleteLookupMasterResponse,
+      responseStream: false,
+      options: {},
+    },
+    /** CreateLookupMasterColumn adds a fillable column to a master. */
+    createLookupMasterColumn: {
+      name: "CreateLookupMasterColumn",
+      requestType: CreateLookupMasterColumnRequest,
+      requestStream: false,
+      responseType: CreateLookupMasterColumnResponse,
+      responseStream: false,
+      options: {},
+    },
+    /** DeleteLookupMasterColumn removes a column from a master. */
+    deleteLookupMasterColumn: {
+      name: "DeleteLookupMasterColumn",
+      requestType: DeleteLookupMasterColumnRequest,
+      requestStream: false,
+      responseType: DeleteLookupMasterColumnResponse,
+      responseStream: false,
+      options: {},
+    },
+    /** UpdateLookupMaster updates display_name, table_name, and/or is_active of an existing master. */
+    updateLookupMaster: {
+      name: "UpdateLookupMaster",
+      requestType: UpdateLookupMasterRequest,
+      requestStream: false,
+      responseType: UpdateLookupMasterResponse,
+      responseStream: false,
+      options: {},
+    },
+    /** ListTableColumns introspects a registered PostgreSQL table's columns via information_schema. */
+    listTableColumns: {
+      name: "ListTableColumns",
+      requestType: ListTableColumnsRequest,
+      requestStream: false,
+      responseType: ListTableColumnsResponse,
+      responseStream: false,
+      options: {},
+    },
+    /** ListMasterOptions returns combobox options (value+label) by querying the registered table. */
+    listMasterOptions: {
+      name: "ListMasterOptions",
+      requestType: ListMasterOptionsRequest,
+      requestStream: false,
+      responseType: ListMasterOptionsResponse,
+      responseStream: false,
+      options: {},
+    },
+    /** ExportLookupMasters exports all masters and columns to an Excel workbook. */
+    exportLookupMasters: {
+      name: "ExportLookupMasters",
+      requestType: ExportLookupMastersRequest,
+      requestStream: false,
+      responseType: ExportLookupMastersResponse,
+      responseStream: false,
+      options: {},
+    },
+    /** ImportLookupMasters imports masters and columns from an Excel workbook. */
+    importLookupMasters: {
+      name: "ImportLookupMasters",
+      requestType: ImportLookupMastersRequest,
+      requestStream: false,
+      responseType: ImportLookupMastersResponse,
+      responseStream: false,
+      options: {},
+    },
+  },
+} as const;
+
+/**
+ * YarnLookupFillService provides a unified "fill from master" API used by the CAPP form.
+ * Called when the user selects a lookup param value (e.g., a machine code).
+ * Returns numeric and text fills to auto-populate related CAPP params.
+ */
+export type YarnLookupFillServiceDefinition = typeof YarnLookupFillServiceDefinition;
+export const YarnLookupFillServiceDefinition = {
+  name: "YarnLookupFillService",
+  fullName: "finance.v1.YarnLookupFillService",
+  methods: {
+    /** GetLookupFillValues returns numeric and text fills to auto-populate CAPP params. */
+    getLookupFillValues: {
+      name: "GetLookupFillValues",
+      requestType: GetLookupFillValuesRequest,
+      requestStream: false,
+      responseType: GetLookupFillValuesResponse,
+      responseStream: false,
+      options: {},
     },
   },
 } as const;
@@ -16270,6 +17075,10 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
+
+function isObject(value: any): boolean {
+  return typeof value === "object" && value !== null;
+}
 
 function isSet(value: any): boolean {
   return value !== null && value !== undefined;

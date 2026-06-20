@@ -5,8 +5,9 @@
 // display_group, lets the responsible user fill values, and saves them in a
 // single batch.
 
-import { useMemo, useState } from "react"
-import { Loader2, Save, AlertCircle, Plus, Trash2 } from "lucide-react"
+import { useCallback, useMemo, useState } from "react"
+import { Loader2, Save, AlertCircle, Plus, Trash2, ArrowUp } from "lucide-react"
+import { useQueryClient } from "@tanstack/react-query"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -21,13 +22,19 @@ import {
   useRemoveApplicableParam,
 } from "@/hooks/finance/use-cost-product-parameter"
 import type { RequiredParamEntry, UpsertParamValuePayload } from "@/types/finance/cost-product-parameter"
+import type { LookupFillValuesResponse } from "@/types/finance/yarn-master"
+import type { RemoveApplicablePreview } from "@/types/finance/lookup-master"
 import { AddParameterDialog } from "./add-parameter-dialog"
+import { MasterLookupField } from "./master-lookup-field"
+import { ConfirmDialog } from "@/components/shared/confirm-dialog/confirm-dialog"
+import { cn } from "@/lib/utils"
+import { toast } from "sonner"
 
 interface ParametersTabProps {
   productSysId: number
 }
 
-interface DraftValue {
+export interface DraftValue {
   valueNumeric: string
   valueText: string
   valueFlag: boolean
@@ -50,7 +57,14 @@ export function ProductParametersTab({ productSysId }: ParametersTabProps) {
   const { data: missing } = useMissingRequiredParams(productSysId)
   const upsertM = useUpsertProductParamValuesBatch()
   const removeM = useRemoveApplicableParam()
+  const qc = useQueryClient()
   const [addOpen, setAddOpen] = useState(false)
+
+  // Remove confirm state — used when removing a MASTER_LOOKUP trigger param.
+  const [removePreviewEntry, setRemovePreviewEntry] = useState<RequiredParamEntry | null>(null)
+  const [removePreview, setRemovePreview] = useState<RemoveApplicablePreview | null>(null)
+  const [previewLoading, setPreviewLoading] = useState(false)
+  const [removeInProgress, setRemoveInProgress] = useState(false)
 
   // Edits made by the user, indexed by paramId. Unedited rows derive their
   // draft from the loaded entries via useMemo below — no useEffect needed.
@@ -64,12 +78,39 @@ export function ProductParametersTab({ productSysId }: ParametersTabProps) {
     return out
   }, [data, edits])
 
-  function patch(paramId: string, p: Partial<DraftValue>) {
-    setEdits((prev) => ({
-      ...prev,
-      [paramId]: { ...(prev[paramId] ?? drafts[paramId]), ...p, dirty: true },
-    }))
-  }
+  const patch = useCallback(
+    (paramId: string, p: Partial<DraftValue>) => {
+      setEdits((prev) => ({
+        ...prev,
+        [paramId]: { ...(prev[paramId] ?? drafts[paramId]), ...p, dirty: true },
+      }))
+    },
+    [drafts],
+  )
+
+  const handleLookupChange = useCallback(
+    (
+      triggerParamId: string,
+      selectedKey: string,
+      fills: LookupFillValuesResponse | null,
+    ) => {
+      patch(triggerParamId, { valueText: selectedKey })
+      if (!fills || !data) return
+
+      for (const [paramCode, numVal] of Object.entries(fills.numericFills)) {
+        const target = data.find((e) => e.paramCode === paramCode)
+        if (target) patch(target.paramId, { valueNumeric: String(numVal) })
+      }
+      for (const [paramCode, textVal] of Object.entries(fills.textFills)) {
+        const target = data.find((e) => e.paramCode === paramCode)
+        if (target) patch(target.paramId, { valueText: textVal })
+      }
+      if (fills.displayLabel) {
+        toast.success(`Auto-filled from: ${fills.displayLabel}`)
+      }
+    },
+    [patch, data],
+  )
 
   const grouped = useMemo(() => {
     const out = new Map<string, RequiredParamEntry[]>()
@@ -83,6 +124,56 @@ export function ProductParametersTab({ productSysId }: ParametersTabProps) {
 
   const dirtyCount = Object.values(drafts).filter((d) => d.dirty).length
   const missingCount = missing?.length ?? 0
+
+  async function handleRemoveClick(entry: RequiredParamEntry) {
+    if (entry.paramCategory === "MASTER_LOOKUP") {
+      setPreviewLoading(true)
+      setRemovePreviewEntry(entry)
+      try {
+        const res = await fetch("/api/v1/finance/cost-product-parameters/applicable/remove-preview", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ productSysId, paramId: entry.paramId }),
+        })
+        if (res.ok) {
+          const json = await res.json() as { data?: RemoveApplicablePreview }
+          setRemovePreview(json.data ?? null)
+        }
+      } finally {
+        setPreviewLoading(false)
+      }
+    } else {
+      removeM.mutate({ productSysId, paramId: entry.paramId })
+    }
+  }
+
+  async function handleRemoveWithChildren() {
+    if (!removePreviewEntry) return
+    setRemoveInProgress(true)
+    try {
+      const res = await fetch(
+        "/api/v1/finance/cost-product-parameters/applicable/remove-with-children",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ productSysId, paramId: removePreviewEntry.paramId }),
+        },
+      )
+      if (!res.ok) {
+        const body = (await res.json()) as { base?: { message?: string } }
+        toast.error(body?.base?.message ?? "Failed to remove parameter")
+        return // keep dialog open for retry
+      }
+      toast.success("Parameter removed")
+      await qc.invalidateQueries({ queryKey: ["finance", "cost-product-parameter"] })
+      setRemovePreviewEntry(null)
+      setRemovePreview(null)
+    } catch {
+      toast.error("Failed to remove parameter")
+    } finally {
+      setRemoveInProgress(false)
+    }
+  }
 
   async function handleSave() {
     if (!data) return
@@ -187,10 +278,10 @@ export function ProductParametersTab({ productSysId }: ParametersTabProps) {
                   entry={entry}
                   draft={draft}
                   onChange={patch}
-                  onRemove={() =>
-                    removeM.mutate({ productSysId, paramId: entry.paramId })
-                  }
-                  removing={removeM.isPending}
+                  onRemove={() => handleRemoveClick(entry)}
+                  removing={removeM.isPending || previewLoading}
+                  allEntries={data}
+                  onLookupChange={handleLookupChange}
                 />
               )
             })}
@@ -203,6 +294,26 @@ export function ProductParametersTab({ productSysId }: ParametersTabProps) {
         open={addOpen}
         onOpenChange={setAddOpen}
       />
+
+      <ConfirmDialog
+        open={!!removePreviewEntry}
+        onOpenChange={(v) => {
+          if (!v) {
+            setRemovePreviewEntry(null)
+            setRemovePreview(null)
+          }
+        }}
+        title={`Remove ${removePreviewEntry?.paramName ?? ""}?`}
+        description={
+          removePreview?.children.length
+            ? `This will also remove ${removePreview.children.length} child param(s): ${removePreview.children.map((c) => c.paramName).join(", ")}. Any filled values will be lost.`
+            : "This parameter will be removed from this product."
+        }
+        confirmText="Remove All"
+        variant="destructive"
+        isLoading={previewLoading || removeInProgress}
+        onConfirm={handleRemoveWithChildren}
+      />
     </div>
   )
 }
@@ -213,9 +324,11 @@ interface ParamRowProps {
   onRemove: () => void
   removing: boolean
   onChange: (paramId: string, p: Partial<DraftValue>) => void
+  allEntries?: RequiredParamEntry[]
+  onLookupChange?: (triggerParamId: string, selectedKey: string, fills: LookupFillValuesResponse | null) => void
 }
 
-function ParamRow({ entry, draft, onChange, onRemove, removing }: ParamRowProps) {
+function ParamRow({ entry, draft, onChange, onRemove, removing, allEntries, onLookupChange }: ParamRowProps) {
   return (
     <div className="grid grid-cols-12 gap-3 items-start">
       <div className="col-span-5">
@@ -241,17 +354,30 @@ function ParamRow({ entry, draft, onChange, onRemove, removing }: ParamRowProps)
           )}
         </div>
       </div>
-      <div className="col-span-6">{renderValueInput(entry, draft, onChange)}</div>
+      <div className="col-span-6">{renderValueInput(entry, draft, onChange, allEntries, onLookupChange)}</div>
       <div className="col-span-1 text-right">
-        <Button
-          size="icon"
-          variant="ghost"
-          title="Remove parameter from this product"
-          disabled={removing}
-          onClick={onRemove}
-        >
-          <Trash2 className="h-4 w-4 text-destructive" />
-        </Button>
+        {entry.lookupFillGroupCode ? (
+          /* Child params are managed via their parent — no individual delete */
+          <Button
+            size="icon"
+            variant="ghost"
+            title={`Managed by ${entry.lookupFillGroupCode} — remove that param to remove all children`}
+            disabled
+            className="cursor-not-allowed opacity-30"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        ) : (
+          <Button
+            size="icon"
+            variant="ghost"
+            title="Remove parameter from this product"
+            disabled={removing}
+            onClick={onRemove}
+          >
+            <Trash2 className="h-4 w-4 text-destructive" />
+          </Button>
+        )}
       </div>
     </div>
   )
@@ -261,6 +387,8 @@ function renderValueInput(
   entry: RequiredParamEntry,
   draft: DraftValue,
   onChange: (paramId: string, p: Partial<DraftValue>) => void,
+  allEntries?: RequiredParamEntry[],
+  onLookupChange?: (triggerParamId: string, selectedKey: string, fills: LookupFillValuesResponse | null) => void,
 ) {
   if (entry.paramCategory === "CALCULATED") {
     return (
@@ -270,19 +398,46 @@ function renderValueInput(
     )
   }
 
-  // LOOKUP master: free-text fallback until master is built (S7.5g backlog).
-  if (entry.lookupMasterCode) {
+  // Child params are auto-filled by their MASTER_LOOKUP trigger — render as read-only.
+  if (entry.lookupFillGroupCode) {
+    const displayValue = draft.valueNumeric || draft.valueText
     return (
       <div className="space-y-1">
-        <Input
-          value={draft.valueText}
-          placeholder={`Type ${entry.lookupMasterCode} key (combobox pending master build)`}
-          onChange={(e) => onChange(entry.paramId, { valueText: e.target.value })}
-        />
-        <p className="text-[10px] text-muted-foreground">
-          ⚠ Free-text fallback — upgrade to dropdown when {entry.lookupMasterCode} master ships.
+        <div
+          className={cn(
+            "flex h-9 w-full items-center rounded-md border border-input bg-muted/50 px-3 text-sm",
+            !displayValue ? "text-muted-foreground italic" : "",
+          )}
+        >
+          {displayValue || "—"}
+        </div>
+        <p className="flex items-center gap-1 text-[10px] text-muted-foreground">
+          <ArrowUp className="h-3 w-3" />
+          auto-filled from{" "}
+          <span className="font-mono font-medium">{entry.lookupFillGroupCode}</span>
         </p>
       </div>
+    )
+  }
+
+  if (entry.lookupMasterCode) {
+    if (onLookupChange && allEntries) {
+      return (
+        <MasterLookupField
+          entry={entry}
+          draft={draft}
+          allEntries={allEntries}
+          onChangeLookup={onLookupChange}
+        />
+      )
+    }
+    // Fallback (should not happen in practice)
+    return (
+      <Input
+        value={draft.valueText}
+        placeholder={`Select ${entry.lookupMasterCode}…`}
+        onChange={(e) => onChange(entry.paramId, { valueText: e.target.value })}
+      />
     )
   }
 

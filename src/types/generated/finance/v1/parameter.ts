@@ -71,6 +71,8 @@ export enum ParamCategory {
   PARAM_CATEGORY_RATE = 2,
   /** PARAM_CATEGORY_CALCULATED - Calculated parameter - computed from other parameters. */
   PARAM_CATEGORY_CALCULATED = 3,
+  /** PARAM_CATEGORY_MASTER_LOOKUP - PARAM_CATEGORY_MASTER_LOOKUP: selector from a master table; triggers auto-fill of child params. */
+  PARAM_CATEGORY_MASTER_LOOKUP = 4,
   UNRECOGNIZED = -1,
 }
 
@@ -88,6 +90,9 @@ export function paramCategoryFromJSON(object: any): ParamCategory {
     case 3:
     case "PARAM_CATEGORY_CALCULATED":
       return ParamCategory.PARAM_CATEGORY_CALCULATED;
+    case 4:
+    case "PARAM_CATEGORY_MASTER_LOOKUP":
+      return ParamCategory.PARAM_CATEGORY_MASTER_LOOKUP;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -105,6 +110,8 @@ export function paramCategoryToJSON(object: ParamCategory): string {
       return "PARAM_CATEGORY_RATE";
     case ParamCategory.PARAM_CATEGORY_CALCULATED:
       return "PARAM_CATEGORY_CALCULATED";
+    case ParamCategory.PARAM_CATEGORY_MASTER_LOOKUP:
+      return "PARAM_CATEGORY_MASTER_LOOKUP";
     case ParamCategory.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -155,6 +162,12 @@ export interface Parameter {
   displayOrder: number;
   /** Form section: Spec / Machine / Grade / Packing / Cost / etc. */
   displayGroup: string;
+  /** Descriptive notes or formula hint for this parameter (read-only, populated from seed/migration). */
+  notes: string;
+  /** param_code of the MASTER_LOOKUP trigger param this child belongs to (empty = not a child param). */
+  lookupFillGroupCode: string;
+  /** Column name in the master entity to read value from (e.g., "mc_speed"). */
+  lookupSourceColumn: string;
 }
 
 /** CreateParameterRequest is the request for creating a new parameter. */
@@ -192,6 +205,12 @@ export interface CreateParameterRequest {
   displayOrder: number;
   /** Display group (optional, max 50 chars). E.g. 'Spec', 'Machine'. */
   displayGroup: string;
+  /** Descriptive notes or formula hint (optional, max 500 chars). */
+  notes: string;
+  /** Fill group: param_code of the parent MASTER_LOOKUP param (optional, max 20 chars). */
+  lookupFillGroupCode: string;
+  /** Source column in the master table (optional, max 50 chars). */
+  lookupSourceColumn: string;
 }
 
 /** CreateParameterResponse is the response for creating a parameter. */
@@ -284,7 +303,19 @@ export interface UpdateParameterRequest {
     | number
     | undefined;
   /** New display group (optional). Set to empty string to clear. */
-  displayGroup?: string | undefined;
+  displayGroup?:
+    | string
+    | undefined;
+  /** New notes (optional). Set to empty string to clear. */
+  notes?:
+    | string
+    | undefined;
+  /** New fill group code (optional). Set to empty string to clear. */
+  lookupFillGroupCode?:
+    | string
+    | undefined;
+  /** New source column (optional). Set to empty string to clear. */
+  lookupSourceColumn?: string | undefined;
 }
 
 /** UpdateParameterResponse is the response for updating a parameter. */
@@ -337,6 +368,8 @@ export interface ListParametersRequest {
   sortBy: string;
   /** Sort order: "asc", "desc" (default: "asc"). */
   sortOrder: string;
+  /** Filter by lookup_fill_group_code. Empty string = no filter. */
+  lookupFillGroupCodeFilter: string;
 }
 
 /** ListParametersResponse is the response for listing parameters. */
@@ -439,6 +472,9 @@ function createBaseParameter(): Parameter {
     lookupMasterCode: "",
     displayOrder: 0,
     displayGroup: "",
+    notes: "",
+    lookupFillGroupCode: "",
+    lookupSourceColumn: "",
   };
 }
 
@@ -503,6 +539,15 @@ export const Parameter: MessageFns<Parameter> = {
     }
     if (message.displayGroup !== "") {
       writer.uint32(234).string(message.displayGroup);
+    }
+    if (message.notes !== "") {
+      writer.uint32(242).string(message.notes);
+    }
+    if (message.lookupFillGroupCode !== "") {
+      writer.uint32(250).string(message.lookupFillGroupCode);
+    }
+    if (message.lookupSourceColumn !== "") {
+      writer.uint32(258).string(message.lookupSourceColumn);
     }
     return writer;
   },
@@ -674,6 +719,30 @@ export const Parameter: MessageFns<Parameter> = {
           message.displayGroup = reader.string();
           continue;
         }
+        case 30: {
+          if (tag !== 242) {
+            break;
+          }
+
+          message.notes = reader.string();
+          continue;
+        }
+        case 31: {
+          if (tag !== 250) {
+            break;
+          }
+
+          message.lookupFillGroupCode = reader.string();
+          continue;
+        }
+        case 32: {
+          if (tag !== 258) {
+            break;
+          }
+
+          message.lookupSourceColumn = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -781,6 +850,17 @@ export const Parameter: MessageFns<Parameter> = {
         : isSet(object.display_group)
         ? globalThis.String(object.display_group)
         : "",
+      notes: isSet(object.notes) ? globalThis.String(object.notes) : "",
+      lookupFillGroupCode: isSet(object.lookupFillGroupCode)
+        ? globalThis.String(object.lookupFillGroupCode)
+        : isSet(object.lookup_fill_group_code)
+        ? globalThis.String(object.lookup_fill_group_code)
+        : "",
+      lookupSourceColumn: isSet(object.lookupSourceColumn)
+        ? globalThis.String(object.lookupSourceColumn)
+        : isSet(object.lookup_source_column)
+        ? globalThis.String(object.lookup_source_column)
+        : "",
     };
   },
 
@@ -846,6 +926,15 @@ export const Parameter: MessageFns<Parameter> = {
     if (message.displayGroup !== "") {
       obj.displayGroup = message.displayGroup;
     }
+    if (message.notes !== "") {
+      obj.notes = message.notes;
+    }
+    if (message.lookupFillGroupCode !== "") {
+      obj.lookupFillGroupCode = message.lookupFillGroupCode;
+    }
+    if (message.lookupSourceColumn !== "") {
+      obj.lookupSourceColumn = message.lookupSourceColumn;
+    }
     return obj;
   },
 
@@ -876,6 +965,9 @@ export const Parameter: MessageFns<Parameter> = {
     message.lookupMasterCode = object.lookupMasterCode ?? "";
     message.displayOrder = object.displayOrder ?? 0;
     message.displayGroup = object.displayGroup ?? "";
+    message.notes = object.notes ?? "";
+    message.lookupFillGroupCode = object.lookupFillGroupCode ?? "";
+    message.lookupSourceColumn = object.lookupSourceColumn ?? "";
     return message;
   },
 };
@@ -897,6 +989,9 @@ function createBaseCreateParameterRequest(): CreateParameterRequest {
     lookupMasterCode: "",
     displayOrder: 0,
     displayGroup: "",
+    notes: "",
+    lookupFillGroupCode: "",
+    lookupSourceColumn: "",
   };
 }
 
@@ -946,6 +1041,15 @@ export const CreateParameterRequest: MessageFns<CreateParameterRequest> = {
     }
     if (message.displayGroup !== "") {
       writer.uint32(122).string(message.displayGroup);
+    }
+    if (message.notes !== "") {
+      writer.uint32(130).string(message.notes);
+    }
+    if (message.lookupFillGroupCode !== "") {
+      writer.uint32(138).string(message.lookupFillGroupCode);
+    }
+    if (message.lookupSourceColumn !== "") {
+      writer.uint32(146).string(message.lookupSourceColumn);
     }
     return writer;
   },
@@ -1077,6 +1181,30 @@ export const CreateParameterRequest: MessageFns<CreateParameterRequest> = {
           message.displayGroup = reader.string();
           continue;
         }
+        case 16: {
+          if (tag !== 130) {
+            break;
+          }
+
+          message.notes = reader.string();
+          continue;
+        }
+        case 17: {
+          if (tag !== 138) {
+            break;
+          }
+
+          message.lookupFillGroupCode = reader.string();
+          continue;
+        }
+        case 18: {
+          if (tag !== 146) {
+            break;
+          }
+
+          message.lookupSourceColumn = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1163,6 +1291,17 @@ export const CreateParameterRequest: MessageFns<CreateParameterRequest> = {
         : isSet(object.display_group)
         ? globalThis.String(object.display_group)
         : "",
+      notes: isSet(object.notes) ? globalThis.String(object.notes) : "",
+      lookupFillGroupCode: isSet(object.lookupFillGroupCode)
+        ? globalThis.String(object.lookupFillGroupCode)
+        : isSet(object.lookup_fill_group_code)
+        ? globalThis.String(object.lookup_fill_group_code)
+        : "",
+      lookupSourceColumn: isSet(object.lookupSourceColumn)
+        ? globalThis.String(object.lookupSourceColumn)
+        : isSet(object.lookup_source_column)
+        ? globalThis.String(object.lookup_source_column)
+        : "",
     };
   },
 
@@ -1213,6 +1352,15 @@ export const CreateParameterRequest: MessageFns<CreateParameterRequest> = {
     if (message.displayGroup !== "") {
       obj.displayGroup = message.displayGroup;
     }
+    if (message.notes !== "") {
+      obj.notes = message.notes;
+    }
+    if (message.lookupFillGroupCode !== "") {
+      obj.lookupFillGroupCode = message.lookupFillGroupCode;
+    }
+    if (message.lookupSourceColumn !== "") {
+      obj.lookupSourceColumn = message.lookupSourceColumn;
+    }
     return obj;
   },
 
@@ -1236,6 +1384,9 @@ export const CreateParameterRequest: MessageFns<CreateParameterRequest> = {
     message.lookupMasterCode = object.lookupMasterCode ?? "";
     message.displayOrder = object.displayOrder ?? 0;
     message.displayGroup = object.displayGroup ?? "";
+    message.notes = object.notes ?? "";
+    message.lookupFillGroupCode = object.lookupFillGroupCode ?? "";
+    message.lookupSourceColumn = object.lookupSourceColumn ?? "";
     return message;
   },
 };
@@ -1478,6 +1629,9 @@ function createBaseUpdateParameterRequest(): UpdateParameterRequest {
     lookupMasterCode: undefined,
     displayOrder: undefined,
     displayGroup: undefined,
+    notes: undefined,
+    lookupFillGroupCode: undefined,
+    lookupSourceColumn: undefined,
   };
 }
 
@@ -1530,6 +1684,15 @@ export const UpdateParameterRequest: MessageFns<UpdateParameterRequest> = {
     }
     if (message.displayGroup !== undefined) {
       writer.uint32(130).string(message.displayGroup);
+    }
+    if (message.notes !== undefined) {
+      writer.uint32(138).string(message.notes);
+    }
+    if (message.lookupFillGroupCode !== undefined) {
+      writer.uint32(146).string(message.lookupFillGroupCode);
+    }
+    if (message.lookupSourceColumn !== undefined) {
+      writer.uint32(154).string(message.lookupSourceColumn);
     }
     return writer;
   },
@@ -1669,6 +1832,30 @@ export const UpdateParameterRequest: MessageFns<UpdateParameterRequest> = {
           message.displayGroup = reader.string();
           continue;
         }
+        case 17: {
+          if (tag !== 138) {
+            break;
+          }
+
+          message.notes = reader.string();
+          continue;
+        }
+        case 18: {
+          if (tag !== 146) {
+            break;
+          }
+
+          message.lookupFillGroupCode = reader.string();
+          continue;
+        }
+        case 19: {
+          if (tag !== 154) {
+            break;
+          }
+
+          message.lookupSourceColumn = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1760,6 +1947,17 @@ export const UpdateParameterRequest: MessageFns<UpdateParameterRequest> = {
         : isSet(object.display_group)
         ? globalThis.String(object.display_group)
         : undefined,
+      notes: isSet(object.notes) ? globalThis.String(object.notes) : undefined,
+      lookupFillGroupCode: isSet(object.lookupFillGroupCode)
+        ? globalThis.String(object.lookupFillGroupCode)
+        : isSet(object.lookup_fill_group_code)
+        ? globalThis.String(object.lookup_fill_group_code)
+        : undefined,
+      lookupSourceColumn: isSet(object.lookupSourceColumn)
+        ? globalThis.String(object.lookupSourceColumn)
+        : isSet(object.lookup_source_column)
+        ? globalThis.String(object.lookup_source_column)
+        : undefined,
     };
   },
 
@@ -1813,6 +2011,15 @@ export const UpdateParameterRequest: MessageFns<UpdateParameterRequest> = {
     if (message.displayGroup !== undefined) {
       obj.displayGroup = message.displayGroup;
     }
+    if (message.notes !== undefined) {
+      obj.notes = message.notes;
+    }
+    if (message.lookupFillGroupCode !== undefined) {
+      obj.lookupFillGroupCode = message.lookupFillGroupCode;
+    }
+    if (message.lookupSourceColumn !== undefined) {
+      obj.lookupSourceColumn = message.lookupSourceColumn;
+    }
     return obj;
   },
 
@@ -1837,6 +2044,9 @@ export const UpdateParameterRequest: MessageFns<UpdateParameterRequest> = {
     message.lookupMasterCode = object.lookupMasterCode ?? undefined;
     message.displayOrder = object.displayOrder ?? undefined;
     message.displayGroup = object.displayGroup ?? undefined;
+    message.notes = object.notes ?? undefined;
+    message.lookupFillGroupCode = object.lookupFillGroupCode ?? undefined;
+    message.lookupSourceColumn = object.lookupSourceColumn ?? undefined;
     return message;
   },
 };
@@ -2053,6 +2263,7 @@ function createBaseListParametersRequest(): ListParametersRequest {
     activeFilter: 0,
     sortBy: "",
     sortOrder: "",
+    lookupFillGroupCodeFilter: "",
   };
 }
 
@@ -2081,6 +2292,9 @@ export const ListParametersRequest: MessageFns<ListParametersRequest> = {
     }
     if (message.sortOrder !== "") {
       writer.uint32(66).string(message.sortOrder);
+    }
+    if (message.lookupFillGroupCodeFilter !== "") {
+      writer.uint32(74).string(message.lookupFillGroupCodeFilter);
     }
     return writer;
   },
@@ -2156,6 +2370,14 @@ export const ListParametersRequest: MessageFns<ListParametersRequest> = {
           message.sortOrder = reader.string();
           continue;
         }
+        case 9: {
+          if (tag !== 74) {
+            break;
+          }
+
+          message.lookupFillGroupCodeFilter = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2199,6 +2421,11 @@ export const ListParametersRequest: MessageFns<ListParametersRequest> = {
         : isSet(object.sort_order)
         ? globalThis.String(object.sort_order)
         : "",
+      lookupFillGroupCodeFilter: isSet(object.lookupFillGroupCodeFilter)
+        ? globalThis.String(object.lookupFillGroupCodeFilter)
+        : isSet(object.lookup_fill_group_code_filter)
+        ? globalThis.String(object.lookup_fill_group_code_filter)
+        : "",
     };
   },
 
@@ -2228,6 +2455,9 @@ export const ListParametersRequest: MessageFns<ListParametersRequest> = {
     if (message.sortOrder !== "") {
       obj.sortOrder = message.sortOrder;
     }
+    if (message.lookupFillGroupCodeFilter !== "") {
+      obj.lookupFillGroupCodeFilter = message.lookupFillGroupCodeFilter;
+    }
     return obj;
   },
 
@@ -2244,6 +2474,7 @@ export const ListParametersRequest: MessageFns<ListParametersRequest> = {
     message.activeFilter = object.activeFilter ?? 0;
     message.sortBy = object.sortBy ?? "";
     message.sortOrder = object.sortOrder ?? "";
+    message.lookupFillGroupCodeFilter = object.lookupFillGroupCodeFilter ?? "";
     return message;
   },
 };
@@ -2972,46 +3203,7 @@ export const ParameterServiceDefinition = {
       requestStream: false,
       responseType: CreateParameterResponse,
       responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              31,
-              58,
-              1,
-              42,
-              34,
-              26,
-              47,
-              97,
-              112,
-              105,
-              47,
-              118,
-              49,
-              47,
-              102,
-              105,
-              110,
-              97,
-              110,
-              99,
-              101,
-              47,
-              112,
-              97,
-              114,
-              97,
-              109,
-              101,
-              116,
-              101,
-              114,
-              115,
-            ]),
-          ],
-        },
-      },
+      options: {},
     },
     /** GetParameter retrieves a parameter by ID. */
     getParameter: {
@@ -3020,54 +3212,7 @@ export const ParameterServiceDefinition = {
       requestStream: false,
       responseType: GetParameterResponse,
       responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              39,
-              18,
-              37,
-              47,
-              97,
-              112,
-              105,
-              47,
-              118,
-              49,
-              47,
-              102,
-              105,
-              110,
-              97,
-              110,
-              99,
-              101,
-              47,
-              112,
-              97,
-              114,
-              97,
-              109,
-              101,
-              116,
-              101,
-              114,
-              115,
-              47,
-              123,
-              112,
-              97,
-              114,
-              97,
-              109,
-              95,
-              105,
-              100,
-              125,
-            ]),
-          ],
-        },
-      },
+      options: {},
     },
     /**
      * UpdateParameter updates an existing parameter.
@@ -3079,57 +3224,7 @@ export const ParameterServiceDefinition = {
       requestStream: false,
       responseType: UpdateParameterResponse,
       responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              42,
-              58,
-              1,
-              42,
-              26,
-              37,
-              47,
-              97,
-              112,
-              105,
-              47,
-              118,
-              49,
-              47,
-              102,
-              105,
-              110,
-              97,
-              110,
-              99,
-              101,
-              47,
-              112,
-              97,
-              114,
-              97,
-              109,
-              101,
-              116,
-              101,
-              114,
-              115,
-              47,
-              123,
-              112,
-              97,
-              114,
-              97,
-              109,
-              95,
-              105,
-              100,
-              125,
-            ]),
-          ],
-        },
-      },
+      options: {},
     },
     /** DeleteParameter soft deletes a parameter. */
     deleteParameter: {
@@ -3138,54 +3233,7 @@ export const ParameterServiceDefinition = {
       requestStream: false,
       responseType: DeleteParameterResponse,
       responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              39,
-              42,
-              37,
-              47,
-              97,
-              112,
-              105,
-              47,
-              118,
-              49,
-              47,
-              102,
-              105,
-              110,
-              97,
-              110,
-              99,
-              101,
-              47,
-              112,
-              97,
-              114,
-              97,
-              109,
-              101,
-              116,
-              101,
-              114,
-              115,
-              47,
-              123,
-              112,
-              97,
-              114,
-              97,
-              109,
-              95,
-              105,
-              100,
-              125,
-            ]),
-          ],
-        },
-      },
+      options: {},
     },
     /** ListParameters lists parameters with search, filter, and pagination. */
     listParameters: {
@@ -3194,43 +3242,7 @@ export const ParameterServiceDefinition = {
       requestStream: false,
       responseType: ListParametersResponse,
       responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              28,
-              18,
-              26,
-              47,
-              97,
-              112,
-              105,
-              47,
-              118,
-              49,
-              47,
-              102,
-              105,
-              110,
-              97,
-              110,
-              99,
-              101,
-              47,
-              112,
-              97,
-              114,
-              97,
-              109,
-              101,
-              116,
-              101,
-              114,
-              115,
-            ]),
-          ],
-        },
-      },
+      options: {},
     },
     /** ExportParameters exports parameters to Excel file. */
     exportParameters: {
@@ -3239,50 +3251,7 @@ export const ParameterServiceDefinition = {
       requestStream: false,
       responseType: ExportParametersResponse,
       responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              35,
-              18,
-              33,
-              47,
-              97,
-              112,
-              105,
-              47,
-              118,
-              49,
-              47,
-              102,
-              105,
-              110,
-              97,
-              110,
-              99,
-              101,
-              47,
-              112,
-              97,
-              114,
-              97,
-              109,
-              101,
-              116,
-              101,
-              114,
-              115,
-              47,
-              101,
-              120,
-              112,
-              111,
-              114,
-              116,
-            ]),
-          ],
-        },
-      },
+      options: {},
     },
     /** ImportParameters imports parameters from Excel file. */
     importParameters: {
@@ -3291,53 +3260,7 @@ export const ParameterServiceDefinition = {
       requestStream: false,
       responseType: ImportParametersResponse,
       responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              38,
-              58,
-              1,
-              42,
-              34,
-              33,
-              47,
-              97,
-              112,
-              105,
-              47,
-              118,
-              49,
-              47,
-              102,
-              105,
-              110,
-              97,
-              110,
-              99,
-              101,
-              47,
-              112,
-              97,
-              114,
-              97,
-              109,
-              101,
-              116,
-              101,
-              114,
-              115,
-              47,
-              105,
-              109,
-              112,
-              111,
-              114,
-              116,
-            ]),
-          ],
-        },
-      },
+      options: {},
     },
     /** DownloadParameterTemplate downloads the Excel import template. */
     downloadParameterTemplate: {
@@ -3346,52 +3269,7 @@ export const ParameterServiceDefinition = {
       requestStream: false,
       responseType: DownloadParameterTemplateResponse,
       responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              37,
-              18,
-              35,
-              47,
-              97,
-              112,
-              105,
-              47,
-              118,
-              49,
-              47,
-              102,
-              105,
-              110,
-              97,
-              110,
-              99,
-              101,
-              47,
-              112,
-              97,
-              114,
-              97,
-              109,
-              101,
-              116,
-              101,
-              114,
-              115,
-              47,
-              116,
-              101,
-              109,
-              112,
-              108,
-              97,
-              116,
-              101,
-            ]),
-          ],
-        },
-      },
+      options: {},
     },
   },
 } as const;

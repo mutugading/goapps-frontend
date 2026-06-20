@@ -1,10 +1,11 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useMemo } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { Loader2 } from "lucide-react"
+import { useQuery } from "@tanstack/react-query"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -25,6 +26,7 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import {
   Select,
   SelectContent,
@@ -45,6 +47,7 @@ import { useCreateParameter, useUpdateParameter } from "@/hooks/finance/use-para
 import { useUOMs } from "@/hooks/finance/use-uom"
 import { useDepartments } from "@/hooks/iam/use-departments"
 import { ActiveFilter } from "@/types/finance/uom"
+import { useLookupMasters, useLookupMasterColumns } from "@/hooks/finance/use-lookup-master"
 
 interface ParameterFormValues {
   paramCode: string
@@ -61,8 +64,11 @@ interface ParameterFormValues {
   isRequiredForCosting: boolean
   isPeriodDependent: boolean
   lookupMasterCode: string
+  lookupFillGroupCode: string
+  lookupSourceColumn: string
   displayOrder: number
   displayGroup: string
+  notes: string
 }
 
 const parameterFormSchema = z.object({
@@ -96,8 +102,11 @@ const parameterFormSchema = z.object({
   isRequiredForCosting: z.boolean(),
   isPeriodDependent: z.boolean(),
   lookupMasterCode: z.string().max(30),
+  lookupFillGroupCode: z.string().max(20),
+  lookupSourceColumn: z.string().max(50),
   displayOrder: z.coerce.number().int().gte(0),
   displayGroup: z.string().max(50),
+  notes: z.string().max(500),
 })
 
 interface ParameterFormDialogProps {
@@ -145,8 +154,11 @@ export function ParameterFormDialog({
       isRequiredForCosting: false,
       isPeriodDependent: false,
       lookupMasterCode: "",
+      lookupFillGroupCode: "",
+      lookupSourceColumn: "",
       displayOrder: 0,
       displayGroup: "",
+      notes: "",
     },
   })
 
@@ -168,8 +180,11 @@ export function ParameterFormDialog({
           isRequiredForCosting: parameter.isRequiredForCosting ?? false,
           isPeriodDependent: parameter.isPeriodDependent ?? false,
           lookupMasterCode: parameter.lookupMasterCode || "",
+          lookupFillGroupCode: parameter.lookupFillGroupCode || "__none__",
+          lookupSourceColumn: parameter.lookupSourceColumn || "",
           displayOrder: parameter.displayOrder ?? 0,
           displayGroup: parameter.displayGroup || "",
+          notes: parameter.notes || "",
         })
       } else {
         form.reset({
@@ -187,8 +202,11 @@ export function ParameterFormDialog({
           isRequiredForCosting: false,
           isPeriodDependent: false,
           lookupMasterCode: "",
+          lookupFillGroupCode: "",
+          lookupSourceColumn: "",
           displayOrder: 0,
           displayGroup: "",
+          notes: "",
         })
       }
     }
@@ -214,8 +232,11 @@ export function ParameterFormDialog({
             isRequiredForCosting: values.isRequiredForCosting,
             isPeriodDependent: values.isPeriodDependent,
             lookupMasterCode: values.lookupMasterCode,
+            lookupFillGroupCode: values.lookupFillGroupCode === "__none__" ? undefined : (values.lookupFillGroupCode || undefined),
+            lookupSourceColumn: values.lookupSourceColumn || undefined,
             displayOrder: values.displayOrder,
             displayGroup: values.displayGroup,
+            notes: values.notes,
           },
         })
       } else {
@@ -233,8 +254,11 @@ export function ParameterFormDialog({
           isRequiredForCosting: values.isRequiredForCosting,
           isPeriodDependent: values.isPeriodDependent,
           lookupMasterCode: values.lookupMasterCode,
+          lookupFillGroupCode: values.lookupFillGroupCode === "__none__" ? "" : values.lookupFillGroupCode,
+          lookupSourceColumn: values.lookupSourceColumn,
           displayOrder: values.displayOrder,
           displayGroup: values.displayGroup,
+          notes: values.notes,
         })
       }
       onOpenChange(false)
@@ -245,6 +269,42 @@ export function ParameterFormDialog({
   }
 
   const isPending = createMutation.isPending || updateMutation.isPending
+
+  // Lookup master registry
+  const { data: lookupMasters = [] } = useLookupMasters(true)
+  const watchedCategory = form.watch("paramCategory")
+  const watchedFillGroup = form.watch("lookupFillGroupCode")
+
+  // Fetch MASTER_LOOKUP trigger params for the fill-group combobox (child params only)
+  const { data: triggerParams } = useQuery({
+    queryKey: ["finance", "parameter", "list", "master-lookup-triggers"],
+    queryFn: async () => {
+      const res = await fetch(`/api/v1/finance/parameters?paramCategory=${ParamCategory.PARAM_CATEGORY_MASTER_LOOKUP}&pageSize=100`)
+      if (!res.ok) return []
+      // ListParametersResponse.data is repeated Parameter (direct array, not nested items)
+      const json = await res.json() as { data?: Array<{ paramCode: string; paramName: string; lookupMasterCode: string }> | { items?: Array<{ paramCode: string; paramName: string; lookupMasterCode: string }> } }
+      const data = json.data
+      return Array.isArray(data) ? data : (data?.items ?? [])
+    },
+    staleTime: 60_000,
+    enabled: watchedCategory !== ParamCategory.PARAM_CATEGORY_MASTER_LOOKUP,
+  })
+
+  // Derive master code from selected trigger param for cascading source-column dropdown
+  const masterCodeForColumns = useMemo(() => {
+    if (!watchedFillGroup || watchedFillGroup === "__none__" || !triggerParams) return ""
+    const trigger = triggerParams.find((p) => p.paramCode === watchedFillGroup)
+    return trigger?.lookupMasterCode ?? ""
+  }, [watchedFillGroup, triggerParams])
+
+  const { data: sourceColumns } = useLookupMasterColumns(masterCodeForColumns || undefined)
+
+  // Clear lookup master code when category changes away from MASTER_LOOKUP
+  useEffect(() => {
+    if (watchedCategory !== ParamCategory.PARAM_CATEGORY_MASTER_LOOKUP) {
+      form.setValue("lookupMasterCode", "")
+    }
+  }, [watchedCategory, form])
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -570,25 +630,111 @@ export function ParameterFormDialog({
                   name="lookupMasterCode"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Lookup Master Code</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="e.g., YARN_TYPE, MACHINE (optional)"
-                          {...field}
-                          value={field.value || ""}
-                          disabled={isPending}
-                          className="uppercase"
-                          onChange={(e) => field.onChange(e.target.value.toUpperCase())}
-                        />
-                      </FormControl>
+                      <FormLabel>Lookup Master</FormLabel>
+                      <Select
+                        value={field.value || ""}
+                        onValueChange={field.onChange}
+                        disabled={isPending || watchedCategory !== ParamCategory.PARAM_CATEGORY_MASTER_LOOKUP}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder={
+                              watchedCategory === ParamCategory.PARAM_CATEGORY_MASTER_LOOKUP
+                                ? "Select a master table…"
+                                : "Only for Master Lookup category"
+                            } />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {lookupMasters.map((m) => (
+                            <SelectItem key={m.lmCode} value={m.lmCode}>
+                              {m.lmDisplayName}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormDescription>
                         When set, the per-product form renders a combobox sourced from this master.
-                        Leave empty for free-text / typed input.
+                        Only applicable for Master Lookup category params.
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+
+                {/* Fill Group — only for child params (non-MASTER_LOOKUP) */}
+                {watchedCategory !== ParamCategory.PARAM_CATEGORY_MASTER_LOOKUP && (
+                  <FormField
+                    control={form.control}
+                    name="lookupFillGroupCode"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Fill Group (Parent Trigger)</FormLabel>
+                        <Select
+                          value={field.value || ""}
+                          onValueChange={(val) => {
+                            field.onChange(val)
+                            form.setValue("lookupSourceColumn", "")
+                          }}
+                          disabled={isPending}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select trigger param (optional)…" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="__none__">— None —</SelectItem>
+                            {(triggerParams ?? []).map((p) => (
+                              <SelectItem key={p.paramCode} value={p.paramCode}>
+                                {p.paramCode} — {p.paramName}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormDescription>
+                          If this param is auto-filled by a MASTER_LOOKUP trigger, select the trigger param here.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+
+                {/* Source Column — cascades from fill group selection */}
+                {watchedFillGroup && watchedFillGroup !== "__none__" && (
+                  <FormField
+                    control={form.control}
+                    name="lookupSourceColumn"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Source Column</FormLabel>
+                        <Select
+                          value={field.value || ""}
+                          onValueChange={field.onChange}
+                          disabled={isPending || !masterCodeForColumns}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder={masterCodeForColumns ? "Select column…" : "Select fill group first"} />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {(sourceColumns ?? []).map((col) => (
+                              <SelectItem key={col.lmcColumnName} value={col.lmcColumnName}>
+                                {col.lmcDisplayName} ({col.lmcDataType.toLowerCase()})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormDescription>
+                          The column in the master table whose value will fill this param.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
               </div>
 
               <div className="mt-4 space-y-3">
@@ -638,6 +784,29 @@ export function ParameterFormDialog({
                 />
               </div>
             </div>
+
+            <FormField
+              control={form.control}
+              name="notes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Notes</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Formula hint or description (optional, max 500 chars)"
+                      rows={3}
+                      {...field}
+                      value={field.value || ""}
+                      disabled={isPending}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Free-text notes or formula hint. Pre-filled from Excel spec.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             {isEditing && (
               <FormField
