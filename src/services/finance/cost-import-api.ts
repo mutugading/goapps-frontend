@@ -206,3 +206,19 @@ export async function exportBulkProductRouting(options?: {
     status: json.status ?? json.data?.status ?? "",
   }
 }
+
+/**
+ * Download the blank bulk product routing import template.
+ * Triggers a browser file download directly.
+ */
+export async function downloadBulkProductRoutingTemplate(): Promise<void> {
+  const res = await fetch("/api/v1/finance/costing/template/bulk_product_routing")
+  if (!res.ok) throw new Error("Failed to download template")
+  const blob = await res.blob()
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  a.download = "bulk_product_routing_template.xlsx"
+  a.click()
+  URL.revokeObjectURL(url)
+}
