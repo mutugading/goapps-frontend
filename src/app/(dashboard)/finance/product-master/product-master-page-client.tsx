@@ -18,6 +18,7 @@ import {
   ProductMasterTable,
 } from "@/components/finance/cost-product-master"
 import { ImportExportToolbar } from "@/components/finance/costing/import-export-toolbar"
+import { BulkImportDialog, BulkExportButton } from "@/components/finance/costing/bulk-import-dialog"
 import { ProductTypeCombobox } from "@/components/finance/comboboxes"
 import { DataTablePagination } from "@/components/shared"
 import { useCostProductMasterCounts, useCostProductMasters, costProductMasterKeys } from "@/hooks/finance/use-cost-product-master"
@@ -41,6 +42,7 @@ export default function ProductMasterPageClient() {
   const [formOpen, setFormOpen] = useState(false)
   const [erpOpen, setErpOpen] = useState(false)
   const [deactivateOpen, setDeactivateOpen] = useState(false)
+  const [bulkImportOpen, setBulkImportOpen] = useState(false)
   const [editing, setEditing] = useState<CostProductMaster | null>(null)
 
   function openCreate() {
@@ -76,6 +78,10 @@ export default function ProductMasterPageClient() {
             queryClient.invalidateQueries({ queryKey: costProductMasterKeys.all })
           }
         />
+        <BulkExportButton />
+        <Button variant="outline" size="sm" onClick={() => setBulkImportOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" /> Bulk Import
+        </Button>
         <Button onClick={openCreate}>
           <Plus className="mr-2 h-4 w-4" /> New product
         </Button>
@@ -152,6 +158,7 @@ export default function ProductMasterPageClient() {
         onOpenChange={setDeactivateOpen}
         product={editing}
       />
+      <BulkImportDialog open={bulkImportOpen} onOpenChange={setBulkImportOpen} />
     </div>
   )
 }
