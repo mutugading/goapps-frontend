@@ -150,6 +150,10 @@ export async function validateBulkProductRoutingFile(
   if (!res.ok) throw new Error(`Validation failed: ${res.status}`)
   const json = await res.json()
 
+  if (!json.base?.isSuccess && json.base?.isSuccess !== undefined) {
+    throw new Error(json.base?.message || "Validation request failed")
+  }
+
   // Normalise: handle both camelCase (gRPC-gateway) and snake_case (raw proto)
   const isValid: boolean = json.isValid ?? json.is_valid ?? false
   const rawSheets: unknown[] = Array.isArray(json.sheets) ? json.sheets : []
