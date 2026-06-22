@@ -107,6 +107,55 @@ export interface DownloadCostProductParameterTemplateResponse {
   fileName: string;
 }
 
+export interface ImportRowError {
+  rowNumber: number;
+  field: string;
+  message: string;
+}
+
+export interface BulkSheetValidationResult {
+  sheetName: string;
+  totalRows: number;
+  errorCount: number;
+  warningCount: number;
+  sampleErrors: ImportRowError[];
+}
+
+export interface ImportBulkProductRoutingRequest {
+  fileContent: Uint8Array;
+  fileName: string;
+  duplicateAction: string;
+}
+
+export interface ImportBulkProductRoutingResponse {
+  base: BaseResponse | undefined;
+  jobId: number;
+  status: string;
+}
+
+export interface ValidateBulkProductRoutingFileRequest {
+  fileContent: Uint8Array;
+  fileName: string;
+}
+
+export interface ValidateBulkProductRoutingFileResponse {
+  base: BaseResponse | undefined;
+  isValid: boolean;
+  sheets: BulkSheetValidationResult[];
+}
+
+export interface ExportBulkProductRoutingRequest {
+  productTypeCodes: string[];
+  includeRouting: boolean;
+  activeOnly: boolean;
+}
+
+export interface ExportBulkProductRoutingResponse {
+  base: BaseResponse | undefined;
+  jobId: number;
+  status: string;
+}
+
 function createBaseCostImportJob(): CostImportJob {
   return {
     jobId: 0,
@@ -1743,6 +1792,834 @@ export const DownloadCostProductParameterTemplateResponse: MessageFns<DownloadCo
   },
 };
 
+function createBaseImportRowError(): ImportRowError {
+  return { rowNumber: 0, field: "", message: "" };
+}
+
+export const ImportRowError: MessageFns<ImportRowError> = {
+  encode(message: ImportRowError, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.rowNumber !== 0) {
+      writer.uint32(8).int32(message.rowNumber);
+    }
+    if (message.field !== "") {
+      writer.uint32(18).string(message.field);
+    }
+    if (message.message !== "") {
+      writer.uint32(26).string(message.message);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ImportRowError {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseImportRowError();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.rowNumber = reader.int32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.field = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.message = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ImportRowError {
+    return {
+      rowNumber: isSet(object.rowNumber)
+        ? globalThis.Number(object.rowNumber)
+        : isSet(object.row_number)
+        ? globalThis.Number(object.row_number)
+        : 0,
+      field: isSet(object.field) ? globalThis.String(object.field) : "",
+      message: isSet(object.message) ? globalThis.String(object.message) : "",
+    };
+  },
+
+  toJSON(message: ImportRowError): unknown {
+    const obj: any = {};
+    if (message.rowNumber !== 0) {
+      obj.rowNumber = Math.round(message.rowNumber);
+    }
+    if (message.field !== "") {
+      obj.field = message.field;
+    }
+    if (message.message !== "") {
+      obj.message = message.message;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ImportRowError>): ImportRowError {
+    return ImportRowError.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ImportRowError>): ImportRowError {
+    const message = createBaseImportRowError();
+    message.rowNumber = object.rowNumber ?? 0;
+    message.field = object.field ?? "";
+    message.message = object.message ?? "";
+    return message;
+  },
+};
+
+function createBaseBulkSheetValidationResult(): BulkSheetValidationResult {
+  return { sheetName: "", totalRows: 0, errorCount: 0, warningCount: 0, sampleErrors: [] };
+}
+
+export const BulkSheetValidationResult: MessageFns<BulkSheetValidationResult> = {
+  encode(message: BulkSheetValidationResult, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.sheetName !== "") {
+      writer.uint32(10).string(message.sheetName);
+    }
+    if (message.totalRows !== 0) {
+      writer.uint32(16).int32(message.totalRows);
+    }
+    if (message.errorCount !== 0) {
+      writer.uint32(24).int32(message.errorCount);
+    }
+    if (message.warningCount !== 0) {
+      writer.uint32(32).int32(message.warningCount);
+    }
+    for (const v of message.sampleErrors) {
+      ImportRowError.encode(v!, writer.uint32(42).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): BulkSheetValidationResult {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseBulkSheetValidationResult();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.sheetName = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.totalRows = reader.int32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.errorCount = reader.int32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.warningCount = reader.int32();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.sampleErrors.push(ImportRowError.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): BulkSheetValidationResult {
+    return {
+      sheetName: isSet(object.sheetName)
+        ? globalThis.String(object.sheetName)
+        : isSet(object.sheet_name)
+        ? globalThis.String(object.sheet_name)
+        : "",
+      totalRows: isSet(object.totalRows)
+        ? globalThis.Number(object.totalRows)
+        : isSet(object.total_rows)
+        ? globalThis.Number(object.total_rows)
+        : 0,
+      errorCount: isSet(object.errorCount)
+        ? globalThis.Number(object.errorCount)
+        : isSet(object.error_count)
+        ? globalThis.Number(object.error_count)
+        : 0,
+      warningCount: isSet(object.warningCount)
+        ? globalThis.Number(object.warningCount)
+        : isSet(object.warning_count)
+        ? globalThis.Number(object.warning_count)
+        : 0,
+      sampleErrors: globalThis.Array.isArray(object?.sampleErrors)
+        ? object.sampleErrors.map((e: any) => ImportRowError.fromJSON(e))
+        : globalThis.Array.isArray(object?.sample_errors)
+        ? object.sample_errors.map((e: any) => ImportRowError.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: BulkSheetValidationResult): unknown {
+    const obj: any = {};
+    if (message.sheetName !== "") {
+      obj.sheetName = message.sheetName;
+    }
+    if (message.totalRows !== 0) {
+      obj.totalRows = Math.round(message.totalRows);
+    }
+    if (message.errorCount !== 0) {
+      obj.errorCount = Math.round(message.errorCount);
+    }
+    if (message.warningCount !== 0) {
+      obj.warningCount = Math.round(message.warningCount);
+    }
+    if (message.sampleErrors?.length) {
+      obj.sampleErrors = message.sampleErrors.map((e) => ImportRowError.toJSON(e));
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<BulkSheetValidationResult>): BulkSheetValidationResult {
+    return BulkSheetValidationResult.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<BulkSheetValidationResult>): BulkSheetValidationResult {
+    const message = createBaseBulkSheetValidationResult();
+    message.sheetName = object.sheetName ?? "";
+    message.totalRows = object.totalRows ?? 0;
+    message.errorCount = object.errorCount ?? 0;
+    message.warningCount = object.warningCount ?? 0;
+    message.sampleErrors = object.sampleErrors?.map((e) => ImportRowError.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseImportBulkProductRoutingRequest(): ImportBulkProductRoutingRequest {
+  return { fileContent: new Uint8Array(0), fileName: "", duplicateAction: "" };
+}
+
+export const ImportBulkProductRoutingRequest: MessageFns<ImportBulkProductRoutingRequest> = {
+  encode(message: ImportBulkProductRoutingRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.fileContent.length !== 0) {
+      writer.uint32(10).bytes(message.fileContent);
+    }
+    if (message.fileName !== "") {
+      writer.uint32(18).string(message.fileName);
+    }
+    if (message.duplicateAction !== "") {
+      writer.uint32(26).string(message.duplicateAction);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ImportBulkProductRoutingRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseImportBulkProductRoutingRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.fileContent = reader.bytes();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.fileName = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.duplicateAction = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ImportBulkProductRoutingRequest {
+    return {
+      fileContent: isSet(object.fileContent)
+        ? bytesFromBase64(object.fileContent)
+        : isSet(object.file_content)
+        ? bytesFromBase64(object.file_content)
+        : new Uint8Array(0),
+      fileName: isSet(object.fileName)
+        ? globalThis.String(object.fileName)
+        : isSet(object.file_name)
+        ? globalThis.String(object.file_name)
+        : "",
+      duplicateAction: isSet(object.duplicateAction)
+        ? globalThis.String(object.duplicateAction)
+        : isSet(object.duplicate_action)
+        ? globalThis.String(object.duplicate_action)
+        : "",
+    };
+  },
+
+  toJSON(message: ImportBulkProductRoutingRequest): unknown {
+    const obj: any = {};
+    if (message.fileContent.length !== 0) {
+      obj.fileContent = base64FromBytes(message.fileContent);
+    }
+    if (message.fileName !== "") {
+      obj.fileName = message.fileName;
+    }
+    if (message.duplicateAction !== "") {
+      obj.duplicateAction = message.duplicateAction;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ImportBulkProductRoutingRequest>): ImportBulkProductRoutingRequest {
+    return ImportBulkProductRoutingRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ImportBulkProductRoutingRequest>): ImportBulkProductRoutingRequest {
+    const message = createBaseImportBulkProductRoutingRequest();
+    message.fileContent = object.fileContent ?? new Uint8Array(0);
+    message.fileName = object.fileName ?? "";
+    message.duplicateAction = object.duplicateAction ?? "";
+    return message;
+  },
+};
+
+function createBaseImportBulkProductRoutingResponse(): ImportBulkProductRoutingResponse {
+  return { base: undefined, jobId: 0, status: "" };
+}
+
+export const ImportBulkProductRoutingResponse: MessageFns<ImportBulkProductRoutingResponse> = {
+  encode(message: ImportBulkProductRoutingResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    if (message.jobId !== 0) {
+      writer.uint32(16).int64(message.jobId);
+    }
+    if (message.status !== "") {
+      writer.uint32(26).string(message.status);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ImportBulkProductRoutingResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseImportBulkProductRoutingResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.jobId = longToNumber(reader.int64());
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.status = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ImportBulkProductRoutingResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      jobId: isSet(object.jobId)
+        ? globalThis.Number(object.jobId)
+        : isSet(object.job_id)
+        ? globalThis.Number(object.job_id)
+        : 0,
+      status: isSet(object.status) ? globalThis.String(object.status) : "",
+    };
+  },
+
+  toJSON(message: ImportBulkProductRoutingResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.jobId !== 0) {
+      obj.jobId = Math.round(message.jobId);
+    }
+    if (message.status !== "") {
+      obj.status = message.status;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ImportBulkProductRoutingResponse>): ImportBulkProductRoutingResponse {
+    return ImportBulkProductRoutingResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ImportBulkProductRoutingResponse>): ImportBulkProductRoutingResponse {
+    const message = createBaseImportBulkProductRoutingResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.jobId = object.jobId ?? 0;
+    message.status = object.status ?? "";
+    return message;
+  },
+};
+
+function createBaseValidateBulkProductRoutingFileRequest(): ValidateBulkProductRoutingFileRequest {
+  return { fileContent: new Uint8Array(0), fileName: "" };
+}
+
+export const ValidateBulkProductRoutingFileRequest: MessageFns<ValidateBulkProductRoutingFileRequest> = {
+  encode(message: ValidateBulkProductRoutingFileRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.fileContent.length !== 0) {
+      writer.uint32(10).bytes(message.fileContent);
+    }
+    if (message.fileName !== "") {
+      writer.uint32(18).string(message.fileName);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ValidateBulkProductRoutingFileRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseValidateBulkProductRoutingFileRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.fileContent = reader.bytes();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.fileName = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ValidateBulkProductRoutingFileRequest {
+    return {
+      fileContent: isSet(object.fileContent)
+        ? bytesFromBase64(object.fileContent)
+        : isSet(object.file_content)
+        ? bytesFromBase64(object.file_content)
+        : new Uint8Array(0),
+      fileName: isSet(object.fileName)
+        ? globalThis.String(object.fileName)
+        : isSet(object.file_name)
+        ? globalThis.String(object.file_name)
+        : "",
+    };
+  },
+
+  toJSON(message: ValidateBulkProductRoutingFileRequest): unknown {
+    const obj: any = {};
+    if (message.fileContent.length !== 0) {
+      obj.fileContent = base64FromBytes(message.fileContent);
+    }
+    if (message.fileName !== "") {
+      obj.fileName = message.fileName;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ValidateBulkProductRoutingFileRequest>): ValidateBulkProductRoutingFileRequest {
+    return ValidateBulkProductRoutingFileRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ValidateBulkProductRoutingFileRequest>): ValidateBulkProductRoutingFileRequest {
+    const message = createBaseValidateBulkProductRoutingFileRequest();
+    message.fileContent = object.fileContent ?? new Uint8Array(0);
+    message.fileName = object.fileName ?? "";
+    return message;
+  },
+};
+
+function createBaseValidateBulkProductRoutingFileResponse(): ValidateBulkProductRoutingFileResponse {
+  return { base: undefined, isValid: false, sheets: [] };
+}
+
+export const ValidateBulkProductRoutingFileResponse: MessageFns<ValidateBulkProductRoutingFileResponse> = {
+  encode(message: ValidateBulkProductRoutingFileResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    if (message.isValid !== false) {
+      writer.uint32(16).bool(message.isValid);
+    }
+    for (const v of message.sheets) {
+      BulkSheetValidationResult.encode(v!, writer.uint32(26).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ValidateBulkProductRoutingFileResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseValidateBulkProductRoutingFileResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.isValid = reader.bool();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.sheets.push(BulkSheetValidationResult.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ValidateBulkProductRoutingFileResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      isValid: isSet(object.isValid)
+        ? globalThis.Boolean(object.isValid)
+        : isSet(object.is_valid)
+        ? globalThis.Boolean(object.is_valid)
+        : false,
+      sheets: globalThis.Array.isArray(object?.sheets)
+        ? object.sheets.map((e: any) => BulkSheetValidationResult.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: ValidateBulkProductRoutingFileResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.isValid !== false) {
+      obj.isValid = message.isValid;
+    }
+    if (message.sheets?.length) {
+      obj.sheets = message.sheets.map((e) => BulkSheetValidationResult.toJSON(e));
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ValidateBulkProductRoutingFileResponse>): ValidateBulkProductRoutingFileResponse {
+    return ValidateBulkProductRoutingFileResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ValidateBulkProductRoutingFileResponse>): ValidateBulkProductRoutingFileResponse {
+    const message = createBaseValidateBulkProductRoutingFileResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.isValid = object.isValid ?? false;
+    message.sheets = object.sheets?.map((e) => BulkSheetValidationResult.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseExportBulkProductRoutingRequest(): ExportBulkProductRoutingRequest {
+  return { productTypeCodes: [], includeRouting: false, activeOnly: false };
+}
+
+export const ExportBulkProductRoutingRequest: MessageFns<ExportBulkProductRoutingRequest> = {
+  encode(message: ExportBulkProductRoutingRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    for (const v of message.productTypeCodes) {
+      writer.uint32(10).string(v!);
+    }
+    if (message.includeRouting !== false) {
+      writer.uint32(16).bool(message.includeRouting);
+    }
+    if (message.activeOnly !== false) {
+      writer.uint32(24).bool(message.activeOnly);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ExportBulkProductRoutingRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseExportBulkProductRoutingRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.productTypeCodes.push(reader.string());
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.includeRouting = reader.bool();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.activeOnly = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ExportBulkProductRoutingRequest {
+    return {
+      productTypeCodes: globalThis.Array.isArray(object?.productTypeCodes)
+        ? object.productTypeCodes.map((e: any) => globalThis.String(e))
+        : globalThis.Array.isArray(object?.product_type_codes)
+        ? object.product_type_codes.map((e: any) => globalThis.String(e))
+        : [],
+      includeRouting: isSet(object.includeRouting)
+        ? globalThis.Boolean(object.includeRouting)
+        : isSet(object.include_routing)
+        ? globalThis.Boolean(object.include_routing)
+        : false,
+      activeOnly: isSet(object.activeOnly)
+        ? globalThis.Boolean(object.activeOnly)
+        : isSet(object.active_only)
+        ? globalThis.Boolean(object.active_only)
+        : false,
+    };
+  },
+
+  toJSON(message: ExportBulkProductRoutingRequest): unknown {
+    const obj: any = {};
+    if (message.productTypeCodes?.length) {
+      obj.productTypeCodes = message.productTypeCodes;
+    }
+    if (message.includeRouting !== false) {
+      obj.includeRouting = message.includeRouting;
+    }
+    if (message.activeOnly !== false) {
+      obj.activeOnly = message.activeOnly;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ExportBulkProductRoutingRequest>): ExportBulkProductRoutingRequest {
+    return ExportBulkProductRoutingRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ExportBulkProductRoutingRequest>): ExportBulkProductRoutingRequest {
+    const message = createBaseExportBulkProductRoutingRequest();
+    message.productTypeCodes = object.productTypeCodes?.map((e) => e) || [];
+    message.includeRouting = object.includeRouting ?? false;
+    message.activeOnly = object.activeOnly ?? false;
+    return message;
+  },
+};
+
+function createBaseExportBulkProductRoutingResponse(): ExportBulkProductRoutingResponse {
+  return { base: undefined, jobId: 0, status: "" };
+}
+
+export const ExportBulkProductRoutingResponse: MessageFns<ExportBulkProductRoutingResponse> = {
+  encode(message: ExportBulkProductRoutingResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    if (message.jobId !== 0) {
+      writer.uint32(16).int64(message.jobId);
+    }
+    if (message.status !== "") {
+      writer.uint32(26).string(message.status);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ExportBulkProductRoutingResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseExportBulkProductRoutingResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.jobId = longToNumber(reader.int64());
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.status = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ExportBulkProductRoutingResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      jobId: isSet(object.jobId)
+        ? globalThis.Number(object.jobId)
+        : isSet(object.job_id)
+        ? globalThis.Number(object.job_id)
+        : 0,
+      status: isSet(object.status) ? globalThis.String(object.status) : "",
+    };
+  },
+
+  toJSON(message: ExportBulkProductRoutingResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.jobId !== 0) {
+      obj.jobId = Math.round(message.jobId);
+    }
+    if (message.status !== "") {
+      obj.status = message.status;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ExportBulkProductRoutingResponse>): ExportBulkProductRoutingResponse {
+    return ExportBulkProductRoutingResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ExportBulkProductRoutingResponse>): ExportBulkProductRoutingResponse {
+    const message = createBaseExportBulkProductRoutingResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.jobId = object.jobId ?? 0;
+    message.status = object.status ?? "";
+    return message;
+  },
+};
+
 export type CostDataImportServiceDefinition = typeof CostDataImportServiceDefinition;
 export const CostDataImportServiceDefinition = {
   name: "CostDataImportService",
@@ -1809,6 +2686,30 @@ export const CostDataImportServiceDefinition = {
       requestType: DownloadCostProductParameterTemplateRequest,
       requestStream: false,
       responseType: DownloadCostProductParameterTemplateResponse,
+      responseStream: false,
+      options: {},
+    },
+    importBulkProductRouting: {
+      name: "ImportBulkProductRouting",
+      requestType: ImportBulkProductRoutingRequest,
+      requestStream: false,
+      responseType: ImportBulkProductRoutingResponse,
+      responseStream: false,
+      options: {},
+    },
+    validateBulkProductRoutingFile: {
+      name: "ValidateBulkProductRoutingFile",
+      requestType: ValidateBulkProductRoutingFileRequest,
+      requestStream: false,
+      responseType: ValidateBulkProductRoutingFileResponse,
+      responseStream: false,
+      options: {},
+    },
+    exportBulkProductRouting: {
+      name: "ExportBulkProductRouting",
+      requestType: ExportBulkProductRoutingRequest,
+      requestStream: false,
+      responseType: ExportBulkProductRoutingResponse,
       responseStream: false,
       options: {},
     },

@@ -8,6 +8,8 @@ export type ImportEntity =
   | "product_master"
   | "capp"
   | "cpp"
+  | "bulk_product_routing"
+  | "bulk_product_routing_export"
 
 export interface CostImportJob {
   jobId: number
@@ -76,4 +78,47 @@ export function normalizeCostImportJob(raw: RawCostImportJob): CostImportJob {
     startedAt: raw.startedAt ?? raw.started_at ?? "",
     completedAt: raw.completedAt ?? raw.completed_at ?? "",
   }
+}
+
+// ── Import entity label map ─────────────────────────────────────────────────
+
+/** Human-readable labels for all import/export entity types. */
+export const IMPORT_ENTITY_LABELS: Record<string, string> = {
+  product_type: "Product Type",
+  parameter: "Parameter",
+  product_master: "Product Master",
+  capp: "Cost Applicable Parameters",
+  cpp: "Cost Product Parameters",
+  bulk_product_routing: "Bulk Import (Product Master + Routing)",
+  bulk_product_routing_export: "Bulk Export (Product Master + Routing)",
+}
+
+// ── Bulk Product Routing import/export ─────────────────────────────────────
+
+/** Entity constant for the bulk import (product master + routing). */
+export const ENTITY_BULK_PRODUCT_ROUTING = "bulk_product_routing"
+
+/** Entity constant for the bulk export job (product master + routing). */
+export const ENTITY_BULK_PRODUCT_ROUTING_EXPORT = "bulk_product_routing_export"
+
+/** Row-level error from a single sheet during bulk validation. */
+export interface BulkRowError {
+  rowNumber: number
+  field: string
+  message: string
+}
+
+/** Per-sheet result from ValidateBulkProductRoutingFile. */
+export interface BulkSheetValidationResult {
+  sheetName: string
+  totalRows: number
+  errorCount: number
+  warningCount: number
+  sampleErrors: BulkRowError[]
+}
+
+/** Full result from ValidateBulkProductRoutingFile. */
+export interface BulkValidationResult {
+  isValid: boolean
+  sheets: BulkSheetValidationResult[]
 }

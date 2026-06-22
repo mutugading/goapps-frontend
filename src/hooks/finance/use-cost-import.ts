@@ -10,15 +10,28 @@ import {
   importSync,
   importAsync,
   getImportJob,
+  listImportJobs,
 } from "@/services/finance/cost-import-api"
 import type {
   CostImportJob,
   ImportEntity,
   SyncImportResult,
 } from "@/types/finance/cost-import"
+import type { ListImportJobsParams } from "@/services/finance/cost-import-api"
 
 export const costImportKeys = {
   job: (id: number) => ["finance", "cost-import", "job", id] as const,
+  jobs: (params?: ListImportJobsParams) =>
+    ["finance", "cost-import", "jobs", params] as const,
+}
+
+export function useImportJobs(params?: ListImportJobsParams, refetchIntervalMs?: number) {
+  return useQuery({
+    queryKey: costImportKeys.jobs(params),
+    queryFn: () => listImportJobs(params),
+    staleTime: 5000,
+    refetchInterval: refetchIntervalMs,
+  })
 }
 
 export function useDownloadTemplate() {
