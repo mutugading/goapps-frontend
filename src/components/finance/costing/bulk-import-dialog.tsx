@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import React, { useEffect, useRef, useState } from "react"
 import { AlertCircle, CheckCircle2, ChevronDown, ChevronRight, FileSpreadsheet, Loader2, Upload } from "lucide-react"
 import { toast } from "sonner"
 
@@ -191,9 +191,8 @@ export function BulkImportDialog({ open, onOpenChange }: BulkImportDialogProps) 
                   </TableHeader>
                   <TableBody>
                     {validation.sheets.map((sheet) => (
-                      <>
+                      <React.Fragment key={sheet.sheetName}>
                         <TableRow
-                          key={sheet.sheetName}
                           className={sheet.errorCount > 0 ? "bg-destructive/5" : undefined}
                         >
                           <TableCell className="font-medium">{sheet.sheetName}</TableCell>
@@ -245,7 +244,7 @@ export function BulkImportDialog({ open, onOpenChange }: BulkImportDialogProps) 
                               </TableCell>
                             </TableRow>
                           ))}
-                      </>
+                      </React.Fragment>
                     ))}
                   </TableBody>
                 </Table>
@@ -277,7 +276,7 @@ export function BulkImportDialog({ open, onOpenChange }: BulkImportDialogProps) 
           )}
 
           {/* Start Import button — shown only when validation passed */}
-          {step === "validated" && !hasErrors && (
+          {step === "validated" && !hasErrors && (validation?.isValid ?? true) && (
             <Button onClick={handleImport} disabled={isSubmitting}>
               {isSubmitting ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
