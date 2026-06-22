@@ -13,13 +13,7 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
+import { Dialog } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
@@ -31,7 +25,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { ScrollArea } from "@/components/ui/scroll-area"
+import {
+  ScrollableDialogContent,
+  ScrollableDialogHeader,
+  ScrollableDialogBody,
+  ScrollableDialogFooter,
+} from "@/components/common/scrollable-dialog"
+import { DialogTitle } from "@/components/ui/dialog"
 import {
   bulkImportProductMasterRouting,
   downloadBulkProductRoutingTemplate,
@@ -140,27 +140,28 @@ export function BulkImportDialog({ open, onOpenChange }: BulkImportDialogProps) 
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[620px]">
-        <DialogHeader>
+      <ScrollableDialogContent className="sm:max-w-[580px]">
+        <ScrollableDialogHeader>
           <DialogTitle>Bulk Import — Product Master &amp; Routing</DialogTitle>
-        </DialogHeader>
+        </ScrollableDialogHeader>
 
-        <div className="space-y-4 py-2">
+        <ScrollableDialogBody className="space-y-4">
           {/* Template Download — hidden once job submitted */}
           {!isDone && (
-            <div className="flex items-center justify-between rounded-lg border p-4">
-              <div className="flex items-center gap-3">
-                <FileSpreadsheet className="h-8 w-8 text-green-600" />
-                <div>
+            <div className="flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex min-w-0 items-center gap-3">
+                <FileSpreadsheet className="h-8 w-8 shrink-0 text-green-600" />
+                <div className="min-w-0">
                   <p className="font-medium">Import Template</p>
                   <p className="text-sm text-muted-foreground">
-                    Download the Excel template with required sheets
+                    Download template Excel dengan 6 sheet yang diperlukan
                   </p>
                 </div>
               </div>
               <Button
                 variant="outline"
                 size="sm"
+                className="shrink-0 self-end sm:self-auto"
                 onClick={handleDownloadTemplate}
                 disabled={templateLoading || isSubmitting}
               >
@@ -177,7 +178,7 @@ export function BulkImportDialog({ open, onOpenChange }: BulkImportDialogProps) 
           {/* File Upload — hidden once job submitted */}
           {!isDone && (
             <div className="space-y-2">
-              <Label>Select File</Label>
+              <Label>Pilih File</Label>
               <div
                 className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-6 transition-colors hover:border-primary/50"
                 onClick={() => fileRef.current?.click()}
@@ -190,21 +191,21 @@ export function BulkImportDialog({ open, onOpenChange }: BulkImportDialogProps) 
                   onChange={handleFileChange}
                 />
                 {file ? (
-                  <div className="flex items-center gap-2">
-                    <FileSpreadsheet className="h-6 w-6 text-green-600" />
-                    <span className="font-medium">{file.name}</span>
-                    <span className="text-sm text-muted-foreground">
+                  <div className="flex min-w-0 max-w-full items-center gap-2">
+                    <FileSpreadsheet className="h-6 w-6 shrink-0 text-green-600" />
+                    <span className="min-w-0 truncate font-medium">{file.name}</span>
+                    <span className="shrink-0 text-sm text-muted-foreground">
                       ({(file.size / 1024).toFixed(1)} KB)
                     </span>
                   </div>
                 ) : (
                   <>
                     <Upload className="mb-2 h-8 w-8 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">
-                      Click to select or drag and drop an Excel file
+                    <p className="text-center text-sm text-muted-foreground">
+                      Klik untuk memilih atau drag &amp; drop file Excel
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      Supported: .xlsx
+                      Format: .xlsx
                     </p>
                   </>
                 )}
@@ -216,7 +217,7 @@ export function BulkImportDialog({ open, onOpenChange }: BulkImportDialogProps) 
           {isValidating && (
             <div className="flex items-center gap-2 py-2 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
-              Validating file…
+              Memvalidasi file…
             </div>
           )}
 
@@ -225,115 +226,112 @@ export function BulkImportDialog({ open, onOpenChange }: BulkImportDialogProps) 
             <div className="space-y-3">
               <div className="flex items-center gap-2">
                 {validation.isValid ? (
-                  <CheckCircle2 className="h-5 w-5 text-green-600" />
+                  <CheckCircle2 className="h-5 w-5 shrink-0 text-green-600" />
                 ) : (
-                  <AlertCircle className="h-5 w-5 text-destructive" />
+                  <AlertCircle className="h-5 w-5 shrink-0 text-destructive" />
                 )}
                 <span className="font-medium">
                   {validation.isValid
-                    ? "File is valid — ready to import"
-                    : "Validation failed — fix errors before importing"}
+                    ? "File valid — siap diimport"
+                    : "Validasi gagal — perbaiki error sebelum import"}
                 </span>
               </div>
 
-              <ScrollArea className="max-h-64 rounded border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Sheet</TableHead>
-                      <TableHead className="text-right">Rows</TableHead>
-                      <TableHead className="text-right">Errors</TableHead>
-                      <TableHead className="text-right">Warnings</TableHead>
-                      <TableHead className="w-8" />
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {validation.sheets.map((sheet) => (
-                      <React.Fragment key={sheet.sheetName}>
-                        <TableRow
-                          className={sheet.errorCount > 0 ? "bg-destructive/5" : undefined}
-                        >
-                          <TableCell className="font-medium">{sheet.sheetName}</TableCell>
-                          <TableCell className="text-right">{sheet.totalRows}</TableCell>
-                          <TableCell className="text-right">
-                            {sheet.errorCount > 0 ? (
-                              <Badge variant="destructive" className="text-xs">
-                                {sheet.errorCount}
-                              </Badge>
-                            ) : (
-                              <span className="text-muted-foreground">0</span>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {sheet.warningCount > 0 ? (
-                              <Badge variant="secondary" className="text-xs">
-                                {sheet.warningCount}
-                              </Badge>
-                            ) : (
-                              <span className="text-muted-foreground">0</span>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            {sheet.sampleErrors.length > 0 && (
-                              <button
-                                type="button"
-                                className="flex items-center text-muted-foreground hover:text-foreground"
-                                onClick={() => toggleSheet(sheet.sheetName)}
-                              >
-                                {expandedSheets.has(sheet.sheetName) ? (
-                                  <ChevronDown className="h-4 w-4" />
-                                ) : (
-                                  <ChevronRight className="h-4 w-4" />
-                                )}
-                              </button>
-                            )}
-                          </TableCell>
-                        </TableRow>
+              <div className="max-h-64 overflow-auto rounded border">
+                  <Table className="w-full table-fixed">
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Sheet</TableHead>
+                        <TableHead className="w-10 text-right">Row</TableHead>
+                        <TableHead className="w-14 text-right">Error</TableHead>
+                        <TableHead className="w-16 text-right">Warning</TableHead>
+                        <TableHead className="w-8" />
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {validation.sheets.map((sheet) => (
+                        <React.Fragment key={sheet.sheetName}>
+                          <TableRow
+                            className={sheet.errorCount > 0 ? "bg-destructive/5" : undefined}
+                          >
+                            <TableCell className="truncate font-medium">{sheet.sheetName}</TableCell>
+                            <TableCell className="text-right">{sheet.totalRows}</TableCell>
+                            <TableCell className="text-right">
+                              {sheet.errorCount > 0 ? (
+                                <Badge variant="destructive" className="text-xs">
+                                  {sheet.errorCount}
+                                </Badge>
+                              ) : (
+                                <span className="text-muted-foreground">0</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {sheet.warningCount > 0 ? (
+                                <Badge variant="secondary" className="text-xs">
+                                  {sheet.warningCount}
+                                </Badge>
+                              ) : (
+                                <span className="text-muted-foreground">0</span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {sheet.sampleErrors.length > 0 && (
+                                <button
+                                  type="button"
+                                  className="flex items-center text-muted-foreground hover:text-foreground"
+                                  onClick={() => toggleSheet(sheet.sheetName)}
+                                >
+                                  {expandedSheets.has(sheet.sheetName) ? (
+                                    <ChevronDown className="h-4 w-4" />
+                                  ) : (
+                                    <ChevronRight className="h-4 w-4" />
+                                  )}
+                                </button>
+                              )}
+                            </TableCell>
+                          </TableRow>
 
-                        {/* Sample errors for this sheet */}
-                        {expandedSheets.has(sheet.sheetName) &&
-                          sheet.sampleErrors.map((err, i) => (
-                            <TableRow key={`${sheet.sheetName}-err-${i}`} className="bg-muted/30">
-                              <TableCell
-                                colSpan={5}
-                                className="py-1 pl-8 text-xs text-destructive"
-                              >
-                                Row {err.rowNumber}{err.field ? ` [${err.field}]` : ""}: {err.message}
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                      </React.Fragment>
-                    ))}
-                  </TableBody>
-                </Table>
-              </ScrollArea>
+                          {/* Sample errors */}
+                          {expandedSheets.has(sheet.sheetName) &&
+                            sheet.sampleErrors.map((err, i) => (
+                              <TableRow key={`${sheet.sheetName}-err-${i}`} className="bg-muted/30">
+                                <TableCell
+                                  colSpan={5}
+                                  className="break-all py-1 pl-4 text-xs text-destructive"
+                                >
+                                  Row {err.rowNumber}{err.field ? ` [${err.field}]` : ""}: {err.message}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                        </React.Fragment>
+                      ))}
+                    </TableBody>
+                  </Table>
+              </div>
             </div>
           )}
 
           {/* Done */}
           {isDone && jobId !== null && (
             <div className="flex items-center gap-2 text-sm text-green-600">
-              <CheckCircle2 className="h-4 w-4" />
-              Import queued as Job #{jobId}. You will receive a notification when it
-              completes.
+              <CheckCircle2 className="h-4 w-4 shrink-0" />
+              Import dijadwalkan sebagai Job #{jobId}. Notifikasi akan dikirim saat selesai.
             </div>
           )}
-        </div>
+        </ScrollableDialogBody>
 
-        <DialogFooter>
+        <ScrollableDialogFooter>
           <Button variant="outline" onClick={handleClose} disabled={isSubmitting}>
-            {isDone ? "Close" : "Cancel"}
+            {isDone ? "Tutup" : "Batal"}
           </Button>
 
-          {/* Validate button — shown when file selected but not yet validated */}
           {file && step === "upload" && (
             <Button onClick={handleValidate} disabled={isValidating}>
               <CheckCircle2 className="mr-2 h-4 w-4" />
-              Validate
+              Validasi
             </Button>
           )}
 
-          {/* Start Import button — shown only when validation passed */}
           {canImport && (
             <Button onClick={handleImport} disabled={isSubmitting}>
               {isSubmitting ? (
@@ -341,11 +339,11 @@ export function BulkImportDialog({ open, onOpenChange }: BulkImportDialogProps) 
               ) : (
                 <Upload className="mr-2 h-4 w-4" />
               )}
-              {isSubmitting ? "Queueing…" : "Start Import"}
+              {isSubmitting ? "Mengantri…" : "Mulai Import"}
             </Button>
           )}
-        </DialogFooter>
-      </DialogContent>
+        </ScrollableDialogFooter>
+      </ScrollableDialogContent>
     </Dialog>
   )
 }
