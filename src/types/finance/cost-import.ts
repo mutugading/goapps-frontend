@@ -8,6 +8,8 @@ export type ImportEntity =
   | "product_master"
   | "capp"
   | "cpp"
+  | "bulk_product_routing"
+  | "bulk_product_routing_export"
 
 export interface CostImportJob {
   jobId: number

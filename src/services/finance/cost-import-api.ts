@@ -106,6 +106,45 @@ export async function getImportJob(jobId: number): Promise<CostImportJob> {
   return json.data as CostImportJob
 }
 
+export interface ListImportJobsParams {
+  entity?: string
+  status?: string
+  page?: number
+  pageSize?: number
+}
+
+export interface ListImportJobsResult {
+  items: CostImportJob[]
+  totalItems: number
+  totalPages: number
+  currentPage: number
+  pageSize: number
+}
+
+/**
+ * List import/export jobs with optional entity/status filters.
+ */
+export async function listImportJobs(
+  params?: ListImportJobsParams,
+): Promise<ListImportJobsResult> {
+  const qs = new URLSearchParams()
+  if (params?.entity) qs.set("entity", params.entity)
+  if (params?.status) qs.set("status", params.status)
+  if (params?.page) qs.set("page", String(params.page))
+  if (params?.pageSize) qs.set("pageSize", String(params.pageSize))
+  const res = await fetch(`${BASE}/import-jobs?${qs.toString()}`)
+  if (!res.ok) throw new Error(`List jobs failed: ${res.status}`)
+  const json = await res.json()
+  const raw: unknown[] = Array.isArray(json.data) ? json.data : []
+  return {
+    items: raw as CostImportJob[],
+    totalItems: Number(json.pagination?.totalItems ?? raw.length),
+    totalPages: Number(json.pagination?.totalPages ?? 1),
+    currentPage: Number(json.pagination?.currentPage ?? 1),
+    pageSize: Number(json.pagination?.pageSize ?? 20),
+  }
+}
+
 // ── Bulk Product Routing ────────────────────────────────────────────────────
 
 /**
