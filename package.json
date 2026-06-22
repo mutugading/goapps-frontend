@@ -41,6 +41,7 @@
     "date-fns": "^4.1.0",
     "echarts": "^6.1.0",
     "echarts-for-react": "^3.0.6",
+    "exceljs": "^4.4.0",
     "html-to-image": "^1.11.13",
     "jwt-decode": "^4.0.0",
     "lucide-react": "^0.563.0",
