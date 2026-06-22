@@ -109,17 +109,19 @@ export async function GET() {
 
   for (const sheet of SHEETS) {
     const ws = wb.addWorksheet(sheet.name);
-    ws.addRow(sheet.headers);
-    ws.addRow(sheet.sample);
 
-    // Bold header row
-    ws.getRow(1).font = { bold: true };
-    // Auto-width columns
+    // Set columns first — this writes the header row (row 1) automatically
     ws.columns = sheet.headers.map((h, i) => ({
       header: h,
       key: String(i),
       width: Math.max(h.length + 4, 16),
     }));
+
+    // Add only the sample data row (row 2)
+    ws.addRow(sheet.sample);
+
+    // Bold header row
+    ws.getRow(1).font = { bold: true };
   }
 
   const buffer = await wb.xlsx.writeBuffer();

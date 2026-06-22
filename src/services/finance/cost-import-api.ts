@@ -201,6 +201,9 @@ export async function exportBulkProductRouting(options?: {
   })
   if (!res.ok) throw new Error(`Bulk export failed: ${res.status}`)
   const json = await res.json()
+  if (json.base?.isSuccess === false) {
+    throw new Error(json.base?.message || "Bulk export failed")
+  }
   return {
     jobId: json.jobId ?? json.job_id ?? json.data?.jobId ?? json.data?.job_id ?? 0,
     status: json.status ?? json.data?.status ?? "",

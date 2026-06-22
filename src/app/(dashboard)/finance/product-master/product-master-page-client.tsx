@@ -2,6 +2,7 @@
 
 import { CheckCircle2, ChevronDown, FileSpreadsheet, Package, PauseCircle, Plus, Upload } from "lucide-react"
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 
@@ -47,6 +48,7 @@ export default function ProductMasterPageClient() {
   const { data, isLoading } = useCostProductMasters(filters)
   const { data: counts, isLoading: countsLoading } = useCostProductMasterCounts()
   const queryClient = useQueryClient()
+  const router = useRouter()
 
   const [formOpen, setFormOpen] = useState(false)
   const [erpOpen, setErpOpen] = useState(false)
@@ -83,9 +85,16 @@ export default function ProductMasterPageClient() {
     setBulkExportLoading(true)
     try {
       const result = await exportBulkProductRouting()
-      toast.success(`Export queued — Job #${result.jobId}`)
+      toast.success(`Export dijadwalkan — Job #${result.jobId}`, {
+        description: "File akan tersedia di halaman Import Jobs setelah selesai diproses.",
+        action: {
+          label: "Lihat Jobs",
+          onClick: () => router.push("/finance/import-jobs"),
+        },
+        duration: 8000,
+      })
     } catch (e) {
-      toast.error(`Export failed: ${String(e)}`)
+      toast.error(`Export gagal: ${e instanceof Error ? e.message : String(e)}`)
     } finally {
       setBulkExportLoading(false)
     }
