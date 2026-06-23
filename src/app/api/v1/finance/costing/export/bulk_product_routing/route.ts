@@ -18,6 +18,9 @@ export async function POST(request: NextRequest) {
     const productTypeCodes: string[] = Array.isArray(body.productTypeCodes)
       ? (body.productTypeCodes as string[])
       : []
+    const productSysIds: number[] = Array.isArray(body.productSysIds)
+      ? (body.productSysIds as unknown[]).map(Number)
+      : []
 
     const includeRouting: boolean =
       typeof body.includeRouting === "boolean" ? body.includeRouting : true
@@ -25,7 +28,7 @@ export async function POST(request: NextRequest) {
       typeof body.activeOnly === "boolean" ? body.activeOnly : false
 
     const res = await getCostDataImportClient().exportBulkProductRouting(
-      { productTypeCodes, includeRouting, activeOnly },
+      { productTypeCodes, productSysIds, includeRouting, activeOnly },
       metadata,
     )
 

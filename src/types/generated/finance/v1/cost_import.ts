@@ -148,6 +148,13 @@ export interface ExportBulkProductRoutingRequest {
   productTypeCodes: string[];
   includeRouting: boolean;
   activeOnly: boolean;
+  /**
+   * product_sys_ids, when non-empty, restricts the export to the transitive
+   * closure of the given products (the listed products plus every intermediate
+   * product reachable via PRODUCT-type route RMs). Mutually exclusive with
+   * product_type_codes; product_sys_ids takes precedence when both are set.
+   */
+  productSysIds: number[];
 }
 
 export interface ExportBulkProductRoutingResponse {
@@ -2419,7 +2426,7 @@ export const ValidateBulkProductRoutingFileResponse: MessageFns<ValidateBulkProd
 };
 
 function createBaseExportBulkProductRoutingRequest(): ExportBulkProductRoutingRequest {
-  return { productTypeCodes: [], includeRouting: false, activeOnly: false };
+  return { productTypeCodes: [], includeRouting: false, activeOnly: false, productSysIds: [] };
 }
 
 export const ExportBulkProductRoutingRequest: MessageFns<ExportBulkProductRoutingRequest> = {
@@ -2433,6 +2440,11 @@ export const ExportBulkProductRoutingRequest: MessageFns<ExportBulkProductRoutin
     if (message.activeOnly !== false) {
       writer.uint32(24).bool(message.activeOnly);
     }
+    writer.uint32(34).fork();
+    for (const v of message.productSysIds) {
+      writer.int64(v);
+    }
+    writer.join();
     return writer;
   },
 
@@ -2467,6 +2479,24 @@ export const ExportBulkProductRoutingRequest: MessageFns<ExportBulkProductRoutin
           message.activeOnly = reader.bool();
           continue;
         }
+        case 4: {
+          if (tag === 32) {
+            message.productSysIds.push(longToNumber(reader.int64()));
+
+            continue;
+          }
+
+          if (tag === 34) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.productSysIds.push(longToNumber(reader.int64()));
+            }
+
+            continue;
+          }
+
+          break;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2493,6 +2523,11 @@ export const ExportBulkProductRoutingRequest: MessageFns<ExportBulkProductRoutin
         : isSet(object.active_only)
         ? globalThis.Boolean(object.active_only)
         : false,
+      productSysIds: globalThis.Array.isArray(object?.productSysIds)
+        ? object.productSysIds.map((e: any) => globalThis.Number(e))
+        : globalThis.Array.isArray(object?.product_sys_ids)
+        ? object.product_sys_ids.map((e: any) => globalThis.Number(e))
+        : [],
     };
   },
 
@@ -2507,6 +2542,9 @@ export const ExportBulkProductRoutingRequest: MessageFns<ExportBulkProductRoutin
     if (message.activeOnly !== false) {
       obj.activeOnly = message.activeOnly;
     }
+    if (message.productSysIds?.length) {
+      obj.productSysIds = message.productSysIds.map((e) => Math.round(e));
+    }
     return obj;
   },
 
@@ -2518,6 +2556,7 @@ export const ExportBulkProductRoutingRequest: MessageFns<ExportBulkProductRoutin
     message.productTypeCodes = object.productTypeCodes?.map((e) => e) || [];
     message.includeRouting = object.includeRouting ?? false;
     message.activeOnly = object.activeOnly ?? false;
+    message.productSysIds = object.productSysIds?.map((e) => e) || [];
     return message;
   },
 };
