@@ -227,16 +227,22 @@ export async function validateBulkProductRoutingFile(
 }
 
 /**
- * Queue an async export of all product master + routing data to MinIO.
+ * Queue an async export of product master + routing data to MinIO.
+ * When productSysIds is provided, exports only those products and their full
+ * transitive dependency closure (intermediates reachable via PRODUCT-type RMs).
  * Returns a job ID that can be polled or viewed on the import-jobs page.
  */
 export async function exportBulkProductRouting(options?: {
   productTypeCodes?: string[]
+  productSysIds?: number[]
 }): Promise<{ jobId: number; status: string }> {
   const res = await fetch(`${BASE}/export/bulk_product_routing`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ productTypeCodes: options?.productTypeCodes ?? [] }),
+    body: JSON.stringify({
+      productTypeCodes: options?.productTypeCodes ?? [],
+      productSysIds: options?.productSysIds ?? [],
+    }),
   })
   if (!res.ok) throw new Error(`Bulk export failed: ${res.status}`)
   const json = await res.json()

@@ -84,7 +84,10 @@ export default function ProductMasterPageClient() {
   async function handleBulkExport() {
     setBulkExportLoading(true)
     try {
-      const result = await exportBulkProductRouting()
+      const isFiltered = !!filters.search || !!filters.productTypeId
+      const visibleItems = data?.items ?? []
+      const productSysIds = isFiltered ? visibleItems.map((p) => p.productSysId) : undefined
+      const result = await exportBulkProductRouting({ productSysIds })
       toast.success(`Export dijadwalkan — Job #${result.jobId}`, {
         description: "File akan tersedia di halaman Import Jobs setelah selesai diproses.",
         action: {

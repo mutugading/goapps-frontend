@@ -1,7 +1,10 @@
 "use client"
 
 import Link from "next/link"
-import { ArrowLeft, Package } from "lucide-react"
+import { useState } from "react"
+import { ArrowLeft, Download, Loader2, Package } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { toast } from "sonner"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -15,6 +18,7 @@ import { ProductRoutingTab } from "@/components/finance/cost-product-master/rout
 import { ProductAuditTab } from "@/components/finance/cost-product-master/audit-tab"
 import { CostHistoryTab } from "@/components/finance/cost-results/cost-history-tab"
 import { ProductTypeName } from "@/components/common/product-type-name"
+import { exportBulkProductRouting } from "@/services/finance/cost-import-api"
 
 interface Props {
   productSysId: number
@@ -22,6 +26,26 @@ interface Props {
 
 export default function ProductMasterDetailClient({ productSysId }: Props) {
   const { data: product, isLoading } = useCostProductMaster(productSysId)
+  const router = useRouter()
+  const [exporting, setExporting] = useState(false)
+
+  async function handleExport() {
+    setExporting(true)
+    try {
+      const result = await exportBulkProductRouting({ productSysIds: [productSysId] })
+      toast.success(`Export dijadwalkan — Job #${result.jobId}`, {
+        description: "Termasuk semua intermediate product yang berkaitan.",
+        action: {
+          label: "Lihat job",
+          onClick: () => router.push("/finance/import-jobs"),
+        },
+      })
+    } catch {
+      toast.error("Export gagal, coba lagi.")
+    } finally {
+      setExporting(false)
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -47,7 +71,19 @@ export default function ProductMasterDetailClient({ productSysId }: Props) {
               : undefined
           }
         />
-        {product && <CalculateButton productSysId={productSysId} label="Calculate cost" />}
+        <div className="flex flex-wrap gap-2">
+          {product && <CalculateButton productSysId={productSysId} label="Calculate cost" />}
+          {product && (
+            <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting}>
+              {exporting ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Download className="mr-2 h-4 w-4" />
+              )}
+              {exporting ? "Memproses…" : "Export product + routing"}
+            </Button>
+          )}
+        </div>
       </div>
 
       {product && (
