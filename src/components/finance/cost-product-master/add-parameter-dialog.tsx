@@ -32,6 +32,7 @@ export function AddParameterDialog({ productSysId, open, onOpenChange }: Props) 
   const qc = useQueryClient()
   const [search, setSearch] = useState("")
   const [overrides, setOverrides] = useState<Record<string, boolean>>({}) // paramId → isRequired
+  const [displayOrders, setDisplayOrders] = useState<Record<string, string>>({}) // paramId → display_order
   const [addingId, setAddingId] = useState<string | null>(null)
 
   // Filter out child params — they are auto-managed via MASTER_LOOKUP trigger.
@@ -55,6 +56,7 @@ export function AddParameterDialog({ productSysId, open, onOpenChange }: Props) 
     setAddingId(entry.paramId)
     try {
       const isReq = overrides[entry.paramId] ?? entry.isRequiredForCosting
+      const displayOrder = Number(displayOrders[entry.paramId] ?? 0)
       const isMasterLookup = entry.paramCategory === "MASTER_LOOKUP"
       const endpoint = isMasterLookup
         ? "/api/v1/finance/cost-product-parameters/applicable/add-with-children"
@@ -62,7 +64,7 @@ export function AddParameterDialog({ productSysId, open, onOpenChange }: Props) 
       const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ productSysId, paramId: entry.paramId, isRequired: isReq }),
+        body: JSON.stringify({ productSysId, paramId: entry.paramId, isRequired: isReq, displayOrder }),
       })
       const body = await res.json()
       if (!res.ok || body?.base?.isSuccess === false) {
@@ -113,7 +115,7 @@ export function AddParameterDialog({ productSysId, open, onOpenChange }: Props) 
                 key={entry.paramId}
                 className="rounded border p-3 grid grid-cols-12 gap-3 items-center"
               >
-                <div className="col-span-7">
+                <div className="col-span-6">
                   <div className="text-sm font-medium flex items-center gap-2">
                     {entry.paramName}
                     <Badge variant="outline" className="text-[10px] font-mono">
@@ -131,14 +133,27 @@ export function AddParameterDialog({ productSysId, open, onOpenChange }: Props) 
                     {entry.ownerDepartment && <> · Owner: {entry.ownerDepartment}</>}
                   </div>
                 </div>
-                <div className="col-span-3 flex items-center gap-2">
+                <div className="col-span-2 flex items-center gap-2">
                   <Switch
                     checked={overrides[entry.paramId] ?? entry.isRequiredForCosting}
                     onCheckedChange={(v) =>
                       setOverrides((prev) => ({ ...prev, [entry.paramId]: v }))
                     }
                   />
-                  <Label className="text-xs">Required</Label>
+                  <Label className="text-xs">Req</Label>
+                </div>
+                <div className="col-span-2">
+                  <input
+                    type="number"
+                    min={0}
+                    placeholder="Order"
+                    title="Display order (0 = inherit default)"
+                    className="h-8 w-full rounded border border-input bg-background px-2 text-xs"
+                    value={displayOrders[entry.paramId] ?? ""}
+                    onChange={(e) =>
+                      setDisplayOrders((prev) => ({ ...prev, [entry.paramId]: e.target.value }))
+                    }
+                  />
                 </div>
                 <div className="col-span-2 text-right">
                   <Button
