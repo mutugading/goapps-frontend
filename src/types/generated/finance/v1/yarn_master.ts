@@ -114,8 +114,44 @@ export interface Machine {
   isActive: boolean;
   /** Optional notes. */
   notes: string;
+  /** Optional manpower cost per day in USD. */
+  mpPerDay?:
+    | number
+    | undefined;
+  /** Optional overhead per head per day in USD. */
+  ohsPerDay?:
+    | number
+    | undefined;
   /** Audit metadata. */
-  audit: AuditInfo | undefined;
+  audit:
+    | AuditInfo
+    | undefined;
+  /** Optional spares cost per day in USD. */
+  sparesPerDay?:
+    | number
+    | undefined;
+  /** Optional change-over quality loss in kgs. */
+  kgsLostChange?:
+    | number
+    | undefined;
+  /** Optional volume bucket 1 quantity threshold. */
+  vb1Qty?:
+    | number
+    | undefined;
+  /** Optional volume bucket 2 quantity threshold. */
+  vb2Qty?:
+    | number
+    | undefined;
+  /** Optional volume bucket 3 quantity threshold. */
+  vb3Qty?:
+    | number
+    | undefined;
+  /** Optional volume bucket 4 quantity threshold. */
+  vb4Qty?:
+    | number
+    | undefined;
+  /** Optional volume bucket 5 quantity threshold. */
+  vb5Qty?: number | undefined;
 }
 
 /** CreateMachineRequest is the request for creating a machine. */
@@ -146,6 +182,40 @@ export interface CreateMachineRequest {
     | undefined;
   /** Optional notes (max 1000 chars). */
   notes: string;
+  /** Optional manpower cost per day in USD. */
+  mpPerDay?:
+    | number
+    | undefined;
+  /** Optional overhead per head per day in USD. */
+  ohsPerDay?:
+    | number
+    | undefined;
+  /** Optional spares cost per day in USD. */
+  sparesPerDay?:
+    | number
+    | undefined;
+  /** Optional change-over quality loss in kgs. */
+  kgsLostChange?:
+    | number
+    | undefined;
+  /** Optional volume bucket 1 quantity threshold. */
+  vb1Qty?:
+    | number
+    | undefined;
+  /** Optional volume bucket 2 quantity threshold. */
+  vb2Qty?:
+    | number
+    | undefined;
+  /** Optional volume bucket 3 quantity threshold. */
+  vb3Qty?:
+    | number
+    | undefined;
+  /** Optional volume bucket 4 quantity threshold. */
+  vb4Qty?:
+    | number
+    | undefined;
+  /** Optional volume bucket 5 quantity threshold. */
+  vb5Qty?: number | undefined;
 }
 
 /** CreateMachineResponse is the response for creating a machine. */
@@ -219,7 +289,43 @@ export interface UpdateMachineRequest {
     | string
     | undefined;
   /** Updated active status. */
-  isActive?: boolean | undefined;
+  isActive?:
+    | boolean
+    | undefined;
+  /** Optional manpower cost per day in USD. */
+  mpPerDay?:
+    | number
+    | undefined;
+  /** Optional overhead per head per day in USD. */
+  ohsPerDay?:
+    | number
+    | undefined;
+  /** Optional spares cost per day in USD. */
+  sparesPerDay?:
+    | number
+    | undefined;
+  /** Optional change-over quality loss in kgs. */
+  kgsLostChange?:
+    | number
+    | undefined;
+  /** Optional volume bucket 1 quantity threshold. */
+  vb1Qty?:
+    | number
+    | undefined;
+  /** Optional volume bucket 2 quantity threshold. */
+  vb2Qty?:
+    | number
+    | undefined;
+  /** Optional volume bucket 3 quantity threshold. */
+  vb3Qty?:
+    | number
+    | undefined;
+  /** Optional volume bucket 4 quantity threshold. */
+  vb4Qty?:
+    | number
+    | undefined;
+  /** Optional volume bucket 5 quantity threshold. */
+  vb5Qty?: number | undefined;
 }
 
 /** UpdateMachineResponse is the response for updating a machine. */
@@ -804,6 +910,14 @@ export interface ProductGrade {
   isActive: boolean;
   /** Optional notes. */
   notes: string;
+  /** Pattern match key (e.g., "DBR <=600D"). */
+  pgDetailProduct: string;
+  /** Grade label for STD_VALUE_LOSS. */
+  pgGradeLabel: string;
+  /** BC_SPECIAL_PROD rate. */
+  stdSellingPrice: number;
+  /** VALUE_LOSS rate. */
+  spValue: number;
   /** Audit metadata. */
   audit: AuditInfo | undefined;
 }
@@ -824,6 +938,14 @@ export interface CreateProductGradeRequest {
   bcRecoveryRate: number;
   /** Optional notes (max 1000 chars). */
   notes: string;
+  /** Pattern match key (max 100 chars). */
+  pgDetailProduct: string;
+  /** Grade label for STD_VALUE_LOSS (max 50 chars). */
+  pgGradeLabel: string;
+  /** BC_SPECIAL_PROD rate (≥ 0). */
+  stdSellingPrice: number;
+  /** VALUE_LOSS rate (≥ 0). */
+  spValue: number;
 }
 
 /** CreateProductGradeResponse is the response for creating a Product Grade. */
@@ -881,7 +1003,23 @@ export interface UpdateProductGradeRequest {
     | string
     | undefined;
   /** Updated active status. */
-  isActive?: boolean | undefined;
+  isActive?:
+    | boolean
+    | undefined;
+  /** Optional pattern match key (max 100 chars). */
+  pgDetailProduct?:
+    | string
+    | undefined;
+  /** Optional grade label for STD_VALUE_LOSS (max 50 chars). */
+  pgGradeLabel?:
+    | string
+    | undefined;
+  /** Optional BC_SPECIAL_PROD rate (≥ 0). */
+  stdSellingPrice?:
+    | number
+    | undefined;
+  /** Optional VALUE_LOSS rate (≥ 0). */
+  spValue?: number | undefined;
 }
 
 /** UpdateProductGradeResponse is the response for updating a Product Grade. */
@@ -1236,6 +1374,14 @@ export interface MBSpin {
   mbsMbCosting: string;
   /** Whether the record is active. */
   mbsIsActive: boolean;
+  /** Optional MB/SP cost code. */
+  mbsCc?:
+    | string
+    | undefined;
+  /** Optional MB rate MKT in USD/kg. */
+  mbsCostRateMkt?:
+    | number
+    | undefined;
   /** Audit metadata. */
   audit: AuditInfo | undefined;
 }
@@ -1263,7 +1409,15 @@ export interface CreateMBSpinRequest {
     | number
     | undefined;
   /** Optional spin cost code (max 100 chars). */
-  mbsMbCosting?: string | undefined;
+  mbsMbCosting?:
+    | string
+    | undefined;
+  /** Optional MB/SP cost code (max 100 chars). */
+  mbsCc?:
+    | string
+    | undefined;
+  /** Optional MB rate MKT in USD/kg. */
+  mbsCostRateMkt?: number | undefined;
 }
 
 /** CreateMBSpinResponse is the response for creating an MB Spin record. */
@@ -1321,7 +1475,15 @@ export interface UpdateMBSpinRequest {
     | string
     | undefined;
   /** Updated active status. */
-  mbsIsActive?: boolean | undefined;
+  mbsIsActive?:
+    | boolean
+    | undefined;
+  /** Optional MB/SP cost code (max 100 chars). */
+  mbsCc?:
+    | string
+    | undefined;
+  /** Optional MB rate MKT in USD/kg. */
+  mbsCostRateMkt?: number | undefined;
 }
 
 /** UpdateMBSpinResponse is the response for updating an MB Spin record. */
@@ -1680,7 +1842,16 @@ function createBaseMachine(): Machine {
     powerPerDay: undefined,
     isActive: false,
     notes: "",
+    mpPerDay: undefined,
+    ohsPerDay: undefined,
     audit: undefined,
+    sparesPerDay: undefined,
+    kgsLostChange: undefined,
+    vb1Qty: undefined,
+    vb2Qty: undefined,
+    vb3Qty: undefined,
+    vb4Qty: undefined,
+    vb5Qty: undefined,
   };
 }
 
@@ -1725,8 +1896,35 @@ export const Machine: MessageFns<Machine> = {
     if (message.notes !== "") {
       writer.uint32(106).string(message.notes);
     }
+    if (message.mpPerDay !== undefined) {
+      writer.uint32(113).double(message.mpPerDay);
+    }
+    if (message.ohsPerDay !== undefined) {
+      writer.uint32(121).double(message.ohsPerDay);
+    }
     if (message.audit !== undefined) {
       AuditInfo.encode(message.audit, writer.uint32(130).fork()).join();
+    }
+    if (message.sparesPerDay !== undefined) {
+      writer.uint32(137).double(message.sparesPerDay);
+    }
+    if (message.kgsLostChange !== undefined) {
+      writer.uint32(145).double(message.kgsLostChange);
+    }
+    if (message.vb1Qty !== undefined) {
+      writer.uint32(153).double(message.vb1Qty);
+    }
+    if (message.vb2Qty !== undefined) {
+      writer.uint32(161).double(message.vb2Qty);
+    }
+    if (message.vb3Qty !== undefined) {
+      writer.uint32(169).double(message.vb3Qty);
+    }
+    if (message.vb4Qty !== undefined) {
+      writer.uint32(177).double(message.vb4Qty);
+    }
+    if (message.vb5Qty !== undefined) {
+      writer.uint32(185).double(message.vb5Qty);
     }
     return writer;
   },
@@ -1842,12 +2040,84 @@ export const Machine: MessageFns<Machine> = {
           message.notes = reader.string();
           continue;
         }
+        case 14: {
+          if (tag !== 113) {
+            break;
+          }
+
+          message.mpPerDay = reader.double();
+          continue;
+        }
+        case 15: {
+          if (tag !== 121) {
+            break;
+          }
+
+          message.ohsPerDay = reader.double();
+          continue;
+        }
         case 16: {
           if (tag !== 130) {
             break;
           }
 
           message.audit = AuditInfo.decode(reader, reader.uint32());
+          continue;
+        }
+        case 17: {
+          if (tag !== 137) {
+            break;
+          }
+
+          message.sparesPerDay = reader.double();
+          continue;
+        }
+        case 18: {
+          if (tag !== 145) {
+            break;
+          }
+
+          message.kgsLostChange = reader.double();
+          continue;
+        }
+        case 19: {
+          if (tag !== 153) {
+            break;
+          }
+
+          message.vb1Qty = reader.double();
+          continue;
+        }
+        case 20: {
+          if (tag !== 161) {
+            break;
+          }
+
+          message.vb2Qty = reader.double();
+          continue;
+        }
+        case 21: {
+          if (tag !== 169) {
+            break;
+          }
+
+          message.vb3Qty = reader.double();
+          continue;
+        }
+        case 22: {
+          if (tag !== 177) {
+            break;
+          }
+
+          message.vb4Qty = reader.double();
+          continue;
+        }
+        case 23: {
+          if (tag !== 185) {
+            break;
+          }
+
+          message.vb5Qty = reader.double();
           continue;
         }
       }
@@ -1922,7 +2192,52 @@ export const Machine: MessageFns<Machine> = {
         ? globalThis.Boolean(object.is_active)
         : false,
       notes: isSet(object.notes) ? globalThis.String(object.notes) : "",
+      mpPerDay: isSet(object.mpPerDay)
+        ? globalThis.Number(object.mpPerDay)
+        : isSet(object.mp_per_day)
+        ? globalThis.Number(object.mp_per_day)
+        : undefined,
+      ohsPerDay: isSet(object.ohsPerDay)
+        ? globalThis.Number(object.ohsPerDay)
+        : isSet(object.ohs_per_day)
+        ? globalThis.Number(object.ohs_per_day)
+        : undefined,
       audit: isSet(object.audit) ? AuditInfo.fromJSON(object.audit) : undefined,
+      sparesPerDay: isSet(object.sparesPerDay)
+        ? globalThis.Number(object.sparesPerDay)
+        : isSet(object.spares_per_day)
+        ? globalThis.Number(object.spares_per_day)
+        : undefined,
+      kgsLostChange: isSet(object.kgsLostChange)
+        ? globalThis.Number(object.kgsLostChange)
+        : isSet(object.kgs_lost_change)
+        ? globalThis.Number(object.kgs_lost_change)
+        : undefined,
+      vb1Qty: isSet(object.vb1Qty)
+        ? globalThis.Number(object.vb1Qty)
+        : isSet(object.vb1_qty)
+        ? globalThis.Number(object.vb1_qty)
+        : undefined,
+      vb2Qty: isSet(object.vb2Qty)
+        ? globalThis.Number(object.vb2Qty)
+        : isSet(object.vb2_qty)
+        ? globalThis.Number(object.vb2_qty)
+        : undefined,
+      vb3Qty: isSet(object.vb3Qty)
+        ? globalThis.Number(object.vb3Qty)
+        : isSet(object.vb3_qty)
+        ? globalThis.Number(object.vb3_qty)
+        : undefined,
+      vb4Qty: isSet(object.vb4Qty)
+        ? globalThis.Number(object.vb4Qty)
+        : isSet(object.vb4_qty)
+        ? globalThis.Number(object.vb4_qty)
+        : undefined,
+      vb5Qty: isSet(object.vb5Qty)
+        ? globalThis.Number(object.vb5Qty)
+        : isSet(object.vb5_qty)
+        ? globalThis.Number(object.vb5_qty)
+        : undefined,
     };
   },
 
@@ -1967,8 +2282,35 @@ export const Machine: MessageFns<Machine> = {
     if (message.notes !== "") {
       obj.notes = message.notes;
     }
+    if (message.mpPerDay !== undefined) {
+      obj.mpPerDay = message.mpPerDay;
+    }
+    if (message.ohsPerDay !== undefined) {
+      obj.ohsPerDay = message.ohsPerDay;
+    }
     if (message.audit !== undefined) {
       obj.audit = AuditInfo.toJSON(message.audit);
+    }
+    if (message.sparesPerDay !== undefined) {
+      obj.sparesPerDay = message.sparesPerDay;
+    }
+    if (message.kgsLostChange !== undefined) {
+      obj.kgsLostChange = message.kgsLostChange;
+    }
+    if (message.vb1Qty !== undefined) {
+      obj.vb1Qty = message.vb1Qty;
+    }
+    if (message.vb2Qty !== undefined) {
+      obj.vb2Qty = message.vb2Qty;
+    }
+    if (message.vb3Qty !== undefined) {
+      obj.vb3Qty = message.vb3Qty;
+    }
+    if (message.vb4Qty !== undefined) {
+      obj.vb4Qty = message.vb4Qty;
+    }
+    if (message.vb5Qty !== undefined) {
+      obj.vb5Qty = message.vb5Qty;
     }
     return obj;
   },
@@ -1991,9 +2333,18 @@ export const Machine: MessageFns<Machine> = {
     message.powerPerDay = object.powerPerDay ?? undefined;
     message.isActive = object.isActive ?? false;
     message.notes = object.notes ?? "";
+    message.mpPerDay = object.mpPerDay ?? undefined;
+    message.ohsPerDay = object.ohsPerDay ?? undefined;
     message.audit = (object.audit !== undefined && object.audit !== null)
       ? AuditInfo.fromPartial(object.audit)
       : undefined;
+    message.sparesPerDay = object.sparesPerDay ?? undefined;
+    message.kgsLostChange = object.kgsLostChange ?? undefined;
+    message.vb1Qty = object.vb1Qty ?? undefined;
+    message.vb2Qty = object.vb2Qty ?? undefined;
+    message.vb3Qty = object.vb3Qty ?? undefined;
+    message.vb4Qty = object.vb4Qty ?? undefined;
+    message.vb5Qty = object.vb5Qty ?? undefined;
     return message;
   },
 };
@@ -2011,6 +2362,15 @@ function createBaseCreateMachineRequest(): CreateMachineRequest {
     mcEfficiency: 0,
     powerPerDay: undefined,
     notes: "",
+    mpPerDay: undefined,
+    ohsPerDay: undefined,
+    sparesPerDay: undefined,
+    kgsLostChange: undefined,
+    vb1Qty: undefined,
+    vb2Qty: undefined,
+    vb3Qty: undefined,
+    vb4Qty: undefined,
+    vb5Qty: undefined,
   };
 }
 
@@ -2048,6 +2408,33 @@ export const CreateMachineRequest: MessageFns<CreateMachineRequest> = {
     }
     if (message.notes !== "") {
       writer.uint32(90).string(message.notes);
+    }
+    if (message.mpPerDay !== undefined) {
+      writer.uint32(97).double(message.mpPerDay);
+    }
+    if (message.ohsPerDay !== undefined) {
+      writer.uint32(105).double(message.ohsPerDay);
+    }
+    if (message.sparesPerDay !== undefined) {
+      writer.uint32(113).double(message.sparesPerDay);
+    }
+    if (message.kgsLostChange !== undefined) {
+      writer.uint32(121).double(message.kgsLostChange);
+    }
+    if (message.vb1Qty !== undefined) {
+      writer.uint32(129).double(message.vb1Qty);
+    }
+    if (message.vb2Qty !== undefined) {
+      writer.uint32(137).double(message.vb2Qty);
+    }
+    if (message.vb3Qty !== undefined) {
+      writer.uint32(145).double(message.vb3Qty);
+    }
+    if (message.vb4Qty !== undefined) {
+      writer.uint32(153).double(message.vb4Qty);
+    }
+    if (message.vb5Qty !== undefined) {
+      writer.uint32(161).double(message.vb5Qty);
     }
     return writer;
   },
@@ -2147,6 +2534,78 @@ export const CreateMachineRequest: MessageFns<CreateMachineRequest> = {
           message.notes = reader.string();
           continue;
         }
+        case 12: {
+          if (tag !== 97) {
+            break;
+          }
+
+          message.mpPerDay = reader.double();
+          continue;
+        }
+        case 13: {
+          if (tag !== 105) {
+            break;
+          }
+
+          message.ohsPerDay = reader.double();
+          continue;
+        }
+        case 14: {
+          if (tag !== 113) {
+            break;
+          }
+
+          message.sparesPerDay = reader.double();
+          continue;
+        }
+        case 15: {
+          if (tag !== 121) {
+            break;
+          }
+
+          message.kgsLostChange = reader.double();
+          continue;
+        }
+        case 16: {
+          if (tag !== 129) {
+            break;
+          }
+
+          message.vb1Qty = reader.double();
+          continue;
+        }
+        case 17: {
+          if (tag !== 137) {
+            break;
+          }
+
+          message.vb2Qty = reader.double();
+          continue;
+        }
+        case 18: {
+          if (tag !== 145) {
+            break;
+          }
+
+          message.vb3Qty = reader.double();
+          continue;
+        }
+        case 19: {
+          if (tag !== 153) {
+            break;
+          }
+
+          message.vb4Qty = reader.double();
+          continue;
+        }
+        case 20: {
+          if (tag !== 161) {
+            break;
+          }
+
+          message.vb5Qty = reader.double();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2209,6 +2668,51 @@ export const CreateMachineRequest: MessageFns<CreateMachineRequest> = {
         ? globalThis.Number(object.power_per_day)
         : undefined,
       notes: isSet(object.notes) ? globalThis.String(object.notes) : "",
+      mpPerDay: isSet(object.mpPerDay)
+        ? globalThis.Number(object.mpPerDay)
+        : isSet(object.mp_per_day)
+        ? globalThis.Number(object.mp_per_day)
+        : undefined,
+      ohsPerDay: isSet(object.ohsPerDay)
+        ? globalThis.Number(object.ohsPerDay)
+        : isSet(object.ohs_per_day)
+        ? globalThis.Number(object.ohs_per_day)
+        : undefined,
+      sparesPerDay: isSet(object.sparesPerDay)
+        ? globalThis.Number(object.sparesPerDay)
+        : isSet(object.spares_per_day)
+        ? globalThis.Number(object.spares_per_day)
+        : undefined,
+      kgsLostChange: isSet(object.kgsLostChange)
+        ? globalThis.Number(object.kgsLostChange)
+        : isSet(object.kgs_lost_change)
+        ? globalThis.Number(object.kgs_lost_change)
+        : undefined,
+      vb1Qty: isSet(object.vb1Qty)
+        ? globalThis.Number(object.vb1Qty)
+        : isSet(object.vb1_qty)
+        ? globalThis.Number(object.vb1_qty)
+        : undefined,
+      vb2Qty: isSet(object.vb2Qty)
+        ? globalThis.Number(object.vb2Qty)
+        : isSet(object.vb2_qty)
+        ? globalThis.Number(object.vb2_qty)
+        : undefined,
+      vb3Qty: isSet(object.vb3Qty)
+        ? globalThis.Number(object.vb3Qty)
+        : isSet(object.vb3_qty)
+        ? globalThis.Number(object.vb3_qty)
+        : undefined,
+      vb4Qty: isSet(object.vb4Qty)
+        ? globalThis.Number(object.vb4Qty)
+        : isSet(object.vb4_qty)
+        ? globalThis.Number(object.vb4_qty)
+        : undefined,
+      vb5Qty: isSet(object.vb5Qty)
+        ? globalThis.Number(object.vb5Qty)
+        : isSet(object.vb5_qty)
+        ? globalThis.Number(object.vb5_qty)
+        : undefined,
     };
   },
 
@@ -2247,6 +2751,33 @@ export const CreateMachineRequest: MessageFns<CreateMachineRequest> = {
     if (message.notes !== "") {
       obj.notes = message.notes;
     }
+    if (message.mpPerDay !== undefined) {
+      obj.mpPerDay = message.mpPerDay;
+    }
+    if (message.ohsPerDay !== undefined) {
+      obj.ohsPerDay = message.ohsPerDay;
+    }
+    if (message.sparesPerDay !== undefined) {
+      obj.sparesPerDay = message.sparesPerDay;
+    }
+    if (message.kgsLostChange !== undefined) {
+      obj.kgsLostChange = message.kgsLostChange;
+    }
+    if (message.vb1Qty !== undefined) {
+      obj.vb1Qty = message.vb1Qty;
+    }
+    if (message.vb2Qty !== undefined) {
+      obj.vb2Qty = message.vb2Qty;
+    }
+    if (message.vb3Qty !== undefined) {
+      obj.vb3Qty = message.vb3Qty;
+    }
+    if (message.vb4Qty !== undefined) {
+      obj.vb4Qty = message.vb4Qty;
+    }
+    if (message.vb5Qty !== undefined) {
+      obj.vb5Qty = message.vb5Qty;
+    }
     return obj;
   },
 
@@ -2266,6 +2797,15 @@ export const CreateMachineRequest: MessageFns<CreateMachineRequest> = {
     message.mcEfficiency = object.mcEfficiency ?? 0;
     message.powerPerDay = object.powerPerDay ?? undefined;
     message.notes = object.notes ?? "";
+    message.mpPerDay = object.mpPerDay ?? undefined;
+    message.ohsPerDay = object.ohsPerDay ?? undefined;
+    message.sparesPerDay = object.sparesPerDay ?? undefined;
+    message.kgsLostChange = object.kgsLostChange ?? undefined;
+    message.vb1Qty = object.vb1Qty ?? undefined;
+    message.vb2Qty = object.vb2Qty ?? undefined;
+    message.vb3Qty = object.vb3Qty ?? undefined;
+    message.vb4Qty = object.vb4Qty ?? undefined;
+    message.vb5Qty = object.vb5Qty ?? undefined;
     return message;
   },
 };
@@ -2504,6 +3044,15 @@ function createBaseUpdateMachineRequest(): UpdateMachineRequest {
     powerPerDay: undefined,
     notes: undefined,
     isActive: undefined,
+    mpPerDay: undefined,
+    ohsPerDay: undefined,
+    sparesPerDay: undefined,
+    kgsLostChange: undefined,
+    vb1Qty: undefined,
+    vb2Qty: undefined,
+    vb3Qty: undefined,
+    vb4Qty: undefined,
+    vb5Qty: undefined,
   };
 }
 
@@ -2544,6 +3093,33 @@ export const UpdateMachineRequest: MessageFns<UpdateMachineRequest> = {
     }
     if (message.isActive !== undefined) {
       writer.uint32(96).bool(message.isActive);
+    }
+    if (message.mpPerDay !== undefined) {
+      writer.uint32(105).double(message.mpPerDay);
+    }
+    if (message.ohsPerDay !== undefined) {
+      writer.uint32(113).double(message.ohsPerDay);
+    }
+    if (message.sparesPerDay !== undefined) {
+      writer.uint32(121).double(message.sparesPerDay);
+    }
+    if (message.kgsLostChange !== undefined) {
+      writer.uint32(129).double(message.kgsLostChange);
+    }
+    if (message.vb1Qty !== undefined) {
+      writer.uint32(137).double(message.vb1Qty);
+    }
+    if (message.vb2Qty !== undefined) {
+      writer.uint32(145).double(message.vb2Qty);
+    }
+    if (message.vb3Qty !== undefined) {
+      writer.uint32(153).double(message.vb3Qty);
+    }
+    if (message.vb4Qty !== undefined) {
+      writer.uint32(161).double(message.vb4Qty);
+    }
+    if (message.vb5Qty !== undefined) {
+      writer.uint32(169).double(message.vb5Qty);
     }
     return writer;
   },
@@ -2651,6 +3227,78 @@ export const UpdateMachineRequest: MessageFns<UpdateMachineRequest> = {
           message.isActive = reader.bool();
           continue;
         }
+        case 13: {
+          if (tag !== 105) {
+            break;
+          }
+
+          message.mpPerDay = reader.double();
+          continue;
+        }
+        case 14: {
+          if (tag !== 113) {
+            break;
+          }
+
+          message.ohsPerDay = reader.double();
+          continue;
+        }
+        case 15: {
+          if (tag !== 121) {
+            break;
+          }
+
+          message.sparesPerDay = reader.double();
+          continue;
+        }
+        case 16: {
+          if (tag !== 129) {
+            break;
+          }
+
+          message.kgsLostChange = reader.double();
+          continue;
+        }
+        case 17: {
+          if (tag !== 137) {
+            break;
+          }
+
+          message.vb1Qty = reader.double();
+          continue;
+        }
+        case 18: {
+          if (tag !== 145) {
+            break;
+          }
+
+          message.vb2Qty = reader.double();
+          continue;
+        }
+        case 19: {
+          if (tag !== 153) {
+            break;
+          }
+
+          message.vb3Qty = reader.double();
+          continue;
+        }
+        case 20: {
+          if (tag !== 161) {
+            break;
+          }
+
+          message.vb4Qty = reader.double();
+          continue;
+        }
+        case 21: {
+          if (tag !== 169) {
+            break;
+          }
+
+          message.vb5Qty = reader.double();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2718,6 +3366,51 @@ export const UpdateMachineRequest: MessageFns<UpdateMachineRequest> = {
         : isSet(object.is_active)
         ? globalThis.Boolean(object.is_active)
         : undefined,
+      mpPerDay: isSet(object.mpPerDay)
+        ? globalThis.Number(object.mpPerDay)
+        : isSet(object.mp_per_day)
+        ? globalThis.Number(object.mp_per_day)
+        : undefined,
+      ohsPerDay: isSet(object.ohsPerDay)
+        ? globalThis.Number(object.ohsPerDay)
+        : isSet(object.ohs_per_day)
+        ? globalThis.Number(object.ohs_per_day)
+        : undefined,
+      sparesPerDay: isSet(object.sparesPerDay)
+        ? globalThis.Number(object.sparesPerDay)
+        : isSet(object.spares_per_day)
+        ? globalThis.Number(object.spares_per_day)
+        : undefined,
+      kgsLostChange: isSet(object.kgsLostChange)
+        ? globalThis.Number(object.kgsLostChange)
+        : isSet(object.kgs_lost_change)
+        ? globalThis.Number(object.kgs_lost_change)
+        : undefined,
+      vb1Qty: isSet(object.vb1Qty)
+        ? globalThis.Number(object.vb1Qty)
+        : isSet(object.vb1_qty)
+        ? globalThis.Number(object.vb1_qty)
+        : undefined,
+      vb2Qty: isSet(object.vb2Qty)
+        ? globalThis.Number(object.vb2Qty)
+        : isSet(object.vb2_qty)
+        ? globalThis.Number(object.vb2_qty)
+        : undefined,
+      vb3Qty: isSet(object.vb3Qty)
+        ? globalThis.Number(object.vb3Qty)
+        : isSet(object.vb3_qty)
+        ? globalThis.Number(object.vb3_qty)
+        : undefined,
+      vb4Qty: isSet(object.vb4Qty)
+        ? globalThis.Number(object.vb4Qty)
+        : isSet(object.vb4_qty)
+        ? globalThis.Number(object.vb4_qty)
+        : undefined,
+      vb5Qty: isSet(object.vb5Qty)
+        ? globalThis.Number(object.vb5Qty)
+        : isSet(object.vb5_qty)
+        ? globalThis.Number(object.vb5_qty)
+        : undefined,
     };
   },
 
@@ -2759,6 +3452,33 @@ export const UpdateMachineRequest: MessageFns<UpdateMachineRequest> = {
     if (message.isActive !== undefined) {
       obj.isActive = message.isActive;
     }
+    if (message.mpPerDay !== undefined) {
+      obj.mpPerDay = message.mpPerDay;
+    }
+    if (message.ohsPerDay !== undefined) {
+      obj.ohsPerDay = message.ohsPerDay;
+    }
+    if (message.sparesPerDay !== undefined) {
+      obj.sparesPerDay = message.sparesPerDay;
+    }
+    if (message.kgsLostChange !== undefined) {
+      obj.kgsLostChange = message.kgsLostChange;
+    }
+    if (message.vb1Qty !== undefined) {
+      obj.vb1Qty = message.vb1Qty;
+    }
+    if (message.vb2Qty !== undefined) {
+      obj.vb2Qty = message.vb2Qty;
+    }
+    if (message.vb3Qty !== undefined) {
+      obj.vb3Qty = message.vb3Qty;
+    }
+    if (message.vb4Qty !== undefined) {
+      obj.vb4Qty = message.vb4Qty;
+    }
+    if (message.vb5Qty !== undefined) {
+      obj.vb5Qty = message.vb5Qty;
+    }
     return obj;
   },
 
@@ -2779,6 +3499,15 @@ export const UpdateMachineRequest: MessageFns<UpdateMachineRequest> = {
     message.powerPerDay = object.powerPerDay ?? undefined;
     message.notes = object.notes ?? undefined;
     message.isActive = object.isActive ?? undefined;
+    message.mpPerDay = object.mpPerDay ?? undefined;
+    message.ohsPerDay = object.ohsPerDay ?? undefined;
+    message.sparesPerDay = object.sparesPerDay ?? undefined;
+    message.kgsLostChange = object.kgsLostChange ?? undefined;
+    message.vb1Qty = object.vb1Qty ?? undefined;
+    message.vb2Qty = object.vb2Qty ?? undefined;
+    message.vb3Qty = object.vb3Qty ?? undefined;
+    message.vb4Qty = object.vb4Qty ?? undefined;
+    message.vb5Qty = object.vb5Qty ?? undefined;
     return message;
   },
 };
@@ -7884,6 +8613,10 @@ function createBaseProductGrade(): ProductGrade {
     bcRecoveryRate: 0,
     isActive: false,
     notes: "",
+    pgDetailProduct: "",
+    pgGradeLabel: "",
+    stdSellingPrice: 0,
+    spValue: 0,
     audit: undefined,
   };
 }
@@ -7916,6 +8649,18 @@ export const ProductGrade: MessageFns<ProductGrade> = {
     }
     if (message.notes !== "") {
       writer.uint32(74).string(message.notes);
+    }
+    if (message.pgDetailProduct !== "") {
+      writer.uint32(82).string(message.pgDetailProduct);
+    }
+    if (message.pgGradeLabel !== "") {
+      writer.uint32(90).string(message.pgGradeLabel);
+    }
+    if (message.stdSellingPrice !== 0) {
+      writer.uint32(97).double(message.stdSellingPrice);
+    }
+    if (message.spValue !== 0) {
+      writer.uint32(105).double(message.spValue);
     }
     if (message.audit !== undefined) {
       AuditInfo.encode(message.audit, writer.uint32(130).fork()).join();
@@ -8002,6 +8747,38 @@ export const ProductGrade: MessageFns<ProductGrade> = {
           message.notes = reader.string();
           continue;
         }
+        case 10: {
+          if (tag !== 82) {
+            break;
+          }
+
+          message.pgDetailProduct = reader.string();
+          continue;
+        }
+        case 11: {
+          if (tag !== 90) {
+            break;
+          }
+
+          message.pgGradeLabel = reader.string();
+          continue;
+        }
+        case 12: {
+          if (tag !== 97) {
+            break;
+          }
+
+          message.stdSellingPrice = reader.double();
+          continue;
+        }
+        case 13: {
+          if (tag !== 105) {
+            break;
+          }
+
+          message.spValue = reader.double();
+          continue;
+        }
         case 16: {
           if (tag !== 130) {
             break;
@@ -8062,6 +8839,26 @@ export const ProductGrade: MessageFns<ProductGrade> = {
         ? globalThis.Boolean(object.is_active)
         : false,
       notes: isSet(object.notes) ? globalThis.String(object.notes) : "",
+      pgDetailProduct: isSet(object.pgDetailProduct)
+        ? globalThis.String(object.pgDetailProduct)
+        : isSet(object.pg_detail_product)
+        ? globalThis.String(object.pg_detail_product)
+        : "",
+      pgGradeLabel: isSet(object.pgGradeLabel)
+        ? globalThis.String(object.pgGradeLabel)
+        : isSet(object.pg_grade_label)
+        ? globalThis.String(object.pg_grade_label)
+        : "",
+      stdSellingPrice: isSet(object.stdSellingPrice)
+        ? globalThis.Number(object.stdSellingPrice)
+        : isSet(object.std_selling_price)
+        ? globalThis.Number(object.std_selling_price)
+        : 0,
+      spValue: isSet(object.spValue)
+        ? globalThis.Number(object.spValue)
+        : isSet(object.sp_value)
+        ? globalThis.Number(object.sp_value)
+        : 0,
       audit: isSet(object.audit) ? AuditInfo.fromJSON(object.audit) : undefined,
     };
   },
@@ -8095,6 +8892,18 @@ export const ProductGrade: MessageFns<ProductGrade> = {
     if (message.notes !== "") {
       obj.notes = message.notes;
     }
+    if (message.pgDetailProduct !== "") {
+      obj.pgDetailProduct = message.pgDetailProduct;
+    }
+    if (message.pgGradeLabel !== "") {
+      obj.pgGradeLabel = message.pgGradeLabel;
+    }
+    if (message.stdSellingPrice !== 0) {
+      obj.stdSellingPrice = message.stdSellingPrice;
+    }
+    if (message.spValue !== 0) {
+      obj.spValue = message.spValue;
+    }
     if (message.audit !== undefined) {
       obj.audit = AuditInfo.toJSON(message.audit);
     }
@@ -8115,6 +8924,10 @@ export const ProductGrade: MessageFns<ProductGrade> = {
     message.bcRecoveryRate = object.bcRecoveryRate ?? 0;
     message.isActive = object.isActive ?? false;
     message.notes = object.notes ?? "";
+    message.pgDetailProduct = object.pgDetailProduct ?? "";
+    message.pgGradeLabel = object.pgGradeLabel ?? "";
+    message.stdSellingPrice = object.stdSellingPrice ?? 0;
+    message.spValue = object.spValue ?? 0;
     message.audit = (object.audit !== undefined && object.audit !== null)
       ? AuditInfo.fromPartial(object.audit)
       : undefined;
@@ -8123,7 +8936,19 @@ export const ProductGrade: MessageFns<ProductGrade> = {
 };
 
 function createBaseCreateProductGradeRequest(): CreateProductGradeRequest {
-  return { pgCode: "", pgName: "", pgDescription: "", bcPerc: 0, nonStdPerc: 0, bcRecoveryRate: 0, notes: "" };
+  return {
+    pgCode: "",
+    pgName: "",
+    pgDescription: "",
+    bcPerc: 0,
+    nonStdPerc: 0,
+    bcRecoveryRate: 0,
+    notes: "",
+    pgDetailProduct: "",
+    pgGradeLabel: "",
+    stdSellingPrice: 0,
+    spValue: 0,
+  };
 }
 
 export const CreateProductGradeRequest: MessageFns<CreateProductGradeRequest> = {
@@ -8148,6 +8973,18 @@ export const CreateProductGradeRequest: MessageFns<CreateProductGradeRequest> = 
     }
     if (message.notes !== "") {
       writer.uint32(58).string(message.notes);
+    }
+    if (message.pgDetailProduct !== "") {
+      writer.uint32(66).string(message.pgDetailProduct);
+    }
+    if (message.pgGradeLabel !== "") {
+      writer.uint32(74).string(message.pgGradeLabel);
+    }
+    if (message.stdSellingPrice !== 0) {
+      writer.uint32(81).double(message.stdSellingPrice);
+    }
+    if (message.spValue !== 0) {
+      writer.uint32(89).double(message.spValue);
     }
     return writer;
   },
@@ -8215,6 +9052,38 @@ export const CreateProductGradeRequest: MessageFns<CreateProductGradeRequest> = 
           message.notes = reader.string();
           continue;
         }
+        case 8: {
+          if (tag !== 66) {
+            break;
+          }
+
+          message.pgDetailProduct = reader.string();
+          continue;
+        }
+        case 9: {
+          if (tag !== 74) {
+            break;
+          }
+
+          message.pgGradeLabel = reader.string();
+          continue;
+        }
+        case 10: {
+          if (tag !== 81) {
+            break;
+          }
+
+          message.stdSellingPrice = reader.double();
+          continue;
+        }
+        case 11: {
+          if (tag !== 89) {
+            break;
+          }
+
+          message.spValue = reader.double();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -8257,6 +9126,26 @@ export const CreateProductGradeRequest: MessageFns<CreateProductGradeRequest> = 
         ? globalThis.Number(object.bc_recovery_rate)
         : 0,
       notes: isSet(object.notes) ? globalThis.String(object.notes) : "",
+      pgDetailProduct: isSet(object.pgDetailProduct)
+        ? globalThis.String(object.pgDetailProduct)
+        : isSet(object.pg_detail_product)
+        ? globalThis.String(object.pg_detail_product)
+        : "",
+      pgGradeLabel: isSet(object.pgGradeLabel)
+        ? globalThis.String(object.pgGradeLabel)
+        : isSet(object.pg_grade_label)
+        ? globalThis.String(object.pg_grade_label)
+        : "",
+      stdSellingPrice: isSet(object.stdSellingPrice)
+        ? globalThis.Number(object.stdSellingPrice)
+        : isSet(object.std_selling_price)
+        ? globalThis.Number(object.std_selling_price)
+        : 0,
+      spValue: isSet(object.spValue)
+        ? globalThis.Number(object.spValue)
+        : isSet(object.sp_value)
+        ? globalThis.Number(object.sp_value)
+        : 0,
     };
   },
 
@@ -8283,6 +9172,18 @@ export const CreateProductGradeRequest: MessageFns<CreateProductGradeRequest> = 
     if (message.notes !== "") {
       obj.notes = message.notes;
     }
+    if (message.pgDetailProduct !== "") {
+      obj.pgDetailProduct = message.pgDetailProduct;
+    }
+    if (message.pgGradeLabel !== "") {
+      obj.pgGradeLabel = message.pgGradeLabel;
+    }
+    if (message.stdSellingPrice !== 0) {
+      obj.stdSellingPrice = message.stdSellingPrice;
+    }
+    if (message.spValue !== 0) {
+      obj.spValue = message.spValue;
+    }
     return obj;
   },
 
@@ -8298,6 +9199,10 @@ export const CreateProductGradeRequest: MessageFns<CreateProductGradeRequest> = 
     message.nonStdPerc = object.nonStdPerc ?? 0;
     message.bcRecoveryRate = object.bcRecoveryRate ?? 0;
     message.notes = object.notes ?? "";
+    message.pgDetailProduct = object.pgDetailProduct ?? "";
+    message.pgGradeLabel = object.pgGradeLabel ?? "";
+    message.stdSellingPrice = object.stdSellingPrice ?? 0;
+    message.spValue = object.spValue ?? 0;
     return message;
   },
 };
@@ -8536,6 +9441,10 @@ function createBaseUpdateProductGradeRequest(): UpdateProductGradeRequest {
     bcRecoveryRate: undefined,
     notes: undefined,
     isActive: undefined,
+    pgDetailProduct: undefined,
+    pgGradeLabel: undefined,
+    stdSellingPrice: undefined,
+    spValue: undefined,
   };
 }
 
@@ -8564,6 +9473,18 @@ export const UpdateProductGradeRequest: MessageFns<UpdateProductGradeRequest> = 
     }
     if (message.isActive !== undefined) {
       writer.uint32(64).bool(message.isActive);
+    }
+    if (message.pgDetailProduct !== undefined) {
+      writer.uint32(74).string(message.pgDetailProduct);
+    }
+    if (message.pgGradeLabel !== undefined) {
+      writer.uint32(82).string(message.pgGradeLabel);
+    }
+    if (message.stdSellingPrice !== undefined) {
+      writer.uint32(89).double(message.stdSellingPrice);
+    }
+    if (message.spValue !== undefined) {
+      writer.uint32(97).double(message.spValue);
     }
     return writer;
   },
@@ -8639,6 +9560,38 @@ export const UpdateProductGradeRequest: MessageFns<UpdateProductGradeRequest> = 
           message.isActive = reader.bool();
           continue;
         }
+        case 9: {
+          if (tag !== 74) {
+            break;
+          }
+
+          message.pgDetailProduct = reader.string();
+          continue;
+        }
+        case 10: {
+          if (tag !== 82) {
+            break;
+          }
+
+          message.pgGradeLabel = reader.string();
+          continue;
+        }
+        case 11: {
+          if (tag !== 89) {
+            break;
+          }
+
+          message.stdSellingPrice = reader.double();
+          continue;
+        }
+        case 12: {
+          if (tag !== 97) {
+            break;
+          }
+
+          message.spValue = reader.double();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -8686,6 +9639,26 @@ export const UpdateProductGradeRequest: MessageFns<UpdateProductGradeRequest> = 
         : isSet(object.is_active)
         ? globalThis.Boolean(object.is_active)
         : undefined,
+      pgDetailProduct: isSet(object.pgDetailProduct)
+        ? globalThis.String(object.pgDetailProduct)
+        : isSet(object.pg_detail_product)
+        ? globalThis.String(object.pg_detail_product)
+        : undefined,
+      pgGradeLabel: isSet(object.pgGradeLabel)
+        ? globalThis.String(object.pgGradeLabel)
+        : isSet(object.pg_grade_label)
+        ? globalThis.String(object.pg_grade_label)
+        : undefined,
+      stdSellingPrice: isSet(object.stdSellingPrice)
+        ? globalThis.Number(object.stdSellingPrice)
+        : isSet(object.std_selling_price)
+        ? globalThis.Number(object.std_selling_price)
+        : undefined,
+      spValue: isSet(object.spValue)
+        ? globalThis.Number(object.spValue)
+        : isSet(object.sp_value)
+        ? globalThis.Number(object.sp_value)
+        : undefined,
     };
   },
 
@@ -8715,6 +9688,18 @@ export const UpdateProductGradeRequest: MessageFns<UpdateProductGradeRequest> = 
     if (message.isActive !== undefined) {
       obj.isActive = message.isActive;
     }
+    if (message.pgDetailProduct !== undefined) {
+      obj.pgDetailProduct = message.pgDetailProduct;
+    }
+    if (message.pgGradeLabel !== undefined) {
+      obj.pgGradeLabel = message.pgGradeLabel;
+    }
+    if (message.stdSellingPrice !== undefined) {
+      obj.stdSellingPrice = message.stdSellingPrice;
+    }
+    if (message.spValue !== undefined) {
+      obj.spValue = message.spValue;
+    }
     return obj;
   },
 
@@ -8731,6 +9716,10 @@ export const UpdateProductGradeRequest: MessageFns<UpdateProductGradeRequest> = 
     message.bcRecoveryRate = object.bcRecoveryRate ?? undefined;
     message.notes = object.notes ?? undefined;
     message.isActive = object.isActive ?? undefined;
+    message.pgDetailProduct = object.pgDetailProduct ?? undefined;
+    message.pgGradeLabel = object.pgGradeLabel ?? undefined;
+    message.stdSellingPrice = object.stdSellingPrice ?? undefined;
+    message.spValue = object.spValue ?? undefined;
     return message;
   },
 };
@@ -11577,6 +12566,8 @@ function createBaseMBSpin(): MBSpin {
     mbsDozing: undefined,
     mbsMbCosting: "",
     mbsIsActive: false,
+    mbsCc: undefined,
+    mbsCostRateMkt: undefined,
     audit: undefined,
   };
 }
@@ -11609,6 +12600,12 @@ export const MBSpin: MessageFns<MBSpin> = {
     }
     if (message.mbsIsActive !== false) {
       writer.uint32(72).bool(message.mbsIsActive);
+    }
+    if (message.mbsCc !== undefined) {
+      writer.uint32(82).string(message.mbsCc);
+    }
+    if (message.mbsCostRateMkt !== undefined) {
+      writer.uint32(89).double(message.mbsCostRateMkt);
     }
     if (message.audit !== undefined) {
       AuditInfo.encode(message.audit, writer.uint32(130).fork()).join();
@@ -11695,6 +12692,22 @@ export const MBSpin: MessageFns<MBSpin> = {
           message.mbsIsActive = reader.bool();
           continue;
         }
+        case 10: {
+          if (tag !== 82) {
+            break;
+          }
+
+          message.mbsCc = reader.string();
+          continue;
+        }
+        case 11: {
+          if (tag !== 89) {
+            break;
+          }
+
+          message.mbsCostRateMkt = reader.double();
+          continue;
+        }
         case 16: {
           if (tag !== 130) {
             break;
@@ -11759,6 +12772,16 @@ export const MBSpin: MessageFns<MBSpin> = {
         : isSet(object.mbs_is_active)
         ? globalThis.Boolean(object.mbs_is_active)
         : false,
+      mbsCc: isSet(object.mbsCc)
+        ? globalThis.String(object.mbsCc)
+        : isSet(object.mbs_cc)
+        ? globalThis.String(object.mbs_cc)
+        : undefined,
+      mbsCostRateMkt: isSet(object.mbsCostRateMkt)
+        ? globalThis.Number(object.mbsCostRateMkt)
+        : isSet(object.mbs_cost_rate_mkt)
+        ? globalThis.Number(object.mbs_cost_rate_mkt)
+        : undefined,
       audit: isSet(object.audit) ? AuditInfo.fromJSON(object.audit) : undefined,
     };
   },
@@ -11792,6 +12815,12 @@ export const MBSpin: MessageFns<MBSpin> = {
     if (message.mbsIsActive !== false) {
       obj.mbsIsActive = message.mbsIsActive;
     }
+    if (message.mbsCc !== undefined) {
+      obj.mbsCc = message.mbsCc;
+    }
+    if (message.mbsCostRateMkt !== undefined) {
+      obj.mbsCostRateMkt = message.mbsCostRateMkt;
+    }
     if (message.audit !== undefined) {
       obj.audit = AuditInfo.toJSON(message.audit);
     }
@@ -11812,6 +12841,8 @@ export const MBSpin: MessageFns<MBSpin> = {
     message.mbsDozing = object.mbsDozing ?? undefined;
     message.mbsMbCosting = object.mbsMbCosting ?? "";
     message.mbsIsActive = object.mbsIsActive ?? false;
+    message.mbsCc = object.mbsCc ?? undefined;
+    message.mbsCostRateMkt = object.mbsCostRateMkt ?? undefined;
     message.audit = (object.audit !== undefined && object.audit !== null)
       ? AuditInfo.fromPartial(object.audit)
       : undefined;
@@ -11828,6 +12859,8 @@ function createBaseCreateMBSpinRequest(): CreateMBSpinRequest {
     mbsFilament: undefined,
     mbsDozing: undefined,
     mbsMbCosting: undefined,
+    mbsCc: undefined,
+    mbsCostRateMkt: undefined,
   };
 }
 
@@ -11853,6 +12886,12 @@ export const CreateMBSpinRequest: MessageFns<CreateMBSpinRequest> = {
     }
     if (message.mbsMbCosting !== undefined) {
       writer.uint32(58).string(message.mbsMbCosting);
+    }
+    if (message.mbsCc !== undefined) {
+      writer.uint32(66).string(message.mbsCc);
+    }
+    if (message.mbsCostRateMkt !== undefined) {
+      writer.uint32(73).double(message.mbsCostRateMkt);
     }
     return writer;
   },
@@ -11920,6 +12959,22 @@ export const CreateMBSpinRequest: MessageFns<CreateMBSpinRequest> = {
           message.mbsMbCosting = reader.string();
           continue;
         }
+        case 8: {
+          if (tag !== 66) {
+            break;
+          }
+
+          message.mbsCc = reader.string();
+          continue;
+        }
+        case 9: {
+          if (tag !== 73) {
+            break;
+          }
+
+          message.mbsCostRateMkt = reader.double();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -11966,6 +13021,16 @@ export const CreateMBSpinRequest: MessageFns<CreateMBSpinRequest> = {
         : isSet(object.mbs_mb_costing)
         ? globalThis.String(object.mbs_mb_costing)
         : undefined,
+      mbsCc: isSet(object.mbsCc)
+        ? globalThis.String(object.mbsCc)
+        : isSet(object.mbs_cc)
+        ? globalThis.String(object.mbs_cc)
+        : undefined,
+      mbsCostRateMkt: isSet(object.mbsCostRateMkt)
+        ? globalThis.Number(object.mbsCostRateMkt)
+        : isSet(object.mbs_cost_rate_mkt)
+        ? globalThis.Number(object.mbs_cost_rate_mkt)
+        : undefined,
     };
   },
 
@@ -11992,6 +13057,12 @@ export const CreateMBSpinRequest: MessageFns<CreateMBSpinRequest> = {
     if (message.mbsMbCosting !== undefined) {
       obj.mbsMbCosting = message.mbsMbCosting;
     }
+    if (message.mbsCc !== undefined) {
+      obj.mbsCc = message.mbsCc;
+    }
+    if (message.mbsCostRateMkt !== undefined) {
+      obj.mbsCostRateMkt = message.mbsCostRateMkt;
+    }
     return obj;
   },
 
@@ -12007,6 +13078,8 @@ export const CreateMBSpinRequest: MessageFns<CreateMBSpinRequest> = {
     message.mbsFilament = object.mbsFilament ?? undefined;
     message.mbsDozing = object.mbsDozing ?? undefined;
     message.mbsMbCosting = object.mbsMbCosting ?? undefined;
+    message.mbsCc = object.mbsCc ?? undefined;
+    message.mbsCostRateMkt = object.mbsCostRateMkt ?? undefined;
     return message;
   },
 };
@@ -12261,6 +13334,8 @@ function createBaseUpdateMBSpinRequest(): UpdateMBSpinRequest {
     mbsDozing: undefined,
     mbsMbCosting: undefined,
     mbsIsActive: undefined,
+    mbsCc: undefined,
+    mbsCostRateMkt: undefined,
   };
 }
 
@@ -12289,6 +13364,12 @@ export const UpdateMBSpinRequest: MessageFns<UpdateMBSpinRequest> = {
     }
     if (message.mbsIsActive !== undefined) {
       writer.uint32(64).bool(message.mbsIsActive);
+    }
+    if (message.mbsCc !== undefined) {
+      writer.uint32(74).string(message.mbsCc);
+    }
+    if (message.mbsCostRateMkt !== undefined) {
+      writer.uint32(81).double(message.mbsCostRateMkt);
     }
     return writer;
   },
@@ -12364,6 +13445,22 @@ export const UpdateMBSpinRequest: MessageFns<UpdateMBSpinRequest> = {
           message.mbsIsActive = reader.bool();
           continue;
         }
+        case 9: {
+          if (tag !== 74) {
+            break;
+          }
+
+          message.mbsCc = reader.string();
+          continue;
+        }
+        case 10: {
+          if (tag !== 81) {
+            break;
+          }
+
+          message.mbsCostRateMkt = reader.double();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -12415,6 +13512,16 @@ export const UpdateMBSpinRequest: MessageFns<UpdateMBSpinRequest> = {
         : isSet(object.mbs_is_active)
         ? globalThis.Boolean(object.mbs_is_active)
         : undefined,
+      mbsCc: isSet(object.mbsCc)
+        ? globalThis.String(object.mbsCc)
+        : isSet(object.mbs_cc)
+        ? globalThis.String(object.mbs_cc)
+        : undefined,
+      mbsCostRateMkt: isSet(object.mbsCostRateMkt)
+        ? globalThis.Number(object.mbsCostRateMkt)
+        : isSet(object.mbs_cost_rate_mkt)
+        ? globalThis.Number(object.mbs_cost_rate_mkt)
+        : undefined,
     };
   },
 
@@ -12444,6 +13551,12 @@ export const UpdateMBSpinRequest: MessageFns<UpdateMBSpinRequest> = {
     if (message.mbsIsActive !== undefined) {
       obj.mbsIsActive = message.mbsIsActive;
     }
+    if (message.mbsCc !== undefined) {
+      obj.mbsCc = message.mbsCc;
+    }
+    if (message.mbsCostRateMkt !== undefined) {
+      obj.mbsCostRateMkt = message.mbsCostRateMkt;
+    }
     return obj;
   },
 
@@ -12460,6 +13573,8 @@ export const UpdateMBSpinRequest: MessageFns<UpdateMBSpinRequest> = {
     message.mbsDozing = object.mbsDozing ?? undefined;
     message.mbsMbCosting = object.mbsMbCosting ?? undefined;
     message.mbsIsActive = object.mbsIsActive ?? undefined;
+    message.mbsCc = object.mbsCc ?? undefined;
+    message.mbsCostRateMkt = object.mbsCostRateMkt ?? undefined;
     return message;
   },
 };
