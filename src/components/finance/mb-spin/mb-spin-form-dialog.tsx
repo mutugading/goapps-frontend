@@ -47,6 +47,8 @@ const formSchema = z.object({
   mbsFilament: z.coerce.number().int().positive().optional().or(z.literal("")),
   mbsDozing: z.coerce.number().min(0).max(100).optional().or(z.literal("")),
   mbsMbCosting: z.string().max(50).optional(),
+  mbsCc: z.string().max(100).optional(),
+  mbsCostRateMkt: z.coerce.number().min(0).optional().nullable(),
   mbsIsActive: z.boolean(),
 })
 
@@ -75,7 +77,7 @@ export function MBSpinFormDialog({ open, onOpenChange, mbSpin, headId, onSuccess
     resolver: zodResolver(formSchema) as never,
     defaultValues: {
       mbhId: headId || "", mbsMgtName: "", mbsOracleSysId: "",
-      mbsDenier: "", mbsFilament: "", mbsDozing: "", mbsMbCosting: "", mbsIsActive: true,
+      mbsDenier: "", mbsFilament: "", mbsDozing: "", mbsMbCosting: "", mbsCc: "", mbsCostRateMkt: null, mbsIsActive: true,
     },
   })
 
@@ -91,9 +93,11 @@ export function MBSpinFormDialog({ open, onOpenChange, mbSpin, headId, onSuccess
               mbsFilament: mbSpin.mbsFilament ?? "",
               mbsDozing: mbSpin.mbsDozing ?? "",
               mbsMbCosting: mbSpin.mbsMbCosting || "",
+              mbsCc: mbSpin.mbsCc ?? "",
+              mbsCostRateMkt: mbSpin.mbsCostRateMkt ?? null,
               mbsIsActive: mbSpin.mbsIsActive ?? true,
             }
-          : { mbhId: headId || "", mbsMgtName: "", mbsOracleSysId: "", mbsDenier: "", mbsFilament: "", mbsDozing: "", mbsMbCosting: "", mbsIsActive: true }
+          : { mbhId: headId || "", mbsMgtName: "", mbsOracleSysId: "", mbsDenier: "", mbsFilament: "", mbsDozing: "", mbsMbCosting: "", mbsCc: "", mbsCostRateMkt: null, mbsIsActive: true }
       )
     }
   }, [open, mbSpin, headId, form])
@@ -112,6 +116,8 @@ export function MBSpinFormDialog({ open, onOpenChange, mbSpin, headId, onSuccess
             mbsFilament: toOptNum(values.mbsFilament),
             mbsDozing: toOptNum(values.mbsDozing),
             mbsMbCosting: values.mbsMbCosting || undefined,
+            mbsCc: values.mbsCc || undefined,
+            mbsCostRateMkt: values.mbsCostRateMkt ?? undefined,
             mbsIsActive: values.mbsIsActive,
           },
         })
@@ -124,6 +130,8 @@ export function MBSpinFormDialog({ open, onOpenChange, mbSpin, headId, onSuccess
           mbsFilament: toOptNum(values.mbsFilament),
           mbsDozing: toOptNum(values.mbsDozing),
           mbsMbCosting: values.mbsMbCosting || undefined,
+          mbsCc: values.mbsCc || undefined,
+          mbsCostRateMkt: values.mbsCostRateMkt ?? undefined,
         })
       }
       onOpenChange(false)
@@ -221,6 +229,19 @@ export function MBSpinFormDialog({ open, onOpenChange, mbSpin, headId, onSuccess
               />
               <FormField
                 control={form.control}
+                name="mbsCc"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>CC Code</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="e.g. CC-001" disabled={isPending} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
                 name="mbsDenier"
                 render={({ field }) => (
                   <FormItem>
@@ -255,6 +276,20 @@ export function MBSpinFormDialog({ open, onOpenChange, mbSpin, headId, onSuccess
                   <FormLabel>Dozing %</FormLabel>
                   <FormControl>
                     <Input {...field} type="number" step="0.01" min="0" max="100" placeholder="Optional" disabled={isPending} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="mbsCostRateMkt"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>MB Rate MKT (USD/kg)</FormLabel>
+                  <FormControl>
+                    <Input {...field} type="number" step="0.000001" value={field.value ?? ""} placeholder="e.g. 2.500000" disabled={isPending} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

@@ -42,6 +42,15 @@ export function MBSpinTable({ data, isLoading, onEdit, onDelete }: MBSpinTablePr
       cell: (row) => row.mbsFilament ?? "-",
     },
     {
+      id: "mbsCostRateMkt",
+      header: "Rate MKT",
+      width: "w-[120px]",
+      hideOnMobile: true,
+      cell: (row) => row.mbsCostRateMkt != null
+        ? `$${row.mbsCostRateMkt.toFixed(4)}`
+        : <span className="text-muted-foreground">—</span>,
+    },
+    {
       id: "mbsIsActive",
       header: "Status",
       width: "w-[100px]",
