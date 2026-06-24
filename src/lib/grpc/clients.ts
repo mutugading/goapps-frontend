@@ -47,7 +47,6 @@ import { RMGroupServiceDefinition } from "@/types/generated/finance/v1/rm_group"
 import { RMCostServiceDefinition } from "@/types/generated/finance/v1/rm_cost"
 import { CostProductTypeServiceDefinition } from "@/types/generated/finance/v1/cost_product_type"
 import { CostRmTypeServiceDefinition } from "@/types/generated/finance/v1/cost_rm_type"
-import { CostErpLookupServiceDefinition } from "@/types/generated/finance/v1/cost_erp"
 import { CostProductMasterServiceDefinition } from "@/types/generated/finance/v1/cost_product_master"
 import { CostRouteServiceDefinition } from "@/types/generated/finance/v1/cost_route"
 import { CostRequestTypeServiceDefinition } from "@/types/generated/finance/v1/cost_request_type"
@@ -318,11 +317,6 @@ export function getCostRmTypeClient() {
   )
 }
 
-export function getCostErpClient() {
-  return getOrCreate("costErp", () =>
-    createServiceClient(CostErpLookupServiceDefinition, SERVICE_ADDRESSES.finance, insecure, CHANNEL_OPTIONS)
-  )
-}
 
 export function getCostProductMasterClient() {
   return getOrCreate("costProductMaster", () =>

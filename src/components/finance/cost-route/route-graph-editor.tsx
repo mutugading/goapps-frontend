@@ -3,7 +3,7 @@
 // RouteGraphEditor — level-based editor for cost_route_seq + cost_route_rm.
 //
 // Model is level-based (1 = FG, 2..N = upstream). Each level renders as a row
-// of stage cards; each card lists its RM inputs (PRODUCT / ITEM / GROUP).
+// of stage cards; each card lists its RM inputs (PRODUCT / GROUP).
 //
 // **UX rule (enforced):** users NEVER see or type a UUID / sys_id. Every
 // reference is picked via a combobox keyed on human-readable code/name.
@@ -24,7 +24,6 @@ import {
 import Link from "next/link"
 
 import { CalculateButton } from "@/components/finance/calc-jobs/calculate-button"
-import { ErpItemCombobox } from "@/components/finance/comboboxes/erp-item-combobox"
 import { ProductMasterCombobox } from "@/components/finance/comboboxes/product-master-combobox"
 import { DuplicateRouteDialog } from "@/components/finance/cost-route/duplicate-route-dialog"
 import { LinkedRequestsPopover } from "@/components/finance/cost-route/linked-requests-popover"
@@ -890,9 +889,8 @@ function AddRmDialog({
   upstreamProducts: UpstreamProduct[]
   onAdd: (rm: CostRouteRm) => void
 }) {
-  const [rmType, setRmType] = useState<RmRefType>("ITEM")
+  const [rmType, setRmType] = useState<RmRefType>("PRODUCT")
   const [productPick, setProductPick] = useState<UpstreamProduct | null>(null)
-  const [itemPick, setItemPick] = useState<{ code: string; name: string } | null>(null)
   const [groupPick, setGroupPick] = useState<{ code: string; name: string } | null>(null)
   const [ratio, setRatio] = useState("1")
   const [subType, setSubType] = useState("")
@@ -903,7 +901,6 @@ function AddRmDialog({
   const isValid =
     Number(ratio) > 0 &&
     ((rmType === "PRODUCT" && !!productPick) ||
-      (rmType === "ITEM" && !!itemPick) ||
       (rmType === "GROUP" && !!groupPick))
 
   return (
@@ -920,7 +917,6 @@ function AddRmDialog({
               onValueChange={(v) => {
                 setRmType(v as RmRefType)
                 setProductPick(null)
-                setItemPick(null)
                 setGroupPick(null)
               }}
             >
@@ -929,8 +925,7 @@ function AddRmDialog({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="PRODUCT">PRODUCT — from another stage in this routing</SelectItem>
-                <SelectItem value="ITEM">ITEM — ERP raw material</SelectItem>
-                <SelectItem value="GROUP">GROUP — RM group</SelectItem>
+                <SelectItem value="GROUP">GROUP — RM group (cons/stock/PO)</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -946,22 +941,6 @@ function AddRmDialog({
               {upstreamProducts.length === 0 && (
                 <p className="mt-1 text-xs text-amber-700">
                   No upstream stages yet. Add a stage at level &gt; {stageLevel} first.
-                </p>
-              )}
-            </div>
-          )}
-
-          {rmType === "ITEM" && (
-            <div>
-              <Label>ERP item</Label>
-              <ErpItemCombobox
-                value={undefined /* code-driven, not sys-id */}
-                onChange={(_id, code, name) => setItemPick({ code, name })}
-                placeholder="Search ERP item by code or name…"
-              />
-              {itemPick && (
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Selected: <span className="font-mono">{itemPick.code}</span> — {itemPick.name}
                 </p>
               )}
             </div>
@@ -1038,20 +1017,6 @@ function AddRmDialog({
                   routeRmName: productPick.productCode
                     ? `${productPick.productCode}${productPick.productName ? " — " + productPick.productName : ""}`
                     : productPick.productName,
-                  routeRmRatio: ratioNum,
-                  ...rmExtra,
-                })
-                return
-              }
-              if (rmType === "ITEM" && itemPick) {
-                onAdd({
-                  rmId: 0,
-                  seqId: 0,
-                  parentProductSysId: 0,
-                  rmType: "ITEM",
-                  rmItemCode: itemPick.code,
-                  routeRmName: itemPick.name,
-                  routeRmItemCode: itemPick.code,
                   routeRmRatio: ratioNum,
                   ...rmExtra,
                 })
