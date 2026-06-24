@@ -12,11 +12,6 @@ export interface CostProductMaster {
   flex01: string
   flex02: string
   flex03: string
-  erpItemCode: string
-  erpGradeCode1: string
-  erpGradeCode2: string
-  erpLinkedAt: string
-  erpLinkedBy: string
   isActive: boolean
   createdAt?: string
   createdBy?: string
@@ -56,12 +51,6 @@ export interface UpdateCostProductMasterPayload {
   flex03?: string
 }
 
-export interface UpdateErpLinkagePayload {
-  erpItemCode: string
-  erpGradeCode1: string
-  erpGradeCode2: string
-}
-
 type Raw = Record<string, unknown> & {
   audit?: {
     createdAt?: string; created_at?: string
@@ -88,11 +77,6 @@ export function normalizeCostProductMaster(raw: Raw): CostProductMaster {
     flex01: str(raw.flex01 ?? raw.flex_01),
     flex02: str(raw.flex02 ?? raw.flex_02),
     flex03: str(raw.flex03 ?? raw.flex_03),
-    erpItemCode: str(raw.erpItemCode ?? raw.erp_item_code),
-    erpGradeCode1: str(raw.erpGradeCode1 ?? raw.erp_grade_code_1 ?? raw.erpGradeCode_1),
-    erpGradeCode2: str(raw.erpGradeCode2 ?? raw.erp_grade_code_2 ?? raw.erpGradeCode_2),
-    erpLinkedAt: str(raw.erpLinkedAt ?? raw.erp_linked_at),
-    erpLinkedBy: str(raw.erpLinkedBy ?? raw.erp_linked_by),
     isActive: (raw.isActive ?? raw.is_active ?? true) as boolean,
     createdAt: raw.audit?.createdAt ?? raw.audit?.created_at,
     createdBy: raw.audit?.createdBy ?? raw.audit?.created_by,

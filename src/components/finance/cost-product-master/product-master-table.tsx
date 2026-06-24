@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { Edit, Link2, Power } from "lucide-react"
+import { Edit, Power } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { ProductTypeName } from "@/components/common/product-type-name"
@@ -15,11 +15,10 @@ interface Props {
   items: CostProductMaster[]
   isLoading?: boolean
   onEdit: (p: CostProductMaster) => void
-  onLinkErp: (p: CostProductMaster) => void
   onDeactivate: (p: CostProductMaster) => void
 }
 
-export function ProductMasterTable({ items, isLoading, onEdit, onLinkErp, onDeactivate }: Props) {
+export function ProductMasterTable({ items, isLoading, onEdit, onDeactivate }: Props) {
   return (
     <div className="rounded-md border">
       <Table>
@@ -30,22 +29,24 @@ export function ProductMasterTable({ items, isLoading, onEdit, onLinkErp, onDeac
             <TableHead className="w-32">Type</TableHead>
             <TableHead className="w-24">Shade</TableHead>
             <TableHead className="w-20">Grade</TableHead>
-            <TableHead className="w-40">ERP linkage</TableHead>
+            <TableHead className="w-28">Oracle Sys ID</TableHead>
+            <TableHead className="w-36">ERP Compound Key</TableHead>
+            <TableHead className="w-24">Type Label</TableHead>
             <TableHead className="w-24">Status</TableHead>
-            <TableHead className="w-44 text-right">Actions</TableHead>
+            <TableHead className="w-24 text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {isLoading && (
             <TableRow>
-              <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+              <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
                 Loading…
               </TableCell>
             </TableRow>
           )}
           {!isLoading && items.length === 0 && (
             <TableRow>
-              <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+              <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
                 No products yet.
               </TableCell>
             </TableRow>
@@ -70,20 +71,9 @@ export function ProductMasterTable({ items, isLoading, onEdit, onLinkErp, onDeac
               </TableCell>
               <TableCell>{p.shadeCode || "—"}</TableCell>
               <TableCell>{p.gradeCode}</TableCell>
-              <TableCell className="text-xs">
-                {p.erpItemCode ? (
-                  <div className="space-y-0.5">
-                    <div className="font-mono">{p.erpItemCode}</div>
-                    {(p.erpGradeCode1 || p.erpGradeCode2) && (
-                      <div className="text-muted-foreground">
-                        {[p.erpGradeCode1, p.erpGradeCode2].filter(Boolean).join(" / ")}
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <span className="text-muted-foreground">Not linked</span>
-                )}
-              </TableCell>
+              <TableCell className="font-mono text-xs">{p.flex02 || "—"}</TableCell>
+              <TableCell className="font-mono text-xs">{p.flex01 || "—"}</TableCell>
+              <TableCell className="text-xs">{p.flex03 || "—"}</TableCell>
               <TableCell>
                 {p.isActive ? (
                   <Badge variant="secondary">Active</Badge>
@@ -94,9 +84,6 @@ export function ProductMasterTable({ items, isLoading, onEdit, onLinkErp, onDeac
               <TableCell className="text-right space-x-1">
                 <Button size="icon" variant="ghost" onClick={() => onEdit(p)} disabled={!p.isActive} title="Edit">
                   <Edit className="h-4 w-4" />
-                </Button>
-                <Button size="icon" variant="ghost" onClick={() => onLinkErp(p)} disabled={!p.isActive} title="ERP linkage">
-                  <Link2 className="h-4 w-4" />
                 </Button>
                 <Button
                   size="icon"

@@ -21,7 +21,6 @@ import {
 } from "@/components/ui/select"
 import {
   DeactivateProductMasterDialog,
-  ErpLinkageDialog,
   ProductMasterFormDialog,
   ProductMasterTable,
 } from "@/components/finance/cost-product-master"
@@ -51,7 +50,6 @@ export default function ProductMasterPageClient() {
   const router = useRouter()
 
   const [formOpen, setFormOpen] = useState(false)
-  const [erpOpen, setErpOpen] = useState(false)
   const [deactivateOpen, setDeactivateOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
   const [bulkImportOpen, setBulkImportOpen] = useState(false)
@@ -67,10 +65,6 @@ export default function ProductMasterPageClient() {
   function openEdit(p: CostProductMaster) {
     setEditing(p)
     setFormOpen(true)
-  }
-  function openErp(p: CostProductMaster) {
-    setEditing(p)
-    setErpOpen(true)
   }
   function openDeactivate(p: CostProductMaster) {
     setEditing(p)
@@ -205,7 +199,6 @@ export default function ProductMasterPageClient() {
         items={items}
         isLoading={isLoading}
         onEdit={openEdit}
-        onLinkErp={openErp}
         onDeactivate={openDeactivate}
       />
 
@@ -229,7 +222,6 @@ export default function ProductMasterPageClient() {
         }
       />
       <ProductMasterFormDialog open={formOpen} onOpenChange={setFormOpen} product={editing} />
-      <ErpLinkageDialog open={erpOpen} onOpenChange={setErpOpen} product={editing} />
       <DeactivateProductMasterDialog
         open={deactivateOpen}
         onOpenChange={setDeactivateOpen}
