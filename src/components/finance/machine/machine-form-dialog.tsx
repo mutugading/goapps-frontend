@@ -45,6 +45,15 @@ const formSchema = z.object({
   mcEfficiency: z.coerce.number().min(0).max(100).default(95),
   machineRpm: z.coerce.number().min(0).optional().nullable(),
   powerPerDay: z.coerce.number().min(0).optional().nullable(),
+  mpPerDay: z.coerce.number().min(0).optional().nullable(),
+  ohsPerDay: z.coerce.number().min(0).optional().nullable(),
+  sparesPerDay: z.coerce.number().min(0).optional().nullable(),
+  kgsLostChange: z.coerce.number().min(0).optional().nullable(),
+  vb1Qty: z.coerce.number().min(0).optional().nullable(),
+  vb2Qty: z.coerce.number().min(0).optional().nullable(),
+  vb3Qty: z.coerce.number().min(0).optional().nullable(),
+  vb4Qty: z.coerce.number().min(0).optional().nullable(),
+  vb5Qty: z.coerce.number().min(0).optional().nullable(),
   notes: z.string().max(500).optional(),
   isActive: z.boolean(),
 })
@@ -68,7 +77,11 @@ export function MachineFormDialog({ open, onOpenChange, machine, onSuccess }: Ma
     defaultValues: {
       machineCode: "", machineName: "", mcType: "", mcLocation: "",
       noOfPosition: 0, noOfEnd: 1, mcSpeed: 0, mcEfficiency: 95,
-      machineRpm: null, powerPerDay: null, notes: "", isActive: true,
+      machineRpm: null, powerPerDay: null,
+      mpPerDay: null, ohsPerDay: null, sparesPerDay: null,
+      kgsLostChange: null, vb1Qty: null, vb2Qty: null,
+      vb3Qty: null, vb4Qty: null, vb5Qty: null,
+      notes: "", isActive: true,
     },
   })
 
@@ -87,13 +100,26 @@ export function MachineFormDialog({ open, onOpenChange, machine, onSuccess }: Ma
               mcEfficiency: machine.mcEfficiency ?? 95,
               machineRpm: machine.machineRpm ?? null,
               powerPerDay: machine.powerPerDay ?? null,
+              mpPerDay: machine.mpPerDay ?? null,
+              ohsPerDay: machine.ohsPerDay ?? null,
+              sparesPerDay: machine.sparesPerDay ?? null,
+              kgsLostChange: machine.kgsLostChange ?? null,
+              vb1Qty: machine.vb1Qty ?? null,
+              vb2Qty: machine.vb2Qty ?? null,
+              vb3Qty: machine.vb3Qty ?? null,
+              vb4Qty: machine.vb4Qty ?? null,
+              vb5Qty: machine.vb5Qty ?? null,
               notes: machine.notes || "",
               isActive: machine.isActive ?? true,
             }
           : {
               machineCode: "", machineName: "", mcType: "", mcLocation: "",
               noOfPosition: 0, noOfEnd: 1, mcSpeed: 0, mcEfficiency: 95,
-              machineRpm: null, powerPerDay: null, notes: "", isActive: true,
+              machineRpm: null, powerPerDay: null,
+              mpPerDay: null, ohsPerDay: null, sparesPerDay: null,
+              kgsLostChange: null, vb1Qty: null, vb2Qty: null,
+              vb3Qty: null, vb4Qty: null, vb5Qty: null,
+              notes: "", isActive: true,
             }
       )
     }
@@ -115,6 +141,15 @@ export function MachineFormDialog({ open, onOpenChange, machine, onSuccess }: Ma
             mcEfficiency: values.mcEfficiency,
             machineRpm: values.machineRpm ?? undefined,
             powerPerDay: values.powerPerDay ?? undefined,
+            mpPerDay: values.mpPerDay ?? undefined,
+            ohsPerDay: values.ohsPerDay ?? undefined,
+            sparesPerDay: values.sparesPerDay ?? undefined,
+            kgsLostChange: values.kgsLostChange ?? undefined,
+            vb1Qty: values.vb1Qty ?? undefined,
+            vb2Qty: values.vb2Qty ?? undefined,
+            vb3Qty: values.vb3Qty ?? undefined,
+            vb4Qty: values.vb4Qty ?? undefined,
+            vb5Qty: values.vb5Qty ?? undefined,
             notes: values.notes,
             isActive: values.isActive,
           },
@@ -131,6 +166,15 @@ export function MachineFormDialog({ open, onOpenChange, machine, onSuccess }: Ma
           mcEfficiency: values.mcEfficiency,
           machineRpm: values.machineRpm ?? undefined,
           powerPerDay: values.powerPerDay ?? undefined,
+          mpPerDay: values.mpPerDay ?? undefined,
+          ohsPerDay: values.ohsPerDay ?? undefined,
+          sparesPerDay: values.sparesPerDay ?? undefined,
+          kgsLostChange: values.kgsLostChange ?? undefined,
+          vb1Qty: values.vb1Qty ?? undefined,
+          vb2Qty: values.vb2Qty ?? undefined,
+          vb3Qty: values.vb3Qty ?? undefined,
+          vb4Qty: values.vb4Qty ?? undefined,
+          vb5Qty: values.vb5Qty ?? undefined,
           notes: values.notes || "",
         })
       }
@@ -145,7 +189,7 @@ export function MachineFormDialog({ open, onOpenChange, machine, onSuccess }: Ma
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[560px]">
+      <DialogContent className="sm:max-w-[640px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{isEditing ? "Edit Machine" : "Add Machine"}</DialogTitle>
           <DialogDescription>
@@ -306,6 +350,63 @@ export function MachineFormDialog({ open, onOpenChange, machine, onSuccess }: Ma
                   </FormItem>
                 )}
               />
+            </div>
+
+            {/* Costs & Volume Buckets */}
+            <div className="border-t pt-4 mt-2">
+              <p className="text-sm font-medium text-muted-foreground mb-3">Costs &amp; Volume Buckets (auto-fill source)</p>
+              <div className="grid grid-cols-2 gap-4">
+                <FormField control={form.control} name="mpPerDay" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Manpower / Day (USD)</FormLabel>
+                    <FormControl>
+                      <Input {...field} type="number" step="0.0001" value={field.value ?? ""} placeholder="e.g. 85.00" disabled={isPending} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="ohsPerDay" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Overhead / Head / Day (USD)</FormLabel>
+                    <FormControl>
+                      <Input {...field} type="number" step="0.0001" value={field.value ?? ""} placeholder="e.g. 12.50" disabled={isPending} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="sparesPerDay" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Spares / Day (USD)</FormLabel>
+                    <FormControl>
+                      <Input {...field} type="number" step="0.0001" value={field.value ?? ""} placeholder="e.g. 5.00" disabled={isPending} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="kgsLostChange" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Change-Over Loss (kg)</FormLabel>
+                    <FormControl>
+                      <Input {...field} type="number" step="0.001" value={field.value ?? ""} placeholder="e.g. 2.5" disabled={isPending} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+              </div>
+              <p className="text-sm font-medium text-muted-foreground mt-3 mb-2">Volume Bucket Qty Thresholds (kg)</p>
+              <div className="grid grid-cols-5 gap-2">
+                {(["vb1Qty", "vb2Qty", "vb3Qty", "vb4Qty", "vb5Qty"] as const).map((name, i) => (
+                  <FormField key={name} control={form.control} name={name} render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>VB{i + 1}</FormLabel>
+                      <FormControl>
+                        <Input {...field} type="number" step="1" value={field.value ?? ""} placeholder="0" disabled={isPending} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                ))}
+              </div>
             </div>
 
             <FormField

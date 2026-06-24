@@ -36,6 +36,26 @@ export function MachineTable({ data, isLoading, onEdit, onDelete }: MachineTable
       cell: (row) => row.mcType || "-",
     },
     {
+      id: "mpPerDay",
+      header: "MP/Day",
+      width: "w-[100px]",
+      hideOnMobile: true,
+      cell: (row) =>
+        row.mpPerDay != null
+          ? `$${row.mpPerDay.toFixed(2)}`
+          : <span className="text-muted-foreground">—</span>,
+    },
+    {
+      id: "kgsLostChange",
+      header: "CO Loss (kg)",
+      width: "w-[110px]",
+      hideOnMobile: true,
+      cell: (row) =>
+        row.kgsLostChange != null
+          ? row.kgsLostChange.toFixed(3)
+          : <span className="text-muted-foreground">—</span>,
+    },
+    {
       id: "notes",
       header: "Notes",
       hideOnMobile: true,
