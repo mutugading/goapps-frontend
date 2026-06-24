@@ -1,4 +1,4 @@
-// CostErpLookup — list items (GET) and create item (POST).
+// CostErpLookup — list items (GET only, read-only Oracle replica).
 import { NextRequest, NextResponse } from "next/server"
 import { getCostErpClient, createMetadataFromRequest, isGrpcError, handleGrpcError } from "@/lib/grpc"
 
@@ -23,26 +23,5 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     if (isGrpcError(error)) return handleGrpcError(error)
     return NextResponse.json({ base: { isSuccess: false, statusCode: "500", message: "Failed to list ERP items", validationErrors: [] }, data: [] }, { status: 500 })
-  }
-}
-
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json()
-    const metadata = createMetadataFromRequest(request)
-    const client = getCostErpClient()
-    const response = await client.createCostErpItem(
-      {
-        itemCode: body.itemCode || body.item_code || "",
-        itemName: body.itemName || body.item_name || "",
-        itemType: body.itemType || body.item_type || "",
-        isActive: body.isActive ?? body.is_active ?? true,
-      },
-      metadata,
-    )
-    return NextResponse.json({ base: response.base, data: response.data })
-  } catch (error) {
-    if (isGrpcError(error)) return handleGrpcError(error)
-    return NextResponse.json({ base: { isSuccess: false, statusCode: "500", message: "Failed to create ERP item", validationErrors: [] } }, { status: 500 })
   }
 }

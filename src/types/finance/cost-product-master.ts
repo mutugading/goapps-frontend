@@ -9,6 +9,9 @@ export interface CostProductMaster {
   shadeCode: string
   gradeCode: string
   description: string
+  flex01: string
+  flex02: string
+  flex03: string
   erpItemCode: string
   erpGradeCode1: string
   erpGradeCode2: string
@@ -38,6 +41,9 @@ export interface CreateCostProductMasterPayload {
   shadeCode: string
   gradeCode: string
   description: string
+  flex01?: string
+  flex02?: string
+  flex03?: string
 }
 
 export interface UpdateCostProductMasterPayload {
@@ -45,6 +51,9 @@ export interface UpdateCostProductMasterPayload {
   shadeCode: string
   gradeCode: string
   description: string
+  flex01?: string
+  flex02?: string
+  flex03?: string
 }
 
 export interface UpdateErpLinkagePayload {
@@ -76,6 +85,9 @@ export function normalizeCostProductMaster(raw: Raw): CostProductMaster {
     shadeCode: str(raw.shadeCode ?? raw.shade_code),
     gradeCode: str(raw.gradeCode ?? raw.grade_code) || "AX",
     description: str(raw.description),
+    flex01: str(raw.flex01 ?? raw.flex_01),
+    flex02: str(raw.flex02 ?? raw.flex_02),
+    flex03: str(raw.flex03 ?? raw.flex_03),
     erpItemCode: str(raw.erpItemCode ?? raw.erp_item_code),
     erpGradeCode1: str(raw.erpGradeCode1 ?? raw.erp_grade_code_1 ?? raw.erpGradeCode_1),
     erpGradeCode2: str(raw.erpGradeCode2 ?? raw.erp_grade_code_2 ?? raw.erpGradeCode_2),

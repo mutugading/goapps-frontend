@@ -1,4 +1,4 @@
-// Canonical Phase B — ERP lookups (PRD §7.3, CEI_/CEG_/CES_). Items are fully managed (CRUD).
+// Canonical Phase B — ERP lookups (PRD §7.3, CEI_/CEG_/CES_). Read-only Oracle replicas.
 export interface CostErpItem {
   itemId: number
   itemCode: string
@@ -6,20 +6,6 @@ export interface CostErpItem {
   itemType: string
   isActive: boolean
   syncedAt?: string
-}
-
-// Form types for create/update operations
-export interface CreateErpItemForm {
-  itemCode: string
-  itemName: string
-  itemType: string
-  isActive: boolean
-}
-
-export interface UpdateErpItemForm {
-  itemName?: string
-  itemType?: string
-  isActive?: boolean
 }
 
 // Item type options derived from domain knowledge (ERP item types)
