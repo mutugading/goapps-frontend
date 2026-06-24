@@ -41,6 +41,10 @@ const formSchema = z.object({
   bcPerc: z.coerce.number().min(0).max(100),
   nonStdPerc: z.coerce.number().min(0).max(100),
   bcRecoveryRate: z.coerce.number().min(0).max(1),
+  pgDetailProduct: z.string().max(100).optional(),
+  pgGradeLabel: z.string().max(50).optional(),
+  stdSellingPrice: z.coerce.number().min(0).default(0),
+  spValue: z.coerce.number().min(0).default(0),
   notes: z.string().max(500).optional(),
   isActive: z.boolean(),
 })
@@ -62,7 +66,7 @@ export function ProductGradeFormDialog({ open, onOpenChange, productGrade, onSuc
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema) as never,
     defaultValues: {
-      pgCode: "", pgName: "", pgDescription: "", bcPerc: 0, nonStdPerc: 0, bcRecoveryRate: 0.85, notes: "", isActive: true,
+      pgCode: "", pgName: "", pgDescription: "", bcPerc: 0, nonStdPerc: 0, bcRecoveryRate: 0.85, pgDetailProduct: "", pgGradeLabel: "", stdSellingPrice: 0, spValue: 0, notes: "", isActive: true,
     },
   })
 
@@ -77,10 +81,14 @@ export function ProductGradeFormDialog({ open, onOpenChange, productGrade, onSuc
               bcPerc: productGrade.bcPerc ?? 0,
               nonStdPerc: productGrade.nonStdPerc ?? 0,
               bcRecoveryRate: productGrade.bcRecoveryRate ?? 0.85,
+              pgDetailProduct: productGrade.pgDetailProduct ?? "",
+              pgGradeLabel: productGrade.pgGradeLabel ?? "",
+              stdSellingPrice: productGrade.stdSellingPrice ?? 0,
+              spValue: productGrade.spValue ?? 0,
               notes: productGrade.notes || "",
               isActive: productGrade.isActive ?? true,
             }
-          : { pgCode: "", pgName: "", pgDescription: "", bcPerc: 0, nonStdPerc: 0, bcRecoveryRate: 0.85, notes: "", isActive: true }
+          : { pgCode: "", pgName: "", pgDescription: "", bcPerc: 0, nonStdPerc: 0, bcRecoveryRate: 0.85, pgDetailProduct: "", pgGradeLabel: "", stdSellingPrice: 0, spValue: 0, notes: "", isActive: true }
       )
     }
   }, [open, productGrade, form])
@@ -97,6 +105,10 @@ export function ProductGradeFormDialog({ open, onOpenChange, productGrade, onSuc
             bcPerc: values.bcPerc,
             nonStdPerc: values.nonStdPerc,
             bcRecoveryRate: values.bcRecoveryRate,
+            pgDetailProduct: values.pgDetailProduct || "",
+            pgGradeLabel: values.pgGradeLabel || "",
+            stdSellingPrice: values.stdSellingPrice,
+            spValue: values.spValue,
             notes: values.notes,
             isActive: values.isActive,
           },
@@ -109,6 +121,10 @@ export function ProductGradeFormDialog({ open, onOpenChange, productGrade, onSuc
           bcPerc: values.bcPerc,
           nonStdPerc: values.nonStdPerc,
           bcRecoveryRate: values.bcRecoveryRate,
+          pgDetailProduct: values.pgDetailProduct || "",
+          pgGradeLabel: values.pgGradeLabel || "",
+          stdSellingPrice: values.stdSellingPrice,
+          spValue: values.spValue,
           notes: values.notes || "",
         })
       }
@@ -203,6 +219,68 @@ export function ProductGradeFormDialog({ open, onOpenChange, productGrade, onSuc
                   </FormItem>
                 )}
               />
+            </div>
+
+            <div className="border-t pt-4 mt-2">
+              <p className="text-sm font-medium text-muted-foreground mb-3">Grade Lookup Fields</p>
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="pgDetailProduct"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Detail Product Pattern</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder='e.g. "DBR <=600D"' disabled={isPending} />
+                      </FormControl>
+                      <FormDescription>Oracle CMPG_DETAIL_PRODUCT match key</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="pgGradeLabel"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Grade Label</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder='e.g. "Type 7 NS"' disabled={isPending} />
+                      </FormControl>
+                      <FormDescription>Value stored in STD_VALUE_LOSS param</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="stdSellingPrice"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Std Selling Price (%)</FormLabel>
+                      <FormControl>
+                        <Input {...field} type="number" step="0.01" min="0" disabled={isPending} />
+                      </FormControl>
+                      <FormDescription>BC_SPECIAL_PROD value</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="spValue"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>SP Value (%)</FormLabel>
+                      <FormControl>
+                        <Input {...field} type="number" step="0.01" min="0" disabled={isPending} />
+                      </FormControl>
+                      <FormDescription>VALUE_LOSS value</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </div>
 
             <FormField

@@ -48,6 +48,12 @@ export function ProductGradeTable({ data, isLoading, onEdit, onDelete }: Product
       cell: (row) => `${((row.bcRecoveryRate ?? 0) * 100).toFixed(1)}%`,
     },
     {
+      id: "pgDetailProduct",
+      header: "Detail Pattern",
+      hideOnMobile: true,
+      cell: (row) => row.pgDetailProduct || <span className="text-muted-foreground">—</span>,
+    },
+    {
       id: "isActive",
       header: "Status",
       width: "w-[100px]",
