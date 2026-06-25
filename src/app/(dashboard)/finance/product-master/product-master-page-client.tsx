@@ -25,6 +25,7 @@ import {
   ProductMasterTable,
 } from "@/components/finance/cost-product-master"
 import { BulkImportDialog } from "@/components/finance/costing/bulk-import-dialog"
+import { ParamsOnlyImportDialog } from "@/components/finance/costing/params-only-import-dialog"
 import { ImportDialog } from "@/components/finance/costing/import-dialog"
 import { ProductTypeCombobox } from "@/components/finance/comboboxes"
 import { DataTablePagination } from "@/components/shared"
@@ -53,6 +54,7 @@ export default function ProductMasterPageClient() {
   const [deactivateOpen, setDeactivateOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
   const [bulkImportOpen, setBulkImportOpen] = useState(false)
+  const [paramsImportOpen, setParamsImportOpen] = useState(false)
   const [editing, setEditing] = useState<CostProductMaster | null>(null)
   const [bulkExportLoading, setBulkExportLoading] = useState(false)
 
@@ -122,6 +124,9 @@ export default function ProductMasterPageClient() {
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={() => setBulkImportOpen(true)}>
               Import Produk + Routing (Bulk)
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => setParamsImportOpen(true)}>
+              Import Params Saja (Bulk)
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -228,6 +233,7 @@ export default function ProductMasterPageClient() {
         product={editing}
       />
       <BulkImportDialog open={bulkImportOpen} onOpenChange={setBulkImportOpen} />
+      <ParamsOnlyImportDialog open={paramsImportOpen} onOpenChange={setParamsImportOpen} />
     </div>
   )
 }
