@@ -176,19 +176,23 @@ export async function bulkImportProductMasterRouting(
 /**
  * Queue a params-only bulk import (product_parameters + product_applicable_params).
  * Products must already exist from a prior bulk_product_routing import.
+ * Uses multipart/form-data to send binary bytes without JSON inflation overhead.
  * Returns a job ID that can be polled with getImportJob().
  */
 export async function bulkImportParamsOnly(
   file: File,
 ): Promise<{ jobId: number; status: string }> {
-  const fileContent = Array.from(new Uint8Array(await file.arrayBuffer()))
+  const formData = new FormData()
+  formData.append("file", file)
   const res = await fetch(`${BASE}/import/bulk_params_only`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ fileContent, fileName: file.name }),
+    body: formData, // binary multipart — no Content-Type header needed (browser sets boundary)
   })
   if (!res.ok) throw new Error(`Params-only import failed: ${res.status}`)
   const json = await res.json()
+  if (!json.base?.isSuccess) {
+    throw new Error(json.base?.message || `Import failed`)
+  }
   return {
     jobId: json.data?.jobId ?? json.data?.job_id ?? 0,
     status: json.data?.status ?? "",

@@ -1,7 +1,8 @@
 // POST /api/v1/finance/costing/import/bulk_params_only
-// Params-only bulk import: product_parameters + product_applicable_params.
-// Products must already exist from a prior bulk_product_routing import.
-// Accepts JSON body: { fileContent: number[], fileName: string }
+// Accepts multipart/form-data ("file" field) to avoid JSON number-array inflation:
+// a 50 MB binary file as JSON becomes ~200 MB — this sends the actual binary bytes.
+// Falls back to JSON body (small files only) for backward compatibility.
+// Returns: { base, data: { jobId: number } }
 import { NextRequest, NextResponse } from "next/server"
 import {
   getCostDataImportClient,
@@ -12,12 +13,40 @@ import {
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
     const metadata = createMetadataFromRequest(request)
-    const fileContent = new Uint8Array(body.fileContent as number[])
-    const fileName: string = body.fileName ?? ""
+    const client = getCostDataImportClient()
 
-    const res = await getCostDataImportClient().importBulkParamsOnly(
+    let fileContent: Uint8Array
+    let fileName: string
+
+    const contentType = request.headers.get("content-type") ?? ""
+
+    if (contentType.includes("multipart/form-data")) {
+      const formData = await request.formData()
+      const file = formData.get("file") as File | null
+      if (!file) {
+        return NextResponse.json(
+          {
+            base: {
+              isSuccess: false,
+              statusCode: "400",
+              message: "Missing 'file' field in form data",
+              validationErrors: [],
+            },
+          },
+          { status: 400 },
+        )
+      }
+      fileContent = new Uint8Array(await file.arrayBuffer())
+      fileName = file.name
+    } else {
+      // Legacy JSON fallback
+      const body = await request.json()
+      fileContent = new Uint8Array(body.fileContent as number[])
+      fileName = body.fileName ?? ""
+    }
+
+    const res = await client.importBulkParamsOnly(
       { fileContent, fileName },
       metadata,
     )

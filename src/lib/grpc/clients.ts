@@ -81,8 +81,8 @@ const CHANNEL_OPTIONS = {
   "grpc.keepalive_permit_without_calls": 1,
   "grpc.max_reconnect_backoff_ms": 10000,
   "grpc.initial_reconnect_backoff_ms": 1000,
-  "grpc.max_receive_message_length": 10 * 1024 * 1024,
-  "grpc.max_send_message_length": 10 * 1024 * 1024,
+  "grpc.max_receive_message_length": 100 * 1024 * 1024,
+  "grpc.max_send_message_length": 100 * 1024 * 1024,
   "grpc.enable_retries": 1,
 }
 
