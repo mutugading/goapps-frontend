@@ -1,19 +1,25 @@
 "use client"
 
-import { useRef, useState } from "react"
-import { Download, FileSpreadsheet, Loader2, Upload } from "lucide-react"
+import { useEffect, useRef, useState } from "react"
+import {
+  AlertCircle,
+  CheckCircle2,
+  Download,
+  FileSpreadsheet,
+  Loader2,
+  Upload,
+} from "lucide-react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
-import { Button } from "@/components/ui/button"
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import {
   bulkImportParamsOnly,
@@ -25,34 +31,40 @@ interface Props {
   onOpenChange: (open: boolean) => void
 }
 
+type Step = "upload" | "submitting" | "done"
+
 /**
  * ParamsOnlyImportDialog — imports product_parameters + product_applicable_params
  * from a file that does NOT include a product_master sheet. Products must already
  * exist in the database from a prior bulk_product_routing import.
  *
- * Supports split part-sheets (product_parameters_p1 + _p2, etc.) automatically.
- * Validation is all-or-nothing on the backend — if any param code is unknown or
- * any cross-reference fails, the import aborts and an error report is generated.
+ * Both sheets are optional — you can include just one or both.
+ * Split part-sheets (e.g. product_parameters_p1 + _p2) are merged automatically.
+ * Validation is all-or-nothing on the backend — an error report (with a dedicated
+ * "missing_param_codes" tab) is generated if any row is invalid.
  */
 export function ParamsOnlyImportDialog({ open, onOpenChange }: Props) {
   const fileRef = useRef<HTMLInputElement>(null)
   const [file, setFile] = useState<File | null>(null)
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [step, setStep] = useState<Step>("upload")
+  const [jobId, setJobId] = useState<number | null>(null)
   const [templateLoading, setTemplateLoading] = useState(false)
   const router = useRouter()
 
-  function reset() {
-    setFile(null)
-    setIsSubmitting(false)
-    if (fileRef.current) fileRef.current.value = ""
+  useEffect(() => {
+    if (open) {
+      setFile(null)
+      setStep("upload")
+      setJobId(null)
+      if (fileRef.current) fileRef.current.value = ""
+    }
+  }, [open])
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    setFile(e.target.files?.[0] ?? null)
   }
 
-  function handleClose() {
-    reset()
-    onOpenChange(false)
-  }
-
-  async function handleTemplate() {
+  async function handleDownloadTemplate() {
     setTemplateLoading(true)
     try {
       await downloadParamsOnlyTemplate()
@@ -65,98 +77,165 @@ export function ParamsOnlyImportDialog({ open, onOpenChange }: Props) {
 
   async function handleImport() {
     if (!file) return
-    setIsSubmitting(true)
+    setStep("submitting")
     try {
       const result = await bulkImportParamsOnly(file)
+      setJobId(result.jobId)
+      setStep("done")
       toast.success(`Params import queued — Job #${result.jobId}`, {
-        description: "All-or-nothing validation runs first. Check Import Jobs for results.",
+        description: "Validation runs first (all-or-nothing). Check Import Jobs for the result.",
         action: {
           label: "Lihat Jobs",
           onClick: () => router.push("/finance/import-jobs"),
         },
         duration: 8000,
       })
-      handleClose()
     } catch (e) {
       toast.error(`Import failed: ${String(e)}`)
-      setIsSubmitting(false)
+      setStep("upload")
     }
   }
 
+  function handleClose() {
+    setFile(null)
+    setStep("upload")
+    setJobId(null)
+    if (fileRef.current) fileRef.current.value = ""
+    onOpenChange(false)
+  }
+
+  const isSubmitting = step === "submitting"
+  const isDone = step === "done"
+
   return (
-    <Dialog open={open} onOpenChange={(v) => { if (!v) handleClose() }}>
-      <DialogContent className="sm:max-w-md">
+    <Dialog open={open} onOpenChange={handleClose}>
+      <DialogContent className="sm:max-w-[550px]">
         <DialogHeader>
-          <DialogTitle>Import Params Only</DialogTitle>
-          <DialogDescription className="space-y-1">
-            <span className="block">
-              Upload a file containing <strong>product_parameters</strong> and{" "}
-              <strong>product_applicable_params</strong> sheets.
-            </span>
-            <span className="block text-xs">
-              Split part-sheets (e.g. <code className="font-mono">_p1</code>,{" "}
-              <code className="font-mono">_p2</code>) are merged automatically.
-              Products must already exist from a prior bulk import.
-            </span>
-          </DialogDescription>
+          <DialogTitle>Import Params Only (Bulk)</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 py-2">
-          <div className="space-y-2">
-            <Label htmlFor="params-file">Excel file (.xlsx)</Label>
-            <input
-              id="params-file"
-              ref={fileRef}
-              type="file"
-              accept=".xlsx,.xls"
-              className="block w-full text-sm text-muted-foreground file:mr-3 file:py-1 file:px-3 file:rounded file:border file:border-input file:text-xs file:font-medium file:bg-background file:text-foreground hover:file:bg-accent cursor-pointer"
-              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-            />
-          </div>
+          {/* Template download card */}
+          {!isDone && (
+            <div className="flex items-center justify-between rounded-lg border p-4">
+              <div className="flex items-center gap-3">
+                <FileSpreadsheet className="h-8 w-8 text-green-600" />
+                <div>
+                  <p className="font-medium">Params-Only Template</p>
+                  <p className="text-sm text-muted-foreground">
+                    2 sheets: product_parameters + product_applicable_params
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => void handleDownloadTemplate()}
+                disabled={templateLoading || isSubmitting}
+              >
+                {templateLoading ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Download className="mr-2 h-4 w-4" />
+                )}
+                Download
+              </Button>
+            </div>
+          )}
 
-          {file && (
-            <div className="flex items-center gap-2 rounded border bg-muted/40 px-3 py-2 text-sm">
-              <FileSpreadsheet className="h-4 w-4 shrink-0 text-muted-foreground" />
-              <span className="truncate">{file.name}</span>
-              <span className="ml-auto shrink-0 text-xs text-muted-foreground">
-                {(file.size / 1024 / 1024).toFixed(1)} MB
+          {/* File upload */}
+          {!isDone && (
+            <div className="space-y-2">
+              <Label>Select File</Label>
+              <div
+                className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-6 transition-colors hover:border-primary/50"
+                onClick={() => fileRef.current?.click()}
+              >
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept=".xlsx,.xls"
+                  className="hidden"
+                  onChange={handleFileChange}
+                />
+                {file ? (
+                  <div className="flex items-center gap-2">
+                    <FileSpreadsheet className="h-6 w-6 text-green-600" />
+                    <span className="font-medium">{file.name}</span>
+                    <span className="text-sm text-muted-foreground">
+                      ({(file.size / 1024 / 1024).toFixed(1)} MB)
+                    </span>
+                  </div>
+                ) : (
+                  <>
+                    <Upload className="mb-2 h-8 w-8 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">
+                      Click to select or drag and drop an Excel file
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Supports split part-sheets (_p1, _p2, …) automatically
+                    </p>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Warning */}
+          {!isDone && (
+            <div className="flex gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>
+                Import is all-or-nothing. If any <code className="font-mono text-xs">param_code</code>{" "}
+                is not registered in{" "}
+                <strong>Finance &gt; Master &gt; Parameter</strong>, the entire import
+                fails and a{" "}
+                <strong>missing_param_codes</strong> sheet is added to the error report.
               </span>
             </div>
           )}
 
-          <div className="rounded border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
-            Import is all-or-nothing: if any param code is unknown the entire job
-            fails and an error report is generated. Check{" "}
-            <strong>Finance &gt; Master &gt; Parameter</strong> first.
-          </div>
+          {/* Done state */}
+          {isDone && jobId && (
+            <div className="flex items-center gap-3 rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-950">
+              <CheckCircle2 className="h-5 w-5 shrink-0 text-green-600" />
+              <div>
+                <p className="font-medium text-green-800 dark:text-green-200">
+                  Import queued — Job #{jobId}
+                </p>
+                <p className="text-sm text-green-700 dark:text-green-300">
+                  Validation runs first. You&apos;ll receive a notification when done.
+                </p>
+                <Button
+                  variant="link"
+                  size="sm"
+                  className="mt-1 h-auto p-0 text-green-700"
+                  onClick={() => router.push("/finance/import-jobs")}
+                >
+                  View Import Jobs →
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
 
-        <DialogFooter className="flex-wrap gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleTemplate}
-            disabled={templateLoading}
-          >
-            {templateLoading ? (
-              <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Download className="mr-2 h-3.5 w-3.5" />
-            )}
-            Template
+        <DialogFooter>
+          <Button variant="outline" onClick={handleClose}>
+            {isDone ? "Close" : "Cancel"}
           </Button>
-          <div className="flex-1" />
-          <Button variant="outline" onClick={handleClose} disabled={isSubmitting}>
-            Cancel
-          </Button>
-          <Button onClick={() => void handleImport()} disabled={!file || isSubmitting}>
-            {isSubmitting ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Upload className="mr-2 h-4 w-4" />
-            )}
-            Import
-          </Button>
+          {!isDone && (
+            <Button
+              onClick={() => void handleImport()}
+              disabled={!file || isSubmitting}
+            >
+              {isSubmitting ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Upload className="mr-2 h-4 w-4" />
+              )}
+              Import
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
