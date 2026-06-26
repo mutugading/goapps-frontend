@@ -482,6 +482,30 @@ export interface BoxBobbinCost {
   notes: string;
   /** Period-specific rate entries. */
   rates: BoxBobbinCostRate[];
+  /** Optional bobbin reuse count (from Oracle CMBBC_BBN_REUSE). */
+  bbnReuse?:
+    | number
+    | undefined;
+  /** Optional box reuse count (from Oracle CMBBC_BOX_REUSE). */
+  boxReuse?:
+    | number
+    | undefined;
+  /** Optional MKT box rate in USD/box (param CAPTIVE/DELIVERY_BOX_RATE MKT). */
+  boxCost?:
+    | number
+    | undefined;
+  /** Optional MKT bobbin rate in USD/bobbin (param CAPTIVE/DELIVERY_BOB_RATE MKT). */
+  bobinCost?:
+    | number
+    | undefined;
+  /** Optional VAL box rate in USD/box (param CAPTIVE/DELIVERY_BOX_RATE VAL). */
+  boxCostVal?:
+    | number
+    | undefined;
+  /** Optional VAL bobbin rate in USD/bobbin (param CAPTIVE/DELIVERY_BOB_RATE VAL). */
+  bobinCostVal?:
+    | number
+    | undefined;
   /** Audit metadata. */
   audit: AuditInfo | undefined;
 }
@@ -498,6 +522,28 @@ export interface CreateBoxBobbinCostRequest {
   noOfBob: number;
   /** Optional notes (max 1000 chars). */
   notes: string;
+  /** Optional bobbin reuse count (≥ 0). */
+  bbnReuse?:
+    | number
+    | undefined;
+  /** Optional box reuse count (≥ 0). */
+  boxReuse?:
+    | number
+    | undefined;
+  /** Optional MKT box rate in USD/box (≥ 0). */
+  boxCost?:
+    | number
+    | undefined;
+  /** Optional MKT bobbin rate in USD/bobbin (≥ 0). */
+  bobinCost?:
+    | number
+    | undefined;
+  /** Optional VAL box rate in USD/box (≥ 0). */
+  boxCostVal?:
+    | number
+    | undefined;
+  /** Optional VAL bobbin rate in USD/bobbin (≥ 0). */
+  bobinCostVal?: number | undefined;
 }
 
 /** CreateBoxBobbinCostResponse is the response for creating a Box Bobbin Cost config. */
@@ -547,7 +593,31 @@ export interface UpdateBoxBobbinCostRequest {
     | string
     | undefined;
   /** Updated active status. */
-  isActive?: boolean | undefined;
+  isActive?:
+    | boolean
+    | undefined;
+  /** Optional updated bobbin reuse count (≥ 0). */
+  bbnReuse?:
+    | number
+    | undefined;
+  /** Optional updated box reuse count (≥ 0). */
+  boxReuse?:
+    | number
+    | undefined;
+  /** Optional updated MKT box rate in USD/box (≥ 0). */
+  boxCost?:
+    | number
+    | undefined;
+  /** Optional updated MKT bobbin rate in USD/bobbin (≥ 0). */
+  bobinCost?:
+    | number
+    | undefined;
+  /** Optional updated VAL box rate in USD/box (≥ 0). */
+  boxCostVal?:
+    | number
+    | undefined;
+  /** Optional updated VAL bobbin rate in USD/bobbin (≥ 0). */
+  bobinCostVal?: number | undefined;
 }
 
 /** UpdateBoxBobbinCostResponse is the response for updating a Box Bobbin Cost config. */
@@ -918,6 +988,14 @@ export interface ProductGrade {
   stdSellingPrice: number;
   /** VALUE_LOSS rate. */
   spValue: number;
+  /** Optional loss factor (param NON_STD_SPECIAL_PROD, from Oracle CMPG_LOSS). */
+  lossPct?:
+    | number
+    | undefined;
+  /** Optional display sequence number (from Oracle CMPG_SEQ_NO). */
+  seqNo?:
+    | number
+    | undefined;
   /** Audit metadata. */
   audit: AuditInfo | undefined;
 }
@@ -946,6 +1024,12 @@ export interface CreateProductGradeRequest {
   stdSellingPrice: number;
   /** VALUE_LOSS rate (≥ 0). */
   spValue: number;
+  /** Optional loss factor (≥ 0). */
+  lossPct?:
+    | number
+    | undefined;
+  /** Optional display sequence number (≥ 0). */
+  seqNo?: number | undefined;
 }
 
 /** CreateProductGradeResponse is the response for creating a Product Grade. */
@@ -1019,7 +1103,15 @@ export interface UpdateProductGradeRequest {
     | number
     | undefined;
   /** Optional VALUE_LOSS rate (≥ 0). */
-  spValue?: number | undefined;
+  spValue?:
+    | number
+    | undefined;
+  /** Optional updated loss factor (≥ 0). */
+  lossPct?:
+    | number
+    | undefined;
+  /** Optional updated display sequence number (≥ 0). */
+  seqNo?: number | undefined;
 }
 
 /** UpdateProductGradeResponse is the response for updating a Product Grade. */
@@ -4760,6 +4852,12 @@ function createBaseBoxBobbinCost(): BoxBobbinCost {
     isActive: false,
     notes: "",
     rates: [],
+    bbnReuse: undefined,
+    boxReuse: undefined,
+    boxCost: undefined,
+    bobinCost: undefined,
+    boxCostVal: undefined,
+    bobinCostVal: undefined,
     audit: undefined,
   };
 }
@@ -4789,6 +4887,24 @@ export const BoxBobbinCost: MessageFns<BoxBobbinCost> = {
     }
     for (const v of message.rates) {
       BoxBobbinCostRate.encode(v!, writer.uint32(66).fork()).join();
+    }
+    if (message.bbnReuse !== undefined) {
+      writer.uint32(73).double(message.bbnReuse);
+    }
+    if (message.boxReuse !== undefined) {
+      writer.uint32(81).double(message.boxReuse);
+    }
+    if (message.boxCost !== undefined) {
+      writer.uint32(89).double(message.boxCost);
+    }
+    if (message.bobinCost !== undefined) {
+      writer.uint32(97).double(message.bobinCost);
+    }
+    if (message.boxCostVal !== undefined) {
+      writer.uint32(105).double(message.boxCostVal);
+    }
+    if (message.bobinCostVal !== undefined) {
+      writer.uint32(113).double(message.bobinCostVal);
     }
     if (message.audit !== undefined) {
       AuditInfo.encode(message.audit, writer.uint32(130).fork()).join();
@@ -4867,6 +4983,54 @@ export const BoxBobbinCost: MessageFns<BoxBobbinCost> = {
           message.rates.push(BoxBobbinCostRate.decode(reader, reader.uint32()));
           continue;
         }
+        case 9: {
+          if (tag !== 73) {
+            break;
+          }
+
+          message.bbnReuse = reader.double();
+          continue;
+        }
+        case 10: {
+          if (tag !== 81) {
+            break;
+          }
+
+          message.boxReuse = reader.double();
+          continue;
+        }
+        case 11: {
+          if (tag !== 89) {
+            break;
+          }
+
+          message.boxCost = reader.double();
+          continue;
+        }
+        case 12: {
+          if (tag !== 97) {
+            break;
+          }
+
+          message.bobinCost = reader.double();
+          continue;
+        }
+        case 13: {
+          if (tag !== 105) {
+            break;
+          }
+
+          message.boxCostVal = reader.double();
+          continue;
+        }
+        case 14: {
+          if (tag !== 113) {
+            break;
+          }
+
+          message.bobinCostVal = reader.double();
+          continue;
+        }
         case 16: {
           if (tag !== 130) {
             break;
@@ -4920,6 +5084,36 @@ export const BoxBobbinCost: MessageFns<BoxBobbinCost> = {
       rates: globalThis.Array.isArray(object?.rates)
         ? object.rates.map((e: any) => BoxBobbinCostRate.fromJSON(e))
         : [],
+      bbnReuse: isSet(object.bbnReuse)
+        ? globalThis.Number(object.bbnReuse)
+        : isSet(object.bbn_reuse)
+        ? globalThis.Number(object.bbn_reuse)
+        : undefined,
+      boxReuse: isSet(object.boxReuse)
+        ? globalThis.Number(object.boxReuse)
+        : isSet(object.box_reuse)
+        ? globalThis.Number(object.box_reuse)
+        : undefined,
+      boxCost: isSet(object.boxCost)
+        ? globalThis.Number(object.boxCost)
+        : isSet(object.box_cost)
+        ? globalThis.Number(object.box_cost)
+        : undefined,
+      bobinCost: isSet(object.bobinCost)
+        ? globalThis.Number(object.bobinCost)
+        : isSet(object.bobin_cost)
+        ? globalThis.Number(object.bobin_cost)
+        : undefined,
+      boxCostVal: isSet(object.boxCostVal)
+        ? globalThis.Number(object.boxCostVal)
+        : isSet(object.box_cost_val)
+        ? globalThis.Number(object.box_cost_val)
+        : undefined,
+      bobinCostVal: isSet(object.bobinCostVal)
+        ? globalThis.Number(object.bobinCostVal)
+        : isSet(object.bobin_cost_val)
+        ? globalThis.Number(object.bobin_cost_val)
+        : undefined,
       audit: isSet(object.audit) ? AuditInfo.fromJSON(object.audit) : undefined,
     };
   },
@@ -4950,6 +5144,24 @@ export const BoxBobbinCost: MessageFns<BoxBobbinCost> = {
     if (message.rates?.length) {
       obj.rates = message.rates.map((e) => BoxBobbinCostRate.toJSON(e));
     }
+    if (message.bbnReuse !== undefined) {
+      obj.bbnReuse = message.bbnReuse;
+    }
+    if (message.boxReuse !== undefined) {
+      obj.boxReuse = message.boxReuse;
+    }
+    if (message.boxCost !== undefined) {
+      obj.boxCost = message.boxCost;
+    }
+    if (message.bobinCost !== undefined) {
+      obj.bobinCost = message.bobinCost;
+    }
+    if (message.boxCostVal !== undefined) {
+      obj.boxCostVal = message.boxCostVal;
+    }
+    if (message.bobinCostVal !== undefined) {
+      obj.bobinCostVal = message.bobinCostVal;
+    }
     if (message.audit !== undefined) {
       obj.audit = AuditInfo.toJSON(message.audit);
     }
@@ -4969,6 +5181,12 @@ export const BoxBobbinCost: MessageFns<BoxBobbinCost> = {
     message.isActive = object.isActive ?? false;
     message.notes = object.notes ?? "";
     message.rates = object.rates?.map((e) => BoxBobbinCostRate.fromPartial(e)) || [];
+    message.bbnReuse = object.bbnReuse ?? undefined;
+    message.boxReuse = object.boxReuse ?? undefined;
+    message.boxCost = object.boxCost ?? undefined;
+    message.bobinCost = object.bobinCost ?? undefined;
+    message.boxCostVal = object.boxCostVal ?? undefined;
+    message.bobinCostVal = object.bobinCostVal ?? undefined;
     message.audit = (object.audit !== undefined && object.audit !== null)
       ? AuditInfo.fromPartial(object.audit)
       : undefined;
@@ -4977,7 +5195,19 @@ export const BoxBobbinCost: MessageFns<BoxBobbinCost> = {
 };
 
 function createBaseCreateBoxBobbinCostRequest(): CreateBoxBobbinCostRequest {
-  return { bbcCode: "", bbcName: "", bbcType: "", noOfBob: 0, notes: "" };
+  return {
+    bbcCode: "",
+    bbcName: "",
+    bbcType: "",
+    noOfBob: 0,
+    notes: "",
+    bbnReuse: undefined,
+    boxReuse: undefined,
+    boxCost: undefined,
+    bobinCost: undefined,
+    boxCostVal: undefined,
+    bobinCostVal: undefined,
+  };
 }
 
 export const CreateBoxBobbinCostRequest: MessageFns<CreateBoxBobbinCostRequest> = {
@@ -4996,6 +5226,24 @@ export const CreateBoxBobbinCostRequest: MessageFns<CreateBoxBobbinCostRequest> 
     }
     if (message.notes !== "") {
       writer.uint32(42).string(message.notes);
+    }
+    if (message.bbnReuse !== undefined) {
+      writer.uint32(49).double(message.bbnReuse);
+    }
+    if (message.boxReuse !== undefined) {
+      writer.uint32(57).double(message.boxReuse);
+    }
+    if (message.boxCost !== undefined) {
+      writer.uint32(65).double(message.boxCost);
+    }
+    if (message.bobinCost !== undefined) {
+      writer.uint32(73).double(message.bobinCost);
+    }
+    if (message.boxCostVal !== undefined) {
+      writer.uint32(81).double(message.boxCostVal);
+    }
+    if (message.bobinCostVal !== undefined) {
+      writer.uint32(89).double(message.bobinCostVal);
     }
     return writer;
   },
@@ -5047,6 +5295,54 @@ export const CreateBoxBobbinCostRequest: MessageFns<CreateBoxBobbinCostRequest> 
           message.notes = reader.string();
           continue;
         }
+        case 6: {
+          if (tag !== 49) {
+            break;
+          }
+
+          message.bbnReuse = reader.double();
+          continue;
+        }
+        case 7: {
+          if (tag !== 57) {
+            break;
+          }
+
+          message.boxReuse = reader.double();
+          continue;
+        }
+        case 8: {
+          if (tag !== 65) {
+            break;
+          }
+
+          message.boxCost = reader.double();
+          continue;
+        }
+        case 9: {
+          if (tag !== 73) {
+            break;
+          }
+
+          message.bobinCost = reader.double();
+          continue;
+        }
+        case 10: {
+          if (tag !== 81) {
+            break;
+          }
+
+          message.boxCostVal = reader.double();
+          continue;
+        }
+        case 11: {
+          if (tag !== 89) {
+            break;
+          }
+
+          message.bobinCostVal = reader.double();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -5079,6 +5375,36 @@ export const CreateBoxBobbinCostRequest: MessageFns<CreateBoxBobbinCostRequest> 
         ? globalThis.Number(object.no_of_bob)
         : 0,
       notes: isSet(object.notes) ? globalThis.String(object.notes) : "",
+      bbnReuse: isSet(object.bbnReuse)
+        ? globalThis.Number(object.bbnReuse)
+        : isSet(object.bbn_reuse)
+        ? globalThis.Number(object.bbn_reuse)
+        : undefined,
+      boxReuse: isSet(object.boxReuse)
+        ? globalThis.Number(object.boxReuse)
+        : isSet(object.box_reuse)
+        ? globalThis.Number(object.box_reuse)
+        : undefined,
+      boxCost: isSet(object.boxCost)
+        ? globalThis.Number(object.boxCost)
+        : isSet(object.box_cost)
+        ? globalThis.Number(object.box_cost)
+        : undefined,
+      bobinCost: isSet(object.bobinCost)
+        ? globalThis.Number(object.bobinCost)
+        : isSet(object.bobin_cost)
+        ? globalThis.Number(object.bobin_cost)
+        : undefined,
+      boxCostVal: isSet(object.boxCostVal)
+        ? globalThis.Number(object.boxCostVal)
+        : isSet(object.box_cost_val)
+        ? globalThis.Number(object.box_cost_val)
+        : undefined,
+      bobinCostVal: isSet(object.bobinCostVal)
+        ? globalThis.Number(object.bobinCostVal)
+        : isSet(object.bobin_cost_val)
+        ? globalThis.Number(object.bobin_cost_val)
+        : undefined,
     };
   },
 
@@ -5099,6 +5425,24 @@ export const CreateBoxBobbinCostRequest: MessageFns<CreateBoxBobbinCostRequest> 
     if (message.notes !== "") {
       obj.notes = message.notes;
     }
+    if (message.bbnReuse !== undefined) {
+      obj.bbnReuse = message.bbnReuse;
+    }
+    if (message.boxReuse !== undefined) {
+      obj.boxReuse = message.boxReuse;
+    }
+    if (message.boxCost !== undefined) {
+      obj.boxCost = message.boxCost;
+    }
+    if (message.bobinCost !== undefined) {
+      obj.bobinCost = message.bobinCost;
+    }
+    if (message.boxCostVal !== undefined) {
+      obj.boxCostVal = message.boxCostVal;
+    }
+    if (message.bobinCostVal !== undefined) {
+      obj.bobinCostVal = message.bobinCostVal;
+    }
     return obj;
   },
 
@@ -5112,6 +5456,12 @@ export const CreateBoxBobbinCostRequest: MessageFns<CreateBoxBobbinCostRequest> 
     message.bbcType = object.bbcType ?? "";
     message.noOfBob = object.noOfBob ?? 0;
     message.notes = object.notes ?? "";
+    message.bbnReuse = object.bbnReuse ?? undefined;
+    message.boxReuse = object.boxReuse ?? undefined;
+    message.boxCost = object.boxCost ?? undefined;
+    message.bobinCost = object.bobinCost ?? undefined;
+    message.boxCostVal = object.boxCostVal ?? undefined;
+    message.bobinCostVal = object.bobinCostVal ?? undefined;
     return message;
   },
 };
@@ -5348,6 +5698,12 @@ function createBaseUpdateBoxBobbinCostRequest(): UpdateBoxBobbinCostRequest {
     noOfBob: undefined,
     notes: undefined,
     isActive: undefined,
+    bbnReuse: undefined,
+    boxReuse: undefined,
+    boxCost: undefined,
+    bobinCost: undefined,
+    boxCostVal: undefined,
+    bobinCostVal: undefined,
   };
 }
 
@@ -5370,6 +5726,24 @@ export const UpdateBoxBobbinCostRequest: MessageFns<UpdateBoxBobbinCostRequest> 
     }
     if (message.isActive !== undefined) {
       writer.uint32(48).bool(message.isActive);
+    }
+    if (message.bbnReuse !== undefined) {
+      writer.uint32(57).double(message.bbnReuse);
+    }
+    if (message.boxReuse !== undefined) {
+      writer.uint32(65).double(message.boxReuse);
+    }
+    if (message.boxCost !== undefined) {
+      writer.uint32(73).double(message.boxCost);
+    }
+    if (message.bobinCost !== undefined) {
+      writer.uint32(81).double(message.bobinCost);
+    }
+    if (message.boxCostVal !== undefined) {
+      writer.uint32(89).double(message.boxCostVal);
+    }
+    if (message.bobinCostVal !== undefined) {
+      writer.uint32(97).double(message.bobinCostVal);
     }
     return writer;
   },
@@ -5429,6 +5803,54 @@ export const UpdateBoxBobbinCostRequest: MessageFns<UpdateBoxBobbinCostRequest> 
           message.isActive = reader.bool();
           continue;
         }
+        case 7: {
+          if (tag !== 57) {
+            break;
+          }
+
+          message.bbnReuse = reader.double();
+          continue;
+        }
+        case 8: {
+          if (tag !== 65) {
+            break;
+          }
+
+          message.boxReuse = reader.double();
+          continue;
+        }
+        case 9: {
+          if (tag !== 73) {
+            break;
+          }
+
+          message.boxCost = reader.double();
+          continue;
+        }
+        case 10: {
+          if (tag !== 81) {
+            break;
+          }
+
+          message.bobinCost = reader.double();
+          continue;
+        }
+        case 11: {
+          if (tag !== 89) {
+            break;
+          }
+
+          message.boxCostVal = reader.double();
+          continue;
+        }
+        case 12: {
+          if (tag !== 97) {
+            break;
+          }
+
+          message.bobinCostVal = reader.double();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -5466,6 +5888,36 @@ export const UpdateBoxBobbinCostRequest: MessageFns<UpdateBoxBobbinCostRequest> 
         : isSet(object.is_active)
         ? globalThis.Boolean(object.is_active)
         : undefined,
+      bbnReuse: isSet(object.bbnReuse)
+        ? globalThis.Number(object.bbnReuse)
+        : isSet(object.bbn_reuse)
+        ? globalThis.Number(object.bbn_reuse)
+        : undefined,
+      boxReuse: isSet(object.boxReuse)
+        ? globalThis.Number(object.boxReuse)
+        : isSet(object.box_reuse)
+        ? globalThis.Number(object.box_reuse)
+        : undefined,
+      boxCost: isSet(object.boxCost)
+        ? globalThis.Number(object.boxCost)
+        : isSet(object.box_cost)
+        ? globalThis.Number(object.box_cost)
+        : undefined,
+      bobinCost: isSet(object.bobinCost)
+        ? globalThis.Number(object.bobinCost)
+        : isSet(object.bobin_cost)
+        ? globalThis.Number(object.bobin_cost)
+        : undefined,
+      boxCostVal: isSet(object.boxCostVal)
+        ? globalThis.Number(object.boxCostVal)
+        : isSet(object.box_cost_val)
+        ? globalThis.Number(object.box_cost_val)
+        : undefined,
+      bobinCostVal: isSet(object.bobinCostVal)
+        ? globalThis.Number(object.bobinCostVal)
+        : isSet(object.bobin_cost_val)
+        ? globalThis.Number(object.bobin_cost_val)
+        : undefined,
     };
   },
 
@@ -5489,6 +5941,24 @@ export const UpdateBoxBobbinCostRequest: MessageFns<UpdateBoxBobbinCostRequest> 
     if (message.isActive !== undefined) {
       obj.isActive = message.isActive;
     }
+    if (message.bbnReuse !== undefined) {
+      obj.bbnReuse = message.bbnReuse;
+    }
+    if (message.boxReuse !== undefined) {
+      obj.boxReuse = message.boxReuse;
+    }
+    if (message.boxCost !== undefined) {
+      obj.boxCost = message.boxCost;
+    }
+    if (message.bobinCost !== undefined) {
+      obj.bobinCost = message.bobinCost;
+    }
+    if (message.boxCostVal !== undefined) {
+      obj.boxCostVal = message.boxCostVal;
+    }
+    if (message.bobinCostVal !== undefined) {
+      obj.bobinCostVal = message.bobinCostVal;
+    }
     return obj;
   },
 
@@ -5503,6 +5973,12 @@ export const UpdateBoxBobbinCostRequest: MessageFns<UpdateBoxBobbinCostRequest> 
     message.noOfBob = object.noOfBob ?? undefined;
     message.notes = object.notes ?? undefined;
     message.isActive = object.isActive ?? undefined;
+    message.bbnReuse = object.bbnReuse ?? undefined;
+    message.boxReuse = object.boxReuse ?? undefined;
+    message.boxCost = object.boxCost ?? undefined;
+    message.bobinCost = object.bobinCost ?? undefined;
+    message.boxCostVal = object.boxCostVal ?? undefined;
+    message.bobinCostVal = object.bobinCostVal ?? undefined;
     return message;
   },
 };
@@ -8617,6 +9093,8 @@ function createBaseProductGrade(): ProductGrade {
     pgGradeLabel: "",
     stdSellingPrice: 0,
     spValue: 0,
+    lossPct: undefined,
+    seqNo: undefined,
     audit: undefined,
   };
 }
@@ -8661,6 +9139,12 @@ export const ProductGrade: MessageFns<ProductGrade> = {
     }
     if (message.spValue !== 0) {
       writer.uint32(105).double(message.spValue);
+    }
+    if (message.lossPct !== undefined) {
+      writer.uint32(113).double(message.lossPct);
+    }
+    if (message.seqNo !== undefined) {
+      writer.uint32(120).int32(message.seqNo);
     }
     if (message.audit !== undefined) {
       AuditInfo.encode(message.audit, writer.uint32(130).fork()).join();
@@ -8779,6 +9263,22 @@ export const ProductGrade: MessageFns<ProductGrade> = {
           message.spValue = reader.double();
           continue;
         }
+        case 14: {
+          if (tag !== 113) {
+            break;
+          }
+
+          message.lossPct = reader.double();
+          continue;
+        }
+        case 15: {
+          if (tag !== 120) {
+            break;
+          }
+
+          message.seqNo = reader.int32();
+          continue;
+        }
         case 16: {
           if (tag !== 130) {
             break;
@@ -8859,6 +9359,16 @@ export const ProductGrade: MessageFns<ProductGrade> = {
         : isSet(object.sp_value)
         ? globalThis.Number(object.sp_value)
         : 0,
+      lossPct: isSet(object.lossPct)
+        ? globalThis.Number(object.lossPct)
+        : isSet(object.loss_pct)
+        ? globalThis.Number(object.loss_pct)
+        : undefined,
+      seqNo: isSet(object.seqNo)
+        ? globalThis.Number(object.seqNo)
+        : isSet(object.seq_no)
+        ? globalThis.Number(object.seq_no)
+        : undefined,
       audit: isSet(object.audit) ? AuditInfo.fromJSON(object.audit) : undefined,
     };
   },
@@ -8904,6 +9414,12 @@ export const ProductGrade: MessageFns<ProductGrade> = {
     if (message.spValue !== 0) {
       obj.spValue = message.spValue;
     }
+    if (message.lossPct !== undefined) {
+      obj.lossPct = message.lossPct;
+    }
+    if (message.seqNo !== undefined) {
+      obj.seqNo = Math.round(message.seqNo);
+    }
     if (message.audit !== undefined) {
       obj.audit = AuditInfo.toJSON(message.audit);
     }
@@ -8928,6 +9444,8 @@ export const ProductGrade: MessageFns<ProductGrade> = {
     message.pgGradeLabel = object.pgGradeLabel ?? "";
     message.stdSellingPrice = object.stdSellingPrice ?? 0;
     message.spValue = object.spValue ?? 0;
+    message.lossPct = object.lossPct ?? undefined;
+    message.seqNo = object.seqNo ?? undefined;
     message.audit = (object.audit !== undefined && object.audit !== null)
       ? AuditInfo.fromPartial(object.audit)
       : undefined;
@@ -8948,6 +9466,8 @@ function createBaseCreateProductGradeRequest(): CreateProductGradeRequest {
     pgGradeLabel: "",
     stdSellingPrice: 0,
     spValue: 0,
+    lossPct: undefined,
+    seqNo: undefined,
   };
 }
 
@@ -8985,6 +9505,12 @@ export const CreateProductGradeRequest: MessageFns<CreateProductGradeRequest> = 
     }
     if (message.spValue !== 0) {
       writer.uint32(89).double(message.spValue);
+    }
+    if (message.lossPct !== undefined) {
+      writer.uint32(97).double(message.lossPct);
+    }
+    if (message.seqNo !== undefined) {
+      writer.uint32(104).int32(message.seqNo);
     }
     return writer;
   },
@@ -9084,6 +9610,22 @@ export const CreateProductGradeRequest: MessageFns<CreateProductGradeRequest> = 
           message.spValue = reader.double();
           continue;
         }
+        case 12: {
+          if (tag !== 97) {
+            break;
+          }
+
+          message.lossPct = reader.double();
+          continue;
+        }
+        case 13: {
+          if (tag !== 104) {
+            break;
+          }
+
+          message.seqNo = reader.int32();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -9146,6 +9688,16 @@ export const CreateProductGradeRequest: MessageFns<CreateProductGradeRequest> = 
         : isSet(object.sp_value)
         ? globalThis.Number(object.sp_value)
         : 0,
+      lossPct: isSet(object.lossPct)
+        ? globalThis.Number(object.lossPct)
+        : isSet(object.loss_pct)
+        ? globalThis.Number(object.loss_pct)
+        : undefined,
+      seqNo: isSet(object.seqNo)
+        ? globalThis.Number(object.seqNo)
+        : isSet(object.seq_no)
+        ? globalThis.Number(object.seq_no)
+        : undefined,
     };
   },
 
@@ -9184,6 +9736,12 @@ export const CreateProductGradeRequest: MessageFns<CreateProductGradeRequest> = 
     if (message.spValue !== 0) {
       obj.spValue = message.spValue;
     }
+    if (message.lossPct !== undefined) {
+      obj.lossPct = message.lossPct;
+    }
+    if (message.seqNo !== undefined) {
+      obj.seqNo = Math.round(message.seqNo);
+    }
     return obj;
   },
 
@@ -9203,6 +9761,8 @@ export const CreateProductGradeRequest: MessageFns<CreateProductGradeRequest> = 
     message.pgGradeLabel = object.pgGradeLabel ?? "";
     message.stdSellingPrice = object.stdSellingPrice ?? 0;
     message.spValue = object.spValue ?? 0;
+    message.lossPct = object.lossPct ?? undefined;
+    message.seqNo = object.seqNo ?? undefined;
     return message;
   },
 };
@@ -9445,6 +10005,8 @@ function createBaseUpdateProductGradeRequest(): UpdateProductGradeRequest {
     pgGradeLabel: undefined,
     stdSellingPrice: undefined,
     spValue: undefined,
+    lossPct: undefined,
+    seqNo: undefined,
   };
 }
 
@@ -9485,6 +10047,12 @@ export const UpdateProductGradeRequest: MessageFns<UpdateProductGradeRequest> = 
     }
     if (message.spValue !== undefined) {
       writer.uint32(97).double(message.spValue);
+    }
+    if (message.lossPct !== undefined) {
+      writer.uint32(105).double(message.lossPct);
+    }
+    if (message.seqNo !== undefined) {
+      writer.uint32(112).int32(message.seqNo);
     }
     return writer;
   },
@@ -9592,6 +10160,22 @@ export const UpdateProductGradeRequest: MessageFns<UpdateProductGradeRequest> = 
           message.spValue = reader.double();
           continue;
         }
+        case 13: {
+          if (tag !== 105) {
+            break;
+          }
+
+          message.lossPct = reader.double();
+          continue;
+        }
+        case 14: {
+          if (tag !== 112) {
+            break;
+          }
+
+          message.seqNo = reader.int32();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -9659,6 +10243,16 @@ export const UpdateProductGradeRequest: MessageFns<UpdateProductGradeRequest> = 
         : isSet(object.sp_value)
         ? globalThis.Number(object.sp_value)
         : undefined,
+      lossPct: isSet(object.lossPct)
+        ? globalThis.Number(object.lossPct)
+        : isSet(object.loss_pct)
+        ? globalThis.Number(object.loss_pct)
+        : undefined,
+      seqNo: isSet(object.seqNo)
+        ? globalThis.Number(object.seqNo)
+        : isSet(object.seq_no)
+        ? globalThis.Number(object.seq_no)
+        : undefined,
     };
   },
 
@@ -9700,6 +10294,12 @@ export const UpdateProductGradeRequest: MessageFns<UpdateProductGradeRequest> = 
     if (message.spValue !== undefined) {
       obj.spValue = message.spValue;
     }
+    if (message.lossPct !== undefined) {
+      obj.lossPct = message.lossPct;
+    }
+    if (message.seqNo !== undefined) {
+      obj.seqNo = Math.round(message.seqNo);
+    }
     return obj;
   },
 
@@ -9720,6 +10320,8 @@ export const UpdateProductGradeRequest: MessageFns<UpdateProductGradeRequest> = 
     message.pgGradeLabel = object.pgGradeLabel ?? undefined;
     message.stdSellingPrice = object.stdSellingPrice ?? undefined;
     message.spValue = object.spValue ?? undefined;
+    message.lossPct = object.lossPct ?? undefined;
+    message.seqNo = object.seqNo ?? undefined;
     return message;
   },
 };
