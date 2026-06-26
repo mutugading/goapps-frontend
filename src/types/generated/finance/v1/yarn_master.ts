@@ -151,7 +151,31 @@ export interface Machine {
     | number
     | undefined;
   /** Optional volume bucket 5 quantity threshold. */
-  vb5Qty?: number | undefined;
+  vb5Qty?:
+    | number
+    | undefined;
+  /** Optional Oracle CMM_POY_BOBBIN_WEIGHT — kg per bobbin. */
+  mcPoyBobbinWeight?:
+    | number
+    | undefined;
+  /** Optional Oracle CMM_TOT_FXD_CST — total fixed cost. */
+  mcTotFxdCst?:
+    | number
+    | undefined;
+  /** Optional Oracle CMM_BOBBIN_PER_TROLLY — bobbins per trolley. */
+  mcBobbinPerTrolly?:
+    | number
+    | undefined;
+  /** Optional Oracle CMM_BOX_COST — box cost per unit. */
+  mcBoxCost?:
+    | number
+    | undefined;
+  /** Optional Oracle CMM_CAPTIVE_PER_BOBBIN — captive cost per bobbin. */
+  mcCaptivePerBobbin?:
+    | number
+    | undefined;
+  /** Optional Oracle CMM_WEIGHTAGE — machine weightage factor. */
+  mcWeightage?: number | undefined;
 }
 
 /** CreateMachineRequest is the request for creating a machine. */
@@ -215,7 +239,31 @@ export interface CreateMachineRequest {
     | number
     | undefined;
   /** Optional volume bucket 5 quantity threshold. */
-  vb5Qty?: number | undefined;
+  vb5Qty?:
+    | number
+    | undefined;
+  /** Optional Oracle CMM_POY_BOBBIN_WEIGHT (≥ 0). */
+  mcPoyBobbinWeight?:
+    | number
+    | undefined;
+  /** Optional Oracle CMM_TOT_FXD_CST (≥ 0). */
+  mcTotFxdCst?:
+    | number
+    | undefined;
+  /** Optional Oracle CMM_BOBBIN_PER_TROLLY (≥ 0). */
+  mcBobbinPerTrolly?:
+    | number
+    | undefined;
+  /** Optional Oracle CMM_BOX_COST (≥ 0). */
+  mcBoxCost?:
+    | number
+    | undefined;
+  /** Optional Oracle CMM_CAPTIVE_PER_BOBBIN (≥ 0). */
+  mcCaptivePerBobbin?:
+    | number
+    | undefined;
+  /** Optional Oracle CMM_WEIGHTAGE (≥ 0). */
+  mcWeightage?: number | undefined;
 }
 
 /** CreateMachineResponse is the response for creating a machine. */
@@ -325,7 +373,31 @@ export interface UpdateMachineRequest {
     | number
     | undefined;
   /** Optional volume bucket 5 quantity threshold. */
-  vb5Qty?: number | undefined;
+  vb5Qty?:
+    | number
+    | undefined;
+  /** Optional updated Oracle CMM_POY_BOBBIN_WEIGHT (≥ 0). */
+  mcPoyBobbinWeight?:
+    | number
+    | undefined;
+  /** Optional updated Oracle CMM_TOT_FXD_CST (≥ 0). */
+  mcTotFxdCst?:
+    | number
+    | undefined;
+  /** Optional updated Oracle CMM_BOBBIN_PER_TROLLY (≥ 0). */
+  mcBobbinPerTrolly?:
+    | number
+    | undefined;
+  /** Optional updated Oracle CMM_BOX_COST (≥ 0). */
+  mcBoxCost?:
+    | number
+    | undefined;
+  /** Optional updated Oracle CMM_CAPTIVE_PER_BOBBIN (≥ 0). */
+  mcCaptivePerBobbin?:
+    | number
+    | undefined;
+  /** Optional updated Oracle CMM_WEIGHTAGE (≥ 0). */
+  mcWeightage?: number | undefined;
 }
 
 /** UpdateMachineResponse is the response for updating a machine. */
@@ -506,8 +578,16 @@ export interface BoxBobbinCost {
   bobinCostVal?:
     | number
     | undefined;
+  /** Optional Oracle CMBBC_BBN_REUSE_VAL — bobbin reuse count for VAL session. */
+  bbnReuseVal?:
+    | number
+    | undefined;
   /** Audit metadata. */
-  audit: AuditInfo | undefined;
+  audit:
+    | AuditInfo
+    | undefined;
+  /** Optional Oracle CMBBC_BOX_REUSE_VAL — box reuse count for VAL session. */
+  boxReuseVal?: number | undefined;
 }
 
 /** CreateBoxBobbinCostRequest is the request for creating a Box Bobbin Cost config. */
@@ -543,7 +623,15 @@ export interface CreateBoxBobbinCostRequest {
     | number
     | undefined;
   /** Optional VAL bobbin rate in USD/bobbin (≥ 0). */
-  bobinCostVal?: number | undefined;
+  bobinCostVal?:
+    | number
+    | undefined;
+  /** Optional Oracle CMBBC_BBN_REUSE_VAL (≥ 0). */
+  bbnReuseVal?:
+    | number
+    | undefined;
+  /** Optional Oracle CMBBC_BOX_REUSE_VAL (≥ 0). */
+  boxReuseVal?: number | undefined;
 }
 
 /** CreateBoxBobbinCostResponse is the response for creating a Box Bobbin Cost config. */
@@ -617,7 +705,15 @@ export interface UpdateBoxBobbinCostRequest {
     | number
     | undefined;
   /** Optional updated VAL bobbin rate in USD/bobbin (≥ 0). */
-  bobinCostVal?: number | undefined;
+  bobinCostVal?:
+    | number
+    | undefined;
+  /** Optional Oracle CMBBC_BBN_REUSE_VAL (≥ 0). */
+  bbnReuseVal?:
+    | number
+    | undefined;
+  /** Optional Oracle CMBBC_BOX_REUSE_VAL (≥ 0). */
+  boxReuseVal?: number | undefined;
 }
 
 /** UpdateBoxBobbinCostResponse is the response for updating a Box Bobbin Cost config. */
@@ -1248,6 +1344,26 @@ export interface MBHead {
     | undefined;
   /** Whether the record is active. */
   mbhIsActive: boolean;
+  /** Optional Oracle CMBH_CHECK_STATUS — check status (Waiting/Current/Approved). */
+  mbhCheckStatus?:
+    | string
+    | undefined;
+  /** Optional Oracle CMBH_STATUS — head status (R and D/Spinning/Boughtout). */
+  mbhStatus?:
+    | string
+    | undefined;
+  /** Optional Oracle CMBH_LDR_PRSN — LDR person value. */
+  mbhLdrPrsn?:
+    | number
+    | undefined;
+  /** Optional Oracle CMBH_FINAL_PRODUCT — final product description. */
+  mbhFinalProduct?:
+    | string
+    | undefined;
+  /** Optional Oracle CMBH_CODE — product code. */
+  mbhCode?:
+    | string
+    | undefined;
   /** Audit metadata. */
   audit: AuditInfo | undefined;
 }
@@ -1273,7 +1389,27 @@ export interface CreateMBHeadRequest {
     | number
     | undefined;
   /** Optional dozing percentage. */
-  mbhDozing?: number | undefined;
+  mbhDozing?:
+    | number
+    | undefined;
+  /** Optional Oracle CMBH_CHECK_STATUS (max 50 chars). */
+  mbhCheckStatus?:
+    | string
+    | undefined;
+  /** Optional Oracle CMBH_STATUS (max 100 chars). */
+  mbhStatus?:
+    | string
+    | undefined;
+  /** Optional Oracle CMBH_LDR_PRSN (≥ 0). */
+  mbhLdrPrsn?:
+    | number
+    | undefined;
+  /** Optional Oracle CMBH_FINAL_PRODUCT (max 200 chars). */
+  mbhFinalProduct?:
+    | string
+    | undefined;
+  /** Optional Oracle CMBH_CODE (max 100 chars). */
+  mbhCode?: string | undefined;
 }
 
 /** CreateMBHeadResponse is the response for creating an MB Head record. */
@@ -1327,7 +1463,27 @@ export interface UpdateMBHeadRequest {
     | number
     | undefined;
   /** Updated active status. */
-  mbhIsActive?: boolean | undefined;
+  mbhIsActive?:
+    | boolean
+    | undefined;
+  /** Optional Oracle CMBH_CHECK_STATUS (max 50 chars). */
+  mbhCheckStatus?:
+    | string
+    | undefined;
+  /** Optional Oracle CMBH_STATUS (max 100 chars). */
+  mbhStatus?:
+    | string
+    | undefined;
+  /** Optional Oracle CMBH_LDR_PRSN (≥ 0). */
+  mbhLdrPrsn?:
+    | number
+    | undefined;
+  /** Optional Oracle CMBH_FINAL_PRODUCT (max 200 chars). */
+  mbhFinalProduct?:
+    | string
+    | undefined;
+  /** Optional Oracle CMBH_CODE (max 100 chars). */
+  mbhCode?: string | undefined;
 }
 
 /** UpdateMBHeadResponse is the response for updating an MB Head record. */
@@ -1474,6 +1630,18 @@ export interface MBSpin {
   mbsCostRateMkt?:
     | number
     | undefined;
+  /** Optional Oracle CMBS_STATUS — spinning status (Spinning/R and D/Boughtout). */
+  mbsStatus?:
+    | string
+    | undefined;
+  /** Optional Oracle CMBS_LDR_PRSN — LDR person value. */
+  mbsLdrPrsn?:
+    | number
+    | undefined;
+  /** Optional Oracle CMBS_FINAL_PRODUCT — final product description. */
+  mbsFinalProduct?:
+    | string
+    | undefined;
   /** Audit metadata. */
   audit: AuditInfo | undefined;
 }
@@ -1509,7 +1677,19 @@ export interface CreateMBSpinRequest {
     | string
     | undefined;
   /** Optional MB rate MKT in USD/kg. */
-  mbsCostRateMkt?: number | undefined;
+  mbsCostRateMkt?:
+    | number
+    | undefined;
+  /** Optional Oracle CMBS_STATUS (max 100 chars). */
+  mbsStatus?:
+    | string
+    | undefined;
+  /** Optional Oracle CMBS_LDR_PRSN (≥ 0). */
+  mbsLdrPrsn?:
+    | number
+    | undefined;
+  /** Optional Oracle CMBS_FINAL_PRODUCT (max 200 chars). */
+  mbsFinalProduct?: string | undefined;
 }
 
 /** CreateMBSpinResponse is the response for creating an MB Spin record. */
@@ -1575,7 +1755,19 @@ export interface UpdateMBSpinRequest {
     | string
     | undefined;
   /** Optional MB rate MKT in USD/kg. */
-  mbsCostRateMkt?: number | undefined;
+  mbsCostRateMkt?:
+    | number
+    | undefined;
+  /** Optional Oracle CMBS_STATUS (max 100 chars). */
+  mbsStatus?:
+    | string
+    | undefined;
+  /** Optional Oracle CMBS_LDR_PRSN (≥ 0). */
+  mbsLdrPrsn?:
+    | number
+    | undefined;
+  /** Optional Oracle CMBS_FINAL_PRODUCT (max 200 chars). */
+  mbsFinalProduct?: string | undefined;
 }
 
 /** UpdateMBSpinResponse is the response for updating an MB Spin record. */
@@ -1944,6 +2136,12 @@ function createBaseMachine(): Machine {
     vb3Qty: undefined,
     vb4Qty: undefined,
     vb5Qty: undefined,
+    mcPoyBobbinWeight: undefined,
+    mcTotFxdCst: undefined,
+    mcBobbinPerTrolly: undefined,
+    mcBoxCost: undefined,
+    mcCaptivePerBobbin: undefined,
+    mcWeightage: undefined,
   };
 }
 
@@ -2017,6 +2215,24 @@ export const Machine: MessageFns<Machine> = {
     }
     if (message.vb5Qty !== undefined) {
       writer.uint32(185).double(message.vb5Qty);
+    }
+    if (message.mcPoyBobbinWeight !== undefined) {
+      writer.uint32(193).double(message.mcPoyBobbinWeight);
+    }
+    if (message.mcTotFxdCst !== undefined) {
+      writer.uint32(201).double(message.mcTotFxdCst);
+    }
+    if (message.mcBobbinPerTrolly !== undefined) {
+      writer.uint32(209).double(message.mcBobbinPerTrolly);
+    }
+    if (message.mcBoxCost !== undefined) {
+      writer.uint32(217).double(message.mcBoxCost);
+    }
+    if (message.mcCaptivePerBobbin !== undefined) {
+      writer.uint32(225).double(message.mcCaptivePerBobbin);
+    }
+    if (message.mcWeightage !== undefined) {
+      writer.uint32(233).double(message.mcWeightage);
     }
     return writer;
   },
@@ -2212,6 +2428,54 @@ export const Machine: MessageFns<Machine> = {
           message.vb5Qty = reader.double();
           continue;
         }
+        case 24: {
+          if (tag !== 193) {
+            break;
+          }
+
+          message.mcPoyBobbinWeight = reader.double();
+          continue;
+        }
+        case 25: {
+          if (tag !== 201) {
+            break;
+          }
+
+          message.mcTotFxdCst = reader.double();
+          continue;
+        }
+        case 26: {
+          if (tag !== 209) {
+            break;
+          }
+
+          message.mcBobbinPerTrolly = reader.double();
+          continue;
+        }
+        case 27: {
+          if (tag !== 217) {
+            break;
+          }
+
+          message.mcBoxCost = reader.double();
+          continue;
+        }
+        case 28: {
+          if (tag !== 225) {
+            break;
+          }
+
+          message.mcCaptivePerBobbin = reader.double();
+          continue;
+        }
+        case 29: {
+          if (tag !== 233) {
+            break;
+          }
+
+          message.mcWeightage = reader.double();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2330,6 +2594,36 @@ export const Machine: MessageFns<Machine> = {
         : isSet(object.vb5_qty)
         ? globalThis.Number(object.vb5_qty)
         : undefined,
+      mcPoyBobbinWeight: isSet(object.mcPoyBobbinWeight)
+        ? globalThis.Number(object.mcPoyBobbinWeight)
+        : isSet(object.mc_poy_bobbin_weight)
+        ? globalThis.Number(object.mc_poy_bobbin_weight)
+        : undefined,
+      mcTotFxdCst: isSet(object.mcTotFxdCst)
+        ? globalThis.Number(object.mcTotFxdCst)
+        : isSet(object.mc_tot_fxd_cst)
+        ? globalThis.Number(object.mc_tot_fxd_cst)
+        : undefined,
+      mcBobbinPerTrolly: isSet(object.mcBobbinPerTrolly)
+        ? globalThis.Number(object.mcBobbinPerTrolly)
+        : isSet(object.mc_bobbin_per_trolly)
+        ? globalThis.Number(object.mc_bobbin_per_trolly)
+        : undefined,
+      mcBoxCost: isSet(object.mcBoxCost)
+        ? globalThis.Number(object.mcBoxCost)
+        : isSet(object.mc_box_cost)
+        ? globalThis.Number(object.mc_box_cost)
+        : undefined,
+      mcCaptivePerBobbin: isSet(object.mcCaptivePerBobbin)
+        ? globalThis.Number(object.mcCaptivePerBobbin)
+        : isSet(object.mc_captive_per_bobbin)
+        ? globalThis.Number(object.mc_captive_per_bobbin)
+        : undefined,
+      mcWeightage: isSet(object.mcWeightage)
+        ? globalThis.Number(object.mcWeightage)
+        : isSet(object.mc_weightage)
+        ? globalThis.Number(object.mc_weightage)
+        : undefined,
     };
   },
 
@@ -2404,6 +2698,24 @@ export const Machine: MessageFns<Machine> = {
     if (message.vb5Qty !== undefined) {
       obj.vb5Qty = message.vb5Qty;
     }
+    if (message.mcPoyBobbinWeight !== undefined) {
+      obj.mcPoyBobbinWeight = message.mcPoyBobbinWeight;
+    }
+    if (message.mcTotFxdCst !== undefined) {
+      obj.mcTotFxdCst = message.mcTotFxdCst;
+    }
+    if (message.mcBobbinPerTrolly !== undefined) {
+      obj.mcBobbinPerTrolly = message.mcBobbinPerTrolly;
+    }
+    if (message.mcBoxCost !== undefined) {
+      obj.mcBoxCost = message.mcBoxCost;
+    }
+    if (message.mcCaptivePerBobbin !== undefined) {
+      obj.mcCaptivePerBobbin = message.mcCaptivePerBobbin;
+    }
+    if (message.mcWeightage !== undefined) {
+      obj.mcWeightage = message.mcWeightage;
+    }
     return obj;
   },
 
@@ -2437,6 +2749,12 @@ export const Machine: MessageFns<Machine> = {
     message.vb3Qty = object.vb3Qty ?? undefined;
     message.vb4Qty = object.vb4Qty ?? undefined;
     message.vb5Qty = object.vb5Qty ?? undefined;
+    message.mcPoyBobbinWeight = object.mcPoyBobbinWeight ?? undefined;
+    message.mcTotFxdCst = object.mcTotFxdCst ?? undefined;
+    message.mcBobbinPerTrolly = object.mcBobbinPerTrolly ?? undefined;
+    message.mcBoxCost = object.mcBoxCost ?? undefined;
+    message.mcCaptivePerBobbin = object.mcCaptivePerBobbin ?? undefined;
+    message.mcWeightage = object.mcWeightage ?? undefined;
     return message;
   },
 };
@@ -2463,6 +2781,12 @@ function createBaseCreateMachineRequest(): CreateMachineRequest {
     vb3Qty: undefined,
     vb4Qty: undefined,
     vb5Qty: undefined,
+    mcPoyBobbinWeight: undefined,
+    mcTotFxdCst: undefined,
+    mcBobbinPerTrolly: undefined,
+    mcBoxCost: undefined,
+    mcCaptivePerBobbin: undefined,
+    mcWeightage: undefined,
   };
 }
 
@@ -2527,6 +2851,24 @@ export const CreateMachineRequest: MessageFns<CreateMachineRequest> = {
     }
     if (message.vb5Qty !== undefined) {
       writer.uint32(161).double(message.vb5Qty);
+    }
+    if (message.mcPoyBobbinWeight !== undefined) {
+      writer.uint32(169).double(message.mcPoyBobbinWeight);
+    }
+    if (message.mcTotFxdCst !== undefined) {
+      writer.uint32(177).double(message.mcTotFxdCst);
+    }
+    if (message.mcBobbinPerTrolly !== undefined) {
+      writer.uint32(185).double(message.mcBobbinPerTrolly);
+    }
+    if (message.mcBoxCost !== undefined) {
+      writer.uint32(193).double(message.mcBoxCost);
+    }
+    if (message.mcCaptivePerBobbin !== undefined) {
+      writer.uint32(201).double(message.mcCaptivePerBobbin);
+    }
+    if (message.mcWeightage !== undefined) {
+      writer.uint32(209).double(message.mcWeightage);
     }
     return writer;
   },
@@ -2698,6 +3040,54 @@ export const CreateMachineRequest: MessageFns<CreateMachineRequest> = {
           message.vb5Qty = reader.double();
           continue;
         }
+        case 21: {
+          if (tag !== 169) {
+            break;
+          }
+
+          message.mcPoyBobbinWeight = reader.double();
+          continue;
+        }
+        case 22: {
+          if (tag !== 177) {
+            break;
+          }
+
+          message.mcTotFxdCst = reader.double();
+          continue;
+        }
+        case 23: {
+          if (tag !== 185) {
+            break;
+          }
+
+          message.mcBobbinPerTrolly = reader.double();
+          continue;
+        }
+        case 24: {
+          if (tag !== 193) {
+            break;
+          }
+
+          message.mcBoxCost = reader.double();
+          continue;
+        }
+        case 25: {
+          if (tag !== 201) {
+            break;
+          }
+
+          message.mcCaptivePerBobbin = reader.double();
+          continue;
+        }
+        case 26: {
+          if (tag !== 209) {
+            break;
+          }
+
+          message.mcWeightage = reader.double();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2805,6 +3195,36 @@ export const CreateMachineRequest: MessageFns<CreateMachineRequest> = {
         : isSet(object.vb5_qty)
         ? globalThis.Number(object.vb5_qty)
         : undefined,
+      mcPoyBobbinWeight: isSet(object.mcPoyBobbinWeight)
+        ? globalThis.Number(object.mcPoyBobbinWeight)
+        : isSet(object.mc_poy_bobbin_weight)
+        ? globalThis.Number(object.mc_poy_bobbin_weight)
+        : undefined,
+      mcTotFxdCst: isSet(object.mcTotFxdCst)
+        ? globalThis.Number(object.mcTotFxdCst)
+        : isSet(object.mc_tot_fxd_cst)
+        ? globalThis.Number(object.mc_tot_fxd_cst)
+        : undefined,
+      mcBobbinPerTrolly: isSet(object.mcBobbinPerTrolly)
+        ? globalThis.Number(object.mcBobbinPerTrolly)
+        : isSet(object.mc_bobbin_per_trolly)
+        ? globalThis.Number(object.mc_bobbin_per_trolly)
+        : undefined,
+      mcBoxCost: isSet(object.mcBoxCost)
+        ? globalThis.Number(object.mcBoxCost)
+        : isSet(object.mc_box_cost)
+        ? globalThis.Number(object.mc_box_cost)
+        : undefined,
+      mcCaptivePerBobbin: isSet(object.mcCaptivePerBobbin)
+        ? globalThis.Number(object.mcCaptivePerBobbin)
+        : isSet(object.mc_captive_per_bobbin)
+        ? globalThis.Number(object.mc_captive_per_bobbin)
+        : undefined,
+      mcWeightage: isSet(object.mcWeightage)
+        ? globalThis.Number(object.mcWeightage)
+        : isSet(object.mc_weightage)
+        ? globalThis.Number(object.mc_weightage)
+        : undefined,
     };
   },
 
@@ -2870,6 +3290,24 @@ export const CreateMachineRequest: MessageFns<CreateMachineRequest> = {
     if (message.vb5Qty !== undefined) {
       obj.vb5Qty = message.vb5Qty;
     }
+    if (message.mcPoyBobbinWeight !== undefined) {
+      obj.mcPoyBobbinWeight = message.mcPoyBobbinWeight;
+    }
+    if (message.mcTotFxdCst !== undefined) {
+      obj.mcTotFxdCst = message.mcTotFxdCst;
+    }
+    if (message.mcBobbinPerTrolly !== undefined) {
+      obj.mcBobbinPerTrolly = message.mcBobbinPerTrolly;
+    }
+    if (message.mcBoxCost !== undefined) {
+      obj.mcBoxCost = message.mcBoxCost;
+    }
+    if (message.mcCaptivePerBobbin !== undefined) {
+      obj.mcCaptivePerBobbin = message.mcCaptivePerBobbin;
+    }
+    if (message.mcWeightage !== undefined) {
+      obj.mcWeightage = message.mcWeightage;
+    }
     return obj;
   },
 
@@ -2898,6 +3336,12 @@ export const CreateMachineRequest: MessageFns<CreateMachineRequest> = {
     message.vb3Qty = object.vb3Qty ?? undefined;
     message.vb4Qty = object.vb4Qty ?? undefined;
     message.vb5Qty = object.vb5Qty ?? undefined;
+    message.mcPoyBobbinWeight = object.mcPoyBobbinWeight ?? undefined;
+    message.mcTotFxdCst = object.mcTotFxdCst ?? undefined;
+    message.mcBobbinPerTrolly = object.mcBobbinPerTrolly ?? undefined;
+    message.mcBoxCost = object.mcBoxCost ?? undefined;
+    message.mcCaptivePerBobbin = object.mcCaptivePerBobbin ?? undefined;
+    message.mcWeightage = object.mcWeightage ?? undefined;
     return message;
   },
 };
@@ -3145,6 +3589,12 @@ function createBaseUpdateMachineRequest(): UpdateMachineRequest {
     vb3Qty: undefined,
     vb4Qty: undefined,
     vb5Qty: undefined,
+    mcPoyBobbinWeight: undefined,
+    mcTotFxdCst: undefined,
+    mcBobbinPerTrolly: undefined,
+    mcBoxCost: undefined,
+    mcCaptivePerBobbin: undefined,
+    mcWeightage: undefined,
   };
 }
 
@@ -3212,6 +3662,24 @@ export const UpdateMachineRequest: MessageFns<UpdateMachineRequest> = {
     }
     if (message.vb5Qty !== undefined) {
       writer.uint32(169).double(message.vb5Qty);
+    }
+    if (message.mcPoyBobbinWeight !== undefined) {
+      writer.uint32(177).double(message.mcPoyBobbinWeight);
+    }
+    if (message.mcTotFxdCst !== undefined) {
+      writer.uint32(185).double(message.mcTotFxdCst);
+    }
+    if (message.mcBobbinPerTrolly !== undefined) {
+      writer.uint32(193).double(message.mcBobbinPerTrolly);
+    }
+    if (message.mcBoxCost !== undefined) {
+      writer.uint32(201).double(message.mcBoxCost);
+    }
+    if (message.mcCaptivePerBobbin !== undefined) {
+      writer.uint32(209).double(message.mcCaptivePerBobbin);
+    }
+    if (message.mcWeightage !== undefined) {
+      writer.uint32(217).double(message.mcWeightage);
     }
     return writer;
   },
@@ -3391,6 +3859,54 @@ export const UpdateMachineRequest: MessageFns<UpdateMachineRequest> = {
           message.vb5Qty = reader.double();
           continue;
         }
+        case 22: {
+          if (tag !== 177) {
+            break;
+          }
+
+          message.mcPoyBobbinWeight = reader.double();
+          continue;
+        }
+        case 23: {
+          if (tag !== 185) {
+            break;
+          }
+
+          message.mcTotFxdCst = reader.double();
+          continue;
+        }
+        case 24: {
+          if (tag !== 193) {
+            break;
+          }
+
+          message.mcBobbinPerTrolly = reader.double();
+          continue;
+        }
+        case 25: {
+          if (tag !== 201) {
+            break;
+          }
+
+          message.mcBoxCost = reader.double();
+          continue;
+        }
+        case 26: {
+          if (tag !== 209) {
+            break;
+          }
+
+          message.mcCaptivePerBobbin = reader.double();
+          continue;
+        }
+        case 27: {
+          if (tag !== 217) {
+            break;
+          }
+
+          message.mcWeightage = reader.double();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3503,6 +4019,36 @@ export const UpdateMachineRequest: MessageFns<UpdateMachineRequest> = {
         : isSet(object.vb5_qty)
         ? globalThis.Number(object.vb5_qty)
         : undefined,
+      mcPoyBobbinWeight: isSet(object.mcPoyBobbinWeight)
+        ? globalThis.Number(object.mcPoyBobbinWeight)
+        : isSet(object.mc_poy_bobbin_weight)
+        ? globalThis.Number(object.mc_poy_bobbin_weight)
+        : undefined,
+      mcTotFxdCst: isSet(object.mcTotFxdCst)
+        ? globalThis.Number(object.mcTotFxdCst)
+        : isSet(object.mc_tot_fxd_cst)
+        ? globalThis.Number(object.mc_tot_fxd_cst)
+        : undefined,
+      mcBobbinPerTrolly: isSet(object.mcBobbinPerTrolly)
+        ? globalThis.Number(object.mcBobbinPerTrolly)
+        : isSet(object.mc_bobbin_per_trolly)
+        ? globalThis.Number(object.mc_bobbin_per_trolly)
+        : undefined,
+      mcBoxCost: isSet(object.mcBoxCost)
+        ? globalThis.Number(object.mcBoxCost)
+        : isSet(object.mc_box_cost)
+        ? globalThis.Number(object.mc_box_cost)
+        : undefined,
+      mcCaptivePerBobbin: isSet(object.mcCaptivePerBobbin)
+        ? globalThis.Number(object.mcCaptivePerBobbin)
+        : isSet(object.mc_captive_per_bobbin)
+        ? globalThis.Number(object.mc_captive_per_bobbin)
+        : undefined,
+      mcWeightage: isSet(object.mcWeightage)
+        ? globalThis.Number(object.mcWeightage)
+        : isSet(object.mc_weightage)
+        ? globalThis.Number(object.mc_weightage)
+        : undefined,
     };
   },
 
@@ -3571,6 +4117,24 @@ export const UpdateMachineRequest: MessageFns<UpdateMachineRequest> = {
     if (message.vb5Qty !== undefined) {
       obj.vb5Qty = message.vb5Qty;
     }
+    if (message.mcPoyBobbinWeight !== undefined) {
+      obj.mcPoyBobbinWeight = message.mcPoyBobbinWeight;
+    }
+    if (message.mcTotFxdCst !== undefined) {
+      obj.mcTotFxdCst = message.mcTotFxdCst;
+    }
+    if (message.mcBobbinPerTrolly !== undefined) {
+      obj.mcBobbinPerTrolly = message.mcBobbinPerTrolly;
+    }
+    if (message.mcBoxCost !== undefined) {
+      obj.mcBoxCost = message.mcBoxCost;
+    }
+    if (message.mcCaptivePerBobbin !== undefined) {
+      obj.mcCaptivePerBobbin = message.mcCaptivePerBobbin;
+    }
+    if (message.mcWeightage !== undefined) {
+      obj.mcWeightage = message.mcWeightage;
+    }
     return obj;
   },
 
@@ -3600,6 +4164,12 @@ export const UpdateMachineRequest: MessageFns<UpdateMachineRequest> = {
     message.vb3Qty = object.vb3Qty ?? undefined;
     message.vb4Qty = object.vb4Qty ?? undefined;
     message.vb5Qty = object.vb5Qty ?? undefined;
+    message.mcPoyBobbinWeight = object.mcPoyBobbinWeight ?? undefined;
+    message.mcTotFxdCst = object.mcTotFxdCst ?? undefined;
+    message.mcBobbinPerTrolly = object.mcBobbinPerTrolly ?? undefined;
+    message.mcBoxCost = object.mcBoxCost ?? undefined;
+    message.mcCaptivePerBobbin = object.mcCaptivePerBobbin ?? undefined;
+    message.mcWeightage = object.mcWeightage ?? undefined;
     return message;
   },
 };
@@ -4858,7 +5428,9 @@ function createBaseBoxBobbinCost(): BoxBobbinCost {
     bobinCost: undefined,
     boxCostVal: undefined,
     bobinCostVal: undefined,
+    bbnReuseVal: undefined,
     audit: undefined,
+    boxReuseVal: undefined,
   };
 }
 
@@ -4906,8 +5478,14 @@ export const BoxBobbinCost: MessageFns<BoxBobbinCost> = {
     if (message.bobinCostVal !== undefined) {
       writer.uint32(113).double(message.bobinCostVal);
     }
+    if (message.bbnReuseVal !== undefined) {
+      writer.uint32(121).double(message.bbnReuseVal);
+    }
     if (message.audit !== undefined) {
       AuditInfo.encode(message.audit, writer.uint32(130).fork()).join();
+    }
+    if (message.boxReuseVal !== undefined) {
+      writer.uint32(137).double(message.boxReuseVal);
     }
     return writer;
   },
@@ -5031,12 +5609,28 @@ export const BoxBobbinCost: MessageFns<BoxBobbinCost> = {
           message.bobinCostVal = reader.double();
           continue;
         }
+        case 15: {
+          if (tag !== 121) {
+            break;
+          }
+
+          message.bbnReuseVal = reader.double();
+          continue;
+        }
         case 16: {
           if (tag !== 130) {
             break;
           }
 
           message.audit = AuditInfo.decode(reader, reader.uint32());
+          continue;
+        }
+        case 17: {
+          if (tag !== 137) {
+            break;
+          }
+
+          message.boxReuseVal = reader.double();
           continue;
         }
       }
@@ -5114,7 +5708,17 @@ export const BoxBobbinCost: MessageFns<BoxBobbinCost> = {
         : isSet(object.bobin_cost_val)
         ? globalThis.Number(object.bobin_cost_val)
         : undefined,
+      bbnReuseVal: isSet(object.bbnReuseVal)
+        ? globalThis.Number(object.bbnReuseVal)
+        : isSet(object.bbn_reuse_val)
+        ? globalThis.Number(object.bbn_reuse_val)
+        : undefined,
       audit: isSet(object.audit) ? AuditInfo.fromJSON(object.audit) : undefined,
+      boxReuseVal: isSet(object.boxReuseVal)
+        ? globalThis.Number(object.boxReuseVal)
+        : isSet(object.box_reuse_val)
+        ? globalThis.Number(object.box_reuse_val)
+        : undefined,
     };
   },
 
@@ -5162,8 +5766,14 @@ export const BoxBobbinCost: MessageFns<BoxBobbinCost> = {
     if (message.bobinCostVal !== undefined) {
       obj.bobinCostVal = message.bobinCostVal;
     }
+    if (message.bbnReuseVal !== undefined) {
+      obj.bbnReuseVal = message.bbnReuseVal;
+    }
     if (message.audit !== undefined) {
       obj.audit = AuditInfo.toJSON(message.audit);
+    }
+    if (message.boxReuseVal !== undefined) {
+      obj.boxReuseVal = message.boxReuseVal;
     }
     return obj;
   },
@@ -5187,9 +5797,11 @@ export const BoxBobbinCost: MessageFns<BoxBobbinCost> = {
     message.bobinCost = object.bobinCost ?? undefined;
     message.boxCostVal = object.boxCostVal ?? undefined;
     message.bobinCostVal = object.bobinCostVal ?? undefined;
+    message.bbnReuseVal = object.bbnReuseVal ?? undefined;
     message.audit = (object.audit !== undefined && object.audit !== null)
       ? AuditInfo.fromPartial(object.audit)
       : undefined;
+    message.boxReuseVal = object.boxReuseVal ?? undefined;
     return message;
   },
 };
@@ -5207,6 +5819,8 @@ function createBaseCreateBoxBobbinCostRequest(): CreateBoxBobbinCostRequest {
     bobinCost: undefined,
     boxCostVal: undefined,
     bobinCostVal: undefined,
+    bbnReuseVal: undefined,
+    boxReuseVal: undefined,
   };
 }
 
@@ -5244,6 +5858,12 @@ export const CreateBoxBobbinCostRequest: MessageFns<CreateBoxBobbinCostRequest> 
     }
     if (message.bobinCostVal !== undefined) {
       writer.uint32(89).double(message.bobinCostVal);
+    }
+    if (message.bbnReuseVal !== undefined) {
+      writer.uint32(97).double(message.bbnReuseVal);
+    }
+    if (message.boxReuseVal !== undefined) {
+      writer.uint32(105).double(message.boxReuseVal);
     }
     return writer;
   },
@@ -5343,6 +5963,22 @@ export const CreateBoxBobbinCostRequest: MessageFns<CreateBoxBobbinCostRequest> 
           message.bobinCostVal = reader.double();
           continue;
         }
+        case 12: {
+          if (tag !== 97) {
+            break;
+          }
+
+          message.bbnReuseVal = reader.double();
+          continue;
+        }
+        case 13: {
+          if (tag !== 105) {
+            break;
+          }
+
+          message.boxReuseVal = reader.double();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -5405,6 +6041,16 @@ export const CreateBoxBobbinCostRequest: MessageFns<CreateBoxBobbinCostRequest> 
         : isSet(object.bobin_cost_val)
         ? globalThis.Number(object.bobin_cost_val)
         : undefined,
+      bbnReuseVal: isSet(object.bbnReuseVal)
+        ? globalThis.Number(object.bbnReuseVal)
+        : isSet(object.bbn_reuse_val)
+        ? globalThis.Number(object.bbn_reuse_val)
+        : undefined,
+      boxReuseVal: isSet(object.boxReuseVal)
+        ? globalThis.Number(object.boxReuseVal)
+        : isSet(object.box_reuse_val)
+        ? globalThis.Number(object.box_reuse_val)
+        : undefined,
     };
   },
 
@@ -5443,6 +6089,12 @@ export const CreateBoxBobbinCostRequest: MessageFns<CreateBoxBobbinCostRequest> 
     if (message.bobinCostVal !== undefined) {
       obj.bobinCostVal = message.bobinCostVal;
     }
+    if (message.bbnReuseVal !== undefined) {
+      obj.bbnReuseVal = message.bbnReuseVal;
+    }
+    if (message.boxReuseVal !== undefined) {
+      obj.boxReuseVal = message.boxReuseVal;
+    }
     return obj;
   },
 
@@ -5462,6 +6114,8 @@ export const CreateBoxBobbinCostRequest: MessageFns<CreateBoxBobbinCostRequest> 
     message.bobinCost = object.bobinCost ?? undefined;
     message.boxCostVal = object.boxCostVal ?? undefined;
     message.bobinCostVal = object.bobinCostVal ?? undefined;
+    message.bbnReuseVal = object.bbnReuseVal ?? undefined;
+    message.boxReuseVal = object.boxReuseVal ?? undefined;
     return message;
   },
 };
@@ -5704,6 +6358,8 @@ function createBaseUpdateBoxBobbinCostRequest(): UpdateBoxBobbinCostRequest {
     bobinCost: undefined,
     boxCostVal: undefined,
     bobinCostVal: undefined,
+    bbnReuseVal: undefined,
+    boxReuseVal: undefined,
   };
 }
 
@@ -5744,6 +6400,12 @@ export const UpdateBoxBobbinCostRequest: MessageFns<UpdateBoxBobbinCostRequest> 
     }
     if (message.bobinCostVal !== undefined) {
       writer.uint32(97).double(message.bobinCostVal);
+    }
+    if (message.bbnReuseVal !== undefined) {
+      writer.uint32(105).double(message.bbnReuseVal);
+    }
+    if (message.boxReuseVal !== undefined) {
+      writer.uint32(113).double(message.boxReuseVal);
     }
     return writer;
   },
@@ -5851,6 +6513,22 @@ export const UpdateBoxBobbinCostRequest: MessageFns<UpdateBoxBobbinCostRequest> 
           message.bobinCostVal = reader.double();
           continue;
         }
+        case 13: {
+          if (tag !== 105) {
+            break;
+          }
+
+          message.bbnReuseVal = reader.double();
+          continue;
+        }
+        case 14: {
+          if (tag !== 113) {
+            break;
+          }
+
+          message.boxReuseVal = reader.double();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -5918,6 +6596,16 @@ export const UpdateBoxBobbinCostRequest: MessageFns<UpdateBoxBobbinCostRequest> 
         : isSet(object.bobin_cost_val)
         ? globalThis.Number(object.bobin_cost_val)
         : undefined,
+      bbnReuseVal: isSet(object.bbnReuseVal)
+        ? globalThis.Number(object.bbnReuseVal)
+        : isSet(object.bbn_reuse_val)
+        ? globalThis.Number(object.bbn_reuse_val)
+        : undefined,
+      boxReuseVal: isSet(object.boxReuseVal)
+        ? globalThis.Number(object.boxReuseVal)
+        : isSet(object.box_reuse_val)
+        ? globalThis.Number(object.box_reuse_val)
+        : undefined,
     };
   },
 
@@ -5959,6 +6647,12 @@ export const UpdateBoxBobbinCostRequest: MessageFns<UpdateBoxBobbinCostRequest> 
     if (message.bobinCostVal !== undefined) {
       obj.bobinCostVal = message.bobinCostVal;
     }
+    if (message.bbnReuseVal !== undefined) {
+      obj.bbnReuseVal = message.bbnReuseVal;
+    }
+    if (message.boxReuseVal !== undefined) {
+      obj.boxReuseVal = message.boxReuseVal;
+    }
     return obj;
   },
 
@@ -5979,6 +6673,8 @@ export const UpdateBoxBobbinCostRequest: MessageFns<UpdateBoxBobbinCostRequest> 
     message.bobinCost = object.bobinCost ?? undefined;
     message.boxCostVal = object.boxCostVal ?? undefined;
     message.bobinCostVal = object.bobinCostVal ?? undefined;
+    message.bbnReuseVal = object.bbnReuseVal ?? undefined;
+    message.boxReuseVal = object.boxReuseVal ?? undefined;
     return message;
   },
 };
@@ -11345,6 +12041,11 @@ function createBaseMBHead(): MBHead {
     mbhFilament: undefined,
     mbhDozing: undefined,
     mbhIsActive: false,
+    mbhCheckStatus: undefined,
+    mbhStatus: undefined,
+    mbhLdrPrsn: undefined,
+    mbhFinalProduct: undefined,
+    mbhCode: undefined,
     audit: undefined,
   };
 }
@@ -11374,6 +12075,21 @@ export const MBHead: MessageFns<MBHead> = {
     }
     if (message.mbhIsActive !== false) {
       writer.uint32(64).bool(message.mbhIsActive);
+    }
+    if (message.mbhCheckStatus !== undefined) {
+      writer.uint32(74).string(message.mbhCheckStatus);
+    }
+    if (message.mbhStatus !== undefined) {
+      writer.uint32(82).string(message.mbhStatus);
+    }
+    if (message.mbhLdrPrsn !== undefined) {
+      writer.uint32(89).double(message.mbhLdrPrsn);
+    }
+    if (message.mbhFinalProduct !== undefined) {
+      writer.uint32(98).string(message.mbhFinalProduct);
+    }
+    if (message.mbhCode !== undefined) {
+      writer.uint32(106).string(message.mbhCode);
     }
     if (message.audit !== undefined) {
       AuditInfo.encode(message.audit, writer.uint32(130).fork()).join();
@@ -11452,6 +12168,46 @@ export const MBHead: MessageFns<MBHead> = {
           message.mbhIsActive = reader.bool();
           continue;
         }
+        case 9: {
+          if (tag !== 74) {
+            break;
+          }
+
+          message.mbhCheckStatus = reader.string();
+          continue;
+        }
+        case 10: {
+          if (tag !== 82) {
+            break;
+          }
+
+          message.mbhStatus = reader.string();
+          continue;
+        }
+        case 11: {
+          if (tag !== 89) {
+            break;
+          }
+
+          message.mbhLdrPrsn = reader.double();
+          continue;
+        }
+        case 12: {
+          if (tag !== 98) {
+            break;
+          }
+
+          message.mbhFinalProduct = reader.string();
+          continue;
+        }
+        case 13: {
+          if (tag !== 106) {
+            break;
+          }
+
+          message.mbhCode = reader.string();
+          continue;
+        }
         case 16: {
           if (tag !== 130) {
             break;
@@ -11511,6 +12267,31 @@ export const MBHead: MessageFns<MBHead> = {
         : isSet(object.mbh_is_active)
         ? globalThis.Boolean(object.mbh_is_active)
         : false,
+      mbhCheckStatus: isSet(object.mbhCheckStatus)
+        ? globalThis.String(object.mbhCheckStatus)
+        : isSet(object.mbh_check_status)
+        ? globalThis.String(object.mbh_check_status)
+        : undefined,
+      mbhStatus: isSet(object.mbhStatus)
+        ? globalThis.String(object.mbhStatus)
+        : isSet(object.mbh_status)
+        ? globalThis.String(object.mbh_status)
+        : undefined,
+      mbhLdrPrsn: isSet(object.mbhLdrPrsn)
+        ? globalThis.Number(object.mbhLdrPrsn)
+        : isSet(object.mbh_ldr_prsn)
+        ? globalThis.Number(object.mbh_ldr_prsn)
+        : undefined,
+      mbhFinalProduct: isSet(object.mbhFinalProduct)
+        ? globalThis.String(object.mbhFinalProduct)
+        : isSet(object.mbh_final_product)
+        ? globalThis.String(object.mbh_final_product)
+        : undefined,
+      mbhCode: isSet(object.mbhCode)
+        ? globalThis.String(object.mbhCode)
+        : isSet(object.mbh_code)
+        ? globalThis.String(object.mbh_code)
+        : undefined,
       audit: isSet(object.audit) ? AuditInfo.fromJSON(object.audit) : undefined,
     };
   },
@@ -11541,6 +12322,21 @@ export const MBHead: MessageFns<MBHead> = {
     if (message.mbhIsActive !== false) {
       obj.mbhIsActive = message.mbhIsActive;
     }
+    if (message.mbhCheckStatus !== undefined) {
+      obj.mbhCheckStatus = message.mbhCheckStatus;
+    }
+    if (message.mbhStatus !== undefined) {
+      obj.mbhStatus = message.mbhStatus;
+    }
+    if (message.mbhLdrPrsn !== undefined) {
+      obj.mbhLdrPrsn = message.mbhLdrPrsn;
+    }
+    if (message.mbhFinalProduct !== undefined) {
+      obj.mbhFinalProduct = message.mbhFinalProduct;
+    }
+    if (message.mbhCode !== undefined) {
+      obj.mbhCode = message.mbhCode;
+    }
     if (message.audit !== undefined) {
       obj.audit = AuditInfo.toJSON(message.audit);
     }
@@ -11560,6 +12356,11 @@ export const MBHead: MessageFns<MBHead> = {
     message.mbhFilament = object.mbhFilament ?? undefined;
     message.mbhDozing = object.mbhDozing ?? undefined;
     message.mbhIsActive = object.mbhIsActive ?? false;
+    message.mbhCheckStatus = object.mbhCheckStatus ?? undefined;
+    message.mbhStatus = object.mbhStatus ?? undefined;
+    message.mbhLdrPrsn = object.mbhLdrPrsn ?? undefined;
+    message.mbhFinalProduct = object.mbhFinalProduct ?? undefined;
+    message.mbhCode = object.mbhCode ?? undefined;
     message.audit = (object.audit !== undefined && object.audit !== null)
       ? AuditInfo.fromPartial(object.audit)
       : undefined;
@@ -11575,6 +12376,11 @@ function createBaseCreateMBHeadRequest(): CreateMBHeadRequest {
     mbhDenier: undefined,
     mbhFilament: undefined,
     mbhDozing: undefined,
+    mbhCheckStatus: undefined,
+    mbhStatus: undefined,
+    mbhLdrPrsn: undefined,
+    mbhFinalProduct: undefined,
+    mbhCode: undefined,
   };
 }
 
@@ -11597,6 +12403,21 @@ export const CreateMBHeadRequest: MessageFns<CreateMBHeadRequest> = {
     }
     if (message.mbhDozing !== undefined) {
       writer.uint32(49).double(message.mbhDozing);
+    }
+    if (message.mbhCheckStatus !== undefined) {
+      writer.uint32(58).string(message.mbhCheckStatus);
+    }
+    if (message.mbhStatus !== undefined) {
+      writer.uint32(66).string(message.mbhStatus);
+    }
+    if (message.mbhLdrPrsn !== undefined) {
+      writer.uint32(73).double(message.mbhLdrPrsn);
+    }
+    if (message.mbhFinalProduct !== undefined) {
+      writer.uint32(82).string(message.mbhFinalProduct);
+    }
+    if (message.mbhCode !== undefined) {
+      writer.uint32(90).string(message.mbhCode);
     }
     return writer;
   },
@@ -11656,6 +12477,46 @@ export const CreateMBHeadRequest: MessageFns<CreateMBHeadRequest> = {
           message.mbhDozing = reader.double();
           continue;
         }
+        case 7: {
+          if (tag !== 58) {
+            break;
+          }
+
+          message.mbhCheckStatus = reader.string();
+          continue;
+        }
+        case 8: {
+          if (tag !== 66) {
+            break;
+          }
+
+          message.mbhStatus = reader.string();
+          continue;
+        }
+        case 9: {
+          if (tag !== 73) {
+            break;
+          }
+
+          message.mbhLdrPrsn = reader.double();
+          continue;
+        }
+        case 10: {
+          if (tag !== 82) {
+            break;
+          }
+
+          message.mbhFinalProduct = reader.string();
+          continue;
+        }
+        case 11: {
+          if (tag !== 90) {
+            break;
+          }
+
+          message.mbhCode = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -11697,6 +12558,31 @@ export const CreateMBHeadRequest: MessageFns<CreateMBHeadRequest> = {
         : isSet(object.mbh_dozing)
         ? globalThis.Number(object.mbh_dozing)
         : undefined,
+      mbhCheckStatus: isSet(object.mbhCheckStatus)
+        ? globalThis.String(object.mbhCheckStatus)
+        : isSet(object.mbh_check_status)
+        ? globalThis.String(object.mbh_check_status)
+        : undefined,
+      mbhStatus: isSet(object.mbhStatus)
+        ? globalThis.String(object.mbhStatus)
+        : isSet(object.mbh_status)
+        ? globalThis.String(object.mbh_status)
+        : undefined,
+      mbhLdrPrsn: isSet(object.mbhLdrPrsn)
+        ? globalThis.Number(object.mbhLdrPrsn)
+        : isSet(object.mbh_ldr_prsn)
+        ? globalThis.Number(object.mbh_ldr_prsn)
+        : undefined,
+      mbhFinalProduct: isSet(object.mbhFinalProduct)
+        ? globalThis.String(object.mbhFinalProduct)
+        : isSet(object.mbh_final_product)
+        ? globalThis.String(object.mbh_final_product)
+        : undefined,
+      mbhCode: isSet(object.mbhCode)
+        ? globalThis.String(object.mbhCode)
+        : isSet(object.mbh_code)
+        ? globalThis.String(object.mbh_code)
+        : undefined,
     };
   },
 
@@ -11720,6 +12606,21 @@ export const CreateMBHeadRequest: MessageFns<CreateMBHeadRequest> = {
     if (message.mbhDozing !== undefined) {
       obj.mbhDozing = message.mbhDozing;
     }
+    if (message.mbhCheckStatus !== undefined) {
+      obj.mbhCheckStatus = message.mbhCheckStatus;
+    }
+    if (message.mbhStatus !== undefined) {
+      obj.mbhStatus = message.mbhStatus;
+    }
+    if (message.mbhLdrPrsn !== undefined) {
+      obj.mbhLdrPrsn = message.mbhLdrPrsn;
+    }
+    if (message.mbhFinalProduct !== undefined) {
+      obj.mbhFinalProduct = message.mbhFinalProduct;
+    }
+    if (message.mbhCode !== undefined) {
+      obj.mbhCode = message.mbhCode;
+    }
     return obj;
   },
 
@@ -11734,6 +12635,11 @@ export const CreateMBHeadRequest: MessageFns<CreateMBHeadRequest> = {
     message.mbhDenier = object.mbhDenier ?? undefined;
     message.mbhFilament = object.mbhFilament ?? undefined;
     message.mbhDozing = object.mbhDozing ?? undefined;
+    message.mbhCheckStatus = object.mbhCheckStatus ?? undefined;
+    message.mbhStatus = object.mbhStatus ?? undefined;
+    message.mbhLdrPrsn = object.mbhLdrPrsn ?? undefined;
+    message.mbhFinalProduct = object.mbhFinalProduct ?? undefined;
+    message.mbhCode = object.mbhCode ?? undefined;
     return message;
   },
 };
@@ -11967,6 +12873,11 @@ function createBaseUpdateMBHeadRequest(): UpdateMBHeadRequest {
     mbhFilament: undefined,
     mbhDozing: undefined,
     mbhIsActive: undefined,
+    mbhCheckStatus: undefined,
+    mbhStatus: undefined,
+    mbhLdrPrsn: undefined,
+    mbhFinalProduct: undefined,
+    mbhCode: undefined,
   };
 }
 
@@ -11992,6 +12903,21 @@ export const UpdateMBHeadRequest: MessageFns<UpdateMBHeadRequest> = {
     }
     if (message.mbhIsActive !== undefined) {
       writer.uint32(56).bool(message.mbhIsActive);
+    }
+    if (message.mbhCheckStatus !== undefined) {
+      writer.uint32(66).string(message.mbhCheckStatus);
+    }
+    if (message.mbhStatus !== undefined) {
+      writer.uint32(74).string(message.mbhStatus);
+    }
+    if (message.mbhLdrPrsn !== undefined) {
+      writer.uint32(81).double(message.mbhLdrPrsn);
+    }
+    if (message.mbhFinalProduct !== undefined) {
+      writer.uint32(90).string(message.mbhFinalProduct);
+    }
+    if (message.mbhCode !== undefined) {
+      writer.uint32(98).string(message.mbhCode);
     }
     return writer;
   },
@@ -12059,6 +12985,46 @@ export const UpdateMBHeadRequest: MessageFns<UpdateMBHeadRequest> = {
           message.mbhIsActive = reader.bool();
           continue;
         }
+        case 8: {
+          if (tag !== 66) {
+            break;
+          }
+
+          message.mbhCheckStatus = reader.string();
+          continue;
+        }
+        case 9: {
+          if (tag !== 74) {
+            break;
+          }
+
+          message.mbhStatus = reader.string();
+          continue;
+        }
+        case 10: {
+          if (tag !== 81) {
+            break;
+          }
+
+          message.mbhLdrPrsn = reader.double();
+          continue;
+        }
+        case 11: {
+          if (tag !== 90) {
+            break;
+          }
+
+          message.mbhFinalProduct = reader.string();
+          continue;
+        }
+        case 12: {
+          if (tag !== 98) {
+            break;
+          }
+
+          message.mbhCode = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -12105,6 +13071,31 @@ export const UpdateMBHeadRequest: MessageFns<UpdateMBHeadRequest> = {
         : isSet(object.mbh_is_active)
         ? globalThis.Boolean(object.mbh_is_active)
         : undefined,
+      mbhCheckStatus: isSet(object.mbhCheckStatus)
+        ? globalThis.String(object.mbhCheckStatus)
+        : isSet(object.mbh_check_status)
+        ? globalThis.String(object.mbh_check_status)
+        : undefined,
+      mbhStatus: isSet(object.mbhStatus)
+        ? globalThis.String(object.mbhStatus)
+        : isSet(object.mbh_status)
+        ? globalThis.String(object.mbh_status)
+        : undefined,
+      mbhLdrPrsn: isSet(object.mbhLdrPrsn)
+        ? globalThis.Number(object.mbhLdrPrsn)
+        : isSet(object.mbh_ldr_prsn)
+        ? globalThis.Number(object.mbh_ldr_prsn)
+        : undefined,
+      mbhFinalProduct: isSet(object.mbhFinalProduct)
+        ? globalThis.String(object.mbhFinalProduct)
+        : isSet(object.mbh_final_product)
+        ? globalThis.String(object.mbh_final_product)
+        : undefined,
+      mbhCode: isSet(object.mbhCode)
+        ? globalThis.String(object.mbhCode)
+        : isSet(object.mbh_code)
+        ? globalThis.String(object.mbh_code)
+        : undefined,
     };
   },
 
@@ -12131,6 +13122,21 @@ export const UpdateMBHeadRequest: MessageFns<UpdateMBHeadRequest> = {
     if (message.mbhIsActive !== undefined) {
       obj.mbhIsActive = message.mbhIsActive;
     }
+    if (message.mbhCheckStatus !== undefined) {
+      obj.mbhCheckStatus = message.mbhCheckStatus;
+    }
+    if (message.mbhStatus !== undefined) {
+      obj.mbhStatus = message.mbhStatus;
+    }
+    if (message.mbhLdrPrsn !== undefined) {
+      obj.mbhLdrPrsn = message.mbhLdrPrsn;
+    }
+    if (message.mbhFinalProduct !== undefined) {
+      obj.mbhFinalProduct = message.mbhFinalProduct;
+    }
+    if (message.mbhCode !== undefined) {
+      obj.mbhCode = message.mbhCode;
+    }
     return obj;
   },
 
@@ -12146,6 +13152,11 @@ export const UpdateMBHeadRequest: MessageFns<UpdateMBHeadRequest> = {
     message.mbhFilament = object.mbhFilament ?? undefined;
     message.mbhDozing = object.mbhDozing ?? undefined;
     message.mbhIsActive = object.mbhIsActive ?? undefined;
+    message.mbhCheckStatus = object.mbhCheckStatus ?? undefined;
+    message.mbhStatus = object.mbhStatus ?? undefined;
+    message.mbhLdrPrsn = object.mbhLdrPrsn ?? undefined;
+    message.mbhFinalProduct = object.mbhFinalProduct ?? undefined;
+    message.mbhCode = object.mbhCode ?? undefined;
     return message;
   },
 };
@@ -13170,6 +14181,9 @@ function createBaseMBSpin(): MBSpin {
     mbsIsActive: false,
     mbsCc: undefined,
     mbsCostRateMkt: undefined,
+    mbsStatus: undefined,
+    mbsLdrPrsn: undefined,
+    mbsFinalProduct: undefined,
     audit: undefined,
   };
 }
@@ -13208,6 +14222,15 @@ export const MBSpin: MessageFns<MBSpin> = {
     }
     if (message.mbsCostRateMkt !== undefined) {
       writer.uint32(89).double(message.mbsCostRateMkt);
+    }
+    if (message.mbsStatus !== undefined) {
+      writer.uint32(98).string(message.mbsStatus);
+    }
+    if (message.mbsLdrPrsn !== undefined) {
+      writer.uint32(105).double(message.mbsLdrPrsn);
+    }
+    if (message.mbsFinalProduct !== undefined) {
+      writer.uint32(114).string(message.mbsFinalProduct);
     }
     if (message.audit !== undefined) {
       AuditInfo.encode(message.audit, writer.uint32(130).fork()).join();
@@ -13310,6 +14333,30 @@ export const MBSpin: MessageFns<MBSpin> = {
           message.mbsCostRateMkt = reader.double();
           continue;
         }
+        case 12: {
+          if (tag !== 98) {
+            break;
+          }
+
+          message.mbsStatus = reader.string();
+          continue;
+        }
+        case 13: {
+          if (tag !== 105) {
+            break;
+          }
+
+          message.mbsLdrPrsn = reader.double();
+          continue;
+        }
+        case 14: {
+          if (tag !== 114) {
+            break;
+          }
+
+          message.mbsFinalProduct = reader.string();
+          continue;
+        }
         case 16: {
           if (tag !== 130) {
             break;
@@ -13384,6 +14431,21 @@ export const MBSpin: MessageFns<MBSpin> = {
         : isSet(object.mbs_cost_rate_mkt)
         ? globalThis.Number(object.mbs_cost_rate_mkt)
         : undefined,
+      mbsStatus: isSet(object.mbsStatus)
+        ? globalThis.String(object.mbsStatus)
+        : isSet(object.mbs_status)
+        ? globalThis.String(object.mbs_status)
+        : undefined,
+      mbsLdrPrsn: isSet(object.mbsLdrPrsn)
+        ? globalThis.Number(object.mbsLdrPrsn)
+        : isSet(object.mbs_ldr_prsn)
+        ? globalThis.Number(object.mbs_ldr_prsn)
+        : undefined,
+      mbsFinalProduct: isSet(object.mbsFinalProduct)
+        ? globalThis.String(object.mbsFinalProduct)
+        : isSet(object.mbs_final_product)
+        ? globalThis.String(object.mbs_final_product)
+        : undefined,
       audit: isSet(object.audit) ? AuditInfo.fromJSON(object.audit) : undefined,
     };
   },
@@ -13423,6 +14485,15 @@ export const MBSpin: MessageFns<MBSpin> = {
     if (message.mbsCostRateMkt !== undefined) {
       obj.mbsCostRateMkt = message.mbsCostRateMkt;
     }
+    if (message.mbsStatus !== undefined) {
+      obj.mbsStatus = message.mbsStatus;
+    }
+    if (message.mbsLdrPrsn !== undefined) {
+      obj.mbsLdrPrsn = message.mbsLdrPrsn;
+    }
+    if (message.mbsFinalProduct !== undefined) {
+      obj.mbsFinalProduct = message.mbsFinalProduct;
+    }
     if (message.audit !== undefined) {
       obj.audit = AuditInfo.toJSON(message.audit);
     }
@@ -13445,6 +14516,9 @@ export const MBSpin: MessageFns<MBSpin> = {
     message.mbsIsActive = object.mbsIsActive ?? false;
     message.mbsCc = object.mbsCc ?? undefined;
     message.mbsCostRateMkt = object.mbsCostRateMkt ?? undefined;
+    message.mbsStatus = object.mbsStatus ?? undefined;
+    message.mbsLdrPrsn = object.mbsLdrPrsn ?? undefined;
+    message.mbsFinalProduct = object.mbsFinalProduct ?? undefined;
     message.audit = (object.audit !== undefined && object.audit !== null)
       ? AuditInfo.fromPartial(object.audit)
       : undefined;
@@ -13463,6 +14537,9 @@ function createBaseCreateMBSpinRequest(): CreateMBSpinRequest {
     mbsMbCosting: undefined,
     mbsCc: undefined,
     mbsCostRateMkt: undefined,
+    mbsStatus: undefined,
+    mbsLdrPrsn: undefined,
+    mbsFinalProduct: undefined,
   };
 }
 
@@ -13494,6 +14571,15 @@ export const CreateMBSpinRequest: MessageFns<CreateMBSpinRequest> = {
     }
     if (message.mbsCostRateMkt !== undefined) {
       writer.uint32(73).double(message.mbsCostRateMkt);
+    }
+    if (message.mbsStatus !== undefined) {
+      writer.uint32(82).string(message.mbsStatus);
+    }
+    if (message.mbsLdrPrsn !== undefined) {
+      writer.uint32(89).double(message.mbsLdrPrsn);
+    }
+    if (message.mbsFinalProduct !== undefined) {
+      writer.uint32(98).string(message.mbsFinalProduct);
     }
     return writer;
   },
@@ -13577,6 +14663,30 @@ export const CreateMBSpinRequest: MessageFns<CreateMBSpinRequest> = {
           message.mbsCostRateMkt = reader.double();
           continue;
         }
+        case 10: {
+          if (tag !== 82) {
+            break;
+          }
+
+          message.mbsStatus = reader.string();
+          continue;
+        }
+        case 11: {
+          if (tag !== 89) {
+            break;
+          }
+
+          message.mbsLdrPrsn = reader.double();
+          continue;
+        }
+        case 12: {
+          if (tag !== 98) {
+            break;
+          }
+
+          message.mbsFinalProduct = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -13633,6 +14743,21 @@ export const CreateMBSpinRequest: MessageFns<CreateMBSpinRequest> = {
         : isSet(object.mbs_cost_rate_mkt)
         ? globalThis.Number(object.mbs_cost_rate_mkt)
         : undefined,
+      mbsStatus: isSet(object.mbsStatus)
+        ? globalThis.String(object.mbsStatus)
+        : isSet(object.mbs_status)
+        ? globalThis.String(object.mbs_status)
+        : undefined,
+      mbsLdrPrsn: isSet(object.mbsLdrPrsn)
+        ? globalThis.Number(object.mbsLdrPrsn)
+        : isSet(object.mbs_ldr_prsn)
+        ? globalThis.Number(object.mbs_ldr_prsn)
+        : undefined,
+      mbsFinalProduct: isSet(object.mbsFinalProduct)
+        ? globalThis.String(object.mbsFinalProduct)
+        : isSet(object.mbs_final_product)
+        ? globalThis.String(object.mbs_final_product)
+        : undefined,
     };
   },
 
@@ -13665,6 +14790,15 @@ export const CreateMBSpinRequest: MessageFns<CreateMBSpinRequest> = {
     if (message.mbsCostRateMkt !== undefined) {
       obj.mbsCostRateMkt = message.mbsCostRateMkt;
     }
+    if (message.mbsStatus !== undefined) {
+      obj.mbsStatus = message.mbsStatus;
+    }
+    if (message.mbsLdrPrsn !== undefined) {
+      obj.mbsLdrPrsn = message.mbsLdrPrsn;
+    }
+    if (message.mbsFinalProduct !== undefined) {
+      obj.mbsFinalProduct = message.mbsFinalProduct;
+    }
     return obj;
   },
 
@@ -13682,6 +14816,9 @@ export const CreateMBSpinRequest: MessageFns<CreateMBSpinRequest> = {
     message.mbsMbCosting = object.mbsMbCosting ?? undefined;
     message.mbsCc = object.mbsCc ?? undefined;
     message.mbsCostRateMkt = object.mbsCostRateMkt ?? undefined;
+    message.mbsStatus = object.mbsStatus ?? undefined;
+    message.mbsLdrPrsn = object.mbsLdrPrsn ?? undefined;
+    message.mbsFinalProduct = object.mbsFinalProduct ?? undefined;
     return message;
   },
 };
@@ -13938,6 +15075,9 @@ function createBaseUpdateMBSpinRequest(): UpdateMBSpinRequest {
     mbsIsActive: undefined,
     mbsCc: undefined,
     mbsCostRateMkt: undefined,
+    mbsStatus: undefined,
+    mbsLdrPrsn: undefined,
+    mbsFinalProduct: undefined,
   };
 }
 
@@ -13972,6 +15112,15 @@ export const UpdateMBSpinRequest: MessageFns<UpdateMBSpinRequest> = {
     }
     if (message.mbsCostRateMkt !== undefined) {
       writer.uint32(81).double(message.mbsCostRateMkt);
+    }
+    if (message.mbsStatus !== undefined) {
+      writer.uint32(90).string(message.mbsStatus);
+    }
+    if (message.mbsLdrPrsn !== undefined) {
+      writer.uint32(97).double(message.mbsLdrPrsn);
+    }
+    if (message.mbsFinalProduct !== undefined) {
+      writer.uint32(106).string(message.mbsFinalProduct);
     }
     return writer;
   },
@@ -14063,6 +15212,30 @@ export const UpdateMBSpinRequest: MessageFns<UpdateMBSpinRequest> = {
           message.mbsCostRateMkt = reader.double();
           continue;
         }
+        case 11: {
+          if (tag !== 90) {
+            break;
+          }
+
+          message.mbsStatus = reader.string();
+          continue;
+        }
+        case 12: {
+          if (tag !== 97) {
+            break;
+          }
+
+          message.mbsLdrPrsn = reader.double();
+          continue;
+        }
+        case 13: {
+          if (tag !== 106) {
+            break;
+          }
+
+          message.mbsFinalProduct = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -14124,6 +15297,21 @@ export const UpdateMBSpinRequest: MessageFns<UpdateMBSpinRequest> = {
         : isSet(object.mbs_cost_rate_mkt)
         ? globalThis.Number(object.mbs_cost_rate_mkt)
         : undefined,
+      mbsStatus: isSet(object.mbsStatus)
+        ? globalThis.String(object.mbsStatus)
+        : isSet(object.mbs_status)
+        ? globalThis.String(object.mbs_status)
+        : undefined,
+      mbsLdrPrsn: isSet(object.mbsLdrPrsn)
+        ? globalThis.Number(object.mbsLdrPrsn)
+        : isSet(object.mbs_ldr_prsn)
+        ? globalThis.Number(object.mbs_ldr_prsn)
+        : undefined,
+      mbsFinalProduct: isSet(object.mbsFinalProduct)
+        ? globalThis.String(object.mbsFinalProduct)
+        : isSet(object.mbs_final_product)
+        ? globalThis.String(object.mbs_final_product)
+        : undefined,
     };
   },
 
@@ -14159,6 +15347,15 @@ export const UpdateMBSpinRequest: MessageFns<UpdateMBSpinRequest> = {
     if (message.mbsCostRateMkt !== undefined) {
       obj.mbsCostRateMkt = message.mbsCostRateMkt;
     }
+    if (message.mbsStatus !== undefined) {
+      obj.mbsStatus = message.mbsStatus;
+    }
+    if (message.mbsLdrPrsn !== undefined) {
+      obj.mbsLdrPrsn = message.mbsLdrPrsn;
+    }
+    if (message.mbsFinalProduct !== undefined) {
+      obj.mbsFinalProduct = message.mbsFinalProduct;
+    }
     return obj;
   },
 
@@ -14177,6 +15374,9 @@ export const UpdateMBSpinRequest: MessageFns<UpdateMBSpinRequest> = {
     message.mbsIsActive = object.mbsIsActive ?? undefined;
     message.mbsCc = object.mbsCc ?? undefined;
     message.mbsCostRateMkt = object.mbsCostRateMkt ?? undefined;
+    message.mbsStatus = object.mbsStatus ?? undefined;
+    message.mbsLdrPrsn = object.mbsLdrPrsn ?? undefined;
+    message.mbsFinalProduct = object.mbsFinalProduct ?? undefined;
     return message;
   },
 };
