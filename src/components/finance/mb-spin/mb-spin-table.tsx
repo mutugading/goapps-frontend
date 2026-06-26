@@ -28,6 +28,20 @@ export function MBSpinTable({ data, isLoading, onEdit, onDelete }: MBSpinTablePr
       cell: (row) => row.mbsMbCosting || "-",
     },
     {
+      id: "mbsStatus",
+      header: "Status",
+      width: "w-[100px]",
+      hideOnMobile: true,
+      cell: (row) => row.mbsStatus || <span className="text-muted-foreground">—</span>,
+    },
+    {
+      id: "mbsFinalProduct",
+      header: "Final Product",
+      hideOnMobile: true,
+      cellClassName: "max-w-[180px] truncate",
+      cell: (row) => row.mbsFinalProduct || <span className="text-muted-foreground">—</span>,
+    },
+    {
       id: "mbsCc",
       header: "Cost Code",
       width: "w-[110px]",

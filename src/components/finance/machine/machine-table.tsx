@@ -74,6 +74,20 @@ export function MachineTable({ data, isLoading, onEdit, onDelete }: MachineTable
       cell: (row) => row.sparesPerDay != null ? `$${row.sparesPerDay.toFixed(2)}` : <span className="text-muted-foreground">—</span>,
     },
     {
+      id: "mcWeightage",
+      header: "Weightage",
+      width: "w-[90px]",
+      hideOnMobile: true,
+      cell: (row) => row.mcWeightage != null ? row.mcWeightage.toFixed(2) : <span className="text-muted-foreground">—</span>,
+    },
+    {
+      id: "mcPoyBobbinWeight",
+      header: "Bobbin Wt (kg)",
+      width: "w-[110px]",
+      hideOnMobile: true,
+      cell: (row) => row.mcPoyBobbinWeight != null ? row.mcPoyBobbinWeight.toFixed(2) : <span className="text-muted-foreground">—</span>,
+    },
+    {
       id: "kgsLostChange",
       header: "CO Loss (kg)",
       width: "w-[110px]",

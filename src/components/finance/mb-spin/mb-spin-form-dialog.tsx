@@ -49,6 +49,9 @@ const formSchema = z.object({
   mbsMbCosting: z.string().max(50).optional(),
   mbsCc: z.string().max(100).optional(),
   mbsCostRateMkt: z.coerce.number().min(0).optional().nullable(),
+  mbsStatus: z.string().max(100).optional(),
+  mbsLdrPrsn: z.coerce.number().min(0).optional().nullable(),
+  mbsFinalProduct: z.string().max(200).optional(),
   mbsIsActive: z.boolean(),
 })
 
@@ -77,7 +80,8 @@ export function MBSpinFormDialog({ open, onOpenChange, mbSpin, headId, onSuccess
     resolver: zodResolver(formSchema) as never,
     defaultValues: {
       mbhId: headId || "", mbsMgtName: "", mbsOracleSysId: "",
-      mbsDenier: "", mbsFilament: "", mbsDozing: "", mbsMbCosting: "", mbsCc: "", mbsCostRateMkt: null, mbsIsActive: true,
+      mbsDenier: "", mbsFilament: "", mbsDozing: "", mbsMbCosting: "", mbsCc: "", mbsCostRateMkt: null,
+      mbsStatus: "", mbsLdrPrsn: null, mbsFinalProduct: "", mbsIsActive: true,
     },
   })
 
@@ -95,9 +99,12 @@ export function MBSpinFormDialog({ open, onOpenChange, mbSpin, headId, onSuccess
               mbsMbCosting: mbSpin.mbsMbCosting || "",
               mbsCc: mbSpin.mbsCc ?? "",
               mbsCostRateMkt: mbSpin.mbsCostRateMkt ?? null,
+              mbsStatus: mbSpin.mbsStatus || "",
+              mbsLdrPrsn: mbSpin.mbsLdrPrsn ?? null,
+              mbsFinalProduct: mbSpin.mbsFinalProduct || "",
               mbsIsActive: mbSpin.mbsIsActive ?? true,
             }
-          : { mbhId: headId || "", mbsMgtName: "", mbsOracleSysId: "", mbsDenier: "", mbsFilament: "", mbsDozing: "", mbsMbCosting: "", mbsCc: "", mbsCostRateMkt: null, mbsIsActive: true }
+          : { mbhId: headId || "", mbsMgtName: "", mbsOracleSysId: "", mbsDenier: "", mbsFilament: "", mbsDozing: "", mbsMbCosting: "", mbsCc: "", mbsCostRateMkt: null, mbsStatus: "", mbsLdrPrsn: null, mbsFinalProduct: "", mbsIsActive: true }
       )
     }
   }, [open, mbSpin, headId, form])
@@ -118,6 +125,9 @@ export function MBSpinFormDialog({ open, onOpenChange, mbSpin, headId, onSuccess
             mbsMbCosting: values.mbsMbCosting || undefined,
             mbsCc: values.mbsCc || undefined,
             mbsCostRateMkt: values.mbsCostRateMkt ?? undefined,
+            mbsStatus: values.mbsStatus || undefined,
+            mbsLdrPrsn: values.mbsLdrPrsn ?? undefined,
+            mbsFinalProduct: values.mbsFinalProduct || undefined,
             mbsIsActive: values.mbsIsActive,
           },
         })
@@ -132,6 +142,9 @@ export function MBSpinFormDialog({ open, onOpenChange, mbSpin, headId, onSuccess
           mbsMbCosting: values.mbsMbCosting || undefined,
           mbsCc: values.mbsCc || undefined,
           mbsCostRateMkt: values.mbsCostRateMkt ?? undefined,
+          mbsStatus: values.mbsStatus || undefined,
+          mbsLdrPrsn: values.mbsLdrPrsn ?? undefined,
+          mbsFinalProduct: values.mbsFinalProduct || undefined,
         })
       }
       onOpenChange(false)
@@ -295,6 +308,50 @@ export function MBSpinFormDialog({ open, onOpenChange, mbSpin, headId, onSuccess
                 </FormItem>
               )}
             />
+
+            <FormField
+              control={form.control}
+              name="mbsStatus"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Status <span className="text-xs text-muted-foreground">(optional)</span></FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Optional" disabled={isPending} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="mbsLdrPrsn"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>LDR Prsn <span className="text-xs text-muted-foreground">(optional)</span></FormLabel>
+                    <FormControl>
+                      <Input {...field} type="number" step="0.000001" value={field.value ?? ""} placeholder="Optional" disabled={isPending}
+                        onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="mbsFinalProduct"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Final Product <span className="text-xs text-muted-foreground">(optional)</span></FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Optional" disabled={isPending} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             {isEditing && (
               <FormField

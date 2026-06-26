@@ -49,6 +49,12 @@ const formSchema = z.object({
   ohsPerDay: z.coerce.number().min(0).optional().nullable(),
   sparesPerDay: z.coerce.number().min(0).optional().nullable(),
   kgsLostChange: z.coerce.number().min(0).optional().nullable(),
+  mcPoyBobbinWeight: z.coerce.number().min(0).optional().nullable(),
+  mcTotFxdCst: z.coerce.number().min(0).optional().nullable(),
+  mcBobbinPerTrolly: z.coerce.number().min(0).optional().nullable(),
+  mcBoxCost: z.coerce.number().min(0).optional().nullable(),
+  mcCaptivePerBobbin: z.coerce.number().min(0).optional().nullable(),
+  mcWeightage: z.coerce.number().min(0).optional().nullable(),
   vb1Qty: z.coerce.number().min(0).optional().nullable(),
   vb2Qty: z.coerce.number().min(0).optional().nullable(),
   vb3Qty: z.coerce.number().min(0).optional().nullable(),
@@ -79,7 +85,10 @@ export function MachineFormDialog({ open, onOpenChange, machine, onSuccess }: Ma
       noOfPosition: 0, noOfEnd: 1, mcSpeed: 0, mcEfficiency: 95,
       machineRpm: null, powerPerDay: null,
       mpPerDay: null, ohsPerDay: null, sparesPerDay: null,
-      kgsLostChange: null, vb1Qty: null, vb2Qty: null,
+      kgsLostChange: null,
+      mcPoyBobbinWeight: null, mcTotFxdCst: null, mcBobbinPerTrolly: null,
+      mcBoxCost: null, mcCaptivePerBobbin: null, mcWeightage: null,
+      vb1Qty: null, vb2Qty: null,
       vb3Qty: null, vb4Qty: null, vb5Qty: null,
       notes: "", isActive: true,
     },
@@ -104,6 +113,12 @@ export function MachineFormDialog({ open, onOpenChange, machine, onSuccess }: Ma
               ohsPerDay: machine.ohsPerDay ?? null,
               sparesPerDay: machine.sparesPerDay ?? null,
               kgsLostChange: machine.kgsLostChange ?? null,
+              mcPoyBobbinWeight: machine.mcPoyBobbinWeight ?? null,
+              mcTotFxdCst: machine.mcTotFxdCst ?? null,
+              mcBobbinPerTrolly: machine.mcBobbinPerTrolly ?? null,
+              mcBoxCost: machine.mcBoxCost ?? null,
+              mcCaptivePerBobbin: machine.mcCaptivePerBobbin ?? null,
+              mcWeightage: machine.mcWeightage ?? null,
               vb1Qty: machine.vb1Qty ?? null,
               vb2Qty: machine.vb2Qty ?? null,
               vb3Qty: machine.vb3Qty ?? null,
@@ -117,7 +132,10 @@ export function MachineFormDialog({ open, onOpenChange, machine, onSuccess }: Ma
               noOfPosition: 0, noOfEnd: 1, mcSpeed: 0, mcEfficiency: 95,
               machineRpm: null, powerPerDay: null,
               mpPerDay: null, ohsPerDay: null, sparesPerDay: null,
-              kgsLostChange: null, vb1Qty: null, vb2Qty: null,
+              kgsLostChange: null,
+              mcPoyBobbinWeight: null, mcTotFxdCst: null, mcBobbinPerTrolly: null,
+              mcBoxCost: null, mcCaptivePerBobbin: null, mcWeightage: null,
+              vb1Qty: null, vb2Qty: null,
               vb3Qty: null, vb4Qty: null, vb5Qty: null,
               notes: "", isActive: true,
             }
@@ -145,6 +163,12 @@ export function MachineFormDialog({ open, onOpenChange, machine, onSuccess }: Ma
             ohsPerDay: values.ohsPerDay ?? undefined,
             sparesPerDay: values.sparesPerDay ?? undefined,
             kgsLostChange: values.kgsLostChange ?? undefined,
+            mcPoyBobbinWeight: values.mcPoyBobbinWeight ?? undefined,
+            mcTotFxdCst: values.mcTotFxdCst ?? undefined,
+            mcBobbinPerTrolly: values.mcBobbinPerTrolly ?? undefined,
+            mcBoxCost: values.mcBoxCost ?? undefined,
+            mcCaptivePerBobbin: values.mcCaptivePerBobbin ?? undefined,
+            mcWeightage: values.mcWeightage ?? undefined,
             vb1Qty: values.vb1Qty ?? undefined,
             vb2Qty: values.vb2Qty ?? undefined,
             vb3Qty: values.vb3Qty ?? undefined,
@@ -170,6 +194,12 @@ export function MachineFormDialog({ open, onOpenChange, machine, onSuccess }: Ma
           ohsPerDay: values.ohsPerDay ?? undefined,
           sparesPerDay: values.sparesPerDay ?? undefined,
           kgsLostChange: values.kgsLostChange ?? undefined,
+          mcPoyBobbinWeight: values.mcPoyBobbinWeight ?? undefined,
+          mcTotFxdCst: values.mcTotFxdCst ?? undefined,
+          mcBobbinPerTrolly: values.mcBobbinPerTrolly ?? undefined,
+          mcBoxCost: values.mcBoxCost ?? undefined,
+          mcCaptivePerBobbin: values.mcCaptivePerBobbin ?? undefined,
+          mcWeightage: values.mcWeightage ?? undefined,
           vb1Qty: values.vb1Qty ?? undefined,
           vb2Qty: values.vb2Qty ?? undefined,
           vb3Qty: values.vb3Qty ?? undefined,
@@ -406,6 +436,73 @@ export function MachineFormDialog({ open, onOpenChange, machine, onSuccess }: Ma
                     </FormItem>
                   )} />
                 ))}
+              </div>
+            </div>
+
+            {/* Oracle Machine Data */}
+            <div className="border-t pt-4 mt-2">
+              <p className="text-sm font-medium text-muted-foreground mb-3">Oracle Machine Data</p>
+              <div className="grid grid-cols-2 gap-4">
+                <FormField control={form.control} name="mcPoyBobbinWeight" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>POY Bobbin Weight (kg) <span className="text-xs text-muted-foreground">(optional)</span></FormLabel>
+                    <FormControl>
+                      <Input {...field} type="number" step="0.000001" value={field.value ?? ""} placeholder="Optional" disabled={isPending}
+                        onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="mcTotFxdCst" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Total Fixed Cost <span className="text-xs text-muted-foreground">(optional)</span></FormLabel>
+                    <FormControl>
+                      <Input {...field} type="number" step="0.000001" value={field.value ?? ""} placeholder="Optional" disabled={isPending}
+                        onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="mcBobbinPerTrolly" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Bobbin Per Trolley <span className="text-xs text-muted-foreground">(optional)</span></FormLabel>
+                    <FormControl>
+                      <Input {...field} type="number" step="0.000001" value={field.value ?? ""} placeholder="Optional" disabled={isPending}
+                        onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="mcBoxCost" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Box Cost <span className="text-xs text-muted-foreground">(optional)</span></FormLabel>
+                    <FormControl>
+                      <Input {...field} type="number" step="0.000001" value={field.value ?? ""} placeholder="Optional" disabled={isPending}
+                        onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="mcCaptivePerBobbin" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Captive Per Bobbin <span className="text-xs text-muted-foreground">(optional)</span></FormLabel>
+                    <FormControl>
+                      <Input {...field} type="number" step="0.000001" value={field.value ?? ""} placeholder="Optional" disabled={isPending}
+                        onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="mcWeightage" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Weightage <span className="text-xs text-muted-foreground">(optional)</span></FormLabel>
+                    <FormControl>
+                      <Input {...field} type="number" step="0.000001" value={field.value ?? ""} placeholder="Optional" disabled={isPending}
+                        onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
               </div>
             </div>
 
