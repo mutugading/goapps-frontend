@@ -42,6 +42,13 @@ export function MBHeadTable({ data, isLoading, onEdit, onDelete }: MBHeadTablePr
       cell: (row) => row.mbhFilament ?? "-",
     },
     {
+      id: "mbhDozing",
+      header: "Dozing (%)",
+      width: "w-[100px]",
+      hideOnMobile: true,
+      cell: (row) => row.mbhDozing != null ? `${row.mbhDozing.toFixed(2)}%` : <span className="text-muted-foreground">—</span>,
+    },
+    {
       id: "mbhIsActive",
       header: "Status",
       width: "w-[100px]",

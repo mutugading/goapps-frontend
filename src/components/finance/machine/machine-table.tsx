@@ -36,6 +36,20 @@ export function MachineTable({ data, isLoading, onEdit, onDelete }: MachineTable
       cell: (row) => row.mcType || "-",
     },
     {
+      id: "noOfPosition",
+      header: "Positions",
+      width: "w-[90px]",
+      hideOnMobile: true,
+      cell: (row) => row.noOfPosition ?? <span className="text-muted-foreground">—</span>,
+    },
+    {
+      id: "noOfEnd",
+      header: "Ends",
+      width: "w-[70px]",
+      hideOnMobile: true,
+      cell: (row) => row.noOfEnd ?? <span className="text-muted-foreground">—</span>,
+    },
+    {
       id: "mpPerDay",
       header: "MP/Day",
       width: "w-[100px]",
@@ -44,6 +58,20 @@ export function MachineTable({ data, isLoading, onEdit, onDelete }: MachineTable
         row.mpPerDay != null
           ? `$${row.mpPerDay.toFixed(2)}`
           : <span className="text-muted-foreground">—</span>,
+    },
+    {
+      id: "ohsPerDay",
+      header: "OHS/Day",
+      width: "w-[100px]",
+      hideOnMobile: true,
+      cell: (row) => row.ohsPerDay != null ? `$${row.ohsPerDay.toFixed(2)}` : <span className="text-muted-foreground">—</span>,
+    },
+    {
+      id: "sparesPerDay",
+      header: "Spares/Day",
+      width: "w-[100px]",
+      hideOnMobile: true,
+      cell: (row) => row.sparesPerDay != null ? `$${row.sparesPerDay.toFixed(2)}` : <span className="text-muted-foreground">—</span>,
     },
     {
       id: "kgsLostChange",

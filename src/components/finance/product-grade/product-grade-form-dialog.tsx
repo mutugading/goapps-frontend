@@ -45,6 +45,8 @@ const formSchema = z.object({
   pgGradeLabel: z.string().max(50).optional(),
   stdSellingPrice: z.coerce.number().min(0).default(0),
   spValue: z.coerce.number().min(0).default(0),
+  lossPct: z.coerce.number().min(0).optional().nullable(),
+  seqNo:   z.coerce.number().int().min(0).optional().nullable(),
   notes: z.string().max(500).optional(),
   isActive: z.boolean(),
 })
@@ -66,7 +68,7 @@ export function ProductGradeFormDialog({ open, onOpenChange, productGrade, onSuc
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema) as never,
     defaultValues: {
-      pgCode: "", pgName: "", pgDescription: "", bcPerc: 0, nonStdPerc: 0, bcRecoveryRate: 0.85, pgDetailProduct: "", pgGradeLabel: "", stdSellingPrice: 0, spValue: 0, notes: "", isActive: true,
+      pgCode: "", pgName: "", pgDescription: "", bcPerc: 0, nonStdPerc: 0, bcRecoveryRate: 0.85, pgDetailProduct: "", pgGradeLabel: "", stdSellingPrice: 0, spValue: 0, lossPct: null, seqNo: null, notes: "", isActive: true,
     },
   })
 
@@ -85,10 +87,12 @@ export function ProductGradeFormDialog({ open, onOpenChange, productGrade, onSuc
               pgGradeLabel: productGrade.pgGradeLabel ?? "",
               stdSellingPrice: productGrade.stdSellingPrice ?? 0,
               spValue: productGrade.spValue ?? 0,
+              lossPct: productGrade.lossPct ?? null,
+              seqNo:   productGrade.seqNo ?? null,
               notes: productGrade.notes || "",
               isActive: productGrade.isActive ?? true,
             }
-          : { pgCode: "", pgName: "", pgDescription: "", bcPerc: 0, nonStdPerc: 0, bcRecoveryRate: 0.85, pgDetailProduct: "", pgGradeLabel: "", stdSellingPrice: 0, spValue: 0, notes: "", isActive: true }
+          : { pgCode: "", pgName: "", pgDescription: "", bcPerc: 0, nonStdPerc: 0, bcRecoveryRate: 0.85, pgDetailProduct: "", pgGradeLabel: "", stdSellingPrice: 0, spValue: 0, lossPct: null, seqNo: null, notes: "", isActive: true }
       )
     }
   }, [open, productGrade, form])
@@ -109,6 +113,8 @@ export function ProductGradeFormDialog({ open, onOpenChange, productGrade, onSuc
             pgGradeLabel: (values.pgGradeLabel || undefined) as unknown as string,
             stdSellingPrice: values.stdSellingPrice,
             spValue: values.spValue,
+            lossPct: values.lossPct ?? undefined,
+            seqNo:   values.seqNo != null ? values.seqNo : undefined,
             notes: values.notes,
             isActive: values.isActive,
           },
@@ -125,6 +131,8 @@ export function ProductGradeFormDialog({ open, onOpenChange, productGrade, onSuc
           pgGradeLabel: (values.pgGradeLabel || undefined) as unknown as string,
           stdSellingPrice: values.stdSellingPrice,
           spValue: values.spValue,
+          lossPct: values.lossPct ?? undefined,
+          seqNo:   values.seqNo != null ? values.seqNo : undefined,
           notes: values.notes || "",
         })
       }
@@ -276,6 +284,50 @@ export function ProductGradeFormDialog({ open, onOpenChange, productGrade, onSuc
                         <Input {...field} type="number" step="0.01" min="0" disabled={isPending} />
                       </FormControl>
                       <FormDescription>VALUE_LOSS value</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="lossPct"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Loss Factor <span className="text-xs text-muted-foreground">(optional)</span></FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="0.0001"
+                          placeholder="Optional"
+                          {...field}
+                          value={field.value ?? ""}
+                          onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))}
+                          disabled={isPending}
+                        />
+                      </FormControl>
+                      <FormDescription>NON_STD_SPECIAL_PROD param</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="seqNo"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Sequence No. <span className="text-xs text-muted-foreground">(optional)</span></FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="1"
+                          placeholder="Optional"
+                          {...field}
+                          value={field.value ?? ""}
+                          onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))}
+                          disabled={isPending}
+                        />
+                      </FormControl>
+                      <FormDescription>Display order</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}

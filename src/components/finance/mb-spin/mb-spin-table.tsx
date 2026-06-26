@@ -28,6 +28,13 @@ export function MBSpinTable({ data, isLoading, onEdit, onDelete }: MBSpinTablePr
       cell: (row) => row.mbsMbCosting || "-",
     },
     {
+      id: "mbsCc",
+      header: "Cost Code",
+      width: "w-[110px]",
+      hideOnMobile: true,
+      cell: (row) => row.mbsCc || <span className="text-muted-foreground">—</span>,
+    },
+    {
       id: "mbsDenier",
       header: "Denier",
       width: "w-[90px]",
