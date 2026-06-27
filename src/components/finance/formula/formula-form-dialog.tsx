@@ -139,7 +139,7 @@ export function FormulaFormDialog({
   )
   const fullFormula = fullFormulaResult?.data ?? null
 
-  // Fetch CALCULATED params for result parameter dropdown
+  // Fetch CALCULATED params — these are always valid result params
   const { data: calculatedParamData } = useParameters({
     page: 1,
     pageSize: 200,
@@ -167,6 +167,14 @@ export function FormulaFormDialog({
     sortBy: "code",
     sortOrder: "asc",
   })
+
+  // Result param pool = CALCULATED + INPUT. INPUT params can also be formula outputs
+  // (e.g. AX_WT is INPUT category but is the result of F_YARN_AX_WT_FROM_MKT).
+  // This matches Oracle's design where FROM_MARKETING formulas write to INPUT params.
+  const resultParamPool = useMemo(() => [
+    ...(calculatedParamData?.data || []),
+    ...(inputParamData?.data || []),
+  ].sort((a, b) => (a.paramCode || "").localeCompare(b.paramCode || "")), [calculatedParamData, inputParamData])
 
   const calculatedParams = useMemo(() => calculatedParamData?.data || [], [calculatedParamData])
   // Input picker = INPUT + RATE + CALCULATED. A CALCULATED param IS a valid
@@ -404,13 +412,13 @@ export function FormulaFormDialog({
                 )}
               />
 
-              {/* Result Parameter - Only CALCULATED params */}
+              {/* Result Parameter — CALCULATED + INPUT params (INPUT params can also be formula outputs) */}
               <FormField
                 control={form.control}
                 name="resultParamId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Result Parameter</FormLabel>
+                    <FormLabel>Result Parameter <span className="text-destructive">*</span></FormLabel>
                     <Select
                       onValueChange={field.onChange}
                       value={field.value || ""}
@@ -422,16 +430,17 @@ export function FormulaFormDialog({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {calculatedParams.map((param) => (
+                        {resultParamPool.map((param) => (
                           <SelectItem key={param.paramId} value={param.paramId}>
                             <span className="font-mono text-xs">{param.paramCode}</span>
+                            <span className="ml-1 text-xs text-muted-foreground">({String(param.paramCategory ?? "").replace("PARAM_CATEGORY_", "").toLowerCase()})</span>
                             <span className="ml-2 text-muted-foreground">— {param.paramName}</span>
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                     <FormDescription>
-                      Only &quot;Calculated&quot; type parameters are shown
+                      Calculated and Input category parameters can be formula outputs.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
