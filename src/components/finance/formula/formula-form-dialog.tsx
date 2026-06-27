@@ -63,6 +63,14 @@ const validTypeValues = [
   FormulaType.FORMULA_TYPE_CALCULATION,
   FormulaType.FORMULA_TYPE_SQL_QUERY,
   FormulaType.FORMULA_TYPE_CONSTANT,
+  FormulaType.FORMULA_TYPE_CONDITIONAL,
+  FormulaType.FORMULA_TYPE_LOOKUP,
+  FormulaType.FORMULA_TYPE_RM_LOOKUP,
+  FormulaType.FORMULA_TYPE_FROM_MARKETING,
+  FormulaType.FORMULA_TYPE_INTERMINGLING,
+  FormulaType.FORMULA_TYPE_SNAPSHOT,
+  FormulaType.FORMULA_TYPE_PENDING,
+  FormulaType.FORMULA_TYPE_INITIAL_VALUE,
 ]
 
 const formulaFormSchema = z.object({
@@ -184,6 +192,10 @@ export function FormulaFormDialog({
       isActive: true,
     },
   })
+
+  // Watch formulaType to conditionally show input params section.
+  const watchedFormulaType = form.watch("formulaType")
+  const showInputParams = watchedFormulaType === FormulaType.FORMULA_TYPE_CALCULATION
 
   // Watch resultParamId to exclude it from the input picker (no self-loop).
   const watchedResultParamId = form.watch("resultParamId")
@@ -426,79 +438,81 @@ export function FormulaFormDialog({
                 )}
               />
 
-              {/* Input Parameters - Only INPUT + RATE params */}
-              <FormField
-                control={form.control}
-                name="inputParamIds"
-                render={() => (
-                  <FormItem>
-                    <FormLabel>Input Parameters</FormLabel>
-                    {selectedInputIds.length > 0 && (
-                      <div className="flex flex-wrap gap-1 pb-2">
-                        {selectedInputIds.map((id) => {
-                          const p = inputPool.find((param) => param.paramId === id)
-                          return (
-                            <Badge key={id} variant="secondary" className="text-xs">
-                              {p?.paramCode || id}
-                              <button
-                                type="button"
-                                onClick={() => toggleInputParam(id)}
-                                className="ml-1 hover:text-destructive"
-                                disabled={isPending}
-                              >
-                                <X className="h-3 w-3" />
-                              </button>
-                            </Badge>
-                          )
-                        })}
-                      </div>
-                    )}
-                    <div className="rounded-md border">
-                      <div className="flex items-center border-b px-3">
-                        <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
-                        <Input
-                          placeholder="Search parameters..."
-                          value={inputParamSearch}
-                          onChange={(e) => setInputParamSearch(e.target.value)}
-                          className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
-                          disabled={isPending}
-                        />
-                      </div>
-                      <ScrollArea className="h-[150px]">
-                        <div className="p-2 space-y-1">
-                          {filteredInputParams.length === 0 ? (
-                            <p className="text-sm text-muted-foreground text-center py-4">
-                              No parameters found
-                            </p>
-                          ) : (
-                            filteredInputParams.map((param) => (
-                              <label
-                                key={param.paramId}
-                                className="flex items-center space-x-2 rounded-md px-2 py-1.5 hover:bg-accent cursor-pointer"
-                              >
-                                <Checkbox
-                                  checked={selectedInputIds.includes(param.paramId)}
-                                  onCheckedChange={() => toggleInputParam(param.paramId)}
+              {/* Input Parameters - only shown for CALCULATION type */}
+              {showInputParams && (
+                <FormField
+                  control={form.control}
+                  name="inputParamIds"
+                  render={() => (
+                    <FormItem>
+                      <FormLabel>Input Parameters</FormLabel>
+                      {selectedInputIds.length > 0 && (
+                        <div className="flex flex-wrap gap-1 pb-2">
+                          {selectedInputIds.map((id) => {
+                            const p = inputPool.find((param) => param.paramId === id)
+                            return (
+                              <Badge key={id} variant="secondary" className="text-xs">
+                                {p?.paramCode || id}
+                                <button
+                                  type="button"
+                                  onClick={() => toggleInputParam(id)}
+                                  className="ml-1 hover:text-destructive"
                                   disabled={isPending}
-                                />
-                                <span className="font-mono text-xs">{param.paramCode}</span>
-                                <span className="text-xs text-muted-foreground truncate">
-                                  — {param.paramName}
-                                </span>
-                              </label>
-                            ))
-                          )}
+                                >
+                                  <X className="h-3 w-3" />
+                                </button>
+                              </Badge>
+                            )
+                          })}
                         </div>
-                      </ScrollArea>
-                    </div>
-                    <FormDescription>
-                      Input, Rate, and Calculated parameters are all available — pick the ones referenced in the expression above.
-                      Calculated params enable formula chaining (e.g. COST_CONVERSION uses COST_LABOR_FULL which is itself produced by another formula).
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                      )}
+                      <div className="rounded-md border">
+                        <div className="flex items-center border-b px-3">
+                          <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+                          <Input
+                            placeholder="Search parameters..."
+                            value={inputParamSearch}
+                            onChange={(e) => setInputParamSearch(e.target.value)}
+                            className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                            disabled={isPending}
+                          />
+                        </div>
+                        <ScrollArea className="h-[150px]">
+                          <div className="p-2 space-y-1">
+                            {filteredInputParams.length === 0 ? (
+                              <p className="text-sm text-muted-foreground text-center py-4">
+                                No parameters found
+                              </p>
+                            ) : (
+                              filteredInputParams.map((param) => (
+                                <label
+                                  key={param.paramId}
+                                  className="flex items-center space-x-2 rounded-md px-2 py-1.5 hover:bg-accent cursor-pointer"
+                                >
+                                  <Checkbox
+                                    checked={selectedInputIds.includes(param.paramId)}
+                                    onCheckedChange={() => toggleInputParam(param.paramId)}
+                                    disabled={isPending}
+                                  />
+                                  <span className="font-mono text-xs">{param.paramCode}</span>
+                                  <span className="text-xs text-muted-foreground truncate">
+                                    — {param.paramName}
+                                  </span>
+                                </label>
+                              ))
+                            )}
+                          </div>
+                        </ScrollArea>
+                      </div>
+                      <FormDescription>
+                        Input, Rate, and Calculated parameters are all available — pick the ones referenced in the expression above.
+                        Calculated params enable formula chaining (e.g. COST_CONVERSION uses COST_LABOR_FULL which is itself produced by another formula).
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
 
               <FormField
                 control={form.control}

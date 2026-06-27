@@ -91,18 +91,34 @@ import {
 // ============================================================================
 
 export const FORMULA_TYPE_LABELS: Record<FormulaType, string> = {
-  [FormulaType.FORMULA_TYPE_UNSPECIFIED]: "All Types",
-  [FormulaType.FORMULA_TYPE_CALCULATION]: "Calculation",
-  [FormulaType.FORMULA_TYPE_SQL_QUERY]: "SQL Query",
-  [FormulaType.FORMULA_TYPE_CONSTANT]: "Constant",
-  [FormulaType.UNRECOGNIZED]: "Unknown",
+  [FormulaType.FORMULA_TYPE_UNSPECIFIED]:    "All Types",
+  [FormulaType.FORMULA_TYPE_CALCULATION]:    "Calculation",
+  [FormulaType.FORMULA_TYPE_SQL_QUERY]:      "SQL Query",
+  [FormulaType.FORMULA_TYPE_CONSTANT]:       "Constant",
+  [FormulaType.FORMULA_TYPE_CONDITIONAL]:    "Conditional",
+  [FormulaType.FORMULA_TYPE_LOOKUP]:         "Lookup",
+  [FormulaType.FORMULA_TYPE_RM_LOOKUP]:      "RM Lookup",
+  [FormulaType.FORMULA_TYPE_FROM_MARKETING]: "From Marketing",
+  [FormulaType.FORMULA_TYPE_INTERMINGLING]:  "Intermingling",
+  [FormulaType.FORMULA_TYPE_SNAPSHOT]:       "Snapshot",
+  [FormulaType.FORMULA_TYPE_PENDING]:        "Pending",
+  [FormulaType.FORMULA_TYPE_INITIAL_VALUE]:  "Initial Value",
+  [FormulaType.UNRECOGNIZED]:                "Unknown",
 }
 
 export const FORMULA_TYPE_OPTIONS = [
-  { value: FormulaType.FORMULA_TYPE_UNSPECIFIED, label: "All Types" },
-  { value: FormulaType.FORMULA_TYPE_CALCULATION, label: "Calculation" },
-  { value: FormulaType.FORMULA_TYPE_SQL_QUERY, label: "SQL Query" },
-  { value: FormulaType.FORMULA_TYPE_CONSTANT, label: "Constant" },
+  { value: FormulaType.FORMULA_TYPE_UNSPECIFIED,    label: "All Types" },
+  { value: FormulaType.FORMULA_TYPE_CALCULATION,    label: "Calculation" },
+  { value: FormulaType.FORMULA_TYPE_SQL_QUERY,      label: "SQL Query" },
+  { value: FormulaType.FORMULA_TYPE_CONSTANT,       label: "Constant" },
+  { value: FormulaType.FORMULA_TYPE_CONDITIONAL,    label: "Conditional" },
+  { value: FormulaType.FORMULA_TYPE_LOOKUP,         label: "Lookup" },
+  { value: FormulaType.FORMULA_TYPE_RM_LOOKUP,      label: "RM Lookup" },
+  { value: FormulaType.FORMULA_TYPE_FROM_MARKETING, label: "From Marketing" },
+  { value: FormulaType.FORMULA_TYPE_INTERMINGLING,  label: "Intermingling" },
+  { value: FormulaType.FORMULA_TYPE_SNAPSHOT,       label: "Snapshot" },
+  { value: FormulaType.FORMULA_TYPE_PENDING,        label: "Pending" },
+  { value: FormulaType.FORMULA_TYPE_INITIAL_VALUE,  label: "Initial Value" },
 ]
 
 export const FORMULA_TYPE_FORM_OPTIONS = FORMULA_TYPE_OPTIONS.filter(
