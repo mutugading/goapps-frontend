@@ -50,6 +50,14 @@ const formSchema = z.object({
   noOfBob: z.coerce.number().int().min(1, "Must be at least 1"),
   notes: z.string().max(1000).optional(),
   isActive: z.boolean(),
+  bbnReuse:     z.coerce.number().min(0).optional().nullable(),
+  bbnReuseVal:  z.coerce.number().min(0).optional().nullable(),
+  boxReuse:     z.coerce.number().min(0).optional().nullable(),
+  boxReuseVal:  z.coerce.number().min(0).optional().nullable(),
+  boxCost:      z.coerce.number().min(0).optional().nullable(),
+  bobinCost:    z.coerce.number().min(0).optional().nullable(),
+  boxCostVal:   z.coerce.number().min(0).optional().nullable(),
+  bobinCostVal: z.coerce.number().min(0).optional().nullable(),
 })
 
 type FormValues = z.infer<typeof formSchema>
@@ -80,6 +88,14 @@ export function BoxBobbinCostFormDialog({
       noOfBob: 24,
       notes: "",
       isActive: true,
+      bbnReuse:     null,
+      bbnReuseVal:  null,
+      boxReuse:     null,
+      boxReuseVal:  null,
+      boxCost:      null,
+      bobinCost:    null,
+      boxCostVal:   null,
+      bobinCostVal: null,
     },
   })
 
@@ -88,14 +104,22 @@ export function BoxBobbinCostFormDialog({
       form.reset(
         boxBobbinCost
           ? {
-              bbcCode: boxBobbinCost.bbcCode || "",
-              bbcName: boxBobbinCost.bbcName || "",
-              bbcType: boxBobbinCost.bbcType || "",
-              noOfBob: boxBobbinCost.noOfBob ?? 24,
-              notes: boxBobbinCost.notes || "",
-              isActive: boxBobbinCost.isActive ?? true,
+              bbcCode:      boxBobbinCost.bbcCode || "",
+              bbcName:      boxBobbinCost.bbcName || "",
+              bbcType:      boxBobbinCost.bbcType || "",
+              noOfBob:      boxBobbinCost.noOfBob ?? 24,
+              notes:        boxBobbinCost.notes || "",
+              isActive:     boxBobbinCost.isActive ?? true,
+              bbnReuse:     boxBobbinCost.bbnReuse ?? null,
+              bbnReuseVal:  boxBobbinCost.bbnReuseVal ?? null,
+              boxReuse:     boxBobbinCost.boxReuse ?? null,
+              boxReuseVal:  boxBobbinCost.boxReuseVal ?? null,
+              boxCost:      boxBobbinCost.boxCost ?? null,
+              bobinCost:    boxBobbinCost.bobinCost ?? null,
+              boxCostVal:   boxBobbinCost.boxCostVal ?? null,
+              bobinCostVal: boxBobbinCost.bobinCostVal ?? null,
             }
-          : { bbcCode: "", bbcName: "", bbcType: "", noOfBob: 24, notes: "", isActive: true }
+          : { bbcCode: "", bbcName: "", bbcType: "", noOfBob: 24, notes: "", isActive: true, bbnReuse: null, bbnReuseVal: null, boxReuse: null, boxReuseVal: null, boxCost: null, bobinCost: null, boxCostVal: null, bobinCostVal: null }
       )
     }
   }, [open, boxBobbinCost, form])
@@ -106,21 +130,37 @@ export function BoxBobbinCostFormDialog({
         await updateMutation.mutateAsync({
           id: boxBobbinCost.bbcId,
           data: {
-            bbcId: boxBobbinCost.bbcId,
-            bbcName: values.bbcName,
-            bbcType: values.bbcType,
-            noOfBob: values.noOfBob,
-            notes: values.notes || "",
-            isActive: values.isActive,
+            bbcId:        boxBobbinCost.bbcId,
+            bbcName:      values.bbcName,
+            bbcType:      values.bbcType,
+            noOfBob:      values.noOfBob,
+            notes:        values.notes || "",
+            isActive:     values.isActive,
+            bbnReuse:     values.bbnReuse ?? undefined,
+            bbnReuseVal:  values.bbnReuseVal ?? undefined,
+            boxReuse:     values.boxReuse ?? undefined,
+            boxReuseVal:  values.boxReuseVal ?? undefined,
+            boxCost:      values.boxCost ?? undefined,
+            bobinCost:    values.bobinCost ?? undefined,
+            boxCostVal:   values.boxCostVal ?? undefined,
+            bobinCostVal: values.bobinCostVal ?? undefined,
           },
         })
       } else {
         await createMutation.mutateAsync({
-          bbcCode: values.bbcCode,
-          bbcName: values.bbcName,
-          bbcType: values.bbcType,
-          noOfBob: values.noOfBob,
-          notes: values.notes || "",
+          bbcCode:      values.bbcCode,
+          bbcName:      values.bbcName,
+          bbcType:      values.bbcType,
+          noOfBob:      values.noOfBob,
+          notes:        values.notes || "",
+          bbnReuse:     values.bbnReuse ?? undefined,
+          bbnReuseVal:  values.bbnReuseVal ?? undefined,
+          boxReuse:     values.boxReuse ?? undefined,
+          boxReuseVal:  values.boxReuseVal ?? undefined,
+          boxCost:      values.boxCost ?? undefined,
+          bobinCost:    values.bobinCost ?? undefined,
+          boxCostVal:   values.boxCostVal ?? undefined,
+          bobinCostVal: values.bobinCostVal ?? undefined,
         })
       }
       onOpenChange(false)
@@ -230,6 +270,180 @@ export function BoxBobbinCostFormDialog({
                   </FormItem>
                 )}
               />
+            </div>
+
+            <div className="border-t pt-4 mt-2">
+              <p className="text-sm font-medium text-muted-foreground mb-3">Rates &amp; Reuse</p>
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="bbnReuse"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Bobbin Reuse Count <span className="text-xs text-muted-foreground">(optional)</span></FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="0.000001"
+                          placeholder="Optional"
+                          {...field}
+                          value={field.value ?? ""}
+                          onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))}
+                          disabled={isPending}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="bbnReuseVal"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Bobbin Reuse Count VAL <span className="text-xs text-muted-foreground">(optional)</span></FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="0.000001"
+                          placeholder="Optional"
+                          {...field}
+                          value={field.value ?? ""}
+                          onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))}
+                          disabled={isPending}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="boxReuse"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Box Reuse Count <span className="text-xs text-muted-foreground">(optional)</span></FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="0.000001"
+                          placeholder="Optional"
+                          {...field}
+                          value={field.value ?? ""}
+                          onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))}
+                          disabled={isPending}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="boxReuseVal"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Box Reuse Count VAL <span className="text-xs text-muted-foreground">(optional)</span></FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="0.000001"
+                          placeholder="Optional"
+                          {...field}
+                          value={field.value ?? ""}
+                          onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))}
+                          disabled={isPending}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="boxCost"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Box Rate MKT (USD) <span className="text-xs text-muted-foreground">(optional)</span></FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="0.000001"
+                          placeholder="Optional"
+                          {...field}
+                          value={field.value ?? ""}
+                          onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))}
+                          disabled={isPending}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="bobinCost"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Bobbin Rate MKT (USD) <span className="text-xs text-muted-foreground">(optional)</span></FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="0.000001"
+                          placeholder="Optional"
+                          {...field}
+                          value={field.value ?? ""}
+                          onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))}
+                          disabled={isPending}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="boxCostVal"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Box Rate VAL (USD) <span className="text-xs text-muted-foreground">(optional)</span></FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="0.000001"
+                          placeholder="Optional"
+                          {...field}
+                          value={field.value ?? ""}
+                          onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))}
+                          disabled={isPending}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="bobinCostVal"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Bobbin Rate VAL (USD) <span className="text-xs text-muted-foreground">(optional)</span></FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="0.000001"
+                          placeholder="Optional"
+                          {...field}
+                          value={field.value ?? ""}
+                          onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))}
+                          disabled={isPending}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </div>
 
             <FormField

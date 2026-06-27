@@ -7,7 +7,6 @@ import {
   type CreateCostProductMasterPayload,
   type ListCostProductMastersParams,
   type UpdateCostProductMasterPayload,
-  type UpdateErpLinkagePayload,
   normalizeCostProductMaster,
 } from "@/types/finance/cost-product-master"
 
@@ -123,28 +122,6 @@ export function useUpdateCostProductMaster() {
     },
     onSuccess: () => {
       toast.success("Product updated")
-      qc.invalidateQueries({ queryKey: KEYS.all })
-    },
-    onError: (e: Error) => toast.error(e.message),
-  })
-}
-
-export function useUpdateErpLinkage() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: async (input: { productSysId: number } & UpdateErpLinkagePayload) => {
-      const { productSysId, ...payload } = input
-      const res = await fetch(`/api/v1/finance/cost-product-masters/${productSysId}/erp-linkage`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      })
-      const json = await res.json()
-      if (!json.base?.isSuccess) throw new Error(json.base?.message || "Failed")
-      return normalizeCostProductMaster(json.data)
-    },
-    onSuccess: () => {
-      toast.success("ERP linkage updated")
       qc.invalidateQueries({ queryKey: KEYS.all })
     },
     onError: (e: Error) => toast.error(e.message),

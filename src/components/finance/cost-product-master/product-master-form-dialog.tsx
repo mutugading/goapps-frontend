@@ -25,6 +25,9 @@ const schema = z.object({
   shadeCode: z.string().max(50, "Max 50 chars"),
   gradeCode: z.string().max(20, "Max 20 chars"),
   description: z.string().max(2000, "Max 2000 chars"),
+  flex01: z.string().max(255, "Max 255 chars"),
+  flex02: z.string().max(100, "Max 100 chars"),
+  flex03: z.string().max(100, "Max 100 chars"),
 })
 
 type FormValues = z.infer<typeof schema>
@@ -44,6 +47,7 @@ export function ProductMasterFormDialog({ open, onOpenChange, product }: Props) 
     resolver: zodResolver(schema) as never,
     defaultValues: {
       productTypeId: 0, productName: "", shadeCode: "", gradeCode: "AX", description: "",
+      flex01: "", flex02: "", flex03: "",
     },
   })
 
@@ -55,6 +59,9 @@ export function ProductMasterFormDialog({ open, onOpenChange, product }: Props) 
         shadeCode: product?.shadeCode ?? "",
         gradeCode: product?.gradeCode || "AX",
         description: product?.description ?? "",
+        flex01: product?.flex01 ?? "",
+        flex02: product?.flex02 ?? "",
+        flex03: product?.flex03 ?? "",
       })
     }
   }, [open, product, form])
@@ -68,6 +75,9 @@ export function ProductMasterFormDialog({ open, onOpenChange, product }: Props) 
           shadeCode: values.shadeCode,
           gradeCode: values.gradeCode,
           description: values.description,
+          flex01: values.flex01,
+          flex02: values.flex02,
+          flex03: values.flex03,
         })
       } else {
         await createMutation.mutateAsync({
@@ -76,6 +86,9 @@ export function ProductMasterFormDialog({ open, onOpenChange, product }: Props) 
           shadeCode: values.shadeCode,
           gradeCode: values.gradeCode,
           description: values.description,
+          flex01: values.flex01,
+          flex02: values.flex02,
+          flex03: values.flex03,
         })
       }
       onOpenChange(false)
@@ -174,6 +187,55 @@ export function ProductMasterFormDialog({ open, onOpenChange, product }: Props) 
                 </FormItem>
               )}
             />
+            <details className="rounded border p-3 text-sm">
+              <summary className="cursor-pointer select-none font-medium text-muted-foreground">
+                Legacy / Import identifiers (optional)
+              </summary>
+              <div className="mt-3 space-y-3">
+                <FormField
+                  control={form.control}
+                  name="flex02"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Oracle Sys ID</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="e.g. 2512" />
+                      </FormControl>
+                      <FormDescription>Legacy Oracle integer sys_id (legacy_oracle_sys_id).</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="flex01"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>ERP Compound Key</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="e.g. INV.FG.001" />
+                      </FormControl>
+                      <FormDescription>Legacy ERP compound key (legacy_erp_compound_key).</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="flex03"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Type Label</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="e.g. FINISH" />
+                      </FormControl>
+                      <FormDescription>Legacy product type label (legacy_type_label).</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </details>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 Cancel

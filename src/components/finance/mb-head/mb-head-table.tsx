@@ -28,6 +28,20 @@ export function MBHeadTable({ data, isLoading, onEdit, onDelete }: MBHeadTablePr
       cell: (row) => row.mbhMgtName || "-",
     },
     {
+      id: "mbhStatus",
+      header: "Status",
+      width: "w-[100px]",
+      hideOnMobile: true,
+      cell: (row) => row.mbhStatus || <span className="text-muted-foreground">—</span>,
+    },
+    {
+      id: "mbhCheckStatus",
+      header: "Check Status",
+      width: "w-[110px]",
+      hideOnMobile: true,
+      cell: (row) => row.mbhCheckStatus || <span className="text-muted-foreground">—</span>,
+    },
+    {
       id: "mbhDenier",
       header: "Denier",
       width: "w-[90px]",
@@ -40,6 +54,13 @@ export function MBHeadTable({ data, isLoading, onEdit, onDelete }: MBHeadTablePr
       width: "w-[90px]",
       hideOnMobile: true,
       cell: (row) => row.mbhFilament ?? "-",
+    },
+    {
+      id: "mbhDozing",
+      header: "Dozing (%)",
+      width: "w-[100px]",
+      hideOnMobile: true,
+      cell: (row) => row.mbhDozing != null ? `${row.mbhDozing.toFixed(2)}%` : <span className="text-muted-foreground">—</span>,
     },
     {
       id: "mbhIsActive",

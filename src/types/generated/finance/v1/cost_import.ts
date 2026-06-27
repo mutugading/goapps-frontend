@@ -133,6 +133,24 @@ export interface ImportBulkProductRoutingResponse {
   status: string;
 }
 
+/**
+ * ImportBulkParamsOnlyRequest imports product_parameters + product_applicable_params
+ * from a file that does NOT contain a product_master sheet. Products must already
+ * exist in the database from a prior bulk import. Supports split part-sheets
+ * (e.g. "product_parameters_p1" + "_p2"). Max 50 MB.
+ */
+export interface ImportBulkParamsOnlyRequest {
+  fileContent: Uint8Array;
+  fileName: string;
+}
+
+/** ImportBulkParamsOnlyResponse returns the created async job ID. */
+export interface ImportBulkParamsOnlyResponse {
+  base: BaseResponse | undefined;
+  jobId: number;
+  status: string;
+}
+
 export interface ValidateBulkProductRoutingFileRequest {
   fileContent: Uint8Array;
   fileName: string;
@@ -2241,6 +2259,188 @@ export const ImportBulkProductRoutingResponse: MessageFns<ImportBulkProductRouti
   },
 };
 
+function createBaseImportBulkParamsOnlyRequest(): ImportBulkParamsOnlyRequest {
+  return { fileContent: new Uint8Array(0), fileName: "" };
+}
+
+export const ImportBulkParamsOnlyRequest: MessageFns<ImportBulkParamsOnlyRequest> = {
+  encode(message: ImportBulkParamsOnlyRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.fileContent.length !== 0) {
+      writer.uint32(10).bytes(message.fileContent);
+    }
+    if (message.fileName !== "") {
+      writer.uint32(18).string(message.fileName);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ImportBulkParamsOnlyRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseImportBulkParamsOnlyRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.fileContent = reader.bytes();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.fileName = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ImportBulkParamsOnlyRequest {
+    return {
+      fileContent: isSet(object.fileContent)
+        ? bytesFromBase64(object.fileContent)
+        : isSet(object.file_content)
+        ? bytesFromBase64(object.file_content)
+        : new Uint8Array(0),
+      fileName: isSet(object.fileName)
+        ? globalThis.String(object.fileName)
+        : isSet(object.file_name)
+        ? globalThis.String(object.file_name)
+        : "",
+    };
+  },
+
+  toJSON(message: ImportBulkParamsOnlyRequest): unknown {
+    const obj: any = {};
+    if (message.fileContent.length !== 0) {
+      obj.fileContent = base64FromBytes(message.fileContent);
+    }
+    if (message.fileName !== "") {
+      obj.fileName = message.fileName;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ImportBulkParamsOnlyRequest>): ImportBulkParamsOnlyRequest {
+    return ImportBulkParamsOnlyRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ImportBulkParamsOnlyRequest>): ImportBulkParamsOnlyRequest {
+    const message = createBaseImportBulkParamsOnlyRequest();
+    message.fileContent = object.fileContent ?? new Uint8Array(0);
+    message.fileName = object.fileName ?? "";
+    return message;
+  },
+};
+
+function createBaseImportBulkParamsOnlyResponse(): ImportBulkParamsOnlyResponse {
+  return { base: undefined, jobId: 0, status: "" };
+}
+
+export const ImportBulkParamsOnlyResponse: MessageFns<ImportBulkParamsOnlyResponse> = {
+  encode(message: ImportBulkParamsOnlyResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    if (message.jobId !== 0) {
+      writer.uint32(16).int64(message.jobId);
+    }
+    if (message.status !== "") {
+      writer.uint32(26).string(message.status);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ImportBulkParamsOnlyResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseImportBulkParamsOnlyResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.jobId = longToNumber(reader.int64());
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.status = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ImportBulkParamsOnlyResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      jobId: isSet(object.jobId)
+        ? globalThis.Number(object.jobId)
+        : isSet(object.job_id)
+        ? globalThis.Number(object.job_id)
+        : 0,
+      status: isSet(object.status) ? globalThis.String(object.status) : "",
+    };
+  },
+
+  toJSON(message: ImportBulkParamsOnlyResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.jobId !== 0) {
+      obj.jobId = Math.round(message.jobId);
+    }
+    if (message.status !== "") {
+      obj.status = message.status;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ImportBulkParamsOnlyResponse>): ImportBulkParamsOnlyResponse {
+    return ImportBulkParamsOnlyResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ImportBulkParamsOnlyResponse>): ImportBulkParamsOnlyResponse {
+    const message = createBaseImportBulkParamsOnlyResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.jobId = object.jobId ?? 0;
+    message.status = object.status ?? "";
+    return message;
+  },
+};
+
 function createBaseValidateBulkProductRoutingFileRequest(): ValidateBulkProductRoutingFileRequest {
   return { fileContent: new Uint8Array(0), fileName: "" };
 }
@@ -2733,6 +2933,18 @@ export const CostDataImportServiceDefinition = {
       requestType: ImportBulkProductRoutingRequest,
       requestStream: false,
       responseType: ImportBulkProductRoutingResponse,
+      responseStream: false,
+      options: {},
+    },
+    /**
+     * ImportBulkParamsOnly imports product parameters from a params-only file.
+     * Products must already exist in the database from a prior bulk import run.
+     */
+    importBulkParamsOnly: {
+      name: "ImportBulkParamsOnly",
+      requestType: ImportBulkParamsOnlyRequest,
+      requestStream: false,
+      responseType: ImportBulkParamsOnlyResponse,
       responseStream: false,
       options: {},
     },

@@ -110,9 +110,9 @@ export default function ProductMasterDetailClient({ productSysId }: Props) {
             </div>
             <Field label="Shade" value={product.shadeCode || "—"} />
             <Field label="Grade" value={product.gradeCode || "—"} />
-            <Field label="ERP item" value={product.erpItemCode || "—"} mono />
-            <Field label="ERP grade 1" value={product.erpGradeCode1 || "—"} mono />
-            <Field label="ERP grade 2" value={product.erpGradeCode2 || "—"} mono />
+            <Field label="Oracle Sys ID" value={product.flex02 || "—"} mono />
+            <Field label="ERP Compound Key" value={product.flex01 || "—"} mono />
+            <Field label="Type Label" value={product.flex03 || "—"} />
             {product.description && (
               <div className="col-span-full">
                 <Field label="Description" value={product.description} />

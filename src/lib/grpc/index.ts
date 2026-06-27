@@ -36,7 +36,6 @@ export {
   getRmCostClient,
   getCostProductTypeClient,
   getCostRmTypeClient,
-  getCostErpClient,
   getCostProductMasterClient,
   getCostRouteClient,
   getCostRequestTypeClient,

@@ -21,6 +21,22 @@ export enum FormulaType {
   FORMULA_TYPE_SQL_QUERY = 2,
   /** FORMULA_TYPE_CONSTANT - Constant value (no calculation). */
   FORMULA_TYPE_CONSTANT = 3,
+  /** FORMULA_TYPE_CONDITIONAL - Conditional expression with if/else branching. */
+  FORMULA_TYPE_CONDITIONAL = 4,
+  /** FORMULA_TYPE_LOOKUP - Lookup from a master table via param code. */
+  FORMULA_TYPE_LOOKUP = 5,
+  /** FORMULA_TYPE_RM_LOOKUP - Lookup using RM group cost rates. */
+  FORMULA_TYPE_RM_LOOKUP = 6,
+  /** FORMULA_TYPE_FROM_MARKETING - Copy value from the SELLING (marketing) session result. */
+  FORMULA_TYPE_FROM_MARKETING = 7,
+  /** FORMULA_TYPE_INTERMINGLING - Intermingling cost lookup. */
+  FORMULA_TYPE_INTERMINGLING = 8,
+  /** FORMULA_TYPE_SNAPSHOT - Snapshot of a previously computed value. */
+  FORMULA_TYPE_SNAPSHOT = 9,
+  /** FORMULA_TYPE_PENDING - Placeholder — formula not yet defined. */
+  FORMULA_TYPE_PENDING = 10,
+  /** FORMULA_TYPE_INITIAL_VALUE - Seeds an initial value before the formula chain starts. */
+  FORMULA_TYPE_INITIAL_VALUE = 11,
   UNRECOGNIZED = -1,
 }
 
@@ -38,6 +54,30 @@ export function formulaTypeFromJSON(object: any): FormulaType {
     case 3:
     case "FORMULA_TYPE_CONSTANT":
       return FormulaType.FORMULA_TYPE_CONSTANT;
+    case 4:
+    case "FORMULA_TYPE_CONDITIONAL":
+      return FormulaType.FORMULA_TYPE_CONDITIONAL;
+    case 5:
+    case "FORMULA_TYPE_LOOKUP":
+      return FormulaType.FORMULA_TYPE_LOOKUP;
+    case 6:
+    case "FORMULA_TYPE_RM_LOOKUP":
+      return FormulaType.FORMULA_TYPE_RM_LOOKUP;
+    case 7:
+    case "FORMULA_TYPE_FROM_MARKETING":
+      return FormulaType.FORMULA_TYPE_FROM_MARKETING;
+    case 8:
+    case "FORMULA_TYPE_INTERMINGLING":
+      return FormulaType.FORMULA_TYPE_INTERMINGLING;
+    case 9:
+    case "FORMULA_TYPE_SNAPSHOT":
+      return FormulaType.FORMULA_TYPE_SNAPSHOT;
+    case 10:
+    case "FORMULA_TYPE_PENDING":
+      return FormulaType.FORMULA_TYPE_PENDING;
+    case 11:
+    case "FORMULA_TYPE_INITIAL_VALUE":
+      return FormulaType.FORMULA_TYPE_INITIAL_VALUE;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -55,6 +95,22 @@ export function formulaTypeToJSON(object: FormulaType): string {
       return "FORMULA_TYPE_SQL_QUERY";
     case FormulaType.FORMULA_TYPE_CONSTANT:
       return "FORMULA_TYPE_CONSTANT";
+    case FormulaType.FORMULA_TYPE_CONDITIONAL:
+      return "FORMULA_TYPE_CONDITIONAL";
+    case FormulaType.FORMULA_TYPE_LOOKUP:
+      return "FORMULA_TYPE_LOOKUP";
+    case FormulaType.FORMULA_TYPE_RM_LOOKUP:
+      return "FORMULA_TYPE_RM_LOOKUP";
+    case FormulaType.FORMULA_TYPE_FROM_MARKETING:
+      return "FORMULA_TYPE_FROM_MARKETING";
+    case FormulaType.FORMULA_TYPE_INTERMINGLING:
+      return "FORMULA_TYPE_INTERMINGLING";
+    case FormulaType.FORMULA_TYPE_SNAPSHOT:
+      return "FORMULA_TYPE_SNAPSHOT";
+    case FormulaType.FORMULA_TYPE_PENDING:
+      return "FORMULA_TYPE_PENDING";
+    case FormulaType.FORMULA_TYPE_INITIAL_VALUE:
+      return "FORMULA_TYPE_INITIAL_VALUE";
     case FormulaType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";

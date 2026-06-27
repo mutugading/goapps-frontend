@@ -42,6 +42,12 @@ export interface CreateCostProductMasterRequest {
   shadeCode: string;
   gradeCode: string;
   description: string;
+  /** Legacy / import identifiers — plain text, no validation constraint. */
+  flex01: string;
+  /** legacy_oracle_sys_id */
+  flex02: string;
+  /** legacy_type_label */
+  flex03: string;
 }
 
 export interface CreateCostProductMasterResponse {
@@ -73,6 +79,12 @@ export interface UpdateCostProductMasterRequest {
   shadeCode: string;
   gradeCode: string;
   description: string;
+  /** Legacy / import identifiers — plain text, no validation constraint. */
+  flex01: string;
+  /** legacy_oracle_sys_id */
+  flex02: string;
+  /** legacy_type_label */
+  flex03: string;
 }
 
 export interface UpdateCostProductMasterResponse {
@@ -609,7 +621,16 @@ export const CostProductMaster: MessageFns<CostProductMaster> = {
 };
 
 function createBaseCreateCostProductMasterRequest(): CreateCostProductMasterRequest {
-  return { productTypeId: 0, productName: "", shadeCode: "", gradeCode: "", description: "" };
+  return {
+    productTypeId: 0,
+    productName: "",
+    shadeCode: "",
+    gradeCode: "",
+    description: "",
+    flex01: "",
+    flex02: "",
+    flex03: "",
+  };
 }
 
 export const CreateCostProductMasterRequest: MessageFns<CreateCostProductMasterRequest> = {
@@ -628,6 +649,15 @@ export const CreateCostProductMasterRequest: MessageFns<CreateCostProductMasterR
     }
     if (message.description !== "") {
       writer.uint32(42).string(message.description);
+    }
+    if (message.flex01 !== "") {
+      writer.uint32(50).string(message.flex01);
+    }
+    if (message.flex02 !== "") {
+      writer.uint32(58).string(message.flex02);
+    }
+    if (message.flex03 !== "") {
+      writer.uint32(66).string(message.flex03);
     }
     return writer;
   },
@@ -679,6 +709,30 @@ export const CreateCostProductMasterRequest: MessageFns<CreateCostProductMasterR
           message.description = reader.string();
           continue;
         }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.flex01 = reader.string();
+          continue;
+        }
+        case 7: {
+          if (tag !== 58) {
+            break;
+          }
+
+          message.flex02 = reader.string();
+          continue;
+        }
+        case 8: {
+          if (tag !== 66) {
+            break;
+          }
+
+          message.flex03 = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -711,6 +765,21 @@ export const CreateCostProductMasterRequest: MessageFns<CreateCostProductMasterR
         ? globalThis.String(object.grade_code)
         : "",
       description: isSet(object.description) ? globalThis.String(object.description) : "",
+      flex01: isSet(object.flex01)
+        ? globalThis.String(object.flex01)
+        : isSet(object.flex_01)
+        ? globalThis.String(object.flex_01)
+        : "",
+      flex02: isSet(object.flex02)
+        ? globalThis.String(object.flex02)
+        : isSet(object.flex_02)
+        ? globalThis.String(object.flex_02)
+        : "",
+      flex03: isSet(object.flex03)
+        ? globalThis.String(object.flex03)
+        : isSet(object.flex_03)
+        ? globalThis.String(object.flex_03)
+        : "",
     };
   },
 
@@ -731,6 +800,15 @@ export const CreateCostProductMasterRequest: MessageFns<CreateCostProductMasterR
     if (message.description !== "") {
       obj.description = message.description;
     }
+    if (message.flex01 !== "") {
+      obj.flex01 = message.flex01;
+    }
+    if (message.flex02 !== "") {
+      obj.flex02 = message.flex02;
+    }
+    if (message.flex03 !== "") {
+      obj.flex03 = message.flex03;
+    }
     return obj;
   },
 
@@ -744,6 +822,9 @@ export const CreateCostProductMasterRequest: MessageFns<CreateCostProductMasterR
     message.shadeCode = object.shadeCode ?? "";
     message.gradeCode = object.gradeCode ?? "";
     message.description = object.description ?? "";
+    message.flex01 = object.flex01 ?? "";
+    message.flex02 = object.flex02 ?? "";
+    message.flex03 = object.flex03 ?? "";
     return message;
   },
 };
@@ -1117,7 +1198,16 @@ export const GetCostProductMasterByCodeResponse: MessageFns<GetCostProductMaster
 };
 
 function createBaseUpdateCostProductMasterRequest(): UpdateCostProductMasterRequest {
-  return { productSysId: 0, productName: "", shadeCode: "", gradeCode: "", description: "" };
+  return {
+    productSysId: 0,
+    productName: "",
+    shadeCode: "",
+    gradeCode: "",
+    description: "",
+    flex01: "",
+    flex02: "",
+    flex03: "",
+  };
 }
 
 export const UpdateCostProductMasterRequest: MessageFns<UpdateCostProductMasterRequest> = {
@@ -1136,6 +1226,15 @@ export const UpdateCostProductMasterRequest: MessageFns<UpdateCostProductMasterR
     }
     if (message.description !== "") {
       writer.uint32(42).string(message.description);
+    }
+    if (message.flex01 !== "") {
+      writer.uint32(50).string(message.flex01);
+    }
+    if (message.flex02 !== "") {
+      writer.uint32(58).string(message.flex02);
+    }
+    if (message.flex03 !== "") {
+      writer.uint32(66).string(message.flex03);
     }
     return writer;
   },
@@ -1187,6 +1286,30 @@ export const UpdateCostProductMasterRequest: MessageFns<UpdateCostProductMasterR
           message.description = reader.string();
           continue;
         }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.flex01 = reader.string();
+          continue;
+        }
+        case 7: {
+          if (tag !== 58) {
+            break;
+          }
+
+          message.flex02 = reader.string();
+          continue;
+        }
+        case 8: {
+          if (tag !== 66) {
+            break;
+          }
+
+          message.flex03 = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1219,6 +1342,21 @@ export const UpdateCostProductMasterRequest: MessageFns<UpdateCostProductMasterR
         ? globalThis.String(object.grade_code)
         : "",
       description: isSet(object.description) ? globalThis.String(object.description) : "",
+      flex01: isSet(object.flex01)
+        ? globalThis.String(object.flex01)
+        : isSet(object.flex_01)
+        ? globalThis.String(object.flex_01)
+        : "",
+      flex02: isSet(object.flex02)
+        ? globalThis.String(object.flex02)
+        : isSet(object.flex_02)
+        ? globalThis.String(object.flex_02)
+        : "",
+      flex03: isSet(object.flex03)
+        ? globalThis.String(object.flex03)
+        : isSet(object.flex_03)
+        ? globalThis.String(object.flex_03)
+        : "",
     };
   },
 
@@ -1239,6 +1377,15 @@ export const UpdateCostProductMasterRequest: MessageFns<UpdateCostProductMasterR
     if (message.description !== "") {
       obj.description = message.description;
     }
+    if (message.flex01 !== "") {
+      obj.flex01 = message.flex01;
+    }
+    if (message.flex02 !== "") {
+      obj.flex02 = message.flex02;
+    }
+    if (message.flex03 !== "") {
+      obj.flex03 = message.flex03;
+    }
     return obj;
   },
 
@@ -1252,6 +1399,9 @@ export const UpdateCostProductMasterRequest: MessageFns<UpdateCostProductMasterR
     message.shadeCode = object.shadeCode ?? "";
     message.gradeCode = object.gradeCode ?? "";
     message.description = object.description ?? "";
+    message.flex01 = object.flex01 ?? "";
+    message.flex02 = object.flex02 ?? "";
+    message.flex03 = object.flex03 ?? "";
     return message;
   },
 };

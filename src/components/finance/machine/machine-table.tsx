@@ -36,6 +36,68 @@ export function MachineTable({ data, isLoading, onEdit, onDelete }: MachineTable
       cell: (row) => row.mcType || "-",
     },
     {
+      id: "noOfPosition",
+      header: "Positions",
+      width: "w-[90px]",
+      hideOnMobile: true,
+      cell: (row) => row.noOfPosition ?? <span className="text-muted-foreground">—</span>,
+    },
+    {
+      id: "noOfEnd",
+      header: "Ends",
+      width: "w-[70px]",
+      hideOnMobile: true,
+      cell: (row) => row.noOfEnd ?? <span className="text-muted-foreground">—</span>,
+    },
+    {
+      id: "mpPerDay",
+      header: "MP/Day",
+      width: "w-[100px]",
+      hideOnMobile: true,
+      cell: (row) =>
+        row.mpPerDay != null
+          ? `$${row.mpPerDay.toFixed(2)}`
+          : <span className="text-muted-foreground">—</span>,
+    },
+    {
+      id: "ohsPerDay",
+      header: "OHS/Day",
+      width: "w-[100px]",
+      hideOnMobile: true,
+      cell: (row) => row.ohsPerDay != null ? `$${row.ohsPerDay.toFixed(2)}` : <span className="text-muted-foreground">—</span>,
+    },
+    {
+      id: "sparesPerDay",
+      header: "Spares/Day",
+      width: "w-[100px]",
+      hideOnMobile: true,
+      cell: (row) => row.sparesPerDay != null ? `$${row.sparesPerDay.toFixed(2)}` : <span className="text-muted-foreground">—</span>,
+    },
+    {
+      id: "mcWeightage",
+      header: "Weightage",
+      width: "w-[90px]",
+      hideOnMobile: true,
+      cell: (row) => row.mcWeightage != null ? row.mcWeightage.toFixed(2) : <span className="text-muted-foreground">—</span>,
+    },
+    {
+      id: "mcPoyBobbinWeight",
+      header: "Bobbin Wt (kg)",
+      width: "w-[110px]",
+      hideOnMobile: true,
+      cell: (row) => row.mcPoyBobbinWeight != null ? row.mcPoyBobbinWeight.toFixed(2) : <span className="text-muted-foreground">—</span>,
+    },
+    {
+      id: "kgsLostChange",
+      header: "CO Loss (kg)",
+      width: "w-[110px]",
+      hideOnMobile: true,
+      cell: (row) =>
+        row.kgsLostChange != null
+          ? row.kgsLostChange.toFixed(3)
+          : <span className="text-muted-foreground">—</span>,
+    },
+    {
       id: "notes",
       header: "Notes",
       hideOnMobile: true,

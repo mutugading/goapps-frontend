@@ -48,6 +48,32 @@ export function ProductGradeTable({ data, isLoading, onEdit, onDelete }: Product
       cell: (row) => `${((row.bcRecoveryRate ?? 0) * 100).toFixed(1)}%`,
     },
     {
+      id: "pgDetailProduct",
+      header: "Detail Pattern",
+      hideOnMobile: true,
+      cell: (row) => row.pgDetailProduct || <span className="text-muted-foreground">—</span>,
+    },
+    {
+      id: "pgGradeLabel",
+      header: "Grade Label",
+      hideOnMobile: true,
+      cell: (row) => row.pgGradeLabel || <span className="text-muted-foreground">—</span>,
+    },
+    {
+      id: "stdSellingPrice",
+      header: "Std Price",
+      width: "w-[100px]",
+      hideOnMobile: true,
+      cell: (row) => row.stdSellingPrice != null ? `$${row.stdSellingPrice.toFixed(4)}` : <span className="text-muted-foreground">—</span>,
+    },
+    {
+      id: "spValue",
+      header: "SP Value",
+      width: "w-[100px]",
+      hideOnMobile: true,
+      cell: (row) => row.spValue != null ? row.spValue.toFixed(4) : <span className="text-muted-foreground">—</span>,
+    },
+    {
       id: "isActive",
       header: "Status",
       width: "w-[100px]",

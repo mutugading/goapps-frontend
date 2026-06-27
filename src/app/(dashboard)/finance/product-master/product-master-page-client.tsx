@@ -21,11 +21,11 @@ import {
 } from "@/components/ui/select"
 import {
   DeactivateProductMasterDialog,
-  ErpLinkageDialog,
   ProductMasterFormDialog,
   ProductMasterTable,
 } from "@/components/finance/cost-product-master"
 import { BulkImportDialog } from "@/components/finance/costing/bulk-import-dialog"
+import { ParamsOnlyImportDialog } from "@/components/finance/costing/params-only-import-dialog"
 import { ImportDialog } from "@/components/finance/costing/import-dialog"
 import { ProductTypeCombobox } from "@/components/finance/comboboxes"
 import { DataTablePagination } from "@/components/shared"
@@ -51,10 +51,10 @@ export default function ProductMasterPageClient() {
   const router = useRouter()
 
   const [formOpen, setFormOpen] = useState(false)
-  const [erpOpen, setErpOpen] = useState(false)
   const [deactivateOpen, setDeactivateOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
   const [bulkImportOpen, setBulkImportOpen] = useState(false)
+  const [paramsImportOpen, setParamsImportOpen] = useState(false)
   const [editing, setEditing] = useState<CostProductMaster | null>(null)
   const [bulkExportLoading, setBulkExportLoading] = useState(false)
 
@@ -67,10 +67,6 @@ export default function ProductMasterPageClient() {
   function openEdit(p: CostProductMaster) {
     setEditing(p)
     setFormOpen(true)
-  }
-  function openErp(p: CostProductMaster) {
-    setEditing(p)
-    setErpOpen(true)
   }
   function openDeactivate(p: CostProductMaster) {
     setEditing(p)
@@ -128,6 +124,9 @@ export default function ProductMasterPageClient() {
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={() => setBulkImportOpen(true)}>
               Import Produk + Routing (Bulk)
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => setParamsImportOpen(true)}>
+              Import Params Saja (Bulk)
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -205,7 +204,6 @@ export default function ProductMasterPageClient() {
         items={items}
         isLoading={isLoading}
         onEdit={openEdit}
-        onLinkErp={openErp}
         onDeactivate={openDeactivate}
       />
 
@@ -229,13 +227,13 @@ export default function ProductMasterPageClient() {
         }
       />
       <ProductMasterFormDialog open={formOpen} onOpenChange={setFormOpen} product={editing} />
-      <ErpLinkageDialog open={erpOpen} onOpenChange={setErpOpen} product={editing} />
       <DeactivateProductMasterDialog
         open={deactivateOpen}
         onOpenChange={setDeactivateOpen}
         product={editing}
       />
       <BulkImportDialog open={bulkImportOpen} onOpenChange={setBulkImportOpen} />
+      <ParamsOnlyImportDialog open={paramsImportOpen} onOpenChange={setParamsImportOpen} />
     </div>
   )
 }

@@ -3,7 +3,7 @@
 // RouteGraphEditor — level-based editor for cost_route_seq + cost_route_rm.
 //
 // Model is level-based (1 = FG, 2..N = upstream). Each level renders as a row
-// of stage cards; each card lists its RM inputs (PRODUCT / ITEM / GROUP).
+// of stage cards; each card lists its RM inputs (PRODUCT / GROUP).
 //
 // **UX rule (enforced):** users NEVER see or type a UUID / sys_id. Every
 // reference is picked via a combobox keyed on human-readable code/name.
@@ -24,7 +24,6 @@ import {
 import Link from "next/link"
 
 import { CalculateButton } from "@/components/finance/calc-jobs/calculate-button"
-import { ErpItemCombobox } from "@/components/finance/comboboxes/erp-item-combobox"
 import { ProductMasterCombobox } from "@/components/finance/comboboxes/product-master-combobox"
 import { DuplicateRouteDialog } from "@/components/finance/cost-route/duplicate-route-dialog"
 import { LinkedRequestsPopover } from "@/components/finance/cost-route/linked-requests-popover"
@@ -45,6 +44,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Textarea } from "@/components/ui/textarea"
 import {
   Select,
   SelectContent,
@@ -156,6 +156,7 @@ export function RouteGraphEditor({ headId }: Props) {
     productSysId: number,
     productCode?: string,
     productName?: string,
+    meta?: { routeName?: string; routeItemCode?: string; routeShadeCode?: string; routeShadeName?: string },
   ): { newSeqIdx: number } => {
     let newSeqIdx = -1
     setWorking((prev) => {
@@ -170,6 +171,10 @@ export function RouteGraphEditor({ headId }: Props) {
         productName,
         routeLevel: level,
         routeSeq: existing + 1,
+        routeName: meta?.routeName || undefined,
+        routeItemCode: meta?.routeItemCode || undefined,
+        routeShadeCode: meta?.routeShadeCode || undefined,
+        routeShadeName: meta?.routeShadeName || undefined,
         positionX: 0,
         positionY: 0,
         rms: [],
@@ -202,6 +207,15 @@ export function RouteGraphEditor({ headId }: Props) {
       const updatedSeqs = [...base.seqs]
       updatedSeqs[seqIdx] = updatedSeq
       return { ...base, seqs: updatedSeqs }
+    })
+    setDirty(true)
+  }
+
+  const setHeadNotes = (notes: string) => {
+    setWorking((prev) => {
+      const base = prev ?? (persisted ? (JSON.parse(JSON.stringify(persisted)) as RouteGraph) : null)
+      if (!base) return prev
+      return { ...base, head: { ...base.head, notes } }
     })
     setDirty(true)
   }
@@ -361,6 +375,19 @@ export function RouteGraphEditor({ headId }: Props) {
             <span>version v{head?.version}</span>
             {head?.promotedFromDraftId ? <span>· promoted from a routing draft</span> : null}
           </div>
+          {!locked && (
+            <div className="mt-2">
+              <Textarea
+                placeholder="Routing notes (optional)…"
+                className="h-14 resize-none text-xs"
+                value={head?.notes ?? ""}
+                onChange={(e) => setHeadNotes(e.target.value)}
+              />
+            </div>
+          )}
+          {locked && head?.notes && (
+            <p className="mt-2 text-xs text-muted-foreground whitespace-pre-wrap">{head.notes}</p>
+          )}
         </div>
         <div className="flex flex-wrap gap-2">
           <LinkedRequestsPopover headId={headId} />
@@ -593,8 +620,8 @@ export function RouteGraphEditor({ headId }: Props) {
         onClose={() => setStageDialogState({ open: false })}
         existingLevels={seqsByLevel.map((g) => g.level)}
         defaultLevel={stageDialogState.defaultLevel}
-        onAdd={(level, productSysId, productCode, productName) => {
-          const { newSeqIdx } = addStage(level, productSysId, productCode, productName)
+        onAdd={(level, productSysId, productCode, productName, meta) => {
+          const { newSeqIdx } = addStage(level, productSysId, productCode, productName, meta)
           // F3 link-after-add: if we opened the dialog by dropping on the pane,
           // wire a PRODUCT-RM between the source seq and the newly-created seq.
           if (stageDialogState.open && stageDialogState.linkToSeqId !== undefined && newSeqIdx >= 0) {
@@ -749,12 +776,16 @@ function AddStageDialog({
   onClose: () => void
   existingLevels: number[]
   defaultLevel?: number
-  onAdd: (level: number, productSysId: number, productCode?: string, productName?: string) => void
+  onAdd: (level: number, productSysId: number, productCode?: string, productName?: string, meta?: { routeName?: string; routeItemCode?: string; routeShadeCode?: string; routeShadeName?: string }) => void
 }) {
   const nextLevel =
     defaultLevel ?? (existingLevels.length === 0 ? 1 : Math.max(...existingLevels) + 1)
   const [level, setLevel] = useState<number>(nextLevel)
   const [picked, setPicked] = useState<{ id: number; code: string; name: string } | null>(null)
+  const [routeName, setRouteName] = useState("")
+  const [routeItemCode, setRouteItemCode] = useState("")
+  const [routeShadeCode, setRouteShadeCode] = useState("")
+  const [routeShadeName, setRouteShadeName] = useState("")
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
@@ -787,12 +818,45 @@ function AddStageDialog({
               The product this stage produces (intermediate or FG).
             </p>
           </div>
+          <details className="text-xs">
+            <summary className="cursor-pointer text-muted-foreground select-none">Additional metadata (optional)</summary>
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              <div>
+                <Label className="text-xs">Route name</Label>
+                <Input value={routeName} onChange={(e) => setRouteName(e.target.value)} placeholder="e.g. Main spin" className="h-8 text-xs" />
+              </div>
+              <div>
+                <Label className="text-xs">ERP item code</Label>
+                <Input value={routeItemCode} onChange={(e) => setRouteItemCode(e.target.value)} placeholder="e.g. ACY0000001" className="h-8 text-xs" />
+              </div>
+              <div>
+                <Label className="text-xs">Shade code</Label>
+                <Input value={routeShadeCode} onChange={(e) => setRouteShadeCode(e.target.value)} placeholder="NL" className="h-8 text-xs" />
+              </div>
+              <div>
+                <Label className="text-xs">Shade name</Label>
+                <Input value={routeShadeName} onChange={(e) => setRouteShadeName(e.target.value)} placeholder="NATURAL" className="h-8 text-xs" />
+              </div>
+            </div>
+          </details>
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          <Button disabled={!picked} onClick={() => picked && onAdd(level, picked.id, picked.code, picked.name)}>
+          <Button
+            disabled={!picked}
+            onClick={() => {
+              if (!picked) return
+              const meta = {
+                routeName: routeName || undefined,
+                routeItemCode: routeItemCode || undefined,
+                routeShadeCode: routeShadeCode || undefined,
+                routeShadeName: routeShadeName || undefined,
+              }
+              onAdd(level, picked.id, picked.code, picked.name, meta)
+            }}
+          >
             Add stage
           </Button>
         </DialogFooter>
@@ -825,17 +889,18 @@ function AddRmDialog({
   upstreamProducts: UpstreamProduct[]
   onAdd: (rm: CostRouteRm) => void
 }) {
-  const [rmType, setRmType] = useState<RmRefType>("ITEM")
+  const [rmType, setRmType] = useState<RmRefType>("PRODUCT")
   const [productPick, setProductPick] = useState<UpstreamProduct | null>(null)
-  const [itemPick, setItemPick] = useState<{ code: string; name: string } | null>(null)
   const [groupPick, setGroupPick] = useState<{ code: string; name: string } | null>(null)
   const [ratio, setRatio] = useState("1")
   const [subType, setSubType] = useState("")
+  const [shadeCode, setShadeCode] = useState("")
+  const [shadeName, setRmShadeName] = useState("")
+  const [notes, setNotes] = useState("")
 
   const isValid =
     Number(ratio) > 0 &&
     ((rmType === "PRODUCT" && !!productPick) ||
-      (rmType === "ITEM" && !!itemPick) ||
       (rmType === "GROUP" && !!groupPick))
 
   return (
@@ -852,7 +917,6 @@ function AddRmDialog({
               onValueChange={(v) => {
                 setRmType(v as RmRefType)
                 setProductPick(null)
-                setItemPick(null)
                 setGroupPick(null)
               }}
             >
@@ -861,8 +925,7 @@ function AddRmDialog({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="PRODUCT">PRODUCT — from another stage in this routing</SelectItem>
-                <SelectItem value="ITEM">ITEM — ERP raw material</SelectItem>
-                <SelectItem value="GROUP">GROUP — RM group</SelectItem>
+                <SelectItem value="GROUP">GROUP — RM group (cons/stock/PO)</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -878,22 +941,6 @@ function AddRmDialog({
               {upstreamProducts.length === 0 && (
                 <p className="mt-1 text-xs text-amber-700">
                   No upstream stages yet. Add a stage at level &gt; {stageLevel} first.
-                </p>
-              )}
-            </div>
-          )}
-
-          {rmType === "ITEM" && (
-            <div>
-              <Label>ERP item</Label>
-              <ErpItemCombobox
-                value={undefined /* code-driven, not sys-id */}
-                onChange={(_id, code, name) => setItemPick({ code, name })}
-                placeholder="Search ERP item by code or name…"
-              />
-              {itemPick && (
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Selected: <span className="font-mono">{itemPick.code}</span> — {itemPick.name}
                 </p>
               )}
             </div>
@@ -928,6 +975,23 @@ function AddRmDialog({
               />
             </div>
           </div>
+          <details className="text-xs">
+            <summary className="cursor-pointer text-muted-foreground select-none">Additional metadata (optional)</summary>
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              <div>
+                <Label className="text-xs">Shade code</Label>
+                <Input value={shadeCode} onChange={(e) => setShadeCode(e.target.value)} placeholder="NL" className="h-8 text-xs" />
+              </div>
+              <div>
+                <Label className="text-xs">Shade name</Label>
+                <Input value={shadeName} onChange={(e) => setRmShadeName(e.target.value)} placeholder="NATURAL" className="h-8 text-xs" />
+              </div>
+              <div className="col-span-2">
+                <Label className="text-xs">Notes</Label>
+                <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Optional notes…" className="h-8 text-xs" />
+              </div>
+            </div>
+          </details>
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={onClose}>
@@ -937,6 +1001,12 @@ function AddRmDialog({
             disabled={!isValid}
             onClick={() => {
               const ratioNum = Number(ratio) || 1
+              const rmExtra = {
+                routeRmShadeCode: shadeCode || undefined,
+                routeRmShadeName: shadeName || undefined,
+                notes: notes || undefined,
+                subType: subType || undefined,
+              }
               if (rmType === "PRODUCT" && productPick) {
                 onAdd({
                   rmId: 0,
@@ -948,21 +1018,7 @@ function AddRmDialog({
                     ? `${productPick.productCode}${productPick.productName ? " — " + productPick.productName : ""}`
                     : productPick.productName,
                   routeRmRatio: ratioNum,
-                  subType: subType || undefined,
-                })
-                return
-              }
-              if (rmType === "ITEM" && itemPick) {
-                onAdd({
-                  rmId: 0,
-                  seqId: 0,
-                  parentProductSysId: 0,
-                  rmType: "ITEM",
-                  rmItemCode: itemPick.code,
-                  routeRmName: itemPick.name,
-                  routeRmItemCode: itemPick.code,
-                  routeRmRatio: ratioNum,
-                  subType: subType || undefined,
+                  ...rmExtra,
                 })
                 return
               }
@@ -975,7 +1031,7 @@ function AddRmDialog({
                   rmGroupCode: groupPick.code,
                   routeRmName: groupPick.name,
                   routeRmRatio: ratioNum,
-                  subType: subType || undefined,
+                  ...rmExtra,
                 })
               }
             }}

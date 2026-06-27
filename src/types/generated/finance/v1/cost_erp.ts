@@ -1281,7 +1281,7 @@ export const ListCostErpShadesResponse: MessageFns<ListCostErpShadesResponse> = 
   },
 };
 
-/** CostErpLookupService — read-only lookup for ERP replica tables. */
+/** CostErpLookupService — read-only ERP lookup tables for pickers and autocomplete. */
 export type CostErpLookupServiceDefinition = typeof CostErpLookupServiceDefinition;
 export const CostErpLookupServiceDefinition = {
   name: "CostErpLookupService",

@@ -174,6 +174,47 @@ export async function bulkImportProductMasterRouting(
 }
 
 /**
+ * Queue a params-only bulk import (product_parameters + product_applicable_params).
+ * Products must already exist from a prior bulk_product_routing import.
+ * Uses multipart/form-data to send binary bytes without JSON inflation overhead.
+ * Returns a job ID that can be polled with getImportJob().
+ */
+export async function bulkImportParamsOnly(
+  file: File,
+): Promise<{ jobId: number; status: string }> {
+  const formData = new FormData()
+  formData.append("file", file)
+  const res = await fetch(`${BASE}/import/bulk_params_only`, {
+    method: "POST",
+    body: formData, // binary multipart — no Content-Type header needed (browser sets boundary)
+  })
+  if (!res.ok) throw new Error(`Params-only import failed: ${res.status}`)
+  const json = await res.json()
+  if (!json.base?.isSuccess) {
+    throw new Error(json.base?.message || `Import failed`)
+  }
+  return {
+    jobId: json.data?.jobId ?? json.data?.job_id ?? 0,
+    status: json.data?.status ?? "",
+  }
+}
+
+/**
+ * Download the params-only import template (2 sheets: product_parameters + applicable_params).
+ */
+export async function downloadParamsOnlyTemplate(): Promise<void> {
+  const res = await fetch(`${BASE}/template/bulk_params_only`)
+  if (!res.ok) throw new Error(`Template download failed: ${res.status}`)
+  const blob = await res.blob()
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  a.download = "bulk_params_only_template.xlsx"
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+/**
  * Validate a bulk product routing Excel file without importing.
  * Returns a per-sheet summary with error/warning counts and sample errors.
  */

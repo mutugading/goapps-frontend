@@ -47,7 +47,6 @@ import { RMGroupServiceDefinition } from "@/types/generated/finance/v1/rm_group"
 import { RMCostServiceDefinition } from "@/types/generated/finance/v1/rm_cost"
 import { CostProductTypeServiceDefinition } from "@/types/generated/finance/v1/cost_product_type"
 import { CostRmTypeServiceDefinition } from "@/types/generated/finance/v1/cost_rm_type"
-import { CostErpLookupServiceDefinition } from "@/types/generated/finance/v1/cost_erp"
 import { CostProductMasterServiceDefinition } from "@/types/generated/finance/v1/cost_product_master"
 import { CostRouteServiceDefinition } from "@/types/generated/finance/v1/cost_route"
 import { CostRequestTypeServiceDefinition } from "@/types/generated/finance/v1/cost_request_type"
@@ -82,8 +81,8 @@ const CHANNEL_OPTIONS = {
   "grpc.keepalive_permit_without_calls": 1,
   "grpc.max_reconnect_backoff_ms": 10000,
   "grpc.initial_reconnect_backoff_ms": 1000,
-  "grpc.max_receive_message_length": 10 * 1024 * 1024,
-  "grpc.max_send_message_length": 10 * 1024 * 1024,
+  "grpc.max_receive_message_length": 100 * 1024 * 1024,
+  "grpc.max_send_message_length": 100 * 1024 * 1024,
   "grpc.enable_retries": 1,
 }
 
@@ -318,11 +317,6 @@ export function getCostRmTypeClient() {
   )
 }
 
-export function getCostErpClient() {
-  return getOrCreate("costErp", () =>
-    createServiceClient(CostErpLookupServiceDefinition, SERVICE_ADDRESSES.finance, insecure, CHANNEL_OPTIONS)
-  )
-}
 
 export function getCostProductMasterClient() {
   return getOrCreate("costProductMaster", () =>

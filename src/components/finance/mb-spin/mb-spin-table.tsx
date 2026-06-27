@@ -28,6 +28,27 @@ export function MBSpinTable({ data, isLoading, onEdit, onDelete }: MBSpinTablePr
       cell: (row) => row.mbsMbCosting || "-",
     },
     {
+      id: "mbsStatus",
+      header: "Status",
+      width: "w-[100px]",
+      hideOnMobile: true,
+      cell: (row) => row.mbsStatus || <span className="text-muted-foreground">—</span>,
+    },
+    {
+      id: "mbsFinalProduct",
+      header: "Final Product",
+      hideOnMobile: true,
+      cellClassName: "max-w-[180px] truncate",
+      cell: (row) => row.mbsFinalProduct || <span className="text-muted-foreground">—</span>,
+    },
+    {
+      id: "mbsCc",
+      header: "Cost Code",
+      width: "w-[110px]",
+      hideOnMobile: true,
+      cell: (row) => row.mbsCc || <span className="text-muted-foreground">—</span>,
+    },
+    {
       id: "mbsDenier",
       header: "Denier",
       width: "w-[90px]",
@@ -40,6 +61,15 @@ export function MBSpinTable({ data, isLoading, onEdit, onDelete }: MBSpinTablePr
       width: "w-[90px]",
       hideOnMobile: true,
       cell: (row) => row.mbsFilament ?? "-",
+    },
+    {
+      id: "mbsCostRateMkt",
+      header: "Rate MKT",
+      width: "w-[120px]",
+      hideOnMobile: true,
+      cell: (row) => row.mbsCostRateMkt != null
+        ? `$${row.mbsCostRateMkt.toFixed(4)}`
+        : <span className="text-muted-foreground">—</span>,
     },
     {
       id: "mbsIsActive",

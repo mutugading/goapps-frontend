@@ -43,6 +43,20 @@ export function BoxBobbinCostTable({ data, isLoading, onEdit, onDelete }: BoxBob
       cell: (row) => row.noOfBob ?? "-",
     },
     {
+      id: "boxCost",
+      header: "Box Rate MKT",
+      width: "w-[120px]",
+      hideOnMobile: true,
+      cell: (row) => row.boxCost != null ? `$${row.boxCost.toFixed(4)}` : <span className="text-muted-foreground">—</span>,
+    },
+    {
+      id: "bobinCost",
+      header: "Bobbin Rate MKT",
+      width: "w-[130px]",
+      hideOnMobile: true,
+      cell: (row) => row.bobinCost != null ? `$${row.bobinCost.toFixed(4)}` : <span className="text-muted-foreground">—</span>,
+    },
+    {
       id: "notes",
       header: "Notes",
       hideOnMobile: true,

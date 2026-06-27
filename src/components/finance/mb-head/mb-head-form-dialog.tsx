@@ -37,6 +37,11 @@ const formSchema = z.object({
   mbhDenier: z.coerce.number().positive().optional().or(z.literal("")),
   mbhFilament: z.coerce.number().int().positive().optional().or(z.literal("")),
   mbhDozing: z.coerce.number().min(0).max(100).optional().or(z.literal("")),
+  mbhCheckStatus: z.string().max(50).optional(),
+  mbhStatus: z.string().max(100).optional(),
+  mbhLdrPrsn: z.coerce.number().min(0).optional().nullable(),
+  mbhFinalProduct: z.string().max(200).optional(),
+  mbhCode: z.string().max(100).optional(),
   mbhIsActive: z.boolean(),
 })
 
@@ -58,7 +63,9 @@ export function MBHeadFormDialog({ open, onOpenChange, mbHead, onSuccess }: MBHe
     resolver: zodResolver(formSchema) as never,
     defaultValues: {
       mbhMbCosting: "", mbhOracleSysId: "", mbhMgtName: "",
-      mbhDenier: "", mbhFilament: "", mbhDozing: "", mbhIsActive: true,
+      mbhDenier: "", mbhFilament: "", mbhDozing: "",
+      mbhCheckStatus: "", mbhStatus: "", mbhLdrPrsn: null, mbhFinalProduct: "", mbhCode: "",
+      mbhIsActive: true,
     },
   })
 
@@ -73,9 +80,14 @@ export function MBHeadFormDialog({ open, onOpenChange, mbHead, onSuccess }: MBHe
               mbhDenier: mbHead.mbhDenier ?? "",
               mbhFilament: mbHead.mbhFilament ?? "",
               mbhDozing: mbHead.mbhDozing ?? "",
+              mbhCheckStatus: mbHead.mbhCheckStatus || "",
+              mbhStatus: mbHead.mbhStatus || "",
+              mbhLdrPrsn: mbHead.mbhLdrPrsn ?? null,
+              mbhFinalProduct: mbHead.mbhFinalProduct || "",
+              mbhCode: mbHead.mbhCode || "",
               mbhIsActive: mbHead.mbhIsActive ?? true,
             }
-          : { mbhMbCosting: "", mbhOracleSysId: "", mbhMgtName: "", mbhDenier: "", mbhFilament: "", mbhDozing: "", mbhIsActive: true }
+          : { mbhMbCosting: "", mbhOracleSysId: "", mbhMgtName: "", mbhDenier: "", mbhFilament: "", mbhDozing: "", mbhCheckStatus: "", mbhStatus: "", mbhLdrPrsn: null, mbhFinalProduct: "", mbhCode: "", mbhIsActive: true }
       )
     }
   }, [open, mbHead, form])
@@ -93,6 +105,11 @@ export function MBHeadFormDialog({ open, onOpenChange, mbHead, onSuccess }: MBHe
             mbhDenier: toOptNum(values.mbhDenier),
             mbhFilament: toOptNum(values.mbhFilament),
             mbhDozing: toOptNum(values.mbhDozing),
+            mbhCheckStatus: values.mbhCheckStatus || undefined,
+            mbhStatus: values.mbhStatus || undefined,
+            mbhLdrPrsn: values.mbhLdrPrsn ?? undefined,
+            mbhFinalProduct: values.mbhFinalProduct || undefined,
+            mbhCode: values.mbhCode || undefined,
             mbhIsActive: values.mbhIsActive,
           },
         })
@@ -104,6 +121,11 @@ export function MBHeadFormDialog({ open, onOpenChange, mbHead, onSuccess }: MBHe
           mbhDenier: toOptNum(values.mbhDenier),
           mbhFilament: toOptNum(values.mbhFilament),
           mbhDozing: toOptNum(values.mbhDozing),
+          mbhCheckStatus: values.mbhCheckStatus || undefined,
+          mbhStatus: values.mbhStatus || undefined,
+          mbhLdrPrsn: values.mbhLdrPrsn ?? undefined,
+          mbhFinalProduct: values.mbhFinalProduct || undefined,
+          mbhCode: values.mbhCode || undefined,
         })
       }
       onOpenChange(false)
@@ -210,6 +232,79 @@ export function MBHeadFormDialog({ open, onOpenChange, mbHead, onSuccess }: MBHe
                 </FormItem>
               )}
             />
+
+            {/* Oracle Data */}
+            <div className="border-t pt-4 mt-2">
+              <p className="text-sm font-medium text-muted-foreground mb-3">Oracle Data</p>
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="mbhCode"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Code <span className="text-xs text-muted-foreground">(optional)</span></FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Optional" disabled={isPending} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="mbhStatus"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Status <span className="text-xs text-muted-foreground">(optional)</span></FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Optional" disabled={isPending} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="mbhCheckStatus"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Check Status <span className="text-xs text-muted-foreground">(optional)</span></FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Optional" disabled={isPending} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="mbhLdrPrsn"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>LDR Prsn <span className="text-xs text-muted-foreground">(optional)</span></FormLabel>
+                      <FormControl>
+                        <Input {...field} type="number" step="0.000001" value={field.value ?? ""} placeholder="Optional" disabled={isPending}
+                          onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="mbhFinalProduct"
+                  render={({ field }) => (
+                    <FormItem className="col-span-2">
+                      <FormLabel>Final Product <span className="text-xs text-muted-foreground">(optional)</span></FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Optional" disabled={isPending} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
 
             {isEditing && (
               <FormField
