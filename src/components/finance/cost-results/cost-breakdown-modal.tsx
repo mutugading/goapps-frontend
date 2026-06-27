@@ -1,13 +1,18 @@
 "use client"
 
+import { ArrowRight, X } from "lucide-react"
+
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetDescription,
+  SheetTitle,
+} from "@/components/ui/sheet"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   Table,
   TableBody,
@@ -17,7 +22,10 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { UserName } from "@/components/common/user-name"
 import { useCostBreakdown } from "@/hooks/finance/use-cost-calc"
+import { useCostProductMaster } from "@/hooks/finance/use-cost-product-master"
+import { useProductRequiredParams } from "@/hooks/finance/use-cost-product-parameter"
 import type {
   CalculationType,
   CostBreakdown,
@@ -48,114 +56,192 @@ export function CostBreakdownModal({
     open ? period : undefined,
     open ? calcType : undefined,
   )
+  const s = breakdown?.summary
+
+  // Same fallback as detail page — breakdown summary may also have empty code/name.
+  const needsFallback = s != null && (!s.productCode || !s.productName)
+  const { data: productMaster } = useCostProductMaster(needsFallback ? productSysId : undefined)
+  const productCode = s?.productCode || productMaster?.productCode || `#${productSysId}`
+  const productName = s?.productName || productMaster?.productName || ""
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <DialogTitle>
-            Cost breakdown
-            {breakdown?.summary
-              ? ` — ${breakdown.summary.productCode} (${breakdown.summary.period} / ${breakdown.summary.calculationType})`
-              : ""}
-          </DialogTitle>
-        </DialogHeader>
-        {isLoading || !breakdown ? (
-          <div className="text-sm text-muted-foreground py-8 text-center">
-            Loading…
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent
+        side="right"
+        showCloseButton={false}
+        className="flex w-full flex-col gap-0 p-0 sm:max-w-3xl"
+      >
+        {/* ── Sticky header ── same structure as FillParamDrawer */}
+        <div className="flex shrink-0 items-start gap-3 border-b bg-background px-6 py-4">
+          <div className="min-w-0 flex-1 space-y-1">
+            <SheetTitle className="text-base font-semibold leading-tight">
+              {productName || productCode}
+            </SheetTitle>
+            <SheetDescription className="text-xs text-muted-foreground">
+              {productName ? `${productCode}  ·  ` : ""}Period {period} · {calcType}
+              {s?.version !== undefined ? ` · v${s.version}` : ""}
+            </SheetDescription>
           </div>
-        ) : (
-          <Tabs defaultValue="summary" className="flex-1 overflow-hidden flex flex-col">
-            <TabsList>
-              <TabsTrigger value="summary">Summary</TabsTrigger>
-              <TabsTrigger value="by-level">
-                By level ({breakdown.byLevel.length})
-              </TabsTrigger>
-              <TabsTrigger value="rm-breakdown">
-                RM breakdown ({breakdown.rmDetails.length})
-              </TabsTrigger>
-              <TabsTrigger value="formula-trace">
-                Formula trace ({breakdown.formulaTrace.length})
-              </TabsTrigger>
-            </TabsList>
-            <div className="flex-1 overflow-auto mt-4">
-              <TabsContent value="summary">
-                <SummaryTab breakdown={breakdown} />
+          <div className="flex shrink-0 items-center gap-1">
+            <SheetClose asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <X className="h-4 w-4" />
+                <span className="sr-only">Close</span>
+              </Button>
+            </SheetClose>
+          </div>
+        </div>
+
+        {/* ── Loading ── */}
+        {isLoading && (
+          <div className="flex-1 space-y-4 overflow-y-auto px-6 py-5">
+            <Skeleton className="h-10 w-64" />
+            <Skeleton className="h-32 w-full rounded-lg" />
+            <Skeleton className="h-48 w-full rounded-lg" />
+          </div>
+        )}
+
+        {/* ── Tabs + scrollable content ── */}
+        {!isLoading && breakdown && (
+          <Tabs
+            defaultValue="summary"
+            className="flex flex-1 flex-col overflow-hidden"
+          >
+            {/* Tab list — sticky below header, standard shadcn TabsList */}
+            <div className="shrink-0 border-b bg-background px-4 py-3">
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="summary">Summary</TabsTrigger>
+                <TabsTrigger value="by-level">
+                  By level
+                  <span className="ml-1 text-xs opacity-60">{breakdown.byLevel.length}</span>
+                </TabsTrigger>
+                <TabsTrigger value="rm">
+                  RM
+                  <span className="ml-1 text-xs opacity-60">{breakdown.rmDetails.length}</span>
+                </TabsTrigger>
+                <TabsTrigger value="formula">
+                  Formula
+                  <span className="ml-1 text-xs opacity-60">{breakdown.formulaTrace.length}</span>
+                </TabsTrigger>
+              </TabsList>
+            </div>
+
+            {/* Scrollable panels — only the active TabsContent is visible */}
+            <div className="flex-1 overflow-y-auto">
+              <TabsContent value="summary" className="m-0 px-6 py-5">
+                <SummaryTab breakdown={breakdown} productSysId={productSysId} />
               </TabsContent>
-              <TabsContent value="by-level">
+              <TabsContent value="by-level" className="m-0 px-6 py-5">
                 <ByLevelTab rows={breakdown.byLevel} />
               </TabsContent>
-              <TabsContent value="rm-breakdown">
+              <TabsContent value="rm" className="m-0 px-6 py-5">
                 <RmTab rows={breakdown.rmDetails} />
               </TabsContent>
-              <TabsContent value="formula-trace">
-                <FormulaTraceTab
-                  rows={breakdown.formulaTrace}
-                  paramSnapshot={breakdown.paramSnapshot}
-                />
+              <TabsContent value="formula" className="m-0 px-6 py-5">
+                <FormulaTraceTab rows={breakdown.formulaTrace} />
               </TabsContent>
             </div>
           </Tabs>
         )}
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   )
 }
 
-// ---------- Summary tab ----------
+// ── Summary tab ───────────────────────────────────────────────────────────────
 
-function SummaryTab({ breakdown }: { breakdown: CostBreakdown }) {
+function SummaryTab({ breakdown, productSysId }: { breakdown: CostBreakdown; productSysId: number }) {
   const s = breakdown.summary
   const snapshotEntries = Object.entries(breakdown.paramSnapshot)
+
+  // Fetch parameter definitions for this product to get the proper displayGroup labels.
+  const { data: requiredParams = [] } = useProductRequiredParams(productSysId)
+  const groupMap = new Map(requiredParams.map((p) => [p.paramCode, p.displayGroup || "Other"]))
+
+  // Group snapshot entries by displayGroup from the parameter master.
+  // Fall back to "Other" for params not found in the map.
+  const grouped: Record<string, [string, string][]> = {}
+  for (const [k, v] of snapshotEntries) {
+    const group = groupMap.get(k) || "General"
+    if (!grouped[group]) grouped[group] = []
+    grouped[group].push([k, v])
+  }
+  const groupEntries = Object.entries(grouped).sort(([a], [b]) =>
+    a === "General" ? 1 : b === "General" ? -1 : a.localeCompare(b),
+  )
+
   return (
-    <div className="space-y-4">
-      {s ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">
-              {s.productCode} — {s.productName}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="grid grid-cols-2 gap-4 md:grid-cols-4">
-            <Stat
-              label="Cost per unit"
-              value={`${s.currencyCode || ""} ${formatNumeric(s.costPerUnit)}`.trim()}
-              highlight
-            />
-            <Stat label="Total RM cost" value={formatNumeric(s.totalRmCost)} />
-            <Stat label="Conversion" value={formatNumeric(s.totalConversion)} />
-            <Stat label="Total cost" value={formatNumeric(s.totalCost)} />
-            <Stat label="Version" value={`v${s.version}`} />
-            <Stat label="Status" value={<Badge>{s.status}</Badge>} />
-            <Stat label="Calculated" value={formatDate(s.calculatedAt)} />
-            <Stat label="By" value={s.calculatedBy || "—"} />
-          </CardContent>
-        </Card>
-      ) : null}
+    <div className="space-y-5">
+      {s && (
+        <div className="grid grid-cols-2 gap-x-6 gap-y-4 text-sm md:grid-cols-4">
+          <Field label="Cost per unit">
+            <span className="text-xl font-semibold tabular-nums">
+              {s.currencyCode ? `${s.currencyCode} ` : ""}
+              {formatNumeric(s.costPerUnit)}
+            </span>
+          </Field>
+          <Field label="Total RM cost">
+            <span className="font-mono tabular-nums">{formatNumeric(s.totalRmCost)}</span>
+          </Field>
+          <Field label="Conversion">
+            <span className="font-mono tabular-nums">{formatNumeric(s.totalConversion)}</span>
+          </Field>
+          <Field label="Total cost">
+            <span className="font-mono font-semibold tabular-nums">{formatNumeric(s.totalCost)}</span>
+          </Field>
+          <Field label="Calculated">
+            <span className="text-muted-foreground">{formatDate(s.calculatedAt)}</span>
+          </Field>
+          <Field label="By">
+            {s.calculatedBy
+              ? <UserName userId={s.calculatedBy} compact className="text-muted-foreground" />
+              : <span className="text-muted-foreground">—</span>}
+          </Field>
+          {s.verifiedAt && (
+            <Field label="Verified">
+              <span className="text-muted-foreground">{formatDate(s.verifiedAt)}</span>
+            </Field>
+          )}
+          {s.verifiedBy && (
+            <Field label="Verified by">
+              <UserName userId={s.verifiedBy} compact className="text-muted-foreground" />
+            </Field>
+          )}
+        </div>
+      )}
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm">
-            Parameter snapshot ({snapshotEntries.length})
+          <CardTitle className="text-sm font-semibold">
+            Parameter snapshot
+            <span className="ml-2 text-xs font-normal text-muted-foreground">
+              {snapshotEntries.length} params · {groupEntries.length} groups
+            </span>
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           {snapshotEntries.length === 0 ? (
-            <div className="text-sm text-muted-foreground">No parameters captured.</div>
+            <p className="text-sm text-muted-foreground">No parameters captured.</p>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1 max-h-96 overflow-auto">
-              {snapshotEntries.map(([k, v]) => (
-                <div
-                  key={k}
-                  className="flex items-baseline justify-between gap-4 border-b py-1 text-sm"
-                >
-                  <span className="font-mono text-xs text-muted-foreground truncate">
-                    {k}
-                  </span>
-                  <span className="font-mono text-xs tabular-nums">{v}</span>
+            groupEntries.map(([groupName, entries]) => (
+              <div key={groupName}>
+                <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  {groupName}
+                  <span className="ml-1.5 font-normal normal-case">({entries.length})</span>
+                </p>
+                <div className="grid grid-cols-1 gap-x-8 sm:grid-cols-2">
+                  {entries.map(([k, v]) => (
+                    <div
+                      key={k}
+                      className="flex items-baseline justify-between gap-3 border-b py-1.5 last:border-0"
+                    >
+                      <span className="min-w-0 truncate font-mono text-xs text-muted-foreground">{k}</span>
+                      <span className="shrink-0 font-mono text-xs tabular-nums">{v}</span>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </div>
+            ))
           )}
         </CardContent>
       </Card>
@@ -163,174 +249,173 @@ function SummaryTab({ breakdown }: { breakdown: CostBreakdown }) {
   )
 }
 
-function Stat({
-  label,
-  value,
-  highlight,
-}: {
-  label: string
-  value: React.ReactNode
-  highlight?: boolean
-}) {
+// ── By level tab ──────────────────────────────────────────────────────────────
+
+function ByLevelTab({ rows }: { rows: LevelBreakdown[] }) {
+  if (rows.length === 0) {
+    return <p className="text-sm text-muted-foreground">No level data.</p>
+  }
   return (
-    <div>
-      <div className="text-xs text-muted-foreground">{label}</div>
-      <div className={highlight ? "text-2xl font-semibold tabular-nums" : "text-sm"}>
-        {value}
+    <div className="overflow-x-auto rounded-md border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-16">Level</TableHead>
+            <TableHead>Product</TableHead>
+            <TableHead className="text-right">Cost contribution</TableHead>
+            <TableHead className="w-28 text-right">Ratio</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {rows.map((r, i) => (
+            <TableRow key={`${r.level}-${r.productSysId}-${i}`}>
+              <TableCell className="font-mono text-sm font-medium">{r.level}</TableCell>
+              <TableCell>
+                <p className="font-mono text-xs text-muted-foreground">{r.productCode}</p>
+                <p className="text-sm">{r.productName}</p>
+              </TableCell>
+              <TableCell className="text-right font-mono text-sm tabular-nums">
+                {formatNumeric(r.costContribution)}
+              </TableCell>
+              <TableCell className="text-right font-mono text-sm tabular-nums">
+                {formatNumeric(r.ratio)}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  )
+}
+
+// ── RM breakdown tab ──────────────────────────────────────────────────────────
+
+function RmTab({ rows }: { rows: CostRmDetail[] }) {
+  if (rows.length === 0) {
+    return <p className="text-sm text-muted-foreground">No RM data.</p>
+  }
+  return (
+    <div className="overflow-x-auto rounded-md border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-24">Type</TableHead>
+            <TableHead>Reference</TableHead>
+            <TableHead>Shade</TableHead>
+            <TableHead className="text-right">Unit cost</TableHead>
+            <TableHead className="text-right">Ratio</TableHead>
+            <TableHead className="text-right">Contribution</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {rows.map((r, i) => (
+            <TableRow key={`${r.rmType}-${r.refCode}-${i}`}>
+              <TableCell>
+                <Badge variant="outline" className="font-mono text-xs font-normal">
+                  {r.rmType}
+                </Badge>
+              </TableCell>
+              <TableCell>
+                <p className="font-mono text-xs text-muted-foreground">{r.refCode}</p>
+                <p className="text-sm">{r.refLabel}</p>
+              </TableCell>
+              <TableCell className="font-mono text-xs text-muted-foreground">
+                {r.shadeCode || "—"}
+              </TableCell>
+              <TableCell className="text-right font-mono text-sm tabular-nums">
+                {formatNumeric(r.unitCost)}
+              </TableCell>
+              <TableCell className="text-right font-mono text-sm tabular-nums">
+                {formatNumeric(r.ratio)}
+              </TableCell>
+              <TableCell className="text-right font-mono text-sm font-semibold tabular-nums">
+                {formatNumeric(r.contribution)}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  )
+}
+
+// ── Formula trace tab — compact card per formula ──────────────────────────────
+
+function FormulaTraceTab({ rows }: { rows: FormulaEval[] }) {
+  if (rows.length === 0) {
+    return <p className="text-sm text-muted-foreground">No formula evaluations.</p>
+  }
+  return (
+    <div className="space-y-2">
+      {rows.map((f, i) => (
+        <FormulaCard key={`${f.formulaCode}-${i}`} formula={f} />
+      ))}
+    </div>
+  )
+}
+
+function FormulaCard({ formula: f }: { formula: FormulaEval }) {
+  const inputEntries = Object.entries(f.inputs ?? {})
+  return (
+    <div className="overflow-hidden rounded-lg border bg-card text-card-foreground">
+      {/* Card header row — code + output param */}
+      <div className="flex items-center justify-between gap-3 border-b bg-muted/40 px-4 py-2">
+        <div className="flex min-w-0 items-center gap-2">
+          <code className="shrink-0 font-mono text-xs font-medium text-foreground">
+            {f.formulaCode}
+          </code>
+          {f.formulaName && (
+            <span className="truncate text-xs text-muted-foreground">
+              · {f.formulaName}
+            </span>
+          )}
+        </div>
+        <div className="flex shrink-0 items-center gap-1 text-muted-foreground">
+          <ArrowRight className="h-3.5 w-3.5" />
+          <code className="font-mono text-xs">{f.outputParamCode}</code>
+        </div>
+      </div>
+
+      {/* Card body */}
+      <div className="space-y-2.5 px-4 py-3">
+        {/* Expression */}
+        <pre className="overflow-x-auto rounded-md bg-muted/50 px-3 py-2 font-mono text-xs leading-relaxed">
+          {f.expression}
+        </pre>
+
+        {/* Inputs — compact inline pairs */}
+        {inputEntries.length > 0 && (
+          <div className="flex flex-wrap gap-x-4 gap-y-1">
+            <span className="text-xs text-muted-foreground">Inputs:</span>
+            {inputEntries.map(([k, v]) => (
+              <span key={k} className="inline-flex items-center gap-1 text-xs">
+                <span className="font-mono text-muted-foreground">{k}</span>
+                <span className="text-muted-foreground/50">=</span>
+                <span className="font-mono font-medium tabular-nums">{v}</span>
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Output */}
+        <div className="flex items-center gap-2 border-t pt-2 text-xs">
+          <span className="text-muted-foreground">Output</span>
+          <span className="font-mono text-sm font-semibold tabular-nums">
+            {formatNumeric(f.outputValue)}
+          </span>
+        </div>
       </div>
     </div>
   )
 }
 
-// ---------- By level tab ----------
+// ── Shared ────────────────────────────────────────────────────────────────────
 
-function ByLevelTab({ rows }: { rows: LevelBreakdown[] }) {
-  if (rows.length === 0) {
-    return <div className="text-sm text-muted-foreground">No level data.</div>
-  }
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Level</TableHead>
-          <TableHead>Product</TableHead>
-          <TableHead className="text-right">Cost contribution</TableHead>
-          <TableHead className="text-right">Ratio</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {rows.map((r, idx) => (
-          <TableRow key={`${r.level}-${r.productSysId}-${idx}`}>
-            <TableCell>{r.level}</TableCell>
-            <TableCell>
-              <div className="flex flex-col">
-                <span className="font-mono text-xs text-muted-foreground">
-                  {r.productCode}
-                </span>
-                <span>{r.productName}</span>
-              </div>
-            </TableCell>
-            <TableCell className="text-right tabular-nums">
-              {formatNumeric(r.costContribution)}
-            </TableCell>
-            <TableCell className="text-right tabular-nums">
-              {formatNumeric(r.ratio)}
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
-  )
-}
-
-// ---------- RM breakdown tab ----------
-
-function RmTab({ rows }: { rows: CostRmDetail[] }) {
-  if (rows.length === 0) {
-    return <div className="text-sm text-muted-foreground">No RM data.</div>
-  }
-  return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>RM Type</TableHead>
-          <TableHead>Ref</TableHead>
-          <TableHead>Shade</TableHead>
-          <TableHead className="text-right">Unit cost</TableHead>
-          <TableHead className="text-right">Ratio</TableHead>
-          <TableHead className="text-right">Contribution</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {rows.map((r, idx) => (
-          <TableRow key={`${r.rmType}-${r.refCode}-${idx}`}>
-            <TableCell>
-              <Badge variant="outline">{r.rmType}</Badge>
-            </TableCell>
-            <TableCell>
-              <div className="flex flex-col">
-                <span className="font-mono text-xs text-muted-foreground">
-                  {r.refCode}
-                </span>
-                <span>{r.refLabel}</span>
-              </div>
-            </TableCell>
-            <TableCell className="font-mono text-xs">{r.shadeCode || "—"}</TableCell>
-            <TableCell className="text-right tabular-nums">
-              {formatNumeric(r.unitCost)}
-            </TableCell>
-            <TableCell className="text-right tabular-nums">
-              {formatNumeric(r.ratio)}
-            </TableCell>
-            <TableCell className="text-right tabular-nums font-semibold">
-              {formatNumeric(r.contribution)}
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
-  )
-}
-
-// ---------- Formula trace tab ----------
-
-function FormulaTraceTab({
-  rows,
-  paramSnapshot: _paramSnapshot,
-}: {
-  rows: FormulaEval[]
-  paramSnapshot: Record<string, string>
-}) {
-  void _paramSnapshot
-  if (rows.length === 0) {
-    return <div className="text-sm text-muted-foreground">No formula evaluations.</div>
-  }
-  return (
-    <div className="space-y-3">
-      {rows.map((f, idx) => {
-        const inputEntries = Object.entries(f.inputs ?? {})
-        return (
-          <Card key={`${f.formulaCode}-${idx}`}>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-baseline justify-between gap-2">
-                <span>
-                  <span className="font-mono text-xs text-muted-foreground mr-2">
-                    {f.formulaCode}
-                  </span>
-                  {f.formulaName}
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  → {f.outputParamCode}
-                </span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <pre className="bg-muted/40 rounded px-3 py-2 text-xs overflow-x-auto">
-                <code>{f.expression}</code>
-              </pre>
-              {inputEntries.length > 0 && (
-                <div className="text-xs">
-                  <span className="text-muted-foreground mr-2">Inputs:</span>
-                  {inputEntries.map(([k, v], i) => (
-                    <span key={k} className="inline-block mr-3">
-                      <span className="font-mono text-muted-foreground">{k}</span>
-                      <span className="mx-1">=</span>
-                      <span className="font-mono tabular-nums">{v}</span>
-                      {i < inputEntries.length - 1 ? "" : ""}
-                    </span>
-                  ))}
-                </div>
-              )}
-              <div className="text-sm">
-                <span className="text-muted-foreground mr-2">Output:</span>
-                <span className="font-mono font-semibold tabular-nums">
-                  {formatNumeric(f.outputValue)}
-                </span>
-              </div>
-            </CardContent>
-          </Card>
-        )
-      })}
+    <div className="space-y-1">
+      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dd>{children}</dd>
     </div>
   )
 }

@@ -11,6 +11,8 @@ import { KpiCard, KpiGrid } from "@/components/common"
 import { StatusBadge } from "@/components/common/status-badge"
 import { UserName } from "@/components/common/user-name"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select"
@@ -31,8 +33,6 @@ interface FiltersState {
   pageSize: number
 }
 
-// Default view: latest period, ACTUAL, active rows — NO forced filters. Users
-// narrow from here. The backend resolves the latest period when none is given.
 const defaultFilters: FiltersState = {
   period: "",
   calcType: "ACTUAL",
@@ -83,135 +83,201 @@ export function CostResultsPageClient() {
   }, [items, totalItems])
 
   return (
-    <div className="space-y-6">
+    <div className="w-full min-w-0 space-y-5">
       <PageHeader
-        title="Cost results"
+        title="Cost Results"
         subtitle={`Per-product unit costs · ${resolvedPeriod}`}
       />
 
       <KpiGrid>
-        <KpiCard title="Results (period)" value={kpis.total.toLocaleString()} icon={ListChecks} />
-        <KpiCard title="Shown on page" value={kpis.onPage} icon={Layers} />
-        <KpiCard title="Verified / approved" value={kpis.verified} icon={CheckCircle2} variant="success" />
+        <KpiCard
+          title="Results (period)"
+          value={kpis.total.toLocaleString()}
+          icon={ListChecks}
+          loading={isLoading}
+        />
+        <KpiCard
+          title="Shown on page"
+          value={kpis.onPage}
+          icon={Layers}
+          loading={isLoading}
+        />
+        <KpiCard
+          title="Verified / approved"
+          value={kpis.verified}
+          icon={CheckCircle2}
+          variant="success"
+          loading={isLoading}
+        />
         <KpiCard
           title="Avg cost / unit"
           value={kpis.avg.toLocaleString("en-US", { maximumFractionDigits: 2 })}
           icon={Calculator}
+          loading={isLoading}
         />
       </KpiGrid>
 
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
-        <DebouncedSearchInput
-          value={filters.search}
-          onValueChange={(search) => setFilters({ ...filters, search, page: 1 })}
-          placeholder="Search product code or name…"
-        />
-        <Input6Period value={filters.period} onChange={(period) => setFilters({ ...filters, period, page: 1 })} />
-        <Select
-          value={filters.calcType || "ALL"}
-          onValueChange={(v) => setFilters({ ...filters, calcType: v === "ALL" ? "" : v, page: 1 })}
-        >
-          <SelectTrigger><SelectValue placeholder="Calc type" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="ALL">All types</SelectItem>
-            {CALC_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        <Select
-          value={filters.status || "ALL"}
-          onValueChange={(v) => setFilters({ ...filters, status: v === "ALL" ? "" : v, page: 1 })}
-        >
-          <SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="ALL">Active (default)</SelectItem>
-            {STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-          </SelectContent>
-        </Select>
-      </div>
+      <Card className="min-w-0">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+          <div>
+            <CardTitle className="text-sm font-semibold">Result list</CardTitle>
+            <CardDescription className="mt-0.5">
+              {isLoading ? "Loading…" : `${totalItems.toLocaleString()} total results`}
+            </CardDescription>
+          </div>
+        </CardHeader>
 
-      {isLoading ? (
-        <div className="space-y-2">
-          {Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
-        </div>
-      ) : items.length === 0 ? (
-        <EmptyState
-          title="No cost results"
-          description="No calculated cost rows for this period/filter. Trigger a calculation from a product or calc job."
-          action={<Button asChild variant="outline"><Link href="/finance/calc-jobs">Go to calc jobs</Link></Button>}
-        />
-      ) : (
-        <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Product</TableHead>
-                <TableHead className="hidden md:table-cell">Type</TableHead>
-                <TableHead className="text-right">Cost / unit</TableHead>
-                <TableHead className="hidden lg:table-cell text-right">RM</TableHead>
-                <TableHead className="hidden lg:table-cell text-right">Conversion</TableHead>
-                <TableHead className="text-right">Total</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="hidden xl:table-cell">By</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {items.map((r) => (
-                <TableRow key={r.costId}>
-                  <TableCell>
-                    <Link
-                      href={`/finance/cost-results/${r.productSysId}/${r.period}/${r.calculationType}`}
-                      className="font-mono text-sm font-medium text-primary hover:underline"
-                    >
-                      {r.productCode || `#${r.productSysId}`}
-                    </Link>
-                    {r.productName && (
-                      <div className="text-xs text-muted-foreground">{r.productName}</div>
-                    )}
-                  </TableCell>
-                  <TableCell className="hidden md:table-cell text-sm">{r.calculationType}</TableCell>
-                  <TableCell className="text-right font-mono text-sm">{fmtMoney(r.costPerUnit)}</TableCell>
-                  <TableCell className="hidden lg:table-cell text-right font-mono text-sm">{fmtMoney(r.totalRmCost)}</TableCell>
-                  <TableCell className="hidden lg:table-cell text-right font-mono text-sm">{fmtMoney(r.totalConversion)}</TableCell>
-                  <TableCell className="text-right font-mono text-sm font-semibold">{fmtMoney(r.totalCost)}</TableCell>
-                  <TableCell><StatusBadge status={r.status} type="cost" size="sm" /></TableCell>
-                  <TableCell className="hidden xl:table-cell text-sm">
-                    {r.calculatedBy ? <UserName userId={r.calculatedBy} /> : "—"}
-                  </TableCell>
-                </TableRow>
+        <CardContent className="space-y-3 pt-0">
+          {/* Filter bar */}
+          <div className="flex flex-wrap items-center gap-2">
+            <DebouncedSearchInput
+              containerClassName="flex-1 min-w-[180px]"
+              value={filters.search}
+              onValueChange={(search) => setFilters({ ...filters, search, page: 1 })}
+              placeholder="Search product code or name…"
+            />
+            <Input6Period
+              value={filters.period}
+              onChange={(period) => setFilters({ ...filters, period, page: 1 })}
+            />
+            <Select
+              value={filters.calcType || "ALL"}
+              onValueChange={(v) => setFilters({ ...filters, calcType: v === "ALL" ? "" : v, page: 1 })}
+            >
+              <SelectTrigger className="h-9 w-[140px]">
+                <SelectValue placeholder="Calc type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">All types</SelectItem>
+                {CALC_TYPES.map((t) => (
+                  <SelectItem key={t} value={t}>{t}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select
+              value={filters.status || "ALL"}
+              onValueChange={(v) => setFilters({ ...filters, status: v === "ALL" ? "" : v, page: 1 })}
+            >
+              <SelectTrigger className="h-9 w-[160px]">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">Active (default)</SelectItem>
+                {STATUSES.map((s) => (
+                  <SelectItem key={s} value={s}>{s}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Table or empty states */}
+          {isLoading ? (
+            <div className="space-y-2">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <Skeleton key={i} className="h-10 w-full" />
               ))}
-            </TableBody>
-          </Table>
-        </div>
-      )}
+            </div>
+          ) : items.length === 0 ? (
+            <EmptyState
+              title="No cost results"
+              description="No calculated cost rows for this period/filter. Trigger a calculation from a product or calc job."
+              action={
+                <Button asChild variant="outline">
+                  <Link href="/finance/calc-jobs">Go to calc jobs</Link>
+                </Button>
+              }
+            />
+          ) : (
+            <div className="overflow-x-auto rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Product</TableHead>
+                    <TableHead className="hidden md:table-cell">Type</TableHead>
+                    <TableHead className="text-right">Cost / unit</TableHead>
+                    <TableHead className="hidden lg:table-cell text-right">RM</TableHead>
+                    <TableHead className="hidden lg:table-cell text-right">Conversion</TableHead>
+                    <TableHead className="text-right">Total</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="hidden xl:table-cell">By</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {items.map((r) => (
+                    <TableRow key={r.costId}>
+                      <TableCell>
+                        <Link
+                          href={`/finance/cost-results/${r.productSysId}/${r.period}/${r.calculationType}`}
+                          className="font-mono text-sm font-medium text-primary hover:underline"
+                        >
+                          {r.productCode || `#${r.productSysId}`}
+                        </Link>
+                        {r.productName && (
+                          <div className="text-xs text-muted-foreground">{r.productName}</div>
+                        )}
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell text-sm">
+                        {r.calculationType}
+                      </TableCell>
+                      <TableCell className="text-right font-mono text-sm tabular-nums">
+                        {fmtMoney(r.costPerUnit)}
+                      </TableCell>
+                      <TableCell className="hidden lg:table-cell text-right font-mono text-sm tabular-nums">
+                        {fmtMoney(r.totalRmCost)}
+                      </TableCell>
+                      <TableCell className="hidden lg:table-cell text-right font-mono text-sm tabular-nums">
+                        {fmtMoney(r.totalConversion)}
+                      </TableCell>
+                      <TableCell className="text-right font-mono text-sm font-semibold tabular-nums">
+                        {fmtMoney(r.totalCost)}
+                      </TableCell>
+                      <TableCell>
+                        <StatusBadge status={r.status} type="cost" size="sm" />
+                      </TableCell>
+                      <TableCell className="hidden xl:table-cell text-sm">
+                        {r.calculatedBy ? (
+                          <UserName userId={r.calculatedBy} compact />
+                        ) : (
+                          "—"
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
 
-      {totalItems > 0 && (
-        <DataTablePagination
-          currentPage={Number(pagination?.currentPage ?? 1)}
-          pageSize={Number(pagination?.pageSize ?? 50)}
-          totalItems={totalItems}
-          totalPages={Number(pagination?.totalPages ?? 0)}
-          onPageChange={(page) => setFilters({ ...filters, page })}
-          onPageSizeChange={(pageSize) => setFilters({ ...filters, pageSize, page: 1 })}
-        />
-      )}
+          {totalItems > 0 && (
+            <DataTablePagination
+              currentPage={Number(pagination?.currentPage ?? 1)}
+              pageSize={Number(pagination?.pageSize ?? 50)}
+              totalItems={totalItems}
+              totalPages={Number(pagination?.totalPages ?? 0)}
+              onPageChange={(page) => setFilters({ ...filters, page })}
+              onPageSizeChange={(pageSize) => setFilters({ ...filters, pageSize, page: 1 })}
+            />
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 }
 
-// Input6Period is a tiny YYYYMM text input that only commits 6-digit values.
+// Period input — 6-digit YYYYMM that only commits on blur when valid.
 function Input6Period({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return (
-    <input
+    <Input
       type="text"
       inputMode="numeric"
       maxLength={6}
-      placeholder="Period YYYYMM (default: this year)"
+      placeholder="Period YYYYMM"
       defaultValue={value}
+      className="h-9 w-[148px]"
       onBlur={(e) => {
         const v = e.target.value.trim()
         if (v === "" || /^[0-9]{6}$/.test(v)) onChange(v)
       }}
-      className="h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
     />
   )
 }
