@@ -113,6 +113,17 @@ const formulaFormSchema = z.object({
       path: ["inputParamIds"],
     })
   }
+  // Prevent self-reference: input param cannot be the same as result param
+  if (
+    data.resultParamId &&
+    data.inputParamIds.includes(data.resultParamId)
+  ) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Input parameters cannot include the result parameter (circular reference)",
+      path: ["inputParamIds"],
+    })
+  }
 })
 
 interface FormulaFormDialogProps {
