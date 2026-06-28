@@ -23,6 +23,12 @@ export async function POST(request: NextRequest) {
       metadata,
     )
 
+    // Surface backend errors (e.g. timeout on very large files) as a non-2xx response
+    // so the frontend can display the message rather than showing an empty result.
+    if (res.base && !res.base.isSuccess) {
+      return NextResponse.json({ base: res.base }, { status: 422 })
+    }
+
     return NextResponse.json({
       isValid: res.isValid,
       sheets: res.sheets.map((sheet) => ({

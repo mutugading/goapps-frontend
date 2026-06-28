@@ -227,7 +227,10 @@ export async function validateBulkProductRoutingFile(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ fileContent, fileName: file.name }),
   })
-  if (!res.ok) throw new Error(`Validation failed: ${res.status}`)
+  if (!res.ok) {
+    const errJson = await res.json().catch(() => null)
+    throw new Error(errJson?.base?.message || `Validation failed: ${res.status}`)
+  }
   const json = await res.json()
 
   if (!json.base?.isSuccess && json.base?.isSuccess !== undefined) {
