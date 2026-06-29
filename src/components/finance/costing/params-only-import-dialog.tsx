@@ -52,6 +52,9 @@ interface ChunkStatus {
 
 const POLL_MS = 3_000
 const MAX_POLL_ERRORS = 5
+// For params-only, a PARTIAL result means some products were skipped (not yet in DB).
+// Auto-retry lets subsequent passes pick up those products once routing is complete.
+const MAX_AUTO_PASSES = 3
 
 export function ParamsOnlyImportDialog({ open, onOpenChange }: Props) {
   const fileRef = useRef<HTMLInputElement>(null)
@@ -67,6 +70,8 @@ export function ParamsOnlyImportDialog({ open, onOpenChange }: Props) {
   const [totalInserted, setTotalInserted] = useState(0)
   const [failedChunks, setFailedChunks] = useState<number[]>([])
   const [templateLoading, setTemplateLoading] = useState(false)
+  const [passNum, setPassNum] = useState(1)
+  const [passStatus, setPassStatus] = useState("")
 
   useEffect(() => {
     if (open) reset()
@@ -82,6 +87,8 @@ export function ParamsOnlyImportDialog({ open, onOpenChange }: Props) {
     setCurrentIdx(0)
     setTotalInserted(0)
     setFailedChunks([])
+    setPassNum(1)
+    setPassStatus("")
     setParseStage("")
     if (fileRef.current) fileRef.current.value = ""
   }
@@ -111,59 +118,90 @@ export function ParamsOnlyImportDialog({ open, onOpenChange }: Props) {
     if (!parsed) return
     abortRef.current = false
     setStep("importing")
-    const failed: number[] = []
 
-    for (let i = fromChunk; i < parsed.chunks.length; i++) {
-      if (abortRef.current) break
-      setCurrentIdx(i)
-      updateChunk(i, { status: "uploading" })
+    let prevFailedCount = parsed.chunks.length
+    let currentPass = fromChunk === 0 ? 1 : passNum
 
-      const chunk = parsed.chunks[i]
-      const chunkFile = new File([chunk.blob], chunk.fileName, {
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      })
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      setPassNum(currentPass)
+      setPassStatus(currentPass > 1 ? `Pass ${currentPass}/${MAX_AUTO_PASSES} — retrying ${prevFailedCount} failed chunks…` : "")
 
-      let jobId: number
-      try {
-        const res = await bulkImportParamsOnly(chunkFile)
-        jobId = res.jobId
-        updateChunk(i, { status: "polling", jobId })
-      } catch (e) {
-        toast.error(`Chunk ${i + 1} upload failed: ${String(e)}`)
-        updateChunk(i, { status: "failed" })
-        failed.push(i)
-        continue
+      if (currentPass > 1) {
+        setChunks((prev) => prev.map((c) => ({ ...c, status: c.status === "failed" ? "pending" : c.status })))
       }
 
-      let pollErrors = 0
-      let done = false
-      while (!abortRef.current && !done) {
-        await delay(POLL_MS)
+      const failed: number[] = []
+
+      for (let i = fromChunk; i < parsed.chunks.length; i++) {
+        if (abortRef.current) break
+        if (currentPass > 1) {
+          const cur = chunks.find((c) => c.index === i)
+          if (cur && (cur.status === "done" || cur.status === "partial")) continue
+        }
+        setCurrentIdx(i)
+        updateChunk(i, { status: "uploading" })
+
+        const chunk = parsed.chunks[i]
+        const chunkFile = new File([chunk.blob], chunk.fileName, {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        })
+
+        let jobId: number
         try {
-          const job = await getImportJob(jobId)
-          if (job.status === "DONE" || job.status === "PARTIAL" || job.status === "FAILED") {
-            const ok = job.status !== "FAILED"
-            updateChunk(i, {
-              status: ok ? (job.status === "DONE" ? "done" : "partial") : "failed",
-              inserted: job.success,
-            })
-            if (ok) setTotalInserted((n) => n + (job.success ?? 0))
-            else failed.push(i)
-            done = true
-          }
-        } catch {
-          pollErrors++
-          if (pollErrors >= MAX_POLL_ERRORS) {
-            updateChunk(i, { status: "failed" })
-            failed.push(i)
-            done = true
+          const res = await bulkImportParamsOnly(chunkFile)
+          jobId = res.jobId
+          updateChunk(i, { status: "polling", jobId })
+        } catch (e) {
+          toast.error(`Chunk ${i + 1} upload failed: ${String(e)}`)
+          updateChunk(i, { status: "failed" })
+          failed.push(i)
+          continue
+        }
+
+        let pollErrors = 0
+        let done = false
+        while (!abortRef.current && !done) {
+          await delay(POLL_MS)
+          try {
+            const job = await getImportJob(jobId)
+            if (job.status === "DONE" || job.status === "PARTIAL" || job.status === "FAILED") {
+              const ok = job.status !== "FAILED"
+              updateChunk(i, {
+                status: ok ? (job.status === "DONE" ? "done" : "partial") : "failed",
+                inserted: job.success,
+              })
+              if (ok) setTotalInserted((n) => n + (job.success ?? 0))
+              else failed.push(i)
+              done = true
+            }
+          } catch {
+            pollErrors++
+            if (pollErrors >= MAX_POLL_ERRORS) {
+              updateChunk(i, { status: "failed" })
+              failed.push(i)
+              done = true
+            }
           }
         }
       }
+
+      setFailedChunks(failed)
+
+      if (abortRef.current || failed.length === 0) break
+      if (currentPass >= MAX_AUTO_PASSES) break
+      if (failed.length >= prevFailedCount) {
+        setPassStatus(`Stopped after ${currentPass} passes — ${failed.length} chunks could not be resolved`)
+        break
+      }
+
+      prevFailedCount = failed.length
+      currentPass++
+      fromChunk = 0
     }
 
-    setFailedChunks(failed)
-    setStep(failed.length === 0 ? "done" : "failed")
+    const finalFailed = chunks.filter((c) => c.status === "failed").length
+    setStep(finalFailed === 0 ? "done" : "failed")
   }
 
   function updateChunk(index: number, patch: Partial<ChunkStatus>) {
@@ -280,10 +318,13 @@ export function ParamsOnlyImportDialog({ open, onOpenChange }: Props) {
           {step === "importing" && parsed && (
             <div className="space-y-3">
               <div className="flex items-center justify-between text-sm">
-                <span className="font-medium">Chunk {currentIdx + 1} / {parsed.chunks.length}</span>
+                <span className="font-medium">
+                  {passNum > 1 ? `Pass ${passNum}/${MAX_AUTO_PASSES} · ` : ""}Chunk {currentIdx + 1} / {parsed.chunks.length}
+                </span>
                 <span className="text-muted-foreground">{totalInserted.toLocaleString()} rows imported</span>
               </div>
               <Progress value={progressPct} className="h-2" />
+              {passStatus && <p className="text-xs text-muted-foreground">{passStatus}</p>}
               <p className="text-xs text-muted-foreground text-center">{doneCount}/{parsed.chunks.length} complete ({progressPct}%)</p>
               <div className="max-h-32 overflow-y-auto rounded border p-2">
                 <div className="flex flex-wrap gap-1.5">
