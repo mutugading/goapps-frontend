@@ -23,6 +23,12 @@ export interface SheetGroupConfig {
   baseName: string
   /** Sheet name written into each output chunk file. */
   outputName: string
+  /**
+   * Per-sheet key column override. Falls back to StartMessage.keyColumn when omitted.
+   * Use when a sheet uses a different column name for the same logical key
+   * (e.g. route_sequences uses "route_head_legacy_product_id" instead of "legacy_oracle_sys_id").
+   */
+  keyColumn?: string
 }
 
 export interface StartMessage {
@@ -137,11 +143,12 @@ async function handleStart(msg: StartMessage) {
         headers = (rows[0] as (string | null)[]).map((h) =>
           h != null ? String(h).trim() : ""
         )
-        keyColIdx = (headers as string[]).indexOf(msg.keyColumn)
+        const effectiveKeyCol = groupCfg.keyColumn ?? msg.keyColumn
+        keyColIdx = (headers as string[]).indexOf(effectiveKeyCol)
         if (keyColIdx === -1) {
           emit({
             type: "error",
-            message: `Sheet "${matching[0]}" does not contain required key column "${msg.keyColumn}". Found: ${headers.filter(Boolean).join(", ")}`,
+            message: `Sheet "${matching[0]}" does not contain key column "${effectiveKeyCol}". Found: ${headers.filter(Boolean).join(", ")}`,
           })
           return
         }

@@ -10,13 +10,16 @@ import {
   FileSpreadsheet,
   Loader2,
   Upload,
+  XCircle,
 } from "lucide-react"
+import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
 import { Dialog } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
+import { Progress } from "@/components/ui/progress"
 import {
   Table,
   TableBody,
@@ -37,18 +40,42 @@ import {
   downloadBulkProductRoutingTemplate,
   exportBulkProductRouting,
   validateBulkProductRoutingFile,
+  getImportJob,
 } from "@/services/finance/cost-import-api"
-import type { BulkSheetValidationResult, BulkValidationResult } from "@/types/finance/cost-import"
+import {
+  chunkExcelFile,
+  BULK_ROUTING_CONFIG,
+  type ChunkResult,
+} from "@/lib/excel/chunked-importer"
+import type { BulkValidationResult } from "@/types/finance/cost-import"
 
 export interface BulkImportDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
 }
 
-type Step = "upload" | "validating" | "validated" | "submitting" | "done"
+// "validate" flow: upload → validating → validated → submitting → done
+// "chunked" flow:  upload → parsing → ready → chunked_importing → chunked_done | chunked_failed
+type Step =
+  | "upload"
+  | "validating" | "validated" | "submitting" | "done"
+  | "parsing" | "ready" | "chunked_importing" | "chunked_done" | "chunked_failed"
+
+interface ChunkStatus {
+  index: number
+  keyCount: number
+  status: "pending" | "uploading" | "polling" | "done" | "partial" | "failed"
+}
+
+const VALIDATE_SIZE_LIMIT = 5 * 1024 * 1024 // 5 MB — matches server-side validate limit
+const POLL_MS = 3_000
+const MAX_POLL_ERRORS = 5
 
 export function BulkImportDialog({ open, onOpenChange }: BulkImportDialogProps) {
   const fileRef = useRef<HTMLInputElement>(null)
+  const router = useRouter()
+  const abortRef = useRef(false)
+
   const [file, setFile] = useState<File | null>(null)
   const [step, setStep] = useState<Step>("upload")
   const [validation, setValidation] = useState<BulkValidationResult | null>(null)
@@ -56,17 +83,30 @@ export function BulkImportDialog({ open, onOpenChange }: BulkImportDialogProps) 
   const [jobId, setJobId] = useState<number | null>(null)
   const [templateLoading, setTemplateLoading] = useState(false)
 
-  // Stable reset function — called from handleClose and when open changes
+  // Chunked state
+  const [parseStage, setParseStage] = useState("")
+  const [parsed, setParsed] = useState<ChunkResult | null>(null)
+  const [chunks, setChunks] = useState<ChunkStatus[]>([])
+  const [currentIdx, setCurrentIdx] = useState(0)
+  const [totalInserted, setTotalInserted] = useState(0)
+  const [failedChunks, setFailedChunks] = useState<number[]>([])
+
   function resetState() {
+    abortRef.current = false
     setFile(null)
     setStep("upload")
     setValidation(null)
     setExpandedSheets(new Set())
     setJobId(null)
+    setParsed(null)
+    setChunks([])
+    setCurrentIdx(0)
+    setTotalInserted(0)
+    setFailedChunks([])
+    setParseStage("")
     if (fileRef.current) fileRef.current.value = ""
   }
 
-  // Reset all state when dialog opens
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { if (open) resetState() }, [open])
 
@@ -115,7 +155,77 @@ export function BulkImportDialog({ open, onOpenChange }: BulkImportDialogProps) 
     }
   }
 
+  // ── Chunked import flow ────────────────────────────────────────────────────
+  async function handleChunkedImport() {
+    if (!file) return
+    setStep("parsing")
+    try {
+      const result = await chunkExcelFile(file, BULK_ROUTING_CONFIG, setParseStage)
+      setParsed(result)
+      setChunks(result.chunks.map((c) => ({ index: c.index, keyCount: c.keyCount, status: "pending" })))
+      setStep("ready")
+    } catch (e) {
+      toast.error(`Parse failed: ${String(e)}`)
+      setStep("upload")
+    }
+  }
+
+  async function startChunkedImport(fromChunk = 0) {
+    if (!parsed) return
+    abortRef.current = false
+    setStep("chunked_importing")
+    const failed: number[] = []
+
+    for (let i = fromChunk; i < parsed.chunks.length; i++) {
+      if (abortRef.current) break
+      setCurrentIdx(i)
+      updateChunk(i, "uploading")
+
+      const chunk = parsed.chunks[i]
+      const chunkFile = new File([chunk.blob], chunk.fileName, {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      })
+
+      let cJobId: number
+      try {
+        const res = await bulkImportProductMasterRouting(chunkFile, "update")
+        cJobId = res.jobId
+        updateChunk(i, "polling")
+      } catch (e) {
+        toast.error(`Chunk ${i + 1} upload failed: ${String(e)}`)
+        updateChunk(i, "failed")
+        failed.push(i)
+        continue
+      }
+
+      let pollErrors = 0
+      let done = false
+      while (!abortRef.current && !done) {
+        await new Promise<void>((r) => setTimeout(r, POLL_MS))
+        try {
+          const job = await getImportJob(cJobId)
+          if (job.status === "DONE" || job.status === "PARTIAL" || job.status === "FAILED") {
+            updateChunk(i, job.status !== "FAILED" ? (job.status === "DONE" ? "done" : "partial") : "failed")
+            if (job.status !== "FAILED") setTotalInserted((n) => n + (job.success ?? 0))
+            else failed.push(i)
+            done = true
+          }
+        } catch {
+          if (++pollErrors >= MAX_POLL_ERRORS) { updateChunk(i, "failed"); failed.push(i); done = true }
+        }
+      }
+    }
+
+    setFailedChunks(failed)
+    setStep(failed.length === 0 ? "chunked_done" : "chunked_failed")
+  }
+
+  function updateChunk(index: number, status: ChunkStatus["status"]) {
+    setChunks((prev) => prev.map((c) => (c.index === index ? { ...c, status } : c)))
+  }
+
   function handleClose() {
+    abortRef.current = true
     resetState()
     onOpenChange(false)
   }
@@ -137,6 +247,10 @@ export function BulkImportDialog({ open, onOpenChange }: BulkImportDialogProps) 
   const isSubmitting = step === "submitting"
   const isDone = step === "done"
   const canImport = step === "validated" && !hasErrors && (validation?.isValid ?? false)
+  const isChunkedFlow = ["parsing","ready","chunked_importing","chunked_done","chunked_failed"].includes(step)
+  const fileTooLargeForValidate = (file?.size ?? 0) > VALIDATE_SIZE_LIMIT
+  const doneCount = chunks.filter((c) => c.status === "done" || c.status === "partial").length
+  const progressPct = parsed ? Math.round((doneCount / parsed.chunks.length) * 100) : 0
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -311,35 +425,149 @@ export function BulkImportDialog({ open, onOpenChange }: BulkImportDialogProps) 
             </div>
           )}
 
-          {/* Done */}
+          {/* Done (single-shot) */}
           {isDone && jobId !== null && (
             <div className="flex items-center gap-2 text-sm text-green-600">
               <CheckCircle2 className="h-4 w-4 shrink-0" />
               Import dijadwalkan sebagai Job #{jobId}. Notifikasi akan dikirim saat selesai.
             </div>
           )}
+
+          {/* File too large warning */}
+          {file && step === "upload" && fileTooLargeForValidate && (
+            <div className="flex gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>
+                File {(file.size / 1024 / 1024).toFixed(1)} MB melebihi batas validasi 5 MB.
+                Gunakan <strong>Chunked Import</strong> untuk melanjutkan.
+              </span>
+            </div>
+          )}
+
+          {/* Chunked: parsing */}
+          {step === "parsing" && (
+            <div className="flex flex-col items-center gap-3 py-4">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <div className="text-center">
+                <p className="font-medium">Parsing file…</p>
+                <p className="mt-1 text-sm text-muted-foreground">{parseStage}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Chunked: ready */}
+          {step === "ready" && parsed && (
+            <div className="rounded-lg border bg-muted/40 p-4 space-y-2">
+              <p className="font-medium">File parsed</p>
+              <div className="grid grid-cols-3 gap-3 text-sm">
+                <div><p className="text-muted-foreground">Products</p><p className="font-medium">{parsed.totalKeys.toLocaleString()}</p></div>
+                <div><p className="text-muted-foreground">Total rows</p><p className="font-medium">{parsed.totalRows.toLocaleString()}</p></div>
+                <div><p className="text-muted-foreground">Chunks</p><p className="font-medium">{parsed.chunks.length}</p></div>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                ~{BULK_ROUTING_CONFIG.chunkSize} products per chunk · 6 sheets each
+              </p>
+              <div className="flex gap-2 rounded border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
+                <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                If routing references intermediate products from other chunks, those rows
+                will show as &quot;missing product&quot; warnings (non-fatal).
+              </div>
+            </div>
+          )}
+
+          {/* Chunked: importing */}
+          {step === "chunked_importing" && parsed && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between text-sm">
+                <span className="font-medium">Chunk {currentIdx + 1} / {parsed.chunks.length}</span>
+                <span className="text-muted-foreground">{totalInserted.toLocaleString()} rows imported</span>
+              </div>
+              <Progress value={progressPct} className="h-2" />
+              <div className="max-h-24 overflow-y-auto rounded border p-2">
+                <div className="flex flex-wrap gap-1.5">
+                  {chunks.map((c) => <RoutingChunkBadge key={c.index} chunk={c} current={c.index === currentIdx} />)}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Chunked: done */}
+          {step === "chunked_done" && (
+            <div className="flex items-start gap-3 rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-950">
+              <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-green-600" />
+              <div>
+                <p className="font-medium text-green-800 dark:text-green-200">
+                  Import complete — {totalInserted.toLocaleString()} rows imported
+                </p>
+                <Button variant="link" size="sm" className="mt-1 h-auto p-0 text-green-700"
+                  onClick={() => router.push("/finance/import-jobs")}>
+                  View Import Jobs →
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Chunked: failed */}
+          {step === "chunked_failed" && (
+            <div className="space-y-2">
+              <div className="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-950">
+                <XCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-600" />
+                <div>
+                  <p className="font-medium text-red-800 dark:text-red-200">
+                    {failedChunks.length} chunk{failedChunks.length > 1 ? "s" : ""} failed
+                    {totalInserted > 0 && ` — ${totalInserted.toLocaleString()} rows already imported`}
+                  </p>
+                </div>
+              </div>
+              <div className="max-h-20 overflow-y-auto rounded border p-2">
+                <div className="flex flex-wrap gap-1.5">
+                  {chunks.map((c) => <RoutingChunkBadge key={c.index} chunk={c} current={false} />)}
+                </div>
+              </div>
+            </div>
+          )}
         </ScrollableDialogBody>
 
         <ScrollableDialogFooter>
-          <Button variant="outline" onClick={handleClose} disabled={isSubmitting}>
-            {isDone ? "Tutup" : "Batal"}
+          <Button variant="outline" onClick={handleClose}
+            disabled={isSubmitting || step === "chunked_importing"}>
+            {isDone || step === "chunked_done" || step === "chunked_failed" ? "Tutup" : "Batal"}
           </Button>
 
-          {file && step === "upload" && (
-            <Button onClick={handleValidate} disabled={isValidating}>
+          {/* Validate flow buttons */}
+          {file && step === "upload" && !fileTooLargeForValidate && (
+            <Button variant="outline" onClick={() => void handleValidate()} disabled={isValidating}>
               <CheckCircle2 className="mr-2 h-4 w-4" />
               Validasi
             </Button>
           )}
-
           {canImport && (
-            <Button onClick={handleImport} disabled={isSubmitting}>
-              {isSubmitting ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Upload className="mr-2 h-4 w-4" />
-              )}
-              {isSubmitting ? "Mengantri…" : "Mulai Import"}
+            <Button onClick={() => void handleImport()} disabled={isSubmitting}>
+              {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+              {isSubmitting ? "Mengantri…" : "Import"}
+            </Button>
+          )}
+
+          {/* Chunked flow buttons */}
+          {file && step === "upload" && (
+            <Button onClick={() => void handleChunkedImport()}>
+              <Upload className="mr-2 h-4 w-4" />
+              {fileTooLargeForValidate ? "Chunked Import" : "Import (Chunked)"}
+            </Button>
+          )}
+          {step === "ready" && (
+            <Button onClick={() => void startChunkedImport(0)}>
+              <Upload className="mr-2 h-4 w-4" />
+              Start ({parsed?.chunks.length} chunks)
+            </Button>
+          )}
+          {step === "chunked_importing" && (
+            <Button variant="outline" onClick={() => { abortRef.current = true }}>Stop</Button>
+          )}
+          {step === "chunked_failed" && failedChunks.length > 0 && (
+            <Button onClick={() => void startChunkedImport(failedChunks[0])}>
+              <Upload className="mr-2 h-4 w-4" />
+              Retry chunk {(failedChunks[0] ?? 0) + 1}
             </Button>
           )}
         </ScrollableDialogFooter>
@@ -382,5 +610,24 @@ export function BulkExportButton({
   )
 }
 
-// Re-export BulkSheetValidationResult for any consumers that import from this module
-export type { BulkSheetValidationResult, BulkValidationResult }
+function RoutingChunkBadge({ chunk, current }: { chunk: ChunkStatus; current: boolean }) {
+  const color: Record<ChunkStatus["status"], string> = {
+    pending:   "bg-muted text-muted-foreground",
+    uploading: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200",
+    polling:   "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-200",
+    done:      "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200",
+    partial:   "bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-200",
+    failed:    "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200",
+  }
+  return (
+    <span className={`inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium ${color[chunk.status]} ${current ? "ring-2 ring-primary" : ""}`}
+      title={`Chunk ${chunk.index + 1}: ${chunk.keyCount} products — ${chunk.status}`}>
+      {chunk.index + 1}
+      {current && (chunk.status === "uploading" || chunk.status === "polling") && (
+        <Loader2 className="ml-1 h-2.5 w-2.5 animate-spin" />
+      )}
+    </span>
+  )
+}
+
+export type { BulkValidationResult }
