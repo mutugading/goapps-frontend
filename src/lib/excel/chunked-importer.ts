@@ -68,18 +68,23 @@ export const PARAMS_ONLY_CONFIG: ChunkerConfig = {
   chunkSize: 300,
 }
 
-/** Bulk product + routing import (product_master + route sheets). */
+/**
+ * Bulk product + routing import (product_master + route sheets).
+ *
+ * route_sequences and route_rms use "route_head_legacy_product_id" as their
+ * key column (same value as legacy_oracle_sys_id — the root product ID).
+ */
 export const BULK_ROUTING_CONFIG: ChunkerConfig = {
   sheetGroups: [
-    { baseName: "product_master",     outputName: "product_master" },
-    { baseName: "product_parameters", outputName: "product_parameters" },
+    { baseName: "product_master",            outputName: "product_master" },
+    { baseName: "product_parameters",        outputName: "product_parameters" },
     { baseName: "product_applicable_params", outputName: "product_applicable_params" },
-    { baseName: "route_head",         outputName: "route_head" },
-    { baseName: "route_sequences",    outputName: "route_sequences" },
-    { baseName: "route_rms",          outputName: "route_rms" },
+    { baseName: "route_head",                outputName: "route_head" },
+    { baseName: "route_sequences",           outputName: "route_sequences", keyColumn: "route_head_legacy_product_id" },
+    { baseName: "route_rms",                 outputName: "route_rms",       keyColumn: "route_head_legacy_product_id" },
   ],
   keyColumn: "legacy_oracle_sys_id",
-  chunkSize: 200, // smaller — 6 sheets per product
+  chunkSize: 200,
 }
 
 // ── Core function ──────────────────────────────────────────────────────────
