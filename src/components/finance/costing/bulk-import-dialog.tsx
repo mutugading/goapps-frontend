@@ -44,7 +44,8 @@ import {
 } from "@/services/finance/cost-import-api"
 import {
   chunkExcelFile,
-  BULK_ROUTING_CONFIG,
+  BULK_PRODUCTS_ONLY_CONFIG,
+  BULK_ROUTING_ONLY_CONFIG,
   type ChunkResult,
 } from "@/lib/excel/chunked-importer"
 import type { BulkValidationResult } from "@/types/finance/cost-import"
@@ -88,7 +89,11 @@ export function BulkImportDialog({ open, onOpenChange }: BulkImportDialogProps) 
 
   // Chunked state
   const [parseStage, setParseStage] = useState("")
-  const [parsed, setParsed] = useState<ChunkResult | null>(null)
+  const [parsedPhase1, setParsedPhase1] = useState<ChunkResult | null>(null)
+  const [parsedPhase2, setParsedPhase2] = useState<ChunkResult | null>(null)
+  // Active phase (1=products, 2=routing) and its chunks
+  const [activePhase, setActivePhase] = useState(1)
+  const parsed = activePhase === 1 ? parsedPhase1 : parsedPhase2
   const [chunks, setChunks] = useState<ChunkStatus[]>([])
   const [currentIdx, setCurrentIdx] = useState(0)
   const [totalInserted, setTotalInserted] = useState(0)
@@ -103,7 +108,9 @@ export function BulkImportDialog({ open, onOpenChange }: BulkImportDialogProps) 
     setValidation(null)
     setExpandedSheets(new Set())
     setJobId(null)
-    setParsed(null)
+    setParsedPhase1(null)
+    setParsedPhase2(null)
+    setActivePhase(1)
     setChunks([])
     setCurrentIdx(0)
     setTotalInserted(0)
@@ -167,9 +174,17 @@ export function BulkImportDialog({ open, onOpenChange }: BulkImportDialogProps) 
     if (!file) return
     setStep("parsing")
     try {
-      const result = await chunkExcelFile(file, BULK_ROUTING_CONFIG, setParseStage)
-      setParsed(result)
-      setChunks(result.chunks.map((c) => ({ index: c.index, keyCount: c.keyCount, status: "pending" })))
+      setParseStage("Parsing product sheets (Phase 1)…")
+      const phase1 = await chunkExcelFile(file, BULK_PRODUCTS_ONLY_CONFIG, (s) => setParseStage(`Phase 1: ${s}`))
+      setParsedPhase1(phase1)
+
+      setParseStage("Parsing routing sheets (Phase 2)…")
+      const phase2 = await chunkExcelFile(file, BULK_ROUTING_ONLY_CONFIG, (s) => setParseStage(`Phase 2: ${s}`))
+      setParsedPhase2(phase2)
+
+      // Show Phase 1 chunks initially
+      setActivePhase(1)
+      setChunks(phase1.chunks.map((c) => ({ index: c.index, keyCount: c.keyCount, status: "pending" })))
       setStep("ready")
     } catch (e) {
       toast.error(`Parse failed: ${String(e)}`)
@@ -177,53 +192,49 @@ export function BulkImportDialog({ open, onOpenChange }: BulkImportDialogProps) 
     }
   }
 
-  async function startChunkedImport(fromChunk = 0) {
-    if (!parsed) return
-    abortRef.current = false
-    setStep("chunked_importing")
-
-    let prevFailedCount = parsed.chunks.length // worst case on first pass
-    let currentPass = fromChunk === 0 ? 1 : passNum
+  async function runPhase(phaseParsed: ChunkResult, phaseNum: 1 | 2): Promise<number> {
+    // Returns count of remaining failed chunks after auto-retry.
+    const totalChunks = phaseParsed.chunks.length
+    setChunks(phaseParsed.chunks.map((c) => ({ index: c.index, keyCount: c.keyCount, status: "pending" })))
+    let prevFailedCount = totalChunks
+    let currentPass = 1
 
     // eslint-disable-next-line no-constant-condition
     while (true) {
       setPassNum(currentPass)
-      setPassStatus(currentPass > 1 ? `Pass ${currentPass}/${MAX_AUTO_PASSES} — retrying ${prevFailedCount} failed chunks…` : "")
-
-      // Reset all pending on each pass (keep done/partial from prior passes visible)
+      const phaseLabel = `Phase ${phaseNum}/2`
+      setPassStatus(
+        currentPass > 1
+          ? `${phaseLabel} · Pass ${currentPass}/${MAX_AUTO_PASSES} — retrying ${prevFailedCount} chunks…`
+          : `${phaseLabel} — ${totalChunks} chunks`
+      )
       if (currentPass > 1) {
         setChunks((prev) => prev.map((c) => ({ ...c, status: c.status === "failed" ? "pending" : c.status })))
       }
 
       const failed: number[] = []
-
-      for (let i = fromChunk; i < parsed.chunks.length; i++) {
+      for (let i = 0; i < totalChunks; i++) {
         if (abortRef.current) break
-        // Skip already-succeeded chunks on re-passes
         if (currentPass > 1) {
-          const current = chunks.find((c) => c.index === i)
-          if (current && (current.status === "done" || current.status === "partial")) continue
+          const cur = chunks.find((c) => c.index === i)
+          if (cur && (cur.status === "done" || cur.status === "partial")) continue
         }
-
         setCurrentIdx(i)
         updateChunk(i, "uploading")
-
-        const chunk = parsed.chunks[i]
+        const chunk = phaseParsed.chunks[i]
         const chunkFile = new File([chunk.blob], chunk.fileName, {
           type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         })
-
         let cJobId: number
         try {
           const res = await bulkImportProductMasterRouting(chunkFile, "update")
           cJobId = res.jobId
           updateChunk(i, "polling")
         } catch (e) {
+          toast.error(`Chunk ${i + 1} upload failed: ${String(e)}`)
           updateChunk(i, "failed"); failed.push(i); continue
         }
-
-        let pollErrors = 0
-        let done = false
+        let pollErrors = 0; let done = false
         while (!abortRef.current && !done) {
           await new Promise<void>((r) => setTimeout(r, POLL_MS))
           try {
@@ -239,25 +250,33 @@ export function BulkImportDialog({ open, onOpenChange }: BulkImportDialogProps) 
           }
         }
       }
-
       setFailedChunks(failed)
-
-      // Stop conditions
-      if (abortRef.current || failed.length === 0) break
-      if (currentPass >= MAX_AUTO_PASSES) break
-      if (failed.length >= prevFailedCount) {
-        // No improvement — stop to avoid infinite loop
-        setPassStatus(`Stopped after ${currentPass} passes — no improvement (${failed.length} chunks still failing)`)
-        break
-      }
-
+      if (abortRef.current || failed.length === 0) return failed.length
+      if (currentPass >= MAX_AUTO_PASSES || failed.length >= prevFailedCount) return failed.length
       prevFailedCount = failed.length
       currentPass++
-      fromChunk = 0 // always restart from 0 on subsequent passes
     }
+  }
 
-    const finalFailed = chunks.filter((c) => c.status === "failed").length
-    setStep(finalFailed === 0 ? "chunked_done" : "chunked_failed")
+  async function startChunkedImport(fromChunk = 0) {
+    if (!parsedPhase1 || !parsedPhase2) return
+    abortRef.current = false
+    setStep("chunked_importing")
+
+    // Unused parameter kept for API compatibility with retry button
+    void fromChunk
+
+    // ── Phase 1: products + params (no cross-product deps → converges quickly) ─
+    setActivePhase(1)
+    const p1Failed = await runPhase(parsedPhase1, 1)
+    if (abortRef.current) { setStep("chunked_failed"); return }
+
+    // ── Phase 2: routing only — all products now in DbProductSet → no deadlock ─
+    setActivePhase(2)
+    setPassNum(1)
+    const p2Failed = await runPhase(parsedPhase2, 2)
+
+    setStep(p1Failed + p2Failed === 0 ? "chunked_done" : "chunked_failed")
   }
 
   function updateChunk(index: number, status: ChunkStatus["status"]) {
@@ -496,21 +515,24 @@ export function BulkImportDialog({ open, onOpenChange }: BulkImportDialogProps) 
           )}
 
           {/* Chunked: ready */}
-          {step === "ready" && parsed && (
-            <div className="rounded-lg border bg-muted/40 p-4 space-y-2">
-              <p className="font-medium">File parsed</p>
-              <div className="grid grid-cols-3 gap-3 text-sm">
-                <div><p className="text-muted-foreground">Products</p><p className="font-medium">{parsed.totalKeys.toLocaleString()}</p></div>
-                <div><p className="text-muted-foreground">Total rows</p><p className="font-medium">{parsed.totalRows.toLocaleString()}</p></div>
-                <div><p className="text-muted-foreground">Chunks</p><p className="font-medium">{parsed.chunks.length}</p></div>
+          {step === "ready" && parsedPhase1 && parsedPhase2 && (
+            <div className="rounded-lg border bg-muted/40 p-4 space-y-3">
+              <p className="font-medium">File parsed — Two-Phase Import</p>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="rounded border p-2 space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Phase 1 — Products</p>
+                  <p className="font-medium">{parsedPhase1.totalKeys.toLocaleString()} products · {parsedPhase1.chunks.length} chunks</p>
+                  <p className="text-xs text-muted-foreground">product_master + parameters</p>
+                </div>
+                <div className="rounded border p-2 space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Phase 2 — Routing</p>
+                  <p className="font-medium">{parsedPhase2.totalKeys.toLocaleString()} routes · {parsedPhase2.chunks.length} chunks</p>
+                  <p className="text-xs text-muted-foreground">route_head + sequences + RMs</p>
+                </div>
               </div>
-              <p className="text-xs text-muted-foreground">
-                ~{BULK_ROUTING_CONFIG.chunkSize} products per chunk · 6 sheets each
-              </p>
-              <div className="flex gap-2 rounded border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
+              <div className="flex gap-2 rounded border border-blue-200 bg-blue-50 p-2 text-xs text-blue-800 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-200">
                 <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                If routing references intermediate products from other chunks, those rows
-                will show as &quot;missing product&quot; warnings (non-fatal).
+                Phase 1 imports all products first. Phase 2 imports routing after — no circular dependency issues.
               </div>
             </div>
           )}

@@ -69,10 +69,41 @@ export const PARAMS_ONLY_CONFIG: ChunkerConfig = {
 }
 
 /**
- * Bulk product + routing import (product_master + route sheets).
+ * Phase 1 of a two-phase bulk routing import: products + params only.
+ * All product_master rows are imported before any routing data, so that
+ * Phase 2 route_sequences can reference ANY product without circular-dependency failures.
+ */
+export const BULK_PRODUCTS_ONLY_CONFIG: ChunkerConfig = {
+  sheetGroups: [
+    { baseName: "product_master",            outputName: "product_master" },
+    { baseName: "product_parameters",        outputName: "product_parameters" },
+    { baseName: "product_applicable_params", outputName: "product_applicable_params" },
+  ],
+  keyColumn: "legacy_oracle_sys_id",
+  chunkSize: 300,
+}
+
+/**
+ * Phase 2 of a two-phase bulk routing import: routing data only.
+ * Run AFTER BULK_PRODUCTS_ONLY_CONFIG so all products are in the DB and
+ * node_product_legacy_product_id cross-references always resolve.
  *
  * route_sequences and route_rms use "route_head_legacy_product_id" as their
  * key column (same value as legacy_oracle_sys_id — the root product ID).
+ */
+export const BULK_ROUTING_ONLY_CONFIG: ChunkerConfig = {
+  sheetGroups: [
+    { baseName: "route_head",      outputName: "route_head" },
+    { baseName: "route_sequences", outputName: "route_sequences", keyColumn: "route_head_legacy_product_id" },
+    { baseName: "route_rms",       outputName: "route_rms",       keyColumn: "route_head_legacy_product_id" },
+  ],
+  keyColumn: "legacy_oracle_sys_id",
+  chunkSize: 300,
+}
+
+/**
+ * Legacy single-phase config — kept for backward compatibility.
+ * Prefer BULK_PRODUCTS_ONLY_CONFIG + BULK_ROUTING_ONLY_CONFIG for large files.
  */
 export const BULK_ROUTING_CONFIG: ChunkerConfig = {
   sheetGroups: [
