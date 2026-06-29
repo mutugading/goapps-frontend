@@ -101,24 +101,12 @@ export const ENTITY_BULK_PRODUCT_ROUTING = "bulk_product_routing"
 /** Entity constant for the bulk export job (product master + routing). */
 export const ENTITY_BULK_PRODUCT_ROUTING_EXPORT = "bulk_product_routing_export"
 
-/** Row-level error from a single sheet during bulk validation. */
-export interface BulkRowError {
-  rowNumber: number
-  field: string
-  message: string
-}
+// ── v2 ETL presigned-upload import ──────────────────────────────────────────
 
-/** Per-sheet result from ValidateBulkProductRoutingFile. */
-export interface BulkSheetValidationResult {
-  sheetName: string
-  totalRows: number
-  errorCount: number
-  warningCount: number
-  sampleErrors: BulkRowError[]
-}
-
-/** Full result from ValidateBulkProductRoutingFile. */
-export interface BulkValidationResult {
-  isValid: boolean
-  sheets: BulkSheetValidationResult[]
-}
+/**
+ * ImportKindKey is the client-facing key for the dataset an ETL import carries.
+ * It maps 1:1 to the backend proto `ImportKind` enum:
+ *   "product_routing" → IMPORT_KIND_PRODUCT_ROUTING (xlsx or zipped CSV)
+ *   "params_only"     → IMPORT_KIND_PARAMS_ONLY (zip of CSV files)
+ */
+export type ImportKindKey = "product_routing" | "params_only"
