@@ -29,10 +29,10 @@ import {
   getImportJob,
 } from "@/services/finance/cost-import-api"
 import {
-  DEFAULT_CHUNK_SIZE,
-  parseAndChunkParamsFile,
-  type ParseResult,
-} from "@/lib/excel/params-chunker"
+  chunkExcelFile,
+  PARAMS_ONLY_CONFIG,
+  type ChunkResult,
+} from "@/lib/excel/chunked-importer"
 
 interface Props {
   open: boolean
@@ -60,7 +60,7 @@ export function ParamsOnlyImportDialog({ open, onOpenChange }: Props) {
 
   const [file, setFile] = useState<File | null>(null)
   const [parseStage, setParseStage] = useState("")
-  const [parsed, setParsed] = useState<ParseResult | null>(null)
+  const [parsed, setParsed] = useState<ChunkResult | null>(null)
   const [step, setStep] = useState<Step>("upload")
   const [chunks, setChunks] = useState<ChunkStatus[]>([])
   const [currentIdx, setCurrentIdx] = useState(0)
@@ -90,12 +90,12 @@ export function ParamsOnlyImportDialog({ open, onOpenChange }: Props) {
     setFile(f)
     setStep("parsing")
     try {
-      const result = await parseAndChunkParamsFile(f, DEFAULT_CHUNK_SIZE, setParseStage)
+      const result = await chunkExcelFile(f, PARAMS_ONLY_CONFIG, setParseStage)
       setParsed(result)
       setChunks(
         result.chunks.map((c) => ({
           index: c.index,
-          productCount: c.productCount,
+          productCount: c.keyCount,
           rowCount: c.rowCount,
           status: "pending",
         }))
@@ -227,7 +227,7 @@ export function ParamsOnlyImportDialog({ open, onOpenChange }: Props) {
                   <Upload className="mb-2 h-8 w-8 text-muted-foreground" />
                   <p className="text-sm text-muted-foreground">Click to select — any size</p>
                   <p className="text-xs text-muted-foreground">
-                    File split automatically into {DEFAULT_CHUNK_SIZE}-product chunks
+                    File split automatically into {PARAMS_ONLY_CONFIG.chunkSize ?? 300}-product chunks
                   </p>
                 </div>
               </div>
@@ -261,12 +261,12 @@ export function ParamsOnlyImportDialog({ open, onOpenChange }: Props) {
               <div className="rounded-lg border bg-muted/40 p-4 space-y-3">
                 <p className="font-medium">File parsed</p>
                 <div className="grid grid-cols-3 gap-4 text-sm">
-                  <div><p className="text-muted-foreground">Products</p><p className="font-medium">{parsed.totalProducts.toLocaleString()}</p></div>
+                  <div><p className="text-muted-foreground">Products</p><p className="font-medium">{parsed.totalKeys.toLocaleString()}</p></div>
                   <div><p className="text-muted-foreground">Total rows</p><p className="font-medium">{parsed.totalRows.toLocaleString()}</p></div>
                   <div><p className="text-muted-foreground">Chunks</p><p className="font-medium">{parsed.chunks.length}</p></div>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  ~{DEFAULT_CHUNK_SIZE} products per chunk · ~{Math.round(parsed.totalRows / parsed.chunks.length).toLocaleString()} rows each · est. 3–8 min per chunk
+                  ~{PARAMS_ONLY_CONFIG.chunkSize ?? 300} products per chunk · ~{Math.round(parsed.totalRows / parsed.chunks.length).toLocaleString()} rows each · est. 3–8 min per chunk
                 </p>
               </div>
               <div className="flex gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
