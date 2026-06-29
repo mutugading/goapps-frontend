@@ -68,18 +68,30 @@ export const PARAMS_ONLY_CONFIG: ChunkerConfig = {
   chunkSize: 300,
 }
 
-/** Bulk product + routing import (product_master + route sheets). */
+/**
+ * Bulk product + routing import (product_master + route sheets).
+ *
+ * route_sequences and route_rms use "route_head_legacy_id" as their key
+ * column (same value as legacy_oracle_sys_id — the root product ID) so
+ * they are split correctly alongside their parent product rows.
+ *
+ * ⚠ Cross-chunk caveat: if product A's routing references product B as an
+ * intermediate node (node_product_legacy_id = B), and B is in a different
+ * chunk, the import will log B as "missing from product_master sheet" for
+ * that chunk but will NOT fail — it treats it as a skip (product B must
+ * already exist in the database from a previous import or earlier chunk).
+ */
 export const BULK_ROUTING_CONFIG: ChunkerConfig = {
   sheetGroups: [
-    { baseName: "product_master",     outputName: "product_master" },
-    { baseName: "product_parameters", outputName: "product_parameters" },
+    { baseName: "product_master",            outputName: "product_master" },
+    { baseName: "product_parameters",        outputName: "product_parameters" },
     { baseName: "product_applicable_params", outputName: "product_applicable_params" },
-    { baseName: "route_head",         outputName: "route_head" },
-    { baseName: "route_sequences",    outputName: "route_sequences" },
-    { baseName: "route_rms",          outputName: "route_rms" },
+    { baseName: "route_head",                outputName: "route_head" },
+    { baseName: "route_sequences",           outputName: "route_sequences", keyColumn: "route_head_legacy_id" },
+    { baseName: "route_rms",                 outputName: "route_rms",       keyColumn: "route_head_legacy_id" },
   ],
-  keyColumn: "legacy_oracle_sys_id",
-  chunkSize: 200, // smaller — 6 sheets per product
+  keyColumn: "legacy_oracle_sys_id", // default for product_master, params, route_head
+  chunkSize: 200,
 }
 
 // ── Core function ──────────────────────────────────────────────────────────
