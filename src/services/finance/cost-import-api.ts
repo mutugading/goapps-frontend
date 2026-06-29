@@ -5,9 +5,7 @@ import type {
   SyncImportResult,
   AsyncImportResponse,
   ImportEntity,
-  BulkValidationResult,
-  BulkSheetValidationResult,
-  BulkRowError,
+  ImportKindKey,
 } from "@/types/finance/cost-import"
 
 const BASE = "/api/v1/finance/costing"
@@ -145,53 +143,78 @@ export async function listImportJobs(
   }
 }
 
-// ── Bulk Product Routing ────────────────────────────────────────────────────
+// ── Bulk ETL import (v2 — presigned upload) ─────────────────────────────────
 
 /**
- * Queue a bulk import of product master + routing data from an Excel file.
- * Returns a job ID that can be polled with getImportJob().
+ * Step 1 of the ETL import flow: ask the backend for a presigned PUT URL so the
+ * browser can upload the file directly to object storage (bypassing the BFF and
+ * gRPC message path entirely — no size inflation, no OOM).
  */
-export async function bulkImportProductMasterRouting(
-  file: File,
-  duplicateAction?: string,
-): Promise<{ jobId: number; status: string }> {
-  const fileContent = Array.from(new Uint8Array(await file.arrayBuffer()))
-  const res = await fetch(`${BASE}/import/bulk_product_routing`, {
+export async function getImportUploadURL(
+  kind: ImportKindKey,
+  fileName: string,
+): Promise<{ uploadUrl: string; objectKey: string; expiresInSeconds: number }> {
+  const res = await fetch(`${BASE}/import/upload-url`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      fileContent,
-      fileName: file.name,
-      duplicateAction: duplicateAction ?? "update",
-    }),
+    body: JSON.stringify({ kind, fileName }),
   })
-  if (!res.ok) throw new Error(`Bulk import failed: ${res.status}`)
-  const json = await res.json()
+  const json = await res.json().catch(() => null)
+  if (!res.ok || json?.base?.isSuccess === false) {
+    throw new Error(json?.base?.message || `Failed to get upload URL: ${res.status}`)
+  }
   return {
-    jobId: json.data?.jobId ?? json.data?.job_id ?? 0,
-    status: json.data?.status ?? "",
+    uploadUrl: json.uploadUrl ?? json.upload_url ?? "",
+    objectKey: json.objectKey ?? json.object_key ?? "",
+    expiresInSeconds: Number(json.expiresInSeconds ?? json.expires_in_seconds ?? 0),
   }
 }
 
 /**
- * Queue a params-only bulk import (product_parameters + product_applicable_params).
- * Products must already exist from a prior bulk_product_routing import.
- * Uses multipart/form-data to send binary bytes without JSON inflation overhead.
- * Returns a job ID that can be polled with getImportJob().
+ * Step 2 of the ETL import flow: PUT the file straight to the presigned MinIO URL
+ * with upload progress. Uses XMLHttpRequest because fetch() cannot report upload
+ * progress. Requires MinIO CORS to allow PUT from the app origin.
  */
-export async function bulkImportParamsOnly(
+export function putToPresignedUrl(
+  uploadUrl: string,
   file: File,
-): Promise<{ jobId: number; status: string }> {
-  const formData = new FormData()
-  formData.append("file", file)
-  const res = await fetch(`${BASE}/import/bulk_params_only`, {
-    method: "POST",
-    body: formData, // binary multipart — no Content-Type header needed (browser sets boundary)
+  onProgress?: (percent: number) => void,
+): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    xhr.open("PUT", uploadUrl, true)
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable && onProgress) {
+        onProgress(Math.round((e.loaded / e.total) * 100))
+      }
+    }
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) resolve()
+      else reject(new Error(`Upload failed: ${xhr.status} ${xhr.statusText}`))
+    }
+    xhr.onerror = () =>
+      reject(new Error("Upload failed — check network / storage CORS configuration"))
+    xhr.send(file)
   })
-  if (!res.ok) throw new Error(`Params-only import failed: ${res.status}`)
-  const json = await res.json()
-  if (!json.base?.isSuccess) {
-    throw new Error(json.base?.message || `Import failed`)
+}
+
+/**
+ * Step 3 of the ETL import flow: tell the backend to start the async ETL job for
+ * the already-uploaded object. Returns the job ID to poll with getImportJob().
+ */
+export async function startCostingImport(
+  kind: ImportKindKey,
+  objectKey: string,
+  fileName: string,
+): Promise<{ jobId: number; status: string }> {
+  const res = await fetch(`${BASE}/import/start`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ kind, objectKey, fileName }),
+  })
+  const json = await res.json().catch(() => null)
+  if (!res.ok || json?.base?.isSuccess === false) {
+    throw new Error(json?.base?.message || `Failed to start import: ${res.status}`)
   }
   return {
     jobId: json.data?.jobId ?? json.data?.job_id ?? 0,
@@ -212,62 +235,6 @@ export async function downloadParamsOnlyTemplate(): Promise<void> {
   a.download = "bulk_params_only_template.xlsx"
   a.click()
   URL.revokeObjectURL(url)
-}
-
-/**
- * Validate a bulk product routing Excel file without importing.
- * Returns a per-sheet summary with error/warning counts and sample errors.
- */
-export async function validateBulkProductRoutingFile(
-  file: File,
-): Promise<BulkValidationResult> {
-  const fileContent = Array.from(new Uint8Array(await file.arrayBuffer()))
-  const res = await fetch(`${BASE}/validate/bulk_product_routing`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ fileContent, fileName: file.name }),
-  })
-  if (!res.ok) {
-    const errJson = await res.json().catch(() => null)
-    throw new Error(errJson?.base?.message || `Validation failed: ${res.status}`)
-  }
-  const json = await res.json()
-
-  if (!json.base?.isSuccess && json.base?.isSuccess !== undefined) {
-    throw new Error(json.base?.message || "Validation request failed")
-  }
-
-  // Normalise: handle both camelCase (gRPC-gateway) and snake_case (raw proto)
-  const isValid: boolean = json.isValid ?? json.is_valid ?? false
-  const rawSheets: unknown[] = Array.isArray(json.sheets) ? json.sheets : []
-
-  const sheets: BulkSheetValidationResult[] = rawSheets.map((s) => {
-    const sheet = s as Record<string, unknown>
-    const rawErrors: unknown[] = Array.isArray(sheet.sampleErrors)
-      ? (sheet.sampleErrors as unknown[])
-      : Array.isArray(sheet.sample_errors)
-        ? (sheet.sample_errors as unknown[])
-        : []
-
-    const sampleErrors: BulkRowError[] = rawErrors.map((e) => {
-      const err = e as Record<string, unknown>
-      return {
-        rowNumber: Number(err.rowNumber ?? err.row_number ?? 0),
-        field: String(err.field ?? ""),
-        message: String(err.message ?? ""),
-      }
-    })
-
-    return {
-      sheetName: String(sheet.sheetName ?? sheet.sheet_name ?? ""),
-      totalRows: Number(sheet.totalRows ?? sheet.total_rows ?? 0),
-      errorCount: Number(sheet.errorCount ?? sheet.error_count ?? 0),
-      warningCount: Number(sheet.warningCount ?? sheet.warning_count ?? 0),
-      sampleErrors,
-    }
-  })
-
-  return { isValid, sheets }
 }
 
 /**

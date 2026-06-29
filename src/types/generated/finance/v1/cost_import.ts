@@ -10,6 +10,49 @@ import { BaseResponse, PaginationRequest, PaginationResponse } from "../../commo
 
 export const protobufPackage = "finance.v1";
 
+/** ImportKind identifies which dataset a presigned upload / import job carries. */
+export enum ImportKind {
+  /** IMPORT_KIND_UNSPECIFIED - Default — invalid, must be set by the caller. */
+  IMPORT_KIND_UNSPECIFIED = 0,
+  /** IMPORT_KIND_PRODUCT_ROUTING - Product master + routing dataset (xlsx or zip CSV). */
+  IMPORT_KIND_PRODUCT_ROUTING = 1,
+  /** IMPORT_KIND_PARAMS_ONLY - Params-only dataset (zip of CSV files). */
+  IMPORT_KIND_PARAMS_ONLY = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function importKindFromJSON(object: any): ImportKind {
+  switch (object) {
+    case 0:
+    case "IMPORT_KIND_UNSPECIFIED":
+      return ImportKind.IMPORT_KIND_UNSPECIFIED;
+    case 1:
+    case "IMPORT_KIND_PRODUCT_ROUTING":
+      return ImportKind.IMPORT_KIND_PRODUCT_ROUTING;
+    case 2:
+    case "IMPORT_KIND_PARAMS_ONLY":
+      return ImportKind.IMPORT_KIND_PARAMS_ONLY;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return ImportKind.UNRECOGNIZED;
+  }
+}
+
+export function importKindToJSON(object: ImportKind): string {
+  switch (object) {
+    case ImportKind.IMPORT_KIND_UNSPECIFIED:
+      return "IMPORT_KIND_UNSPECIFIED";
+    case ImportKind.IMPORT_KIND_PRODUCT_ROUTING:
+      return "IMPORT_KIND_PRODUCT_ROUTING";
+    case ImportKind.IMPORT_KIND_PARAMS_ONLY:
+      return "IMPORT_KIND_PARAMS_ONLY";
+    case ImportKind.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
 export interface CostImportJob {
   jobId: number;
   entity: string;
@@ -137,7 +180,7 @@ export interface ImportBulkProductRoutingResponse {
  * ImportBulkParamsOnlyRequest imports product_parameters + product_applicable_params
  * from a file that does NOT contain a product_master sheet. Products must already
  * exist in the database from a prior bulk import. Supports split part-sheets
- * (e.g. "product_parameters_p1" + "_p2"). Max 50 MB.
+ * (e.g. "product_parameters_p1" + "_p2"). Max 200 MB.
  */
 export interface ImportBulkParamsOnlyRequest {
   fileContent: Uint8Array;
@@ -176,6 +219,44 @@ export interface ExportBulkProductRoutingRequest {
 }
 
 export interface ExportBulkProductRoutingResponse {
+  base: BaseResponse | undefined;
+  jobId: number;
+  status: string;
+}
+
+/**
+ * GetImportUploadURLRequest asks for a presigned PUT URL to upload an import
+ * file directly to object storage (bypassing the BFF and gRPC message path).
+ */
+export interface GetImportUploadURLRequest {
+  kind: ImportKind;
+  fileName: string;
+}
+
+/**
+ * GetImportUploadURLResponse returns the presigned PUT URL plus the object key
+ * to pass back to StartCostingImport once the upload completes.
+ */
+export interface GetImportUploadURLResponse {
+  base: BaseResponse | undefined;
+  uploadUrl: string;
+  objectKey: string;
+  expiresInSeconds: number;
+}
+
+/**
+ * StartCostingImportRequest starts an async ETL import job for an already
+ * uploaded object (identified by object_key from GetImportUploadURL).
+ */
+export interface StartCostingImportRequest {
+  kind: ImportKind;
+  objectKey: string;
+  fileName: string;
+  duplicateAction: string;
+}
+
+/** StartCostingImportResponse returns the created async job ID and its status. */
+export interface StartCostingImportResponse {
   base: BaseResponse | undefined;
   jobId: number;
   status: string;
@@ -2859,6 +2940,426 @@ export const ExportBulkProductRoutingResponse: MessageFns<ExportBulkProductRouti
   },
 };
 
+function createBaseGetImportUploadURLRequest(): GetImportUploadURLRequest {
+  return { kind: 0, fileName: "" };
+}
+
+export const GetImportUploadURLRequest: MessageFns<GetImportUploadURLRequest> = {
+  encode(message: GetImportUploadURLRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.kind !== 0) {
+      writer.uint32(8).int32(message.kind);
+    }
+    if (message.fileName !== "") {
+      writer.uint32(18).string(message.fileName);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetImportUploadURLRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetImportUploadURLRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.kind = reader.int32() as any;
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.fileName = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetImportUploadURLRequest {
+    return {
+      kind: isSet(object.kind) ? importKindFromJSON(object.kind) : 0,
+      fileName: isSet(object.fileName)
+        ? globalThis.String(object.fileName)
+        : isSet(object.file_name)
+        ? globalThis.String(object.file_name)
+        : "",
+    };
+  },
+
+  toJSON(message: GetImportUploadURLRequest): unknown {
+    const obj: any = {};
+    if (message.kind !== 0) {
+      obj.kind = importKindToJSON(message.kind);
+    }
+    if (message.fileName !== "") {
+      obj.fileName = message.fileName;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetImportUploadURLRequest>): GetImportUploadURLRequest {
+    return GetImportUploadURLRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GetImportUploadURLRequest>): GetImportUploadURLRequest {
+    const message = createBaseGetImportUploadURLRequest();
+    message.kind = object.kind ?? 0;
+    message.fileName = object.fileName ?? "";
+    return message;
+  },
+};
+
+function createBaseGetImportUploadURLResponse(): GetImportUploadURLResponse {
+  return { base: undefined, uploadUrl: "", objectKey: "", expiresInSeconds: 0 };
+}
+
+export const GetImportUploadURLResponse: MessageFns<GetImportUploadURLResponse> = {
+  encode(message: GetImportUploadURLResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    if (message.uploadUrl !== "") {
+      writer.uint32(18).string(message.uploadUrl);
+    }
+    if (message.objectKey !== "") {
+      writer.uint32(26).string(message.objectKey);
+    }
+    if (message.expiresInSeconds !== 0) {
+      writer.uint32(32).int64(message.expiresInSeconds);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetImportUploadURLResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetImportUploadURLResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.uploadUrl = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.objectKey = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.expiresInSeconds = longToNumber(reader.int64());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetImportUploadURLResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      uploadUrl: isSet(object.uploadUrl)
+        ? globalThis.String(object.uploadUrl)
+        : isSet(object.upload_url)
+        ? globalThis.String(object.upload_url)
+        : "",
+      objectKey: isSet(object.objectKey)
+        ? globalThis.String(object.objectKey)
+        : isSet(object.object_key)
+        ? globalThis.String(object.object_key)
+        : "",
+      expiresInSeconds: isSet(object.expiresInSeconds)
+        ? globalThis.Number(object.expiresInSeconds)
+        : isSet(object.expires_in_seconds)
+        ? globalThis.Number(object.expires_in_seconds)
+        : 0,
+    };
+  },
+
+  toJSON(message: GetImportUploadURLResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.uploadUrl !== "") {
+      obj.uploadUrl = message.uploadUrl;
+    }
+    if (message.objectKey !== "") {
+      obj.objectKey = message.objectKey;
+    }
+    if (message.expiresInSeconds !== 0) {
+      obj.expiresInSeconds = Math.round(message.expiresInSeconds);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetImportUploadURLResponse>): GetImportUploadURLResponse {
+    return GetImportUploadURLResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GetImportUploadURLResponse>): GetImportUploadURLResponse {
+    const message = createBaseGetImportUploadURLResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.uploadUrl = object.uploadUrl ?? "";
+    message.objectKey = object.objectKey ?? "";
+    message.expiresInSeconds = object.expiresInSeconds ?? 0;
+    return message;
+  },
+};
+
+function createBaseStartCostingImportRequest(): StartCostingImportRequest {
+  return { kind: 0, objectKey: "", fileName: "", duplicateAction: "" };
+}
+
+export const StartCostingImportRequest: MessageFns<StartCostingImportRequest> = {
+  encode(message: StartCostingImportRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.kind !== 0) {
+      writer.uint32(8).int32(message.kind);
+    }
+    if (message.objectKey !== "") {
+      writer.uint32(18).string(message.objectKey);
+    }
+    if (message.fileName !== "") {
+      writer.uint32(26).string(message.fileName);
+    }
+    if (message.duplicateAction !== "") {
+      writer.uint32(34).string(message.duplicateAction);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): StartCostingImportRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseStartCostingImportRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.kind = reader.int32() as any;
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.objectKey = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.fileName = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.duplicateAction = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): StartCostingImportRequest {
+    return {
+      kind: isSet(object.kind) ? importKindFromJSON(object.kind) : 0,
+      objectKey: isSet(object.objectKey)
+        ? globalThis.String(object.objectKey)
+        : isSet(object.object_key)
+        ? globalThis.String(object.object_key)
+        : "",
+      fileName: isSet(object.fileName)
+        ? globalThis.String(object.fileName)
+        : isSet(object.file_name)
+        ? globalThis.String(object.file_name)
+        : "",
+      duplicateAction: isSet(object.duplicateAction)
+        ? globalThis.String(object.duplicateAction)
+        : isSet(object.duplicate_action)
+        ? globalThis.String(object.duplicate_action)
+        : "",
+    };
+  },
+
+  toJSON(message: StartCostingImportRequest): unknown {
+    const obj: any = {};
+    if (message.kind !== 0) {
+      obj.kind = importKindToJSON(message.kind);
+    }
+    if (message.objectKey !== "") {
+      obj.objectKey = message.objectKey;
+    }
+    if (message.fileName !== "") {
+      obj.fileName = message.fileName;
+    }
+    if (message.duplicateAction !== "") {
+      obj.duplicateAction = message.duplicateAction;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<StartCostingImportRequest>): StartCostingImportRequest {
+    return StartCostingImportRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<StartCostingImportRequest>): StartCostingImportRequest {
+    const message = createBaseStartCostingImportRequest();
+    message.kind = object.kind ?? 0;
+    message.objectKey = object.objectKey ?? "";
+    message.fileName = object.fileName ?? "";
+    message.duplicateAction = object.duplicateAction ?? "";
+    return message;
+  },
+};
+
+function createBaseStartCostingImportResponse(): StartCostingImportResponse {
+  return { base: undefined, jobId: 0, status: "" };
+}
+
+export const StartCostingImportResponse: MessageFns<StartCostingImportResponse> = {
+  encode(message: StartCostingImportResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    if (message.jobId !== 0) {
+      writer.uint32(16).int64(message.jobId);
+    }
+    if (message.status !== "") {
+      writer.uint32(26).string(message.status);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): StartCostingImportResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseStartCostingImportResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.jobId = longToNumber(reader.int64());
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.status = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): StartCostingImportResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      jobId: isSet(object.jobId)
+        ? globalThis.Number(object.jobId)
+        : isSet(object.job_id)
+        ? globalThis.Number(object.job_id)
+        : 0,
+      status: isSet(object.status) ? globalThis.String(object.status) : "",
+    };
+  },
+
+  toJSON(message: StartCostingImportResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.jobId !== 0) {
+      obj.jobId = Math.round(message.jobId);
+    }
+    if (message.status !== "") {
+      obj.status = message.status;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<StartCostingImportResponse>): StartCostingImportResponse {
+    return StartCostingImportResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<StartCostingImportResponse>): StartCostingImportResponse {
+    const message = createBaseStartCostingImportResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.jobId = object.jobId ?? 0;
+    message.status = object.status ?? "";
+    return message;
+  },
+};
+
 export type CostDataImportServiceDefinition = typeof CostDataImportServiceDefinition;
 export const CostDataImportServiceDefinition = {
   name: "CostDataImportService",
@@ -2961,6 +3462,30 @@ export const CostDataImportServiceDefinition = {
       requestType: ExportBulkProductRoutingRequest,
       requestStream: false,
       responseType: ExportBulkProductRoutingResponse,
+      responseStream: false,
+      options: {},
+    },
+    /**
+     * GetImportUploadURL returns a presigned PUT URL for direct browser upload of
+     * an import file to object storage.
+     */
+    getImportUploadURL: {
+      name: "GetImportUploadURL",
+      requestType: GetImportUploadURLRequest,
+      requestStream: false,
+      responseType: GetImportUploadURLResponse,
+      responseStream: false,
+      options: {},
+    },
+    /**
+     * StartCostingImport starts an async ETL import job for a previously uploaded
+     * object (referenced by object_key).
+     */
+    startCostingImport: {
+      name: "StartCostingImport",
+      requestType: StartCostingImportRequest,
+      requestStream: false,
+      responseType: StartCostingImportResponse,
       responseStream: false,
       options: {},
     },

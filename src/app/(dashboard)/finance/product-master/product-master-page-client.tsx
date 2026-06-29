@@ -25,7 +25,6 @@ import {
   ProductMasterTable,
 } from "@/components/finance/cost-product-master"
 import { BulkImportDialog } from "@/components/finance/costing/bulk-import-dialog"
-import { ParamsOnlyImportDialog } from "@/components/finance/costing/params-only-import-dialog"
 import { ImportDialog } from "@/components/finance/costing/import-dialog"
 import { ProductTypeCombobox } from "@/components/finance/comboboxes"
 import { DataTablePagination } from "@/components/shared"
@@ -55,6 +54,7 @@ export default function ProductMasterPageClient() {
   const [importOpen, setImportOpen] = useState(false)
   const [bulkImportOpen, setBulkImportOpen] = useState(false)
   const [paramsImportOpen, setParamsImportOpen] = useState(false)
+  // Both bulk menu items open the same unified ETL dialog, differing only by kind.
   const [editing, setEditing] = useState<CostProductMaster | null>(null)
   const [bulkExportLoading, setBulkExportLoading] = useState(false)
 
@@ -232,8 +232,8 @@ export default function ProductMasterPageClient() {
         onOpenChange={setDeactivateOpen}
         product={editing}
       />
-      <BulkImportDialog open={bulkImportOpen} onOpenChange={setBulkImportOpen} />
-      <ParamsOnlyImportDialog open={paramsImportOpen} onOpenChange={setParamsImportOpen} />
+      <BulkImportDialog open={bulkImportOpen} onOpenChange={setBulkImportOpen} kind="product_routing" />
+      <BulkImportDialog open={paramsImportOpen} onOpenChange={setParamsImportOpen} kind="params_only" />
     </div>
   )
 }
