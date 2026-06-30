@@ -154,21 +154,53 @@ function SummaryTab({ breakdown, productSysId }: { breakdown: CostBreakdown; pro
   const s = breakdown.summary
   const snapshotEntries = Object.entries(breakdown.paramSnapshot)
 
-  // Fetch parameter definitions for this product to get the proper displayGroup labels.
+  // Fetch parameter definitions for this product (already sorted by display_group,
+  // capp_display_order, param_code from the backend query).
   const { data: requiredParams = [] } = useProductRequiredParams(productSysId)
-  const groupMap = new Map(requiredParams.map((p) => [p.paramCode, p.displayGroup || "Other"]))
 
-  // Group snapshot entries by displayGroup from the parameter master.
-  // Fall back to "Other" for params not found in the map.
-  const grouped: Record<string, [string, string][]> = {}
-  for (const [k, v] of snapshotEntries) {
-    const group = groupMap.get(k) || "General"
-    if (!grouped[group]) grouped[group] = []
-    grouped[group].push([k, v])
+  // Walk requiredParams in backend order (sorted by display_order, param_code).
+  // Params in the snapshot but NOT in requiredParams go at the end ungrouped.
+  const snapshotMap = new Map(snapshotEntries)
+  const seenCodes = new Set<string>()
+  const orderedEntries: Array<{ code: string; value: string; group: string; order: number }> = []
+
+  for (const p of requiredParams) {
+    const value = snapshotMap.get(p.paramCode)
+    if (value !== undefined) {
+      orderedEntries.push({ code: p.paramCode, value, group: p.displayGroup, order: p.displayOrder })
+      seenCodes.add(p.paramCode)
+    }
   }
-  const groupEntries = Object.entries(grouped).sort(([a], [b]) =>
-    a === "General" ? 1 : b === "General" ? -1 : a.localeCompare(b),
-  )
+  // Remaining snapshot entries not covered by requiredParams — ungrouped at end
+  for (const [k, v] of snapshotEntries) {
+    if (!seenCodes.has(k)) {
+      orderedEntries.push({ code: k, value: v, group: "", order: 9999 })
+    }
+  }
+
+  // Group while collecting the minimum display_order seen per group.
+  // This lets us sort groups by their first-appearing param's order (not alphabetically).
+  const groupMinOrder: Record<string, number> = {}
+  const grouped: Record<string, Array<[string, string]>> = {}
+  for (const { code, value, group, order } of orderedEntries) {
+    if (!grouped[group]) {
+      grouped[group] = []
+      groupMinOrder[group] = order
+    } else {
+      groupMinOrder[group] = Math.min(groupMinOrder[group], order)
+    }
+    grouped[group].push([code, value])
+  }
+  // Sort groups by their minimum display_order: named groups first (by order), ungrouped last
+  const groupEntries = Object.keys(grouped)
+    .sort((a, b) => {
+      if (!a && !b) return 0
+      if (!a) return 1   // ungrouped after all named groups
+      if (!b) return -1
+      return (groupMinOrder[a] ?? 9999) - (groupMinOrder[b] ?? 9999)
+    })
+    .map((g) => [g, grouped[g]] as [string, [string, string][]])
+  const namedGroupCount = groupEntries.filter(([g]) => g !== "").length
 
   return (
     <div className="space-y-5">
@@ -215,20 +247,27 @@ function SummaryTab({ breakdown, productSysId }: { breakdown: CostBreakdown; pro
           <CardTitle className="text-sm font-semibold">
             Parameter snapshot
             <span className="ml-2 text-xs font-normal text-muted-foreground">
-              {snapshotEntries.length} params · {groupEntries.length} groups
+              {snapshotEntries.length} params
+              {namedGroupCount > 0 ? ` · ${namedGroupCount} groups` : ""}
             </span>
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-0">
           {snapshotEntries.length === 0 ? (
             <p className="text-sm text-muted-foreground">No parameters captured.</p>
           ) : (
-            groupEntries.map(([groupName, entries]) => (
-              <div key={groupName}>
-                <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  {groupName}
-                  <span className="ml-1.5 font-normal normal-case">({entries.length})</span>
-                </p>
+            groupEntries.map(([groupName, entries], idx) => (
+              <div key={groupName || "__ungrouped__"} className={idx > 0 ? "mt-5" : ""}>
+                {groupName !== "" && (
+                  <div className="mb-2 flex items-center gap-2 border-b pb-1.5">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-foreground">
+                      {groupName}
+                    </span>
+                    <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                      {entries.length}
+                    </span>
+                  </div>
+                )}
                 <div className="grid grid-cols-1 gap-x-8 sm:grid-cols-2">
                   {entries.map(([k, v]) => (
                     <div
