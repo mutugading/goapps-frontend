@@ -35,16 +35,21 @@ export function UserPermissionDialog({ open, onOpenChange, user }: UserPermissio
     const assignMutation = useAssignUserPermissions()
     const removeMutation = useRemoveUserPermissions()
 
-    // Permission IDs granted via roles — shown checked and read-only in the picker.
+    // Permission IDs the user has via a role but NOT as a direct grant — shown checked
+    // and read-only. Derived as (effective permission codes) minus (direct grant codes),
+    // then mapped to catalog IDs. The backend returns allPermissionCodes = effective union
+    // and directPermissions = true direct grants only.
     const roleInheritedIds = useMemo(() => {
+        const directCodes = new Set((userAccess?.data?.directPermissions ?? []).map((p) => p.permissionCode))
+        const roleCodes = new Set(
+            (userAccess?.data?.allPermissionCodes ?? []).filter((code) => !directCodes.has(code))
+        )
         const set = new Set<string>()
-        for (const role of userAccess?.data?.roles ?? []) {
-            for (const perm of role.permissions ?? []) {
-                set.add(perm.permissionId)
-            }
+        for (const perm of permissions) {
+            if (roleCodes.has(perm.permissionCode)) set.add(perm.permissionId)
         }
         return set
-    }, [userAccess])
+    }, [userAccess, permissions])
 
     // Populate direct-permission selection when the dialog opens.
     useEffect(() => {
