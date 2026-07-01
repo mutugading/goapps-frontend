@@ -1,6 +1,6 @@
 "use client"
 
-import { Pencil, Trash2, Shield } from "lucide-react"
+import { Pencil, Trash2, Shield, KeyRound } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { DataTable, type ColumnDef, type RowAction } from "@/components/shared"
@@ -13,9 +13,10 @@ interface UserTableProps {
     onEdit: (user: UserWithDetail) => void
     onDelete: (user: UserWithDetail) => void
     onManageRoles: (user: UserWithDetail) => void
+    onManagePermissions?: (user: UserWithDetail) => void
 }
 
-export function UserTable({ data, isLoading, onEdit, onDelete, onManageRoles }: UserTableProps) {
+export function UserTable({ data, isLoading, onEdit, onDelete, onManageRoles, onManagePermissions }: UserTableProps) {
     const columns: ColumnDef<UserWithDetail>[] = [
         {
             id: "employeeCode",
@@ -108,6 +109,16 @@ export function UserTable({ data, isLoading, onEdit, onDelete, onManageRoles }: 
             icon: <Shield className="h-4 w-4" />,
             onClick: onManageRoles,
         },
+        ...(onManagePermissions
+            ? [
+                  {
+                      id: "permissions",
+                      label: "Manage Permissions",
+                      icon: <KeyRound className="h-4 w-4" />,
+                      onClick: onManagePermissions,
+                  },
+              ]
+            : []),
         {
             id: "delete",
             label: "Delete",

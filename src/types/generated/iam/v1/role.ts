@@ -157,7 +157,13 @@ export interface PermissionDetail {
   isActive: boolean;
   /** Number of roles with this permission */
   roleCount: number;
-  audit: AuditInfo | undefined;
+  audit:
+    | AuditInfo
+    | undefined;
+  /** Owning page/menu (empty = global/ungrouped) */
+  menuId: string;
+  /** Read-only, joined from mst_menu for display */
+  menuTitle: string;
 }
 
 export interface CreatePermissionRequest {
@@ -172,6 +178,8 @@ export interface CreatePermissionRequest {
   moduleName: string;
   /** Action type: view, create, update, delete, export, import */
   actionType: string;
+  /** Owning page/menu UUID. Empty = global/ungrouped permission. */
+  menuId: string;
 }
 
 export interface CreatePermissionResponse {
@@ -193,6 +201,7 @@ export interface UpdatePermissionRequest {
   permissionName?: string | undefined;
   description?: string | undefined;
   isActive?: boolean | undefined;
+  menuId?: string | undefined;
 }
 
 export interface UpdatePermissionResponse {
@@ -221,6 +230,8 @@ export interface ListPermissionsRequest {
   actionType: string;
   sortBy: string;
   sortOrder: string;
+  /** Filter by menu_id (owning page/menu) */
+  menuId: string;
 }
 
 export interface ListPermissionsResponse {
@@ -2467,6 +2478,8 @@ function createBasePermissionDetail(): PermissionDetail {
     isActive: false,
     roleCount: 0,
     audit: undefined,
+    menuId: "",
+    menuTitle: "",
   };
 }
 
@@ -2501,6 +2514,12 @@ export const PermissionDetail: MessageFns<PermissionDetail> = {
     }
     if (message.audit !== undefined) {
       AuditInfo.encode(message.audit, writer.uint32(82).fork()).join();
+    }
+    if (message.menuId !== "") {
+      writer.uint32(90).string(message.menuId);
+    }
+    if (message.menuTitle !== "") {
+      writer.uint32(98).string(message.menuTitle);
     }
     return writer;
   },
@@ -2592,6 +2611,22 @@ export const PermissionDetail: MessageFns<PermissionDetail> = {
           message.audit = AuditInfo.decode(reader, reader.uint32());
           continue;
         }
+        case 11: {
+          if (tag !== 90) {
+            break;
+          }
+
+          message.menuId = reader.string();
+          continue;
+        }
+        case 12: {
+          if (tag !== 98) {
+            break;
+          }
+
+          message.menuTitle = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2645,6 +2680,16 @@ export const PermissionDetail: MessageFns<PermissionDetail> = {
         ? globalThis.Number(object.role_count)
         : 0,
       audit: isSet(object.audit) ? AuditInfo.fromJSON(object.audit) : undefined,
+      menuId: isSet(object.menuId)
+        ? globalThis.String(object.menuId)
+        : isSet(object.menu_id)
+        ? globalThis.String(object.menu_id)
+        : "",
+      menuTitle: isSet(object.menuTitle)
+        ? globalThis.String(object.menuTitle)
+        : isSet(object.menu_title)
+        ? globalThis.String(object.menu_title)
+        : "",
     };
   },
 
@@ -2680,6 +2725,12 @@ export const PermissionDetail: MessageFns<PermissionDetail> = {
     if (message.audit !== undefined) {
       obj.audit = AuditInfo.toJSON(message.audit);
     }
+    if (message.menuId !== "") {
+      obj.menuId = message.menuId;
+    }
+    if (message.menuTitle !== "") {
+      obj.menuTitle = message.menuTitle;
+    }
     return obj;
   },
 
@@ -2700,12 +2751,22 @@ export const PermissionDetail: MessageFns<PermissionDetail> = {
     message.audit = (object.audit !== undefined && object.audit !== null)
       ? AuditInfo.fromPartial(object.audit)
       : undefined;
+    message.menuId = object.menuId ?? "";
+    message.menuTitle = object.menuTitle ?? "";
     return message;
   },
 };
 
 function createBaseCreatePermissionRequest(): CreatePermissionRequest {
-  return { permissionCode: "", permissionName: "", description: "", serviceName: "", moduleName: "", actionType: "" };
+  return {
+    permissionCode: "",
+    permissionName: "",
+    description: "",
+    serviceName: "",
+    moduleName: "",
+    actionType: "",
+    menuId: "",
+  };
 }
 
 export const CreatePermissionRequest: MessageFns<CreatePermissionRequest> = {
@@ -2727,6 +2788,9 @@ export const CreatePermissionRequest: MessageFns<CreatePermissionRequest> = {
     }
     if (message.actionType !== "") {
       writer.uint32(50).string(message.actionType);
+    }
+    if (message.menuId !== "") {
+      writer.uint32(58).string(message.menuId);
     }
     return writer;
   },
@@ -2786,6 +2850,14 @@ export const CreatePermissionRequest: MessageFns<CreatePermissionRequest> = {
           message.actionType = reader.string();
           continue;
         }
+        case 7: {
+          if (tag !== 58) {
+            break;
+          }
+
+          message.menuId = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2823,6 +2895,11 @@ export const CreatePermissionRequest: MessageFns<CreatePermissionRequest> = {
         : isSet(object.action_type)
         ? globalThis.String(object.action_type)
         : "",
+      menuId: isSet(object.menuId)
+        ? globalThis.String(object.menuId)
+        : isSet(object.menu_id)
+        ? globalThis.String(object.menu_id)
+        : "",
     };
   },
 
@@ -2846,6 +2923,9 @@ export const CreatePermissionRequest: MessageFns<CreatePermissionRequest> = {
     if (message.actionType !== "") {
       obj.actionType = message.actionType;
     }
+    if (message.menuId !== "") {
+      obj.menuId = message.menuId;
+    }
     return obj;
   },
 
@@ -2860,6 +2940,7 @@ export const CreatePermissionRequest: MessageFns<CreatePermissionRequest> = {
     message.serviceName = object.serviceName ?? "";
     message.moduleName = object.moduleName ?? "";
     message.actionType = object.actionType ?? "";
+    message.menuId = object.menuId ?? "";
     return message;
   },
 };
@@ -3089,7 +3170,13 @@ export const GetPermissionResponse: MessageFns<GetPermissionResponse> = {
 };
 
 function createBaseUpdatePermissionRequest(): UpdatePermissionRequest {
-  return { permissionId: "", permissionName: undefined, description: undefined, isActive: undefined };
+  return {
+    permissionId: "",
+    permissionName: undefined,
+    description: undefined,
+    isActive: undefined,
+    menuId: undefined,
+  };
 }
 
 export const UpdatePermissionRequest: MessageFns<UpdatePermissionRequest> = {
@@ -3105,6 +3192,9 @@ export const UpdatePermissionRequest: MessageFns<UpdatePermissionRequest> = {
     }
     if (message.isActive !== undefined) {
       writer.uint32(32).bool(message.isActive);
+    }
+    if (message.menuId !== undefined) {
+      writer.uint32(42).string(message.menuId);
     }
     return writer;
   },
@@ -3148,6 +3238,14 @@ export const UpdatePermissionRequest: MessageFns<UpdatePermissionRequest> = {
           message.isActive = reader.bool();
           continue;
         }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.menuId = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3175,6 +3273,11 @@ export const UpdatePermissionRequest: MessageFns<UpdatePermissionRequest> = {
         : isSet(object.is_active)
         ? globalThis.Boolean(object.is_active)
         : undefined,
+      menuId: isSet(object.menuId)
+        ? globalThis.String(object.menuId)
+        : isSet(object.menu_id)
+        ? globalThis.String(object.menu_id)
+        : undefined,
     };
   },
 
@@ -3192,6 +3295,9 @@ export const UpdatePermissionRequest: MessageFns<UpdatePermissionRequest> = {
     if (message.isActive !== undefined) {
       obj.isActive = message.isActive;
     }
+    if (message.menuId !== undefined) {
+      obj.menuId = message.menuId;
+    }
     return obj;
   },
 
@@ -3204,6 +3310,7 @@ export const UpdatePermissionRequest: MessageFns<UpdatePermissionRequest> = {
     message.permissionName = object.permissionName ?? undefined;
     message.description = object.description ?? undefined;
     message.isActive = object.isActive ?? undefined;
+    message.menuId = object.menuId ?? undefined;
     return message;
   },
 };
@@ -3423,6 +3530,7 @@ function createBaseListPermissionsRequest(): ListPermissionsRequest {
     actionType: "",
     sortBy: "",
     sortOrder: "",
+    menuId: "",
   };
 }
 
@@ -3454,6 +3562,9 @@ export const ListPermissionsRequest: MessageFns<ListPermissionsRequest> = {
     }
     if (message.sortOrder !== "") {
       writer.uint32(74).string(message.sortOrder);
+    }
+    if (message.menuId !== "") {
+      writer.uint32(82).string(message.menuId);
     }
     return writer;
   },
@@ -3537,6 +3648,14 @@ export const ListPermissionsRequest: MessageFns<ListPermissionsRequest> = {
           message.sortOrder = reader.string();
           continue;
         }
+        case 10: {
+          if (tag !== 82) {
+            break;
+          }
+
+          message.menuId = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3585,6 +3704,11 @@ export const ListPermissionsRequest: MessageFns<ListPermissionsRequest> = {
         : isSet(object.sort_order)
         ? globalThis.String(object.sort_order)
         : "",
+      menuId: isSet(object.menuId)
+        ? globalThis.String(object.menuId)
+        : isSet(object.menu_id)
+        ? globalThis.String(object.menu_id)
+        : "",
     };
   },
 
@@ -3617,6 +3741,9 @@ export const ListPermissionsRequest: MessageFns<ListPermissionsRequest> = {
     if (message.sortOrder !== "") {
       obj.sortOrder = message.sortOrder;
     }
+    if (message.menuId !== "") {
+      obj.menuId = message.menuId;
+    }
     return obj;
   },
 
@@ -3634,6 +3761,7 @@ export const ListPermissionsRequest: MessageFns<ListPermissionsRequest> = {
     message.actionType = object.actionType ?? "";
     message.sortBy = object.sortBy ?? "";
     message.sortOrder = object.sortOrder ?? "";
+    message.menuId = object.menuId ?? "";
     return message;
   },
 };

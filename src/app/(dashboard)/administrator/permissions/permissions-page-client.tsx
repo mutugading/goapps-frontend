@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, Suspense } from "react"
-import { Plus, Loader2 } from "lucide-react"
+import Link from "next/link"
+import { Plus, Loader2, BookOpen } from "lucide-react"
 
 import {
     Card,
@@ -75,7 +76,13 @@ function PermissionsPageContent() {
 
     return (
         <>
-            <PageHeader title="Permission Management" subtitle="Manage permissions for role-based access control." />
+            <PageHeader title="Permission Management" subtitle="Manage permissions for role-based access control.">
+                <Button variant="outline" asChild>
+                    <Link href="/administrator/permissions/catalog">
+                        <BookOpen className="mr-2 h-4 w-4" /> View catalog
+                    </Link>
+                </Button>
+            </PageHeader>
 
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">

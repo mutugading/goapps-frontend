@@ -32,6 +32,7 @@ import { useCostProductRequestCounts, useCostProductRequests } from "@/hooks/fin
 import { useUrlState } from "@/lib/hooks"
 import { getStatusDisplay } from "@/lib/ui/status-colors"
 import { usePermissionContext } from "@/providers/permission-provider"
+import { PERMISSIONS } from "@/lib/rbac/permissions"
 import type { CostProductRequest, ListCostProductRequestsParams, RequestStatus } from "@/types/finance/cost-product-request"
 
 const STATUSES: RequestStatus[] = [
@@ -52,7 +53,7 @@ const PAGE_SIZE_OPTIONS = [10, 25, 50, 100]
 export default function ProductRequestsPageClient() {
   const router = useRouter()
   const { hasPermission } = usePermissionContext()
-  const canCreate = hasPermission("finance.product.request.create")
+  const canCreate = hasPermission(PERMISSIONS.ProductRequests.requestCreate)
 
   const [filters, setFilters] = useUrlState<ListCostProductRequestsParams>({ defaultValues: defaultFilters })
   const [formOpen, setFormOpen] = useState(false)

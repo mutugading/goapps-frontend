@@ -93,3 +93,17 @@ export function usePermissionsByService(serviceName?: string) {
         staleTime: 5 * 60 * 1000, // 5 minutes - permissions don't change often
     })
 }
+
+/**
+ * Hook returning the full flat permission catalog (all services), each entry
+ * carrying menuId/menuTitle. Backed by GetPermissionsByService which has NO
+ * pagination cap — unlike ListPermissions whose page_size is limited to 100,
+ * so it is the correct source when a picker/catalog needs every permission.
+ */
+export function useAllPermissions() {
+    const query = usePermissionsByService()
+    const data = (query.data?.data ?? [])
+        .flatMap((service) => service.modules ?? [])
+        .flatMap((mod) => mod.permissions ?? [])
+    return { data, isLoading: query.isLoading, isError: query.isError }
+}
