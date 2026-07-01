@@ -15,7 +15,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area"
 
 import type { Role } from "@/types/iam/role"
-import { usePermissions } from "@/hooks/iam/use-permissions"
+import { useAllPermissions } from "@/hooks/iam/use-permissions"
 import { useRolePermissions, useAssignRolePermissions, useRemoveRolePermissions } from "@/hooks/iam/use-roles"
 import { PermissionPicker } from "@/components/settings/rbac/permission-picker"
 
@@ -25,18 +25,12 @@ interface RolePermissionsDialogProps {
     role: Role | null
 }
 
-// ALL_PERMISSIONS_PAGE_SIZE fetches the full permission catalog in one page for the picker.
-const ALL_PERMISSIONS_PAGE_SIZE = 500
-
 function RolePermissionsDialog({ open, onOpenChange, role }: RolePermissionsDialogProps) {
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
     const [originalIds, setOriginalIds] = useState<Set<string>>(new Set())
 
     const roleId = role?.roleId || ""
-    const { data: permissionsData, isLoading: permissionsLoading } = usePermissions({
-        page: 1,
-        pageSize: ALL_PERMISSIONS_PAGE_SIZE,
-    })
+    const { data: permissions, isLoading: permissionsLoading } = useAllPermissions()
     const { data: rolePermsData, isLoading: rolePermsLoading } = useRolePermissions(roleId)
     const assignMutation = useAssignRolePermissions()
     const removeMutation = useRemoveRolePermissions()
@@ -72,7 +66,6 @@ function RolePermissionsDialog({ open, onOpenChange, role }: RolePermissionsDial
 
     const isPending = assignMutation.isPending || removeMutation.isPending
     const isLoading = permissionsLoading || rolePermsLoading
-    const permissions = permissionsData?.data ?? []
     const hasChanges = (() => {
         if (selectedIds.size !== originalIds.size) return true
         for (const id of selectedIds) {

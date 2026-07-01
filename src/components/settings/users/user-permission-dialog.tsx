@@ -15,7 +15,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area"
 
 import type { UserWithDetail } from "@/types/iam/user"
-import { usePermissions } from "@/hooks/iam/use-permissions"
+import { useAllPermissions } from "@/hooks/iam/use-permissions"
 import { useAssignUserPermissions, useRemoveUserPermissions, useUserAccess } from "@/hooks/iam/use-users"
 import { PermissionPicker } from "@/components/settings/rbac/permission-picker"
 
@@ -25,18 +25,12 @@ interface UserPermissionDialogProps {
     user: UserWithDetail | null
 }
 
-// ALL_PERMISSIONS_PAGE_SIZE fetches the full permission catalog in one page for the picker.
-const ALL_PERMISSIONS_PAGE_SIZE = 500
-
 export function UserPermissionDialog({ open, onOpenChange, user }: UserPermissionDialogProps) {
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
     const [originalIds, setOriginalIds] = useState<Set<string>>(new Set())
 
     const userId = user?.user?.userId || ""
-    const { data: permissionsData, isLoading: permissionsLoading } = usePermissions({
-        page: 1,
-        pageSize: ALL_PERMISSIONS_PAGE_SIZE,
-    })
+    const { data: permissions, isLoading: permissionsLoading } = useAllPermissions()
     const { data: userAccess, isLoading: accessLoading } = useUserAccess(userId)
     const assignMutation = useAssignUserPermissions()
     const removeMutation = useRemoveUserPermissions()
@@ -83,7 +77,6 @@ export function UserPermissionDialog({ open, onOpenChange, user }: UserPermissio
 
     const isPending = assignMutation.isPending || removeMutation.isPending
     const isLoading = permissionsLoading || accessLoading
-    const permissions = permissionsData?.data ?? []
     const displayName = user?.detail?.fullName || user?.user?.username || "user"
     const hasChanges = (() => {
         if (selectedIds.size !== originalIds.size) return true

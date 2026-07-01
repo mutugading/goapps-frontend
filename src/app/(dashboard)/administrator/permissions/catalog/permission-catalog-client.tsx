@@ -11,12 +11,9 @@ import { PageHeader } from "@/components/common/page-header"
 import { EmptyState } from "@/components/common/empty-state"
 import { DebouncedSearchInput } from "@/components/common/debounced-search-input"
 
-import { usePermissions } from "@/hooks/iam/use-permissions"
+import { useAllPermissions } from "@/hooks/iam/use-permissions"
 import { groupPermissionsByMenu } from "@/lib/rbac/group-permissions"
 import type { PermissionDetail } from "@/types/iam/role"
-
-// ALL_PERMISSIONS_PAGE_SIZE fetches the full catalog in one page.
-const ALL_PERMISSIONS_PAGE_SIZE = 500
 
 function matches(perm: PermissionDetail, q: string): boolean {
     if (!q) return true
@@ -31,13 +28,12 @@ function matches(perm: PermissionDetail, q: string): boolean {
 
 export default function PermissionCatalogClient() {
     const [search, setSearch] = useState("")
-    const { data, isLoading } = usePermissions({ page: 1, pageSize: ALL_PERMISSIONS_PAGE_SIZE })
+    const { data: all, isLoading } = useAllPermissions()
 
     const groups = useMemo(() => {
-        const all = data?.data ?? []
         const filtered = search ? all.filter((p) => matches(p, search)) : all
         return groupPermissionsByMenu(filtered)
-    }, [data, search])
+    }, [all, search])
 
     return (
         <div className="space-y-6">
