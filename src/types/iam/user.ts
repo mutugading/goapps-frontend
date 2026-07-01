@@ -35,6 +35,10 @@ export type {
     AssignUserRolesResponse,
     RemoveUserRolesRequest,
     RemoveUserRolesResponse,
+    AssignUserPermissionsRequest,
+    AssignUserPermissionsResponse,
+    RemoveUserPermissionsRequest,
+    RemoveUserPermissionsResponse,
     GetUserRolesAndPermissionsRequest,
     GetUserRolesAndPermissionsResponse,
     UserAccessInfo,
@@ -56,6 +60,8 @@ export {
     ListUsersResponse as ListUsersResponseParser,
     AssignUserRolesResponse as AssignUserRolesResponseParser,
     RemoveUserRolesResponse as RemoveUserRolesResponseParser,
+    AssignUserPermissionsResponse as AssignUserPermissionsResponseParser,
+    RemoveUserPermissionsResponse as RemoveUserPermissionsResponseParser,
     GetUserRolesAndPermissionsResponse as GetUserRolesAndPermissionsResponseParser,
 } from "@/types/generated/iam/v1/user"
 

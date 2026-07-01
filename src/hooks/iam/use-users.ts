@@ -27,6 +27,10 @@ import {
     AssignUserRolesResponseParser,
     type RemoveUserRolesResponse,
     RemoveUserRolesResponseParser,
+    type AssignUserPermissionsResponse,
+    AssignUserPermissionsResponseParser,
+    type RemoveUserPermissionsResponse,
+    RemoveUserPermissionsResponseParser,
 } from "@/types/iam/user"
 
 // ============================================================================
@@ -163,6 +167,50 @@ export function useRemoveUserRoles() {
         },
         onError: (error: Error) => {
             toast.error(error.message || "Failed to remove roles")
+        },
+    })
+}
+
+/**
+ * Hook for assigning direct permissions to a user (bypassing roles).
+ */
+export function useAssignUserPermissions() {
+    const queryClient = useQueryClient()
+
+    return useMutation({
+        mutationFn: async ({ userId, permissionIds }: { userId: string; permissionIds: string[] }): Promise<AssignUserPermissionsResponse> => {
+            const rawResponse = await apiClient.post<unknown>(`/api/v1/iam/users/${userId}/permissions`, { permissionIds })
+            return AssignUserPermissionsResponseParser.fromJSON(rawResponse)
+        },
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({ queryKey: ["iam", "user", "access", variables.userId] })
+            queryClient.invalidateQueries({ queryKey: userKeys.lists() })
+            toast.success("Permissions assigned successfully")
+        },
+        onError: (error: Error) => {
+            toast.error(error.message || "Failed to assign permissions")
+        },
+    })
+}
+
+/**
+ * Hook for removing direct permissions from a user.
+ */
+export function useRemoveUserPermissions() {
+    const queryClient = useQueryClient()
+
+    return useMutation({
+        mutationFn: async ({ userId, permissionIds }: { userId: string; permissionIds: string[] }): Promise<RemoveUserPermissionsResponse> => {
+            const rawResponse = await apiClient.post<unknown>(`/api/v1/iam/users/${userId}/permissions/remove`, { permissionIds })
+            return RemoveUserPermissionsResponseParser.fromJSON(rawResponse)
+        },
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({ queryKey: ["iam", "user", "access", variables.userId] })
+            queryClient.invalidateQueries({ queryKey: userKeys.lists() })
+            toast.success("Permissions removed successfully")
+        },
+        onError: (error: Error) => {
+            toast.error(error.message || "Failed to remove permissions")
         },
     })
 }

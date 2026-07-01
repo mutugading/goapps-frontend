@@ -20,6 +20,7 @@ import {
     UserTable,
     UserPagination,
     UserRoleDialog,
+    UserPermissionDialog,
 } from "@/components/settings/users"
 
 import { useUsers } from "@/hooks/iam/use-users"
@@ -47,6 +48,7 @@ function UsersPageContent() {
     const [isFormOpen, setIsFormOpen] = useState(false)
     const [isDeleteOpen, setIsDeleteOpen] = useState(false)
     const [isRoleDialogOpen, setIsRoleDialogOpen] = useState(false)
+    const [isPermissionDialogOpen, setIsPermissionDialogOpen] = useState(false)
     const [selectedUser, setSelectedUser] = useState<UserWithDetail | null>(null)
 
     const { data, isLoading } = useUsers(filters)
@@ -69,6 +71,11 @@ function UsersPageContent() {
     const handleManageRoles = (user: UserWithDetail) => {
         setSelectedUser(user)
         setIsRoleDialogOpen(true)
+    }
+
+    const handleManagePermissions = (user: UserWithDetail) => {
+        setSelectedUser(user)
+        setIsPermissionDialogOpen(true)
     }
 
     const handlePageChange = (page: number) => {
@@ -104,6 +111,7 @@ function UsersPageContent() {
                         onEdit={handleEdit}
                         onDelete={handleDelete}
                         onManageRoles={handleManageRoles}
+                        onManagePermissions={handleManagePermissions}
                     />
                     <UserPagination
                         pagination={data?.pagination}
@@ -126,6 +134,11 @@ function UsersPageContent() {
             <UserRoleDialog
                 open={isRoleDialogOpen}
                 onOpenChange={setIsRoleDialogOpen}
+                user={selectedUser}
+            />
+            <UserPermissionDialog
+                open={isPermissionDialogOpen}
+                onOpenChange={setIsPermissionDialogOpen}
                 user={selectedUser}
             />
         </>
