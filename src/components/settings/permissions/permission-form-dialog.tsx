@@ -37,6 +37,7 @@ import {
 
 import type { PermissionDetail } from "@/types/iam/role"
 import { useCreatePermission, useUpdatePermission } from "@/hooks/iam/use-permissions"
+import { MenuCombobox } from "@/components/settings/rbac/menu-combobox"
 
 const ACTION_TYPES = ["view", "create", "update", "delete", "export", "import"] as const
 
@@ -50,10 +51,11 @@ const permissionFormSchema = z.object({
             "Format: service.module.entity.action (lowercase, dots)"
         ),
     permissionName: z.string().min(1, "Name is required").max(100, "Maximum 100 characters"),
-    description: z.string().max(500, "Maximum 500 characters"),
+    description: z.string().min(1, "Description is required").max(500, "Maximum 500 characters"),
     serviceName: z.string().min(1, "Service is required").max(50, "Maximum 50 characters"),
     moduleName: z.string().min(1, "Module is required").max(50, "Maximum 50 characters"),
     actionType: z.enum(ACTION_TYPES, { message: "Action type is required" }),
+    menuId: z.string(),
     isActive: z.boolean(),
 })
 
@@ -79,6 +81,7 @@ export function PermissionFormDialog({ open, onOpenChange, permission }: Permiss
             serviceName: "",
             moduleName: "",
             actionType: "view",
+            menuId: "",
             isActive: true,
         },
     })
@@ -93,6 +96,7 @@ export function PermissionFormDialog({ open, onOpenChange, permission }: Permiss
                     serviceName: permission.serviceName || "",
                     moduleName: permission.moduleName || "",
                     actionType: (permission.actionType as typeof ACTION_TYPES[number]) || "view",
+                    menuId: permission.menuId || "",
                     isActive: permission.isActive ?? true,
                 })
             } else {
@@ -103,6 +107,7 @@ export function PermissionFormDialog({ open, onOpenChange, permission }: Permiss
                     serviceName: "",
                     moduleName: "",
                     actionType: "view",
+                    menuId: "",
                     isActive: true,
                 })
             }
@@ -139,6 +144,7 @@ export function PermissionFormDialog({ open, onOpenChange, permission }: Permiss
                         permissionName: values.permissionName,
                         description: values.description || "",
                         isActive: values.isActive,
+                        menuId: values.menuId,
                     },
                 })
             } else {
@@ -149,6 +155,7 @@ export function PermissionFormDialog({ open, onOpenChange, permission }: Permiss
                     serviceName: values.serviceName,
                     moduleName: values.moduleName,
                     actionType: values.actionType,
+                    menuId: values.menuId,
                 })
             }
             onOpenChange(false)
@@ -292,16 +299,43 @@ export function PermissionFormDialog({ open, onOpenChange, permission }: Permiss
                             name="description"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Description</FormLabel>
+                                    <FormLabel>
+                                        Description <span className="text-destructive">*</span>
+                                    </FormLabel>
                                     <FormControl>
                                         <Textarea
-                                            placeholder="Optional description..."
+                                            placeholder="Explain what this permission allows, e.g. 'View the Unit of Measure master list'"
                                             {...field}
                                             value={field.value || ""}
                                             disabled={isPending}
                                             rows={2}
                                         />
                                     </FormControl>
+                                    <FormDescription>
+                                        Shown to admins when assigning this permission — describe what it does.
+                                    </FormDescription>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+
+                        <FormField
+                            control={form.control}
+                            name="menuId"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Page / Menu</FormLabel>
+                                    <FormControl>
+                                        <MenuCombobox
+                                            value={field.value || ""}
+                                            onChange={field.onChange}
+                                            disabled={isPending}
+                                        />
+                                    </FormControl>
+                                    <FormDescription>
+                                        The page this permission belongs to. Choose &quot;Global / none&quot; for
+                                        cross-page permissions.
+                                    </FormDescription>
                                     <FormMessage />
                                 </FormItem>
                             )}

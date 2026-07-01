@@ -118,6 +118,7 @@ export interface ListPermissionsParams {
     serviceName?: string
     moduleName?: string
     actionType?: string
+    menuId?: string
     sortBy?: string
     sortOrder?: string
 }

@@ -19,6 +19,7 @@ export async function GET(request: NextRequest) {
                 serviceName: searchParams.get("serviceName") || searchParams.get("service_name") || "",
                 moduleName: searchParams.get("moduleName") || searchParams.get("module_name") || "",
                 actionType: searchParams.get("actionType") || searchParams.get("action_type") || "",
+                menuId: searchParams.get("menuId") || searchParams.get("menu_id") || "",
                 sortBy: searchParams.get("sortBy") || searchParams.get("sort_by") || "",
                 sortOrder: searchParams.get("sortOrder") || searchParams.get("sort_order") || "",
             },
