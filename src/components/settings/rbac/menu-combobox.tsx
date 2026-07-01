@@ -33,7 +33,8 @@ const GLOBAL_VALUE = "__global__"
 export function MenuCombobox({ value, onChange, disabled }: MenuComboboxProps) {
     const [open, setOpen] = useState(false)
     // page_size is capped at 100 by proto validation; 100 covers the current menu set.
-    const { data, isLoading } = useMenus({ page: 1, pageSize: 100, sortBy: "sortOrder", sortOrder: "asc" })
+    // sort_by must be one of the proto-allowed values (snake_case): "", code, title, sort_order, created_at.
+    const { data, isLoading } = useMenus({ page: 1, pageSize: 100, sortBy: "sort_order", sortOrder: "asc" })
     const menus = data?.data ?? []
 
     const selected = menus.find((m) => m.menuId === value)
