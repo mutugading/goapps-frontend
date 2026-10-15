@@ -24,6 +24,16 @@ describe("resolvePeriod", () => {
     expect(r.from).toBeNull()
     expect(r.to).toBeNull()
   })
+  it("THIS_WEEK snaps to Monday", () => {
+    const r = resolvePeriod("THIS_WEEK", undefined, undefined, new Date(2026, 9, 15)) // Thu
+    expect(r.from).toEqual(new Date(2026, 9, 12))
+    expect(r.to).toEqual(new Date(2026, 9, 15))
+  })
+  it("LAST_WEEK is previous Mon–Sun", () => {
+    const r = resolvePeriod("LAST_WEEK", undefined, undefined, new Date(2026, 9, 18)) // Sun
+    expect(r.from).toEqual(new Date(2026, 9, 5))
+    expect(r.to).toEqual(new Date(2026, 9, 11))
+  })
   it("CUSTOM uses provided dates", () => {
     const r = resolvePeriod("CUSTOM", "2026-01-01", "2026-03-31", now)
     expect(r.from).toEqual(new Date("2026-01-01"))
@@ -34,6 +44,11 @@ describe("resolvePeriod", () => {
 describe("periodLabel", () => {
   it("formats YYYYMM monthly", () => {
     expect(periodLabel("202604", "MONTHLY")).toBe("Apr 2026")
+  })
+  it("keeps ISO week labels and derives them from dates", () => {
+    expect(periodLabel("2026-W42", "WEEKLY")).toBe("2026-W42")
+    expect(periodLabel("2026-10-15", "WEEKLY")).toBe("2026-W42")
+    expect(periodLabel("2027-01-01", "WEEKLY")).toBe("2026-W53")
   })
   it("passes through quarterly/yearly", () => {
     expect(periodLabel("2026-Q2", "QUARTERLY")).toBe("2026-Q2")

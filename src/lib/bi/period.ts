@@ -26,6 +26,14 @@ export function resolvePeriod(
       return { from: null, to: null }
     case "THIS_MONTH":
       return { from: firstOfMonth(now), to: now }
+    case "THIS_WEEK":
+      return { from: mondayOf(now), to: now }
+    case "LAST_WEEK": {
+      const thisMon = mondayOf(now)
+      const lastMon = new Date(thisMon.getFullYear(), thisMon.getMonth(), thisMon.getDate() - 7)
+      const lastSun = new Date(thisMon.getFullYear(), thisMon.getMonth(), thisMon.getDate() - 1)
+      return { from: lastMon, to: lastSun }
+    }
     case "THIS_QTR":
       return { from: firstOfQuarter(now), to: now }
     case "THIS_YEAR":
@@ -40,6 +48,9 @@ export function resolvePeriod(
 
 /** Format a YYYYMM / date string into a human label per grain. */
 export function periodLabel(raw: string, grain: string): string {
+  // ISO week label, e.g. "2026-W42" (backend format) — pass through.
+  if (/^\d{4}-W\d{2}$/.test(raw)) return raw
+  if (grain === "WEEKLY") return isoWeekLabel(raw) ?? raw
   // raw may be "202604" (monthly), "2026-04-15" (daily), "2026-Q2", "2026".
   if (/^\d{6}$/.test(raw)) {
     const year = raw.slice(0, 4)
@@ -62,4 +73,22 @@ function firstOfQuarter(d: Date): Date {
 }
 function shiftMonths(d: Date, delta: number): Date {
   return new Date(d.getFullYear(), d.getMonth() + delta, 1)
+}
+
+/** Monday (00:00 local) of the ISO week containing d. */
+function mondayOf(d: Date): Date {
+  const offset = (d.getDay() + 6) % 7
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate() - offset)
+}
+
+/** "2026-10-15" → "2026-W42" (ISO 8601 week; year is the ISO week-year). */
+function isoWeekLabel(raw: string): string | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(raw)
+  if (!m) return null
+  const d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]))
+  const day = d.getUTCDay() || 7
+  d.setUTCDate(d.getUTCDate() + 4 - day) // Thursday of this week
+  const yearStart = Date.UTC(d.getUTCFullYear(), 0, 1)
+  const week = Math.ceil(((d.getTime() - yearStart) / 86400000 + 1) / 7)
+  return `${d.getUTCFullYear()}-W${String(week).padStart(2, "0")}`
 }

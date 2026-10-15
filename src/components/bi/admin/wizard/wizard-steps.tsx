@@ -195,6 +195,7 @@ export function StepDataBinding({ form, setForm }: StepProps) {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value={String(PeriodeGrain.PERIODE_GRAIN_DAILY)}>Daily</SelectItem>
+            <SelectItem value={String(PeriodeGrain.PERIODE_GRAIN_WEEKLY)}>Weekly</SelectItem>
             <SelectItem value={String(PeriodeGrain.PERIODE_GRAIN_MONTHLY)}>Monthly</SelectItem>
             <SelectItem value={String(PeriodeGrain.PERIODE_GRAIN_QUARTERLY)}>Quarterly</SelectItem>
             <SelectItem value={String(PeriodeGrain.PERIODE_GRAIN_YEARLY)}>Yearly</SelectItem>

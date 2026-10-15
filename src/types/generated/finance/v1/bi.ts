@@ -19,6 +19,7 @@ export enum PeriodeGrain {
   PERIODE_GRAIN_MONTHLY = 2,
   PERIODE_GRAIN_QUARTERLY = 3,
   PERIODE_GRAIN_YEARLY = 4,
+  PERIODE_GRAIN_WEEKLY = 5,
   UNRECOGNIZED = -1,
 }
 
@@ -39,6 +40,9 @@ export function periodeGrainFromJSON(object: any): PeriodeGrain {
     case 4:
     case "PERIODE_GRAIN_YEARLY":
       return PeriodeGrain.PERIODE_GRAIN_YEARLY;
+    case 5:
+    case "PERIODE_GRAIN_WEEKLY":
+      return PeriodeGrain.PERIODE_GRAIN_WEEKLY;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -58,6 +62,8 @@ export function periodeGrainToJSON(object: PeriodeGrain): string {
       return "PERIODE_GRAIN_QUARTERLY";
     case PeriodeGrain.PERIODE_GRAIN_YEARLY:
       return "PERIODE_GRAIN_YEARLY";
+    case PeriodeGrain.PERIODE_GRAIN_WEEKLY:
+      return "PERIODE_GRAIN_WEEKLY";
     case PeriodeGrain.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";

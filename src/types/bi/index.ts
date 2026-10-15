@@ -134,14 +134,16 @@ import type {
 } from "@/types/generated/finance/v1/bi"
 
 /** Period preset enum (canonical string keys matching backend ResolvePeriod). */
-export type PeriodPreset = "L12M" | "L24M" | "THIS_YEAR" | "THIS_QTR" | "THIS_MONTH" | "ALL" | "CUSTOM"
-export const PERIOD_PRESETS: PeriodPreset[] = ["L12M", "L24M", "THIS_YEAR", "THIS_QTR", "THIS_MONTH", "ALL", "CUSTOM"]
+export type PeriodPreset = "L12M" | "L24M" | "THIS_YEAR" | "THIS_QTR" | "THIS_MONTH" | "THIS_WEEK" | "LAST_WEEK" | "ALL" | "CUSTOM"
+export const PERIOD_PRESETS: PeriodPreset[] = ["L12M", "L24M", "THIS_YEAR", "THIS_QTR", "THIS_MONTH", "THIS_WEEK", "LAST_WEEK", "ALL", "CUSTOM"]
 export const PERIOD_PRESET_LABELS: Record<PeriodPreset, string> = {
   L12M: "Last 12 Months",
   L24M: "Last 24 Months",
   THIS_YEAR: "This Year",
   THIS_QTR: "This Quarter",
   THIS_MONTH: "This Month",
+  THIS_WEEK: "This Week",
+  LAST_WEEK: "Last Week",
   ALL: "All Periods",
   CUSTOM: "Custom Range",
 }
@@ -291,6 +293,7 @@ export function periodeGrainToString(g: PeriodeGrain): string {
     case 2: return "MONTHLY"
     case 3: return "QUARTERLY"
     case 4: return "YEARLY"
+    case 5: return "WEEKLY"
     default: return ""
   }
 }
