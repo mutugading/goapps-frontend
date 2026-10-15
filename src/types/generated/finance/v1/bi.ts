@@ -334,6 +334,8 @@ export interface Dashboard {
   audit: AuditInfo | undefined;
   isFeatured: boolean;
   featureOrder: number;
+  /** Kalender periode: CALENDAR (bulan kalender) atau PAYROLL_26_25 (periode payroll 26-25). HD-06. */
+  periodCalendar: string;
 }
 
 export interface DataSource {
@@ -468,6 +470,8 @@ export interface CreateDashboardRequest {
   groupId: string;
   allowedRoleCodes: string[];
   isActive: boolean;
+  /** Kosong = CALENDAR. */
+  periodCalendar: string;
 }
 
 export interface CreateDashboardResponse {
@@ -532,6 +536,7 @@ export interface UpdateDashboardRequest {
   isActive?: boolean | undefined;
   isFeatured?: boolean | undefined;
   featureOrder?: number | undefined;
+  periodCalendar?: string | undefined;
 }
 
 export interface UpdateDashboardResponse {
@@ -1068,6 +1073,7 @@ function createBaseDashboard(): Dashboard {
     audit: undefined,
     isFeatured: false,
     featureOrder: 0,
+    periodCalendar: "",
   };
 }
 
@@ -1152,6 +1158,9 @@ export const Dashboard: MessageFns<Dashboard> = {
     }
     if (message.featureOrder !== 0) {
       writer.uint32(208).int32(message.featureOrder);
+    }
+    if (message.periodCalendar !== "") {
+      writer.uint32(218).string(message.periodCalendar);
     }
     return writer;
   },
@@ -1381,6 +1390,14 @@ export const Dashboard: MessageFns<Dashboard> = {
           message.featureOrder = reader.int32();
           continue;
         }
+        case 27: {
+          if (tag !== 218) {
+            break;
+          }
+
+          message.periodCalendar = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1514,6 +1531,11 @@ export const Dashboard: MessageFns<Dashboard> = {
         : isSet(object.feature_order)
         ? globalThis.Number(object.feature_order)
         : 0,
+      periodCalendar: isSet(object.periodCalendar)
+        ? globalThis.String(object.periodCalendar)
+        : isSet(object.period_calendar)
+        ? globalThis.String(object.period_calendar)
+        : "",
     };
   },
 
@@ -1597,6 +1619,9 @@ export const Dashboard: MessageFns<Dashboard> = {
     if (message.featureOrder !== 0) {
       obj.featureOrder = Math.round(message.featureOrder);
     }
+    if (message.periodCalendar !== "") {
+      obj.periodCalendar = message.periodCalendar;
+    }
     return obj;
   },
 
@@ -1633,6 +1658,7 @@ export const Dashboard: MessageFns<Dashboard> = {
       : undefined;
     message.isFeatured = object.isFeatured ?? false;
     message.featureOrder = object.featureOrder ?? 0;
+    message.periodCalendar = object.periodCalendar ?? "";
     return message;
   },
 };
@@ -3562,6 +3588,7 @@ function createBaseCreateDashboardRequest(): CreateDashboardRequest {
     groupId: "",
     allowedRoleCodes: [],
     isActive: false,
+    periodCalendar: "",
   };
 }
 
@@ -3628,6 +3655,9 @@ export const CreateDashboardRequest: MessageFns<CreateDashboardRequest> = {
     }
     if (message.isActive !== false) {
       writer.uint32(160).bool(message.isActive);
+    }
+    if (message.periodCalendar !== "") {
+      writer.uint32(170).string(message.periodCalendar);
     }
     return writer;
   },
@@ -3809,6 +3839,14 @@ export const CreateDashboardRequest: MessageFns<CreateDashboardRequest> = {
           message.isActive = reader.bool();
           continue;
         }
+        case 21: {
+          if (tag !== 170) {
+            break;
+          }
+
+          message.periodCalendar = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3916,6 +3954,11 @@ export const CreateDashboardRequest: MessageFns<CreateDashboardRequest> = {
         : isSet(object.is_active)
         ? globalThis.Boolean(object.is_active)
         : false,
+      periodCalendar: isSet(object.periodCalendar)
+        ? globalThis.String(object.periodCalendar)
+        : isSet(object.period_calendar)
+        ? globalThis.String(object.period_calendar)
+        : "",
     };
   },
 
@@ -3981,6 +4024,9 @@ export const CreateDashboardRequest: MessageFns<CreateDashboardRequest> = {
     if (message.isActive !== false) {
       obj.isActive = message.isActive;
     }
+    if (message.periodCalendar !== "") {
+      obj.periodCalendar = message.periodCalendar;
+    }
     return obj;
   },
 
@@ -4009,6 +4055,7 @@ export const CreateDashboardRequest: MessageFns<CreateDashboardRequest> = {
     message.groupId = object.groupId ?? "";
     message.allowedRoleCodes = object.allowedRoleCodes?.map((e) => e) || [];
     message.isActive = object.isActive ?? false;
+    message.periodCalendar = object.periodCalendar ?? "";
     return message;
   },
 };
@@ -4699,6 +4746,7 @@ function createBaseUpdateDashboardRequest(): UpdateDashboardRequest {
     isActive: undefined,
     isFeatured: undefined,
     featureOrder: undefined,
+    periodCalendar: undefined,
   };
 }
 
@@ -4768,6 +4816,9 @@ export const UpdateDashboardRequest: MessageFns<UpdateDashboardRequest> = {
     }
     if (message.featureOrder !== undefined) {
       writer.uint32(208).int32(message.featureOrder);
+    }
+    if (message.periodCalendar !== undefined) {
+      writer.uint32(218).string(message.periodCalendar);
     }
     return writer;
   },
@@ -4957,6 +5008,14 @@ export const UpdateDashboardRequest: MessageFns<UpdateDashboardRequest> = {
           message.featureOrder = reader.int32();
           continue;
         }
+        case 27: {
+          if (tag !== 218) {
+            break;
+          }
+
+          message.periodCalendar = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -5069,6 +5128,11 @@ export const UpdateDashboardRequest: MessageFns<UpdateDashboardRequest> = {
         : isSet(object.feature_order)
         ? globalThis.Number(object.feature_order)
         : undefined,
+      periodCalendar: isSet(object.periodCalendar)
+        ? globalThis.String(object.periodCalendar)
+        : isSet(object.period_calendar)
+        ? globalThis.String(object.period_calendar)
+        : undefined,
     };
   },
 
@@ -5137,6 +5201,9 @@ export const UpdateDashboardRequest: MessageFns<UpdateDashboardRequest> = {
     if (message.featureOrder !== undefined) {
       obj.featureOrder = Math.round(message.featureOrder);
     }
+    if (message.periodCalendar !== undefined) {
+      obj.periodCalendar = message.periodCalendar;
+    }
     return obj;
   },
 
@@ -5166,6 +5233,7 @@ export const UpdateDashboardRequest: MessageFns<UpdateDashboardRequest> = {
     message.isActive = object.isActive ?? undefined;
     message.isFeatured = object.isFeatured ?? undefined;
     message.featureOrder = object.featureOrder ?? undefined;
+    message.periodCalendar = object.periodCalendar ?? undefined;
     return message;
   },
 };

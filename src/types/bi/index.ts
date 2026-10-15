@@ -134,18 +134,38 @@ import type {
 } from "@/types/generated/finance/v1/bi"
 
 /** Period preset enum (canonical string keys matching backend ResolvePeriod). */
-export type PeriodPreset = "L12M" | "L24M" | "THIS_YEAR" | "THIS_QTR" | "THIS_MONTH" | "THIS_WEEK" | "LAST_WEEK" | "ALL" | "CUSTOM"
-export const PERIOD_PRESETS: PeriodPreset[] = ["L12M", "L24M", "THIS_YEAR", "THIS_QTR", "THIS_MONTH", "THIS_WEEK", "LAST_WEEK", "ALL", "CUSTOM"]
+export type PeriodPreset = "L12M" | "L24M" | "THIS_YEAR" | "THIS_QTR" | "THIS_MONTH" | "LAST_MONTH" | "THIS_WEEK" | "LAST_WEEK" | "YESTERDAY" | "ALL" | "CUSTOM"
+export const PERIOD_PRESETS: PeriodPreset[] = ["L12M", "L24M", "THIS_YEAR", "THIS_QTR", "THIS_MONTH", "LAST_MONTH", "THIS_WEEK", "LAST_WEEK", "YESTERDAY", "ALL", "CUSTOM"]
 export const PERIOD_PRESET_LABELS: Record<PeriodPreset, string> = {
   L12M: "Last 12 Months",
   L24M: "Last 24 Months",
   THIS_YEAR: "This Year",
   THIS_QTR: "This Quarter",
   THIS_MONTH: "This Month",
+  LAST_MONTH: "Last Month",
+  YESTERDAY: "Yesterday",
   THIS_WEEK: "This Week",
   LAST_WEEK: "Last Week",
   ALL: "All Periods",
   CUSTOM: "Custom Range",
+}
+
+/** Period calendar (HD-06): calendar month or payroll period 26th..25th. */
+export type PeriodCalendar = "CALENDAR" | "PAYROLL_26_25"
+export const PERIOD_CALENDAR_LABELS: Record<PeriodCalendar, string> = {
+  CALENDAR: "Calendar month",
+  PAYROLL_26_25: "Payroll period (26–25)",
+}
+
+/** Preset label, using "Period" wording for payroll-calendar dashboards. */
+export function periodPresetLabel(p: PeriodPreset, calendar?: string): string {
+  if (calendar === "PAYROLL_26_25") {
+    if (p === "THIS_MONTH") return "This Period"
+    if (p === "LAST_MONTH") return "Last Period"
+    if (p === "L12M") return "Last 12 Periods"
+    if (p === "L24M") return "Last 24 Periods"
+  }
+  return PERIOD_PRESET_LABELS[p]
 }
 
 /** Compare-mode string keys (matches CompareMode enum). */
@@ -228,6 +248,7 @@ export interface DashboardFormData {
   filterType: string
   filterGroup1: string
   periodeGrain: PeriodeGrain
+  periodCalendar: PeriodCalendar
   defaultPeriod: PeriodPreset
   chartType: ChartType
   chartConfig: Record<string, unknown>

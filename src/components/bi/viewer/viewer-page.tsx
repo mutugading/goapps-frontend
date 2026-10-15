@@ -209,6 +209,7 @@ export function ViewerPage({ code }: { code: string }) {
         compareModes={compareModes}
         primaryChartType={primaryChartType}
         availableChartTypes={availableChartTypes}
+        periodCalendar={dashboard.periodCalendar}
         categories={monthSelectorCategories}
       />
 

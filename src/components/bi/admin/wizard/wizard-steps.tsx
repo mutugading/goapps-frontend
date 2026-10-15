@@ -21,7 +21,8 @@ import {
   PeriodeGrain,
   CompareMode,
   PERIOD_PRESETS,
-  PERIOD_PRESET_LABELS,
+  PERIOD_CALENDAR_LABELS,
+  periodPresetLabel,
   type DashboardFormData,
   type KpiEntry,
   type ViewModeConfig,
@@ -203,6 +204,21 @@ export function StepDataBinding({ form, setForm }: StepProps) {
         </Select>
       </Field>
 
+      <Field label="Period Calendar">
+        <Select value={form.periodCalendar} onValueChange={(v) => setForm((p) => ({ ...p, periodCalendar: v as DashboardFormData["periodCalendar"] }))}>
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {(Object.keys(PERIOD_CALENDAR_LABELS) as DashboardFormData["periodCalendar"][]).map((c) => (
+              <SelectItem key={c} value={c}>
+                {PERIOD_CALENDAR_LABELS[c]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </Field>
+
       <Field label="Default Period">
         <Select value={form.defaultPeriod} onValueChange={(v) => setForm((p) => ({ ...p, defaultPeriod: v as DashboardFormData["defaultPeriod"] }))}>
           <SelectTrigger>
@@ -211,7 +227,7 @@ export function StepDataBinding({ form, setForm }: StepProps) {
           <SelectContent>
             {PERIOD_PRESETS.map((preset) => (
               <SelectItem key={preset} value={preset}>
-                {PERIOD_PRESET_LABELS[preset]}
+                {periodPresetLabel(preset, form.periodCalendar)}
               </SelectItem>
             ))}
           </SelectContent>
