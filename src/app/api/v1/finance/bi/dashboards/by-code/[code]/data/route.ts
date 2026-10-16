@@ -39,8 +39,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     if (selectedMonth && /^\d{6}$/.test(selectedMonth)) {
       const y = parseInt(selectedMonth.slice(0, 4), 10)
       const m = parseInt(selectedMonth.slice(4, 6), 10) - 1
-      const from = new Date(Date.UTC(y, m, 1))
-      const to = new Date(Date.UTC(y, m + 1, 0)) // day-0 of next month = last day of this month
+      // PAYROLL_26_25 (HD-06): label YYYYMM = window 26th of previous month .. 25th of that month.
+      const payroll = sp.get("period_calendar") === "PAYROLL_26_25"
+      const from = payroll ? new Date(Date.UTC(y, m - 1, 26)) : new Date(Date.UTC(y, m, 1))
+      const to = payroll ? new Date(Date.UTC(y, m, 25)) : new Date(Date.UTC(y, m + 1, 0)) // day-0 of next month = last day
       periodPresetOverride = "CUSTOM"
       periodFromStr = from.toISOString().slice(0, 10)
       periodToStr = to.toISOString().slice(0, 10)

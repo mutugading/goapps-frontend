@@ -86,7 +86,7 @@ export function ViewerPage({ code }: { code: string }) {
     isError: dataError,
     error,
     refetch,
-  } = useDashboardData(code, stateWithFilters, refreshMs, earlyIsTrend)
+  } = useDashboardData(code, stateWithFilters, refreshMs, earlyIsTrend, dashboard?.periodCalendar)
 
   // Toggle helpers — use local state for immediate refetch.
   const toggleGroup1 = useCallback((v: string) => {

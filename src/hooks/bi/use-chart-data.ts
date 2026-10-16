@@ -18,7 +18,7 @@ import { dashboardKeys } from "./use-dashboard"
  * Trend charts (line/area/multi_line) always use the period preset (L12M etc.)
  * and ignore selectedPeriod — filtering a trend to 1 month shows only 1 point.
  */
-function buildDataQuery(state: ViewerState, isTrendChart: boolean): string {
+function buildDataQuery(state: ViewerState, isTrendChart: boolean, calendar?: string): string {
   const params = new URLSearchParams()
   params.set("period", state.period)
   if (state.period === "CUSTOM") {
@@ -29,6 +29,7 @@ function buildDataQuery(state: ViewerState, isTrendChart: boolean): string {
   // month to show. Pass it as selected_month so the BFF overrides period to CUSTOM.
   if (!isTrendChart && state.selectedPeriod && /^\d{6}$/.test(state.selectedPeriod)) {
     params.set("selected_month", state.selectedPeriod)
+    if (calendar) params.set("period_calendar", calendar)
   }
   params.set("compare", state.compare)
   if (state.drillPath.length > 0) params.set("drill_path", state.drillPath.join(","))
@@ -55,11 +56,12 @@ export function useDashboardData(
   state: ViewerState,
   refreshIntervalMs: number,
   isTrendChart = false,
+  calendar?: string,
 ) {
   return useQuery<ChartDataResponse | undefined>({
-    queryKey: [...dashboardKeys.all, "data", code, state, isTrendChart] as const,
+    queryKey: [...dashboardKeys.all, "data", code, state, isTrendChart, calendar] as const,
     queryFn: async () => {
-      const qs = buildDataQuery(state, isTrendChart)
+      const qs = buildDataQuery(state, isTrendChart, calendar)
       const raw = await apiClient.get<unknown>(`/api/v1/finance/bi/dashboards/by-code/${code}/data?${qs}`)
       const parsed: GetDashboardDataResponse = GetDashboardDataResponseParser.fromJSON(raw)
       if (!parsed.base?.isSuccess) throw new Error(parsed.base?.message ?? "Failed to load chart data")

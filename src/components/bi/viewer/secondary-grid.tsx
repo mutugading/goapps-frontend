@@ -549,8 +549,12 @@ export function SecondaryGrid({ layoutConfig, data, dashboardCode, selectedPerio
         const activeType = getActiveType(s, i)
 
         // For data_table charts, filter points to the selected period (client-side only).
+        // Pivot tables (WORKFORCE: categories are dept / IYYY-Www, not YYYYMM) are skipped.
+        const isPeriodKeyed = (data.series ?? []).some((ser) =>
+          (ser.points ?? []).some((p) => /^\d{6}$/.test(p.category ?? "")),
+        )
         const filteredData =
-          selectedPeriod && activeType === "data_table"
+          selectedPeriod && activeType === "data_table" && isPeriodKeyed
             ? {
                 ...data,
                 series:
