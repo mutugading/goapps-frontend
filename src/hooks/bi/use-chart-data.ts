@@ -35,6 +35,9 @@ function buildDataQuery(state: ViewerState, isTrendChart: boolean, calendar?: st
   if (state.drillPath.length > 0) params.set("drill_path", state.drillPath.join(","))
   if (state.group1Filter?.length) params.set("group1_filter", state.group1Filter.join(","))
   if (state.group2Filter?.length) params.set("group2_filter", state.group2Filter.join(","))
+  // Employee Overtime (HD-18): values may contain commas (dept names), so the filter travels as JSON.
+  if (state.groupBy) params.set("group_by", state.groupBy)
+  if (state.groupBy && state.groupFilter?.length) params.set("group_filter", JSON.stringify(state.groupFilter))
   return params.toString()
 }
 

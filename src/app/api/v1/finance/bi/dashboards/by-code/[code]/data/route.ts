@@ -21,6 +21,17 @@ function compareKeyToEnum(s: string | null): CompareMode {
   }
 }
 
+/** Parse a JSON array of strings; anything else yields [] (no filter). */
+function parseStringArray(raw: string | null): string[] {
+  if (!raw) return []
+  try {
+    const v: unknown = JSON.parse(raw)
+    return Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : []
+  } catch {
+    return []
+  }
+}
+
 export async function GET(request: NextRequest, { params }: { params: Promise<{ code: string }> }) {
   try {
     const { code } = await params
@@ -54,6 +65,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const group2Filter = sp.get("group2_filter")?.split(",").filter(Boolean) ?? []
     if (group1Filter.length > 0) metadata.set("x-group1-filter", group1Filter.join(","))
     if (group2Filter.length > 0) metadata.set("x-group2-filter", group2Filter.join(","))
+
+    // Employee Overtime table (table_mode=employee_ot, HD-18): group-by key (whitelisted by the
+    // backend) and the selected group values as a JSON array (values may contain commas).
+    const groupBy = sp.get("group_by")
+    if (groupBy) metadata.set("x-group-by", groupBy)
+    const groupFilter = parseStringArray(sp.get("group_filter"))
+    if (groupBy && groupFilter.length > 0) metadata.set("x-group-filter", JSON.stringify(groupFilter))
 
     // force_trend=true: instructs the backend to override x_axis_field and return a
     // time-series payload instead of a categorical/waterfall one. Used by CrossDashboardCard

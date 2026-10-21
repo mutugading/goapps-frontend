@@ -193,6 +193,10 @@ export interface ViewerState {
   group1Filter: string[]
   /** Selected group_2 values from filter chips (Category). Empty = show all. */
   group2Filter: string[]
+  /** Employee Overtime table (table_mode=employee_ot, HD-18): group-by key (DIVISION | DEPT | COMPANY). "" = no grouping. */
+  groupBy?: string
+  /** Employee Overtime table: selected values of the groupBy attribute. Empty = all. */
+  groupFilter?: string[]
   /**
    * Selected period (YYYYMM) for waterfall/bar breakdown and secondary data_table filtering.
    * Defaults to the latest available period in the loaded chart data.
@@ -208,6 +212,8 @@ export const DEFAULT_VIEWER_STATE: ViewerState = {
   chartType: "",
   group1Filter: [],
   group2Filter: [],
+  groupBy: "",
+  groupFilter: [],
   selectedPeriod: undefined,
 }
 

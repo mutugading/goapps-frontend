@@ -26,6 +26,8 @@ import { FilterChips } from "./filter-chips"
 import { KpiGrid } from "./kpi-grid"
 import { DrillBreadcrumb } from "./drill-breadcrumb"
 import { SecondaryGrid } from "./secondary-grid"
+import { EmployeeOTControls } from "./employee-ot-controls"
+import { EMPLOYEE_OT_MODE, EMPLOYEE_OT_PRESETS, readEmployeeOTBlock } from "@/lib/bi/employee-ot"
 import { ViewerEmptyState, ViewerErrorState, DataFreshnessBadge } from "./states"
 
 export function ViewerPage({ code }: { code: string }) {
@@ -86,6 +88,7 @@ export function ViewerPage({ code }: { code: string }) {
     isError: dataError,
     error,
     refetch,
+    isPlaceholderData,
   } = useDashboardData(code, stateWithFilters, refreshMs, earlyIsTrend, dashboard?.periodCalendar)
 
   // Toggle helpers — use local state for immediate refetch.
@@ -133,6 +136,11 @@ export function ViewerPage({ code }: { code: string }) {
   // Categories from chart data — used to drive the month selector in FilterBar.
   const categories = chartData?.categories ?? []
 
+  // Employee Overtime (HD-18): payroll-period presets only, no month selector (selected_month would
+  // turn the period into CUSTOM, which the backend rejects), group-by controls on the table level.
+  const isEmployeeOT =
+    (dataConfig?.["table_mode"] ?? dashConfig?.["table_mode"] ?? dashConfig?.["tableMode"]) === EMPLOYEE_OT_MODE
+
   // Effective selected period: use URL state only when it's a valid YYYYMM string.
   // Ignore stale non-period values (e.g. group_2 names from a previous navigation).
   const periodCategories = categories.filter(c => /^\d{6}$/.test(c))
@@ -151,7 +159,7 @@ export function ViewerPage({ code }: { code: string }) {
 
   // Pass period list to FilterBar: trend charts use period-labelled categories from data;
   // categorical charts use the derived month list.
-  const monthSelectorCategories = isTrendChart ? periodCategories : derivedPeriodOptions
+  const monthSelectorCategories = isEmployeeOT ? [] : isTrendChart ? periodCategories : derivedPeriodOptions
 
   // effectiveSelectedPeriod is undefined when no month is explicitly selected
   // (default "All Months"). In that case the chart shows the full period range
@@ -211,7 +219,18 @@ export function ViewerPage({ code }: { code: string }) {
         availableChartTypes={availableChartTypes}
         periodCalendar={dashboard.periodCalendar}
         categories={monthSelectorCategories}
+        allowedPresets={isEmployeeOT ? EMPLOYEE_OT_PRESETS : undefined}
       />
+
+      {isEmployeeOT && state.drillPath.length === 0 && (
+        <EmployeeOTControls
+          state={state}
+          onChange={setState}
+          block={readEmployeeOTBlock(dataConfig)}
+          data={chartData}
+          stale={isPlaceholderData || dataLoading}
+        />
+      )}
 
       {(group1Values.length > 0 || group2Values.length > 0) && (
         <div className="flex flex-col gap-2 rounded-lg border bg-card px-4 py-3">

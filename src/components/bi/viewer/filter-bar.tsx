@@ -31,6 +31,8 @@ interface FilterBarProps {
   categories?: string[]
   /** Dashboard period calendar (CALENDAR | PAYROLL_26_25) — only changes preset wording. */
   periodCalendar?: string
+  /** Restricts the period dropdown (e.g. employee_ot accepts payroll-period presets only). Default: all. */
+  allowedPresets?: PeriodPreset[]
 }
 
 /** Human-readable label for a chart type string. */
@@ -62,6 +64,7 @@ export function FilterBar({
   availableChartTypes = [],
   categories = [],
   periodCalendar,
+  allowedPresets = PERIOD_PRESETS,
 }: FilterBarProps) {
   const availableCompares: CompareKey[] = ["NONE", ...compareModes.filter((c) => c !== "NONE")]
   const activeChartType = state.chartType || primaryChartType
@@ -95,7 +98,7 @@ export function FilterBar({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {PERIOD_PRESETS.map((p) => (
+            {allowedPresets.map((p) => (
               <SelectItem key={p} value={p}>
                 {periodPresetLabel(p, periodCalendar)}
               </SelectItem>

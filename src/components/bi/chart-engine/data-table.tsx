@@ -5,6 +5,8 @@ import type { ChartProps } from "@/components/bi/chart-engine/types"
 import { toRechartsRows, seriesNames, cfgStr, cfgNum } from "@/lib/bi/data-adapter"
 import { formatNumber, type NumberFormat } from "@/lib/bi/number-format"
 import { cn } from "@/lib/utils"
+import { EmployeeOTTable, EmployeeOTDayTable } from "@/components/bi/chart-engine/employee-ot-table"
+import { EMPLOYEE_OT_MODE } from "@/lib/bi/employee-ot"
 
 const EMPLOYEE_COLUMNS: { key: string; label: string; decimals?: number }[] = [
   { key: "HOURS", label: "Jam minggu terakhir" },
@@ -57,6 +59,11 @@ function EmployeeTable({ config, data, onDrill, height }: ChartProps & { height:
 
 export default function BiDataTable(props: ChartProps) {
   const { config, data, onDrill, height = 360 } = props
+  if (cfgStr(config, "table_mode", "") === EMPLOYEE_OT_MODE) {
+    return (data.drillContext?.currentPath ?? []).length === 0
+      ? <EmployeeOTTable {...props} height={height} />
+      : <EmployeeOTDayTable {...props} height={height} />
+  }
   if (cfgStr(config, "table_mode", "") === "employee_week" && (data.drillContext?.currentPath ?? []).length === 0) {
     return <EmployeeTable {...props} height={height} />
   }
