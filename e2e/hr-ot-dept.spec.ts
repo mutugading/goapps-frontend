@@ -26,3 +26,21 @@ test("H031 KPI Jam OT per Headcount", async ({ page }) => {
   const card = page.getByText("Jam OT per Headcount").first().locator("xpath=ancestor::*[self::div][2]")
   console.log("KPI-CARD:", (await card.innerText()).replace(/\s+/g, " "))
 })
+
+// H033 — KPI "% Karyawan Lembur" (HR_OT_EMP_COUNT / HR_HEADCOUNT ×100, HD-08). Preset default (202608–202610) = 1411/3007 ≈ 46,9 %; 202609 saja ≈ 359/984 ≈ 36,5 %.
+// Kartu menampilkan angka tanpa tanda %.
+// Prasyarat: staging ATT & OT terisi sejak awal periode (cmd/hris-att-backfill -ot).
+test("H033 KPI % Karyawan Lembur", async ({ page }) => {
+  await login(page)
+  await page.goto("/finance/bi/HR_OT_DEPT")
+  await expect(page.getByText("% Karyawan Lembur").first()).toBeVisible({ timeout: 120_000 })
+  await page.screenshot({ path: `${SHOTS}/hr-ot-pct.png`, fullPage: true })
+  const card = page.getByText("% Karyawan Lembur").first().locator("xpath=ancestor::*[self::div][2]")
+  const text = (await card.innerText()).replace(/\s+/g, " ")
+  console.log("KPI-CARD:", text)
+  const m = text.match(/lembur\s+(\d+(?:[.,]\d+)?)/i)
+  expect(m, `nilai % tidak ditemukan di kartu: ${text}`).not.toBeNull()
+  const pct = Number(m![1].replace(",", "."))
+  expect(pct).toBeGreaterThan(0)
+  expect(pct).toBeLessThanOrEqual(100)
+})
