@@ -14,6 +14,7 @@ import type { ChartDataResponse } from "@/types/bi"
 import { ChartEngine } from "@/components/bi/chart-engine/chart-engine"
 import { ComponentDetailTable } from "./component-detail-table"
 import { MonthlyDetailTable } from "./monthly-detail-table"
+import { OtCompareCard } from "./ot-compare-card"
 
 interface ComputedRatioDef {
   numerator: string
@@ -486,6 +487,25 @@ export function SecondaryGrid({ layoutConfig, data, dashboardCode, selectedPerio
                 />
               </CardContent>
             </Card>
+          )
+        }
+
+        // OT period comparison (H041): grouped bar + Δ tables, fetched per period via /computed.
+        if (s.chart_type === "ot_compare" && dashboardCode) {
+          const cfg = (s.chart_config ?? {}) as Record<string, unknown>
+          return (
+            <OtCompareCard
+              key={`${s.title ?? "ot-compare"}-${i}`}
+              title={s.title}
+              dashboardCode={dashboardCode}
+              metric={(cfg.metric as string | undefined) ?? "HR_OT_HOURS"}
+              periodCalendar={cfg.period_calendar as string | undefined}
+              decimals={cfg.decimals as number | undefined}
+              selectedPeriod={selectedPeriod ?? [...(data.categories ?? [])].reverse().find((c) => /^\d{6}$/.test(c))}
+              span={s.span}
+              group1Filter={group1Filter}
+              group2Filter={group2Filter}
+            />
           )
         }
 
