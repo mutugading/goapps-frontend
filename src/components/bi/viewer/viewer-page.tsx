@@ -26,6 +26,7 @@ import { FilterChips } from "./filter-chips"
 import { KpiGrid } from "./kpi-grid"
 import { DrillBreadcrumb } from "./drill-breadcrumb"
 import { SecondaryGrid } from "./secondary-grid"
+import { WorkforceNav, isWorkforceTab } from "./workforce-nav"
 import { EmployeeOTControls } from "./employee-ot-controls"
 import { EMPLOYEE_OT_MODE, EMPLOYEE_OT_PRESETS, readEmployeeOTBlock } from "@/lib/bi/employee-ot"
 import { ViewerEmptyState, ViewerErrorState, DataFreshnessBadge } from "./states"
@@ -210,6 +211,8 @@ export function ViewerPage({ code }: { code: string }) {
       <PageHeader title={dashboard.dashboardTitle} subtitle={dashboard.description}>
         <DataFreshnessBadge timestamp={chartData?.meta?.asOf} />
       </PageHeader>
+
+      {isWorkforceTab(code) && <WorkforceNav code={code} />}
 
       <FilterBar
         state={state}
