@@ -31,6 +31,7 @@ import { OtOverMonthSection, type OtOverMonthConfig } from "./ot-over-month-sect
 import { EmployeeOTControls } from "./employee-ot-controls"
 import { EMPLOYEE_OT_MODE, EMPLOYEE_OT_PRESETS, readEmployeeOTBlock } from "@/lib/bi/employee-ot"
 import { ViewerEmptyState, ViewerErrorState, DataFreshnessBadge } from "./states"
+import { JobStatusBanner } from "./job-status-banner"
 
 export function ViewerPage({ code }: { code: string }) {
   const chartCardRef = useRef<HTMLDivElement>(null)
@@ -152,6 +153,7 @@ export function ViewerPage({ code }: { code: string }) {
 
   // Employee Overtime (HD-18): payroll-period presets only, no month selector (selected_month would
   // turn the period into CUSTOM, which the backend rejects), group-by controls on the table level.
+  const isWorkforce = dashboard?.groupName === "Workforce" || dashboard?.filterType?.startsWith("HR_") === true
   const isEmployeeOT =
     (dataConfig?.["table_mode"] ?? dashConfig?.["table_mode"] ?? dashConfig?.["tableMode"]) === EMPLOYEE_OT_MODE
 
@@ -230,6 +232,8 @@ export function ViewerPage({ code }: { code: string }) {
       <PageHeader title={dashboard.dashboardTitle} subtitle={dashboard.description}>
         <DataFreshnessBadge timestamp={chartData?.meta?.asOf} />
       </PageHeader>
+
+      {isWorkforce && <JobStatusBanner />}
 
       {isWorkforceTab(code) && <WorkforceNav code={code} />}
 
