@@ -109,3 +109,32 @@ test("H028 Employee Overtime", async ({ page }) => {
   console.log("COMPANY-GROUPS:", JSON.stringify(await page.locator("tr.bg-muted\\/60").allInnerTexts()))
   await page.screenshot({ path: `${SHOTS}/8-company.png`, fullPage: true })
 })
+
+// H029 — sisi positif toggle "Hanya melebihi 14 jam". Butuh fixture `recon/h029_fixture.sql`
+// (W43: TST-H029-00 over 3 jam kronis 3, TST-H029-01 over 0,5 kronis 1, TST-H029-02 di bawah batas).
+test("H029 toggle melebihi 14 jam menyisakan over-limit + kronis", async ({ page }) => {
+  test.skip(!process.env.H029_FIXTURE, "set H029_FIXTURE=1 setelah memuat recon/h029_fixture.sql")
+  await login(page)
+  await page.goto("/finance/bi/HR_OT_EMPLOYEES")
+  const total = page.getByText(/^Total: \d+ karyawan/)
+  await expect(total).toBeVisible({ timeout: 120_000 })
+  const row = (nik: string) => page.locator("tbody tr", { hasText: nik })
+  await expect(row("TST-H029-02")).toHaveCount(1)
+
+  await page.getByRole("checkbox", { name: "Hanya melebihi 14 jam" }).click()
+  await expect(total).toHaveText("Total: 2 karyawan")
+  await expect(row("TST-H029-02")).toHaveCount(0)
+  const cells = async (nik: string) => (await row(nik).locator("td").allInnerTexts()).slice(-4)
+  const r0 = await cells("TST-H029-00")
+  const r1 = await cells("TST-H029-01")
+  console.log("OVER-ROWS:", JSON.stringify({ "TST-H029-00": r0, "TST-H029-01": r1 }))
+  expect(r0.slice(1)).toEqual(["17.00", "3.00", "3"])
+  expect(r1.slice(1)).toEqual(["14.50", "0.50", "1"])
+
+  // drill NIK → hari: 2 hari, jam aktual + jam hitung batas
+  await row("TST-H029-00").click()
+  await expect(page.getByText("Jam OT aktual")).toBeVisible({ timeout: 60_000 })
+  const days = await page.locator("tbody tr").evaluateAll((t) => t.map((r) => [...r.querySelectorAll("td")].map((c) => c.textContent)))
+  console.log("OVER-DRILL:", JSON.stringify(days))
+  expect(days).toEqual([["19 Okt 2026", "8.50", "8.50"], ["20 Okt 2026", "8.50", "8.50"]])
+})
