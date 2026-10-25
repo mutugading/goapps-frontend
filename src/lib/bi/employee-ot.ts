@@ -14,6 +14,17 @@ export interface EmployeeOTSubtotal {
   PERIOD_HOURS: number
   WEEK_HOURS: number
   EXCESS: number
+  /** Average period hours per employee, 1 decimal (HD-24). */
+  avg_period_hours: number
+  /** Share of employees with EXCESS > 0, percent, 1 decimal (HD-24). */
+  over_pct: number
+}
+
+export interface EmployeeOTSummary {
+  employees: number
+  totalPeriodHours: number
+  overLimit: number
+  chronic: number
 }
 
 export interface EmployeeOTRanges {
@@ -32,6 +43,7 @@ export interface EmployeeOTBlock {
   truncated: boolean
   maxRows: number
   subtotals: EmployeeOTSubtotal[]
+  summary?: EmployeeOTSummary
   ranges?: EmployeeOTRanges
 }
 
@@ -50,6 +62,7 @@ export function readEmployeeOTBlock(config: Record<string, unknown> | undefined)
   if (!raw || typeof raw !== "object") return undefined
   const b = raw as Record<string, unknown>
   const r = b.ranges as Record<string, unknown> | undefined
+  const sm = b.summary && typeof b.summary === "object" ? (b.summary as Record<string, unknown>) : undefined
   return {
     groupBy: str(b.group_by),
     groupOptions: Array.isArray(b.group_options) ? b.group_options.filter((x): x is string => typeof x === "string") : [],
@@ -61,7 +74,17 @@ export function readEmployeeOTBlock(config: Record<string, unknown> | undefined)
       PERIOD_HOURS: num(s.PERIOD_HOURS),
       WEEK_HOURS: num(s.WEEK_HOURS),
       EXCESS: num(s.EXCESS),
+      avg_period_hours: num(s.avg_period_hours),
+      over_pct: num(s.over_pct),
     })),
+    summary: sm
+      ? {
+          employees: num(sm.employees),
+          totalPeriodHours: num(sm.total_period_hours),
+          overLimit: num(sm.over_limit),
+          chronic: num(sm.chronic),
+        }
+      : undefined,
     ranges: r
       ? {
           periodFrom: str(r.period_from),
@@ -73,6 +96,47 @@ export function readEmployeeOTBlock(config: Record<string, unknown> | undefined)
           weekLabel: str(r.week_label),
         }
       : undefined,
+  }
+}
+
+/** Round half-up to 1 decimal, same as the backend (math.Round on non-negative values). */
+const round1 = (v: number) => Math.round(v * 10) / 10
+
+/** Row shape localSubtotals needs: point values plus the group carried by the adapter. */
+type OTRow = Record<string, unknown>
+
+/** Subtotals per group over the given rows, first-seen order. Used when rows are filtered client-side. */
+export function localSubtotals(rows: OTRow[]): EmployeeOTSubtotal[] {
+  const n = (r: OTRow, k: string) => (typeof r[k] === "number" ? (r[k] as number) : 0)
+  const by = new Map<string, EmployeeOTSubtotal & { over: number }>()
+  for (const r of rows) {
+    const g = String(r.__group ?? "")
+    const s = by.get(g) ?? {
+      group: g, employees: 0, PERIOD_HOURS: 0, WEEK_HOURS: 0, EXCESS: 0, avg_period_hours: 0, over_pct: 0, over: 0,
+    }
+    s.employees++
+    s.PERIOD_HOURS += n(r, "PERIOD_HOURS")
+    s.WEEK_HOURS += n(r, "WEEK_HOURS")
+    s.EXCESS += n(r, "EXCESS")
+    if (n(r, "EXCESS") > 0) s.over++
+    by.set(g, s)
+  }
+  return [...by.values()].map(({ over, ...s }) => ({
+    ...s,
+    avg_period_hours: round1(s.PERIOD_HOURS / s.employees),
+    over_pct: round1((over / s.employees) * 100),
+  }))
+}
+
+/** Summary over the given rows, same definitions as the backend (HD-24): over-limit = EXCESS > 0,
+ *  chronic = CHRONIC > 0, both counted per person. Used when rows are filtered client-side. */
+export function localSummary(rows: OTRow[]): EmployeeOTSummary {
+  const n = (r: OTRow, k: string) => (typeof r[k] === "number" ? (r[k] as number) : 0)
+  return {
+    employees: rows.length,
+    totalPeriodHours: round1(rows.reduce((a, r) => a + n(r, "PERIOD_HOURS"), 0)),
+    overLimit: rows.filter((r) => n(r, "EXCESS") > 0).length,
+    chronic: rows.filter((r) => n(r, "CHRONIC") > 0).length,
   }
 }
 

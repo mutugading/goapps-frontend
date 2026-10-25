@@ -15,13 +15,15 @@ import {
   readEmployeeOTBlock,
   fmtDay,
   fmtRange,
+  localSubtotals,
+  localSummary,
   GROUP_BY_LABELS,
   type EmployeeOTSubtotal,
 } from "@/lib/bi/employee-ot"
+import { EmployeeOTKpiRow } from "@/components/bi/chart-engine/employee-ot-kpi"
 import { cn } from "@/lib/utils"
 
 type NumKey = "PERIOD_HOURS" | "WEEK_HOURS" | "EXCESS" | "CHRONIC"
-type SumKey = Exclude<NumKey, "CHRONIC">
 
 interface SortState {
   key: NumKey
@@ -29,21 +31,6 @@ interface SortState {
 }
 
 const num = (r: RechartsRow, k: string) => (typeof r[k] === "number" ? (r[k] as number) : 0)
-
-/** Subtotals per group over the given rows, in first-seen order (used when rows are filtered client-side). */
-function localSubtotals(rows: RechartsRow[]): EmployeeOTSubtotal[] {
-  const by = new Map<string, EmployeeOTSubtotal>()
-  for (const r of rows) {
-    const g = String(r.__group ?? "")
-    const s = by.get(g) ?? { group: g, employees: 0, PERIOD_HOURS: 0, WEEK_HOURS: 0, EXCESS: 0 }
-    s.employees++
-    s.PERIOD_HOURS += num(r, "PERIOD_HOURS")
-    s.WEEK_HOURS += num(r, "WEEK_HOURS")
-    s.EXCESS += num(r, "EXCESS")
-    by.set(g, s)
-  }
-  return [...by.values()]
-}
 
 export function EmployeeOTTable({ config, data, onDrill, height }: ChartProps & { height: number }) {
   const [onlyOver, setOnlyOver] = useState(false)
@@ -78,13 +65,18 @@ export function EmployeeOTTable({ config, data, onDrill, height }: ChartProps & 
     (onlyOver || !block ? localSubtotals(rows) : block.subtotals).map((s) => [s.group, s]),
   )
 
+  const summary = onlyOver || !block?.summary ? localSummary(rows) : block.summary
+
   const fmtVal = (v: number, d?: number) => formatNumber(v, fmt, d ?? decimals)
   const toggleSort = (key: NumKey) =>
     setSort((s) => (s?.key === key ? (s.desc ? { key, desc: false } : null) : { key, desc: true }))
+  const subtotalCell = (key: NumKey, s: EmployeeOTSubtotal) =>
+    key === "CHRONIC" ? "" : fmtVal(s[key])
   const totalCols = 4 + columns.length
 
   return (
     <div className="space-y-2">
+      <EmployeeOTKpiRow summary={summary} fmtHours={(v) => fmtVal(v)} />
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
         <label className="flex cursor-pointer items-center gap-2">
           <Checkbox checked={onlyOver} onCheckedChange={(v) => setOnlyOver(v === true)} aria-label="Hanya melebihi 14 jam" />
@@ -126,11 +118,13 @@ export function EmployeeOTTable({ config, data, onDrill, height }: ChartProps & 
                     <TableRow className="bg-muted/60 font-semibold hover:bg-muted/60">
                       <TableCell colSpan={4}>
                         {GROUP_BY_LABELS[block?.groupBy ?? ""] ?? block?.groupBy}: {g || "(kosong)"}
-                        <span className="ml-2 text-xs font-normal text-muted-foreground">{s.employees} karyawan</span>
+                        <span className="ml-2 text-xs font-normal text-muted-foreground">
+                          {s.employees} karyawan · rata-rata {fmtVal(s.avg_period_hours)} jam · {formatNumber(s.over_pct, "raw", 1)}% over-limit
+                        </span>
                       </TableCell>
                       {columns.map((c) => (
                         <TableCell key={c.key} className="text-right tabular-nums">
-                          {c.key === "CHRONIC" ? "" : fmtVal(s[c.key as SumKey])}
+                          {subtotalCell(c.key, s)}
                         </TableCell>
                       ))}
                     </TableRow>
