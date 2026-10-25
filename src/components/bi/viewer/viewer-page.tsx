@@ -27,6 +27,7 @@ import { KpiGrid } from "./kpi-grid"
 import { DrillBreadcrumb } from "./drill-breadcrumb"
 import { SecondaryGrid } from "./secondary-grid"
 import { WorkforceNav, isWorkforceTab } from "./workforce-nav"
+import { OtOverMonthSection, type OtOverMonthConfig } from "./ot-over-month-section"
 import { EmployeeOTControls } from "./employee-ot-controls"
 import { EMPLOYEE_OT_MODE, EMPLOYEE_OT_PRESETS, readEmployeeOTBlock } from "@/lib/bi/employee-ot"
 import { ViewerEmptyState, ViewerErrorState, DataFreshnessBadge } from "./states"
@@ -214,6 +215,12 @@ export function ViewerPage({ code }: { code: string }) {
     return `${months[m - 1] ?? ""} ${yyyymm.slice(0, 4)}`
   }
 
+  // Over-limit trend section on top of Kepatuhan 14 Jam (H042, HD-22), declared in layout_config.top_section.
+  const topSection = (dashboard.layoutConfig as Record<string, unknown> | null)?.["top_section"] as
+    | (OtOverMonthConfig & { type?: string })
+    | undefined
+  const topOverMonth = topSection?.type === "ot_over_month" ? topSection : undefined
+
   const chartTitle = (activeViewConfig.titleTemplate
     ? activeViewConfig.titleTemplate.replace("{period}", formatPeriodLabel(effectiveSelectedPeriod ?? "")).trim()
     : "") || (dashboard.dashboardTitle ?? "")
@@ -225,6 +232,14 @@ export function ViewerPage({ code }: { code: string }) {
       </PageHeader>
 
       {isWorkforceTab(code) && <WorkforceNav code={code} />}
+
+      {topOverMonth && (
+        <OtOverMonthSection
+          config={topOverMonth}
+          selectedPeriod={effectiveSelectedPeriod}
+          onSelectMonth={(p) => setState({ ...state, selectedPeriod: p })}
+        />
+      )}
 
       <FilterBar
         state={state}
