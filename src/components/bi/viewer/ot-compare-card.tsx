@@ -44,11 +44,20 @@ export function comparePeriod(p: string, mode: CompareKey): string {
   return `${Math.floor(t / 12)}${String((t % 12) + 1).padStart(2, "0")}`
 }
 
-/** Series-major /computed payload (series.name = bucket, 1 point) → bucket totals, null when empty. */
+/**
+ * /computed payload → bucket totals, null when empty. The backend returns ONE series (named after the
+ * dashboard) with one point per bucket (category = dept / OT type); a series-per-bucket shape
+ * (name = bucket, single unnamed point) is also accepted.
+ */
 export function toTotals(d: ChartDataResponse | undefined): Totals {
-  const series = (d?.series ?? []).filter((s) => s.name)
-  if (series.length === 0) return null
-  return new Map(series.map((s) => [s.name, s.points?.[0]?.value ?? 0]))
+  const out = new Map<string, number>()
+  for (const s of d?.series ?? []) {
+    for (const p of s.points ?? []) {
+      const key = p.category || s.name
+      if (key) out.set(key, (out.get(key) ?? 0) + p.value)
+    }
+  }
+  return out.size === 0 ? null : out
 }
 
 export interface DeltaRow {

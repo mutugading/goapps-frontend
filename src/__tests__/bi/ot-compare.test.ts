@@ -6,6 +6,14 @@ import type { ChartDataResponse } from "@/types/bi"
 const payload = (m: Record<string, number>) =>
   ({ series: Object.entries(m).map(([name, value]) => ({ name, points: [{ category: "", value }] })) }) as unknown as ChartDataResponse
 
+describe("toTotals", () => {
+  it("reads one series with a point per bucket (real /computed shape)", () => {
+    const d = { series: [{ name: "Tren OT", points: [{ category: "Texturising", value: 660.7 }, { category: "Twisting", value: 491.9 }] }] } as unknown as ChartDataResponse
+    expect([...toTotals(d)!.entries()]).toEqual([["Texturising", 660.7], ["Twisting", 491.9]])
+  })
+  it("empty payload is null", () => expect(toTotals({ series: [] } as unknown as ChartDataResponse)).toBeNull())
+})
+
 describe("comparePeriod", () => {
   it("MoM crosses year boundary", () => expect(comparePeriod("202601", "MoM")).toBe("202512"))
   it("YoY shifts 12 months", () => expect(comparePeriod("202610", "YoY")).toBe("202510"))
