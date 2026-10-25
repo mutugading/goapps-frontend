@@ -12,6 +12,7 @@ const WORKFORCE_TABS = [
   { code: "HR_OT_TREND", label: "Tren OT", permission: "finance.bi.workforce.view" },
   { code: "HR_OT_OVER_MONTH", label: "Tren Over-limit", permission: "finance.bi.workforce.view" },
   { code: "HR_OT_OVERLIMIT", label: "Kepatuhan 14 Jam", permission: "finance.bi.workforce.view" },
+  { code: "HR_OT_DQ_MONTH", label: "Kualitas Data", permission: "finance.bi.workforceemployee.view" },
   { code: "HR_OT_EMPLOYEES", label: "Employee Overtime", permission: "finance.bi.workforceemployee.view" },
 ]
 
