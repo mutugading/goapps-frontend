@@ -28,3 +28,15 @@ test("H036 komposisi tipe OT", async ({ page }) => {
   const card = title.locator("xpath=ancestor::*[contains(@class,'rounded')][1]")
   console.log("MIX-CARD:", (await card.innerText()).replace(/\s+/g, " "))
 })
+
+// H037 — kartu konsentrasi lembur (Pareto top 10%) di HR_OT_TREND. Data dev: 202607–202610 = 27,3 / 21,4 / 24,6 / 25,8 %.
+test("H037 konsentrasi lembur Pareto", async ({ page }) => {
+  await login(page)
+  await page.goto("/finance/bi/HR_OT_TREND")
+  const title = page.getByText(/Konsentrasi Lembur: % Jam OT/).first()
+  await expect(title).toBeVisible({ timeout: 120_000 })
+  await expect(page.getByText(/pp vs bulan lalu/).first()).toBeVisible({ timeout: 30_000 })
+  await page.screenshot({ path: `${SHOTS}/hr-ot-pareto.png`, fullPage: true })
+  const card = title.locator("xpath=ancestor::*[contains(@class,'rounded')][1]")
+  console.log("PARETO-CARD:", (await card.innerText()).replace(/\s+/g, " "))
+})

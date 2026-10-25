@@ -16,6 +16,7 @@ import { ComponentDetailTable } from "./component-detail-table"
 import { MonthlyDetailTable } from "./monthly-detail-table"
 import { OtCompareCard } from "./ot-compare-card"
 import { OtMixCard } from "./ot-mix-card"
+import { OtParetoCard } from "./ot-pareto-card"
 
 interface ComputedRatioDef {
   numerator: string
@@ -499,6 +500,23 @@ export function SecondaryGrid({ layoutConfig, data, dashboardCode, selectedPerio
               key={`${s.title ?? "ot-mix"}-${i}`}
               title={s.title}
               data={data}
+              decimals={cfg.decimals as number | undefined}
+              span={s.span}
+            />
+          )
+        }
+
+        // OT concentration trend (H037): top-10% share of OT hours per month, from companion dashboard.
+        if (s.chart_type === "ot_pareto") {
+          const cfg = (s.chart_config ?? {}) as Record<string, unknown>
+          return (
+            <OtParetoCard
+              key={`${s.title ?? "ot-pareto"}-${i}`}
+              title={s.title}
+              sourceDashboardCode={(cfg.source_dashboard_code as string | undefined) ?? "HR_OT_PARETO"}
+              topKey={cfg.top_key as string | undefined}
+              totalKey={cfg.total_key as string | undefined}
+              periodCalendar={cfg.period_calendar as string | undefined}
               decimals={cfg.decimals as number | undefined}
               span={s.span}
             />
