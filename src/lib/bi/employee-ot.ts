@@ -12,8 +12,9 @@ export interface EmployeeOTSubtotal {
   group: string
   employees: number
   PERIOD_HOURS: number
-  WEEK_HOURS: number
   EXCESS: number
+  /** Sum of limit hours per week column, keyed by the week key "W:YYYY-MM-DD" (HD-25). */
+  weekSums: Record<string, number>
   /** Average period hours per employee, 1 decimal (HD-24). */
   avg_period_hours: number
   /** Share of employees with EXCESS > 0, percent, 1 decimal (HD-24). */
@@ -37,6 +38,25 @@ export interface EmployeeOTSummary {
   prev?: EmployeeOTPrev | null
 }
 
+/** One week column of the R1 window (HD-25). `key` is the series name; labels W1..Wn repeat per payroll period. */
+export interface EmployeeOTWeek {
+  key: string
+  label: string
+  period: string
+  from: string
+  to: string
+  /** The week is still running (its Sunday is after today), so its hours are incomplete. */
+  partial: boolean
+}
+
+/** Weekly OT limit in hours; a week cell above it is flagged (HD-25). */
+export const WEEK_LIMIT_HOURS = 14
+
+/** Tooltip of a week column header (HD-25). */
+export const WEEK_HEADER_TOOLTIP = "Jam hitung batas: jam OT yang dihitung ke batas 14 jam per minggu (Senin–Minggu)."
+
+const WEEK_PREFIX = "W:"
+
 export interface EmployeeOTRanges {
   periodFrom: string
   periodTo: string
@@ -56,6 +76,7 @@ export interface EmployeeOTBlock {
   maxRows: number
   subtotals: EmployeeOTSubtotal[]
   summary?: EmployeeOTSummary
+  weeks: EmployeeOTWeek[]
   ranges?: EmployeeOTRanges
 }
 
@@ -92,6 +113,21 @@ function readPrev(raw: unknown): EmployeeOTPrev | null {
   }
 }
 
+function readWeeks(raw: unknown): EmployeeOTWeek[] {
+  if (!Array.isArray(raw)) return []
+  return raw
+    .map((w: Record<string, unknown>) => ({
+      key: str(w.key), label: str(w.label), period: str(w.period), from: str(w.from), to: str(w.to), partial: w.partial === true,
+    }))
+    .filter((w) => w.key !== "")
+}
+
+function weekSumsOf(src: Record<string, unknown>): Record<string, number> {
+  const out: Record<string, number> = {}
+  for (const [k, v] of Object.entries(src)) if (k.startsWith(WEEK_PREFIX)) out[k] = num(v)
+  return out
+}
+
 /** Read the employee_ot block from a response config; undefined when absent (day drill, other modes). */
 export function readEmployeeOTBlock(config: Record<string, unknown> | undefined): EmployeeOTBlock | undefined {
   const raw = config?.["employee_ot"] ?? config?.["employeeOt"]
@@ -108,11 +144,12 @@ export function readEmployeeOTBlock(config: Record<string, unknown> | undefined)
       group: str(s.group),
       employees: num(s.employees),
       PERIOD_HOURS: num(s.PERIOD_HOURS),
-      WEEK_HOURS: num(s.WEEK_HOURS),
       EXCESS: num(s.EXCESS),
+      weekSums: weekSumsOf(s),
       avg_period_hours: num(s.avg_period_hours),
       over_pct: num(s.over_pct),
     })),
+    weeks: readWeeks(b.weeks),
     summary: sm
       ? {
           employees: num(sm.employees),
@@ -151,11 +188,11 @@ export function localSubtotals(rows: OTRow[]): EmployeeOTSubtotal[] {
   for (const r of rows) {
     const g = String(r.__group ?? "")
     const s = by.get(g) ?? {
-      group: g, employees: 0, PERIOD_HOURS: 0, WEEK_HOURS: 0, EXCESS: 0, avg_period_hours: 0, over_pct: 0, over: 0,
+      group: g, employees: 0, PERIOD_HOURS: 0, EXCESS: 0, weekSums: {}, avg_period_hours: 0, over_pct: 0, over: 0,
     }
     s.employees++
     s.PERIOD_HOURS += n(r, "PERIOD_HOURS")
-    s.WEEK_HOURS += n(r, "WEEK_HOURS")
+    for (const k of Object.keys(r)) if (k.startsWith(WEEK_PREFIX)) s.weekSums[k] = (s.weekSums[k] ?? 0) + n(r, k)
     s.EXCESS += n(r, "EXCESS")
     if (n(r, "EXCESS") > 0) s.over++
     by.set(g, s)

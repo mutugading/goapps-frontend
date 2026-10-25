@@ -1,7 +1,7 @@
 "use client"
 
 // Employee Overtime table (table_mode=employee_ot, HD-18): one row per NIK with R1 period hours and
-// the R2 week columns, grouped by the viewer's "Kelompokkan per" with a subtotal row per group.
+// one column per week of the period (HD-25), grouped by the viewer's "Kelompokkan per" with a subtotal row per group.
 // Drill NIK → day shows actual OT and limit hours per day.
 
 import { Fragment, useState } from "react"
@@ -21,6 +21,8 @@ import {
   otLevel,
   barPercent,
   GROUP_BY_LABELS,
+  WEEK_LIMIT_HOURS,
+  WEEK_HEADER_TOOLTIP,
   CHRONIC_WEEKS_THRESHOLD,
   type EmployeeOTSubtotal,
   type OTLevel,
@@ -28,7 +30,7 @@ import {
 import { EmployeeOTKpiRow } from "@/components/bi/chart-engine/employee-ot-kpi"
 import { cn } from "@/lib/utils"
 
-type NumKey = "PERIOD_HOURS" | "WEEK_HOURS" | "EXCESS" | "CHRONIC"
+type NumKey = string
 
 interface SortState {
   key: NumKey
@@ -77,6 +79,17 @@ function PeriodHoursCell({ text, pct, level }: { text: string; pct: number; leve
   )
 }
 
+/** Limit hours of one week; above 14 is flagged with icon + sr-only text, not color alone (HD-25). */
+function WeekCell({ text, over }: { text: string; over: boolean }) {
+  return (
+    <span className={cn("inline-flex items-center gap-1", over && "font-semibold text-amber-700 dark:text-amber-400")} title={over ? `Melebihi ${WEEK_LIMIT_HOURS} jam` : undefined}>
+      {over && <AlertTriangle className="h-3 w-3" aria-hidden="true" />}
+      {text}
+      {over && <span className="sr-only">Melebihi {WEEK_LIMIT_HOURS} jam</span>}
+    </span>
+  )
+}
+
 const num = (r: RechartsRow, k: string) => (typeof r[k] === "number" ? (r[k] as number) : 0)
 
 export function EmployeeOTTable({ config, data, onDrill, height }: ChartProps & { height: number }) {
@@ -90,10 +103,19 @@ export function EmployeeOTTable({ config, data, onDrill, height }: ChartProps & 
   const grouped = Boolean(block?.groupBy)
   const r = block?.ranges
 
-  const columns: { key: NumKey; label: string; sub?: string; decimals?: number }[] = [
+  const weekCols = (block?.weeks ?? []).map((w) => ({
+    key: w.key,
+    label: w.label,
+    sub: `${fmtRange(w.from, w.to)}${w.partial ? " (berjalan)" : ""}`,
+    title: `${w.period} · ${WEEK_HEADER_TOOLTIP}`,
+    week: true,
+    decimals: undefined as number | undefined,
+  }))
+  const columns: { key: NumKey; label: string; sub?: string; title?: string; week?: boolean; decimals?: number }[] = [
     { key: "PERIOD_HOURS", label: "Jam OT periode", sub: r ? fmtRange(r.periodFrom, r.periodTo) : undefined },
-    { key: "WEEK_HOURS", label: "Jam hitung batas", sub: r ? `${r.weekLabel} · ${fmtRange(r.weekFrom, r.weekTo)}` : undefined },
+    ...weekCols,
     { key: "EXCESS", label: "Kelebihan > 14 jam" },
+    { key: "WEEKS_OVER", label: "Minggu > 14 jam", decimals: 0 },
     { key: "CHRONIC", label: "Minggu berturut-turut", decimals: 0 },
   ]
 
@@ -120,7 +142,7 @@ export function EmployeeOTTable({ config, data, onDrill, height }: ChartProps & 
   const toggleSort = (key: NumKey) =>
     setSort((s) => (s?.key === key ? (s.desc ? { key, desc: false } : null) : { key, desc: true }))
   const subtotalCell = (key: NumKey, s: EmployeeOTSubtotal) =>
-    key === "CHRONIC" ? "" : fmtVal(s[key])
+    key === "CHRONIC" || key === "WEEKS_OVER" ? "" : key.startsWith("W:") ? fmtVal(s.weekSums[key] ?? 0) : fmtVal(key === "PERIOD_HOURS" ? s.PERIOD_HOURS : s.EXCESS)
   const totalCols = 5 + columns.length
 
   return (
@@ -147,7 +169,7 @@ export function EmployeeOTTable({ config, data, onDrill, height }: ChartProps & 
               <TableHead>Divisi</TableHead>
               <TableHead>Dept</TableHead>
               {columns.map((c) => (
-                <TableHead key={c.key} className="text-right">
+                <TableHead key={c.key} className="text-right" title={c.title}>
                   <button type="button" className="inline-flex items-center gap-1" onClick={() => toggleSort(c.key)}>
                     {c.label}
                     {sort?.key === c.key && (sort.desc ? <ArrowDown className="h-3 w-3" /> : <ArrowUp className="h-3 w-3" />)}
@@ -207,6 +229,8 @@ export function EmployeeOTTable({ config, data, onDrill, height }: ChartProps & 
                             pct={barPercent(num(row, c.key), maxPeriod)}
                             level={otLevel(num(row, "EXCESS"), num(row, "CHRONIC"))}
                           />
+                        ) : c.week ? (
+                          <WeekCell text={fmtVal(num(row, c.key), c.decimals)} over={num(row, c.key) > WEEK_LIMIT_HOURS} />
                         ) : (
                           fmtVal(num(row, c.key), c.decimals)
                         )}
@@ -245,7 +269,7 @@ export function EmployeeOTDayTable({ config, data, height }: ChartProps & { heig
           <TableRow>
             <TableHead>Tanggal</TableHead>
             <TableHead className="text-right">Jam OT aktual</TableHead>
-            <TableHead className="text-right">Jam hitung batas (minggu R2)</TableHead>
+            <TableHead className="text-right">Jam hitung batas</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>

@@ -46,7 +46,7 @@ const otPt = (category: string, value: number, group: string, division: string) 
 const otData = {
   series: [
     { name: "PERIOD_HOURS", points: [otPt("N1", 40, "DIV A", "DIV A"), otPt("N2", 10, "DIV A", "DIV A"), otPt("N3", 5, "DIV B", "DIV B")] },
-    { name: "WEEK_HOURS", points: [otPt("N1", 17, "DIV A", "DIV A"), otPt("N2", 0, "DIV A", "DIV A"), otPt("N3", 12, "DIV B", "DIV B")] },
+    { name: "W:2026-10-19", points: [otPt("N1", 17, "DIV A", "DIV A"), otPt("N2", 0, "DIV A", "DIV A"), otPt("N3", 12, "DIV B", "DIV B")] },
     { name: "EXCESS", points: [otPt("N1", 3, "DIV A", "DIV A"), otPt("N2", 0, "DIV A", "DIV A"), otPt("N3", 0, "DIV B", "DIV B")] },
     { name: "CHRONIC", points: [otPt("N1", 2, "DIV A", "DIV A"), otPt("N2", 0, "DIV A", "DIV A"), otPt("N3", 0, "DIV B", "DIV B")] },
   ],
@@ -65,8 +65,11 @@ const otConfig = {
     truncated: true,
     max_rows: 2000,
     subtotals: [
-      { group: "DIV A", employees: 2, PERIOD_HOURS: 50, WEEK_HOURS: 17, EXCESS: 3 },
-      { group: "DIV B", employees: 1, PERIOD_HOURS: 5, WEEK_HOURS: 12, EXCESS: 0 },
+      { group: "DIV A", employees: 2, PERIOD_HOURS: 50, "W:2026-10-19": 17, EXCESS: 3 },
+      { group: "DIV B", employees: 1, PERIOD_HOURS: 5, "W:2026-10-19": 12, EXCESS: 0 },
+    ],
+    weeks: [
+      { key: "W:2026-10-19", label: "W4", period: "202610", from: "2026-10-19", to: "2026-10-25", partial: false },
     ],
     ranges: {
       period_from: "2026-09-26", period_to: "2026-10-25", last_period_from: "2026-09-26", day_from: "2026-09-26",
@@ -82,7 +85,11 @@ describe("BiDataTable employee_ot", () => {
     expect(screen.getByText("Divisi: DIV B")).toBeTruthy()
     expect(screen.getByText("50.00")).toBeTruthy() // DIV A period subtotal
     expect(screen.getByText("26 Sep 2026 – 25 Okt 2026")).toBeTruthy()
-    expect(screen.getByText("2026-W43 · 19 Okt 2026 – 25 Okt 2026")).toBeTruthy()
+    expect(screen.getByText("W4")).toBeTruthy()
+    expect(screen.getByText("19 Okt 2026 – 25 Okt 2026")).toBeTruthy()
+    expect(screen.queryByText("Jam hitung batas")).toBeNull()
+    // N1 has 17 h in W4: flagged with sr-only text; N3 (12 h) is not
+    expect(screen.getAllByText("Melebihi 14 jam")).toHaveLength(1)
     expect(screen.getByText(/Dibatasi 2000 karyawan/)).toBeTruthy()
   })
 

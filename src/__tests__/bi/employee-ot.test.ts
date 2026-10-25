@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest"
 import { readEmployeeOTBlock, localSubtotals, localSummary, pctDelta, fmtDelta, barPercent, otLevel, CHRONIC_WEEKS_THRESHOLD } from "@/lib/bi/employee-ot"
 
 const row = (group: string, period: number, excess: number, chronic = 0) => ({
-  __group: group, PERIOD_HOURS: period, WEEK_HOURS: 0, EXCESS: excess, CHRONIC: chronic,
+  __group: group, PERIOD_HOURS: period, EXCESS: excess, CHRONIC: chronic,
 })
 
 describe("readEmployeeOTBlock (HD-24)", () => {
