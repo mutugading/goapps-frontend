@@ -164,7 +164,7 @@ describe("BiDataTable employee_ot", () => {
     render(<BiDataTable config={cfg} data={d} />)
     const n = otConfig.employee_ot.weeks?.length ?? 0
     expect(screen.getByTestId("employee-ot-weeks-note").textContent).toContain(`Menampilkan ${n} dari 52 minggu terakhir`)
-    expect(screen.getByTestId("employee-ot-hidden-over").textContent).toContain("Over di luar kolom: 20 Jul (24.6 jam)")
+    expect(screen.getByTestId("employee-ot-hidden-over").textContent).toContain("20 Jul · 24.6 j")
   })
 
   it("shows no note when nothing is truncated (H053)", () => {

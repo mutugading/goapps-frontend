@@ -265,6 +265,13 @@ export function fmtHiddenOver(row: Record<string, unknown>, fmtHours: (v: number
   return `Over di luar kolom: ${list}${more}`
 }
 
+/** Compact lines for the Kelebihan cell: "20 Jul · 24,6 j", at most `max`, plus how many more remain (H053). */
+export function hiddenOverLines(row: Record<string, unknown>, fmtHours: (v: number) => string, max = 2): { lines: string[]; more: number } {
+  const { items, count } = readHiddenOver(row)
+  const lines = items.slice(0, max).map((w) => `${fmtDay(w.from).replace(/ \d{4}$/, "")} · ${fmtHours(w.hours)} j`)
+  return { lines, more: Math.max(0, count - lines.length) }
+}
+
 /** "26 Sep 2026 – 25 Okt 2026"; empty when either end is missing. */
 export function fmtRange(from: string, to: string): string {
   return from && to ? `${fmtDay(from)} – ${fmtDay(to)}` : ""

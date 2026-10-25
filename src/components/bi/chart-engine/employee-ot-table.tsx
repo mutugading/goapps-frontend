@@ -16,6 +16,7 @@ import {
   fmtDay,
   fmtRange,
   fmtHiddenOver,
+  hiddenOverLines,
   fmtDelta,
   localSubtotals,
   localSummary,
@@ -93,14 +94,18 @@ function WeekCell({ text, over }: { text: string; over: boolean }) {
   )
 }
 
-/** Excess hours plus, when over weeks have no column, a visible text line naming them (H053). */
-function ExcessCell({ text, hidden }: { text: string; hidden: string }) {
+/** Excess hours plus, when over weeks have no column, a few short lines naming them; the full list is the cell tooltip (H053). */
+function ExcessCell({ text, lines, more }: { text: string; lines: string[]; more: number }) {
   return (
     <span className="flex flex-col items-end">
       {text}
-      {hidden && (
-        <span data-testid="employee-ot-hidden-over" className="max-w-48 text-right text-[11px] font-normal text-muted-foreground">
-          {hidden}
+      {lines.length > 0 && (
+        <span data-testid="employee-ot-hidden-over" className="mt-0.5 flex flex-col items-end text-[11px] font-normal leading-tight text-muted-foreground">
+          <span>Di luar kolom:</span>
+          {lines.map((l) => (
+            <span key={l} className="whitespace-nowrap">{l}</span>
+          ))}
+          {more > 0 && <span>+{more} lagi</span>}
         </span>
       )}
     </span>
@@ -255,7 +260,7 @@ export function EmployeeOTTable({ config, data, onDrill, height }: ChartProps & 
                         ) : c.week ? (
                           <WeekCell text={fmtVal(num(row, c.key), c.decimals)} over={num(row, c.key) > WEEK_LIMIT_HOURS} />
                         ) : c.key === "EXCESS" ? (
-                          <ExcessCell text={fmtVal(num(row, c.key), c.decimals)} hidden={fmtHiddenOver(row, (v) => fmtVal(v))} />
+                          <ExcessCell text={fmtVal(num(row, c.key), c.decimals)} {...hiddenOverLines(row, (v) => fmtVal(v))} />
                         ) : (
                           fmtVal(num(row, c.key), c.decimals)
                         )}
