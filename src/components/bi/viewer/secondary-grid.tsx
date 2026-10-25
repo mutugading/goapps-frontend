@@ -15,6 +15,7 @@ import { ChartEngine } from "@/components/bi/chart-engine/chart-engine"
 import { ComponentDetailTable } from "./component-detail-table"
 import { MonthlyDetailTable } from "./monthly-detail-table"
 import { OtCompareCard } from "./ot-compare-card"
+import { OtMixCard } from "./ot-mix-card"
 
 interface ComputedRatioDef {
   numerator: string
@@ -487,6 +488,20 @@ export function SecondaryGrid({ layoutConfig, data, dashboardCode, selectedPerio
                 />
               </CardContent>
             </Card>
+          )
+        }
+
+        // OT type mix (H036): stacked 100% share per month from the primary data.
+        if (s.chart_type === "ot_mix") {
+          const cfg = (s.chart_config ?? {}) as Record<string, unknown>
+          return (
+            <OtMixCard
+              key={`${s.title ?? "ot-mix"}-${i}`}
+              title={s.title}
+              data={data}
+              decimals={cfg.decimals as number | undefined}
+              span={s.span}
+            />
           )
         }
 
