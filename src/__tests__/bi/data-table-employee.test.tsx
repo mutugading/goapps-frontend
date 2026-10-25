@@ -146,6 +146,33 @@ describe("BiDataTable employee_ot", () => {
     expect(screen.getAllByTestId("employee-ot-delta").every((e) => (e.textContent ?? "").startsWith("–"))).toBe(true)
   })
 
+  it("notes truncated week columns and lists hidden over weeks (H053)", () => {
+    const d = {
+      ...otData,
+      series: otData.series.map((s) =>
+        s.name !== "PERIOD_HOURS"
+          ? s
+          : {
+              ...s,
+              points: s.points.map((pt, i) =>
+                i === 0 ? { ...pt, meta: { ...pt.meta, hidden_over: [{ from: "2026-07-20", hours: 24.6 }], hidden_over_count: 1 } } : pt,
+              ),
+            },
+      ),
+    } as unknown as ChartDataResponse
+    const cfg = { ...otConfig, decimals: 1, employee_ot: { ...otConfig.employee_ot, weeks_truncated: true, weeks_total: 52 } }
+    render(<BiDataTable config={cfg} data={d} />)
+    const n = otConfig.employee_ot.weeks?.length ?? 0
+    expect(screen.getByTestId("employee-ot-weeks-note").textContent).toContain(`Menampilkan ${n} dari 52 minggu terakhir`)
+    expect(screen.getByTestId("employee-ot-hidden-over").textContent).toContain("Over di luar kolom: 20 Jul (24.6 jam)")
+  })
+
+  it("shows no note when nothing is truncated (H053)", () => {
+    render(<BiDataTable config={otConfig} data={otData} />)
+    expect(screen.queryByTestId("employee-ot-weeks-note")).toBeNull()
+    expect(screen.queryByTestId("employee-ot-hidden-over")).toBeNull()
+  })
+
   it("drills NIK to days", () => {
     const onDrill = vi.fn()
     render(<BiDataTable config={otConfig} data={otData} onDrill={onDrill} />)

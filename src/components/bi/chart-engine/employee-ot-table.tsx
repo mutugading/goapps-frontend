@@ -15,6 +15,7 @@ import {
   readEmployeeOTBlock,
   fmtDay,
   fmtRange,
+  fmtHiddenOver,
   fmtDelta,
   localSubtotals,
   localSummary,
@@ -92,6 +93,20 @@ function WeekCell({ text, over }: { text: string; over: boolean }) {
   )
 }
 
+/** Excess hours plus, when over weeks have no column, a visible text line naming them (H053). */
+function ExcessCell({ text, hidden }: { text: string; hidden: string }) {
+  return (
+    <span className="flex flex-col items-end">
+      {text}
+      {hidden && (
+        <span data-testid="employee-ot-hidden-over" className="max-w-48 text-right text-[11px] font-normal text-muted-foreground">
+          {hidden}
+        </span>
+      )}
+    </span>
+  )
+}
+
 const num = (r: RechartsRow, k: string) => (typeof r[k] === "number" ? (r[k] as number) : 0)
 
 export function EmployeeOTTable({ config, data, onDrill, height }: ChartProps & { height: number }) {
@@ -156,6 +171,11 @@ export function EmployeeOTTable({ config, data, onDrill, height }: ChartProps & 
           Hanya melebihi 14 jam/minggu
         </label>
         <span>Total: {rows.length} karyawan</span>
+        {block?.weeksTruncated && (
+          <span data-testid="employee-ot-weeks-note">
+            Menampilkan {block.weeks.length} dari {block.weeksTotal} minggu terakhir; kelebihan tetap dihitung dari semua minggu.
+          </span>
+        )}
         {block?.truncated && (
           <span className="text-amber-600 dark:text-amber-400">
             Dibatasi {block.maxRows} karyawan teratas; persempit dengan filter grup.
@@ -224,6 +244,7 @@ export function EmployeeOTTable({ config, data, onDrill, height }: ChartProps & 
                           "text-right tabular-nums",
                           c.key === "EXCESS" && num(row, "EXCESS") > 0 && "font-semibold text-destructive",
                         )}
+                        title={c.key === "EXCESS" ? fmtHiddenOver(row, (v) => fmtVal(v)) || undefined : undefined}
                       >
                         {c.key === "PERIOD_HOURS" ? (
                           <PeriodHoursCell
@@ -233,6 +254,8 @@ export function EmployeeOTTable({ config, data, onDrill, height }: ChartProps & 
                           />
                         ) : c.week ? (
                           <WeekCell text={fmtVal(num(row, c.key), c.decimals)} over={num(row, c.key) > WEEK_LIMIT_HOURS} />
+                        ) : c.key === "EXCESS" ? (
+                          <ExcessCell text={fmtVal(num(row, c.key), c.decimals)} hidden={fmtHiddenOver(row, (v) => fmtVal(v))} />
                         ) : (
                           fmtVal(num(row, c.key), c.decimals)
                         )}

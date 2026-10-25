@@ -73,6 +73,9 @@ export interface EmployeeOTBlock {
   groupBy: string
   groupOptions: string[]
   truncated: boolean
+  /** Week columns were cut to the latest N of M weeks of the window (HD-26, H053). */
+  weeksTruncated: boolean
+  weeksTotal: number
   maxRows: number
   subtotals: EmployeeOTSubtotal[]
   summary?: EmployeeOTSummary
@@ -139,6 +142,8 @@ export function readEmployeeOTBlock(config: Record<string, unknown> | undefined)
     groupBy: str(b.group_by),
     groupOptions: Array.isArray(b.group_options) ? b.group_options.filter((x): x is string => typeof x === "string") : [],
     truncated: b.truncated === true,
+    weeksTruncated: b.weeks_truncated === true,
+    weeksTotal: num(b.weeks_total),
     maxRows: num(b.max_rows),
     subtotals: (Array.isArray(b.subtotals) ? b.subtotals : []).map((s: Record<string, unknown>) => ({
       group: str(s.group),
@@ -236,6 +241,28 @@ export function fmtDay(iso: string): string {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso)
   if (!m) return iso
   return `${Number(m[3])} ${MONTHS_ID[Number(m[2]) - 1] ?? ""} ${m[1]}`
+}
+
+export interface HiddenOverWeek {
+  from: string
+  hours: number
+}
+
+/** Over-limit weeks that have no column, from the row meta (`__hidden_over`, newest first; H053). */
+export function readHiddenOver(row: Record<string, unknown>): { items: HiddenOverWeek[]; count: number } {
+  const raw = row.__hidden_over
+  const items = (Array.isArray(raw) ? raw : []).map((w: Record<string, unknown>) => ({ from: str(w.from), hours: num(w.hours) }))
+  const count = typeof row.__hidden_over_count === "number" ? row.__hidden_over_count : items.length
+  return { items, count }
+}
+
+/** "20 Jul (24,6 jam)" list text for the Kelebihan cell tooltip; "" when nothing is hidden. */
+export function fmtHiddenOver(row: Record<string, unknown>, fmtHours: (v: number) => string): string {
+  const { items, count } = readHiddenOver(row)
+  if (items.length === 0) return ""
+  const list = items.map((w) => `${fmtDay(w.from).replace(/ \d{4}$/, "")} (${fmtHours(w.hours)} jam)`).join(", ")
+  const more = count > items.length ? `, +${count - items.length} lainnya` : ""
+  return `Over di luar kolom: ${list}${more}`
 }
 
 /** "26 Sep 2026 – 25 Okt 2026"; empty when either end is missing. */

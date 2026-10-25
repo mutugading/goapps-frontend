@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { readEmployeeOTBlock, localSubtotals, localSummary, pctDelta, fmtDelta, barPercent, otLevel, CHRONIC_WEEKS_THRESHOLD, payrollLabelOf, comparePeriodOptions, fmtPayrollLabel } from "@/lib/bi/employee-ot"
+import { readEmployeeOTBlock, localSubtotals, localSummary, pctDelta, fmtDelta, barPercent, otLevel, CHRONIC_WEEKS_THRESHOLD, payrollLabelOf, comparePeriodOptions, fmtPayrollLabel, fmtHiddenOver } from "@/lib/bi/employee-ot"
 
 const row = (group: string, period: number, excess: number, chronic = 0) => ({
   __group: group, PERIOD_HOURS: period, EXCESS: excess, CHRONIC: chronic,
@@ -119,4 +119,17 @@ describe("compare period helpers (HD-25)", () => {
     expect(comparePeriodOptions("")).toEqual([])
   })
   it("fmtPayrollLabel", () => expect(fmtPayrollLabel("202610")).toBe("Okt 2026"))
+})
+
+describe("hidden over weeks (H053)", () => {
+  const row = { __hidden_over: [{ from: "2026-07-20", hours: 24.6 }], __hidden_over_count: 3 }
+  it("formats the list newest first with the remainder", () => {
+    expect(fmtHiddenOver(row, (v) => String(v))).toBe("Over di luar kolom: 20 Jul (24.6 jam), +2 lainnya")
+    expect(fmtHiddenOver({}, String)).toBe("")
+  })
+  it("reads weeks_total and weeks_truncated", () => {
+    const b = readEmployeeOTBlock({ employee_ot: { weeks_truncated: true, weeks_total: 52, weeks: [] } })
+    expect(b?.weeksTruncated).toBe(true)
+    expect(b?.weeksTotal).toBe(52)
+  })
 })
