@@ -498,7 +498,7 @@ export function SecondaryGrid({ layoutConfig, data, dashboardCode, selectedPerio
               key={`${s.title ?? "ot-compare"}-${i}`}
               title={s.title}
               dashboardCode={dashboardCode}
-              metric={(cfg.metric as string | undefined) ?? "HR_OT_HOURS"}
+              metric={(cfg.metric as string | undefined) ?? "VALUE"}
               periodCalendar={cfg.period_calendar as string | undefined}
               decimals={cfg.decimals as number | undefined}
               selectedPeriod={selectedPeriod ?? [...(data.categories ?? [])].reverse().find((c) => /^\d{6}$/.test(c))}
