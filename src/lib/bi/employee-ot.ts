@@ -20,11 +20,21 @@ export interface EmployeeOTSubtotal {
   over_pct: number
 }
 
+/** Previous-window comparison of the KPI strip (HD-24). Deltas are null when there is nothing to compare. */
+export interface EmployeeOTPrev {
+  totalPeriodHours: number
+  employees: number
+  hoursDeltaPct: number | null
+  employeesDeltaPct: number | null
+}
+
 export interface EmployeeOTSummary {
   employees: number
   totalPeriodHours: number
   overLimit: number
   chronic: number
+  /** Absent/null when no listed employee has hours in the previous window. */
+  prev?: EmployeeOTPrev | null
 }
 
 export interface EmployeeOTRanges {
@@ -35,6 +45,8 @@ export interface EmployeeOTRanges {
   weekFrom: string
   weekTo: string
   weekLabel: string
+  prevFrom?: string
+  prevTo?: string
 }
 
 export interface EmployeeOTBlock {
@@ -55,6 +67,30 @@ export const GROUP_BY_LABELS: Record<string, string> = {
 
 const str = (v: unknown) => (typeof v === "string" ? v : "")
 const num = (v: unknown) => (typeof v === "number" ? v : Number(v) || 0)
+const numOrNull = (v: unknown) => (typeof v === "number" ? v : null)
+
+/** Change from prev to cur in percent, 1 decimal; null when prev <= 0 (shown as "–", never 0% or ∞). */
+export function pctDelta(cur: number, prev: number): number | null {
+  return prev > 0 ? Math.round(((cur - prev) / prev) * 1000) / 10 : null
+}
+
+/** "▲ 12,5%" / "▼ 3,0%" / "0,0%" for a delta; "–" when null (nothing to compare). */
+export function fmtDelta(d: number | null | undefined): string {
+  if (d === null || d === undefined) return "–"
+  const abs = Math.abs(d).toFixed(1).replace(".", ",")
+  return d > 0 ? `▲ ${abs}%` : d < 0 ? `▼ ${abs}%` : `${abs}%`
+}
+
+function readPrev(raw: unknown): EmployeeOTPrev | null {
+  if (!raw || typeof raw !== "object") return null
+  const p = raw as Record<string, unknown>
+  return {
+    totalPeriodHours: num(p.total_period_hours),
+    employees: num(p.employees),
+    hoursDeltaPct: numOrNull(p.hours_delta_pct),
+    employeesDeltaPct: numOrNull(p.employees_delta_pct),
+  }
+}
 
 /** Read the employee_ot block from a response config; undefined when absent (day drill, other modes). */
 export function readEmployeeOTBlock(config: Record<string, unknown> | undefined): EmployeeOTBlock | undefined {
@@ -83,6 +119,7 @@ export function readEmployeeOTBlock(config: Record<string, unknown> | undefined)
           totalPeriodHours: num(sm.total_period_hours),
           overLimit: num(sm.over_limit),
           chronic: num(sm.chronic),
+          prev: readPrev(sm.prev),
         }
       : undefined,
     ranges: r
@@ -94,6 +131,8 @@ export function readEmployeeOTBlock(config: Record<string, unknown> | undefined)
           weekFrom: str(r.week_from),
           weekTo: str(r.week_to),
           weekLabel: str(r.week_label),
+          prevFrom: str(r.prev_from),
+          prevTo: str(r.prev_to),
         }
       : undefined,
   }
@@ -137,6 +176,9 @@ export function localSummary(rows: OTRow[]): EmployeeOTSummary {
     totalPeriodHours: round1(rows.reduce((a, r) => a + n(r, "PERIOD_HOURS"), 0)),
     overLimit: rows.filter((r) => n(r, "EXCESS") > 0).length,
     chronic: rows.filter((r) => n(r, "CHRONIC") > 0).length,
+    // The previous-window total covers all employees of the window, which the filtered rows cannot
+    // give, so a client-side filter shows "–" instead of a misleading delta (HD-24).
+    prev: null,
   }
 }
 

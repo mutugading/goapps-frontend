@@ -15,6 +15,7 @@ import {
   readEmployeeOTBlock,
   fmtDay,
   fmtRange,
+  fmtDelta,
   localSubtotals,
   localSummary,
   GROUP_BY_LABELS,
@@ -29,6 +30,9 @@ interface SortState {
   key: NumKey
   desc: boolean
 }
+
+/** More OT than the previous window is the alert direction; no data keeps the default color. */
+const deltaClass = (d: unknown) => (typeof d === "number" && d > 0 ? "text-destructive" : "")
 
 const num = (r: RechartsRow, k: string) => (typeof r[k] === "number" ? (r[k] as number) : 0)
 
@@ -72,7 +76,7 @@ export function EmployeeOTTable({ config, data, onDrill, height }: ChartProps & 
     setSort((s) => (s?.key === key ? (s.desc ? { key, desc: false } : null) : { key, desc: true }))
   const subtotalCell = (key: NumKey, s: EmployeeOTSubtotal) =>
     key === "CHRONIC" ? "" : fmtVal(s[key])
-  const totalCols = 4 + columns.length
+  const totalCols = 5 + columns.length
 
   return (
     <div className="space-y-2">
@@ -106,6 +110,12 @@ export function EmployeeOTTable({ config, data, onDrill, height }: ChartProps & 
                   {c.sub && <div className="text-[10px] font-normal text-muted-foreground">{c.sub}</div>}
                 </TableHead>
               ))}
+              <TableHead className="text-right">
+                vs periode lalu
+                {r?.prevFrom && r.prevTo && (
+                  <div className="text-[10px] font-normal text-muted-foreground">{fmtRange(r.prevFrom, r.prevTo)}</div>
+                )}
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -127,6 +137,7 @@ export function EmployeeOTTable({ config, data, onDrill, height }: ChartProps & 
                           {subtotalCell(c.key, s)}
                         </TableCell>
                       ))}
+                      <TableCell />
                     </TableRow>
                   )}
                   <TableRow
@@ -148,6 +159,9 @@ export function EmployeeOTTable({ config, data, onDrill, height }: ChartProps & 
                         {fmtVal(num(row, c.key), c.decimals)}
                       </TableCell>
                     ))}
+                    <TableCell className={cn("text-right tabular-nums", deltaClass(row.__delta_pct))} data-testid="employee-ot-row-delta">
+                      {fmtDelta(typeof row.__delta_pct === "number" ? row.__delta_pct : null)}
+                    </TableCell>
                   </TableRow>
                 </Fragment>
               )

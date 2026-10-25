@@ -96,6 +96,49 @@ describe("BiDataTable employee_ot", () => {
     expect(screen.queryByText("Divisi: DIV B")).toBeNull()
   })
 
+  it("shows the comparison column and KPI deltas, dash when there is no previous period (H046)", () => {
+    const withPrev = (pt: { meta?: Record<string, unknown> }, prev: number | null, delta: number | null) => ({
+      ...pt,
+      meta: { ...pt.meta, prev_hours: prev, delta_pct: delta },
+    })
+    const d = {
+      ...otData,
+      series: otData.series.map((s) =>
+        s.name !== "PERIOD_HOURS"
+          ? s
+          : {
+              ...s,
+              points: [withPrev(s.points[0], 32, 25), withPrev(s.points[1], 20, -50), withPrev(s.points[2], null, null)],
+            },
+      ),
+    } as unknown as ChartDataResponse
+    const cfg = {
+      ...otConfig,
+      employee_ot: {
+        ...otConfig.employee_ot,
+        summary: {
+          employees: 3, total_period_hours: 55, over_limit: 1, chronic: 1,
+          prev: { total_period_hours: 52, employees: 2, hours_delta_pct: 5.8, employees_delta_pct: 50 },
+        },
+        ranges: { ...otConfig.employee_ot.ranges, prev_from: "2026-08-26", prev_to: "2026-09-25" },
+      },
+    }
+    render(<BiDataTable config={cfg} data={d} />)
+    expect(screen.getByRole("columnheader", { name: /vs periode lalu/ })).toBeTruthy()
+    expect(screen.getByText("26 Agu 2026 – 25 Sep 2026")).toBeTruthy()
+    const rowDeltas = screen.getAllByTestId("employee-ot-row-delta").map((e) => e.textContent)
+    expect(rowDeltas).toEqual(["▲ 25,0%", "▼ 50,0%", "–"])
+    const kpiDeltas = screen.getAllByTestId("employee-ot-delta").map((e) => e.textContent)
+    expect(kpiDeltas[0]).toContain("▲ 50,0%")
+    expect(kpiDeltas[1]).toContain("▲ 5,8%")
+  })
+
+  it("shows a dash in KPI and rows when the backend sends no comparison", () => {
+    render(<BiDataTable config={otConfig} data={otData} />)
+    expect(screen.getAllByTestId("employee-ot-row-delta").every((e) => e.textContent === "–")).toBe(true)
+    expect(screen.getAllByTestId("employee-ot-delta").every((e) => (e.textContent ?? "").startsWith("–"))).toBe(true)
+  })
+
   it("drills NIK to days", () => {
     const onDrill = vi.fn()
     render(<BiDataTable config={otConfig} data={otData} onDrill={onDrill} />)

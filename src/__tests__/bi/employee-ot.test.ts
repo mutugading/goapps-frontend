@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { readEmployeeOTBlock, localSubtotals, localSummary } from "@/lib/bi/employee-ot"
+import { readEmployeeOTBlock, localSubtotals, localSummary, pctDelta, fmtDelta } from "@/lib/bi/employee-ot"
 
 const row = (group: string, period: number, excess: number, chronic = 0) => ({
   __group: group, PERIOD_HOURS: period, WEEK_HOURS: 0, EXCESS: excess, CHRONIC: chronic,
@@ -14,7 +14,7 @@ describe("readEmployeeOTBlock (HD-24)", () => {
       },
     })
     expect(b?.subtotals[0]).toMatchObject({ avg_period_hours: 15, over_pct: 50 })
-    expect(b?.summary).toEqual({ employees: 2, totalPeriodHours: 30, overLimit: 1, chronic: 1 })
+    expect(b?.summary).toEqual({ employees: 2, totalPeriodHours: 30, overLimit: 1, chronic: 1, prev: null })
   })
   it("tolerates an older backend without summary", () => {
     const b = readEmployeeOTBlock({ employee_ot: { subtotals: [{ group: "A", employees: 1 }] } })
@@ -41,7 +41,42 @@ describe("localSubtotals", () => {
 describe("localSummary", () => {
   it("counts per person", () => {
     expect(localSummary([row("", 10.04, 2, 3), row("", 5.02, 0, 0)])).toEqual({
-      employees: 2, totalPeriodHours: 15.1, overLimit: 1, chronic: 1,
+      employees: 2, totalPeriodHours: 15.1, overLimit: 1, chronic: 1, prev: null,
     })
+  })
+})
+
+describe("comparison with the previous period (HD-24, H046)", () => {
+  it("pctDelta is null when prev is 0 or negative", () => {
+    expect(pctDelta(10, 0)).toBeNull()
+    expect(pctDelta(0, 0)).toBeNull()
+    expect(pctDelta(30, 20)).toBe(50)
+    expect(pctDelta(8, 16)).toBe(-50)
+    expect(pctDelta(0, 10)).toBe(-100)
+  })
+  it("fmtDelta shows arrows and a dash for nothing to compare", () => {
+    expect(fmtDelta(12.5)).toBe("▲ 12,5%")
+    expect(fmtDelta(-3)).toBe("▼ 3,0%")
+    expect(fmtDelta(0)).toBe("0,0%")
+    expect(fmtDelta(null)).toBe("–")
+    expect(fmtDelta(undefined)).toBe("–")
+  })
+  it("reads summary.prev and the prev range; null prev stays null", () => {
+    const b = readEmployeeOTBlock({
+      employee_ot: {
+        subtotals: [],
+        summary: {
+          employees: 4, total_period_hours: 53, over_limit: 0, chronic: 0,
+          prev: { total_period_hours: 36, employees: 2, hours_delta_pct: 47.2, employees_delta_pct: null },
+        },
+        ranges: { prev_from: "2026-08-26", prev_to: "2026-09-25" },
+      },
+    })
+    expect(b?.summary?.prev).toEqual({ totalPeriodHours: 36, employees: 2, hoursDeltaPct: 47.2, employeesDeltaPct: null })
+    expect(b?.ranges?.prevTo).toBe("2026-09-25")
+    expect(readEmployeeOTBlock({ employee_ot: { subtotals: [], summary: { employees: 1, prev: null } } })?.summary?.prev).toBeNull()
+  })
+  it("localSummary has no comparison: the previous total needs rows that are filtered out", () => {
+    expect(localSummary([{ ...row("A", 30, 0), __prev_hours: 20 }]).prev).toBeNull()
   })
 })
