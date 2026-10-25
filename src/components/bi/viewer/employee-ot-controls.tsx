@@ -7,10 +7,11 @@
 import { useState } from "react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import type { ChartDataResponse, ViewerState } from "@/types/bi"
-import { employeeOTGroupValues, GROUP_BY_LABELS, type EmployeeOTBlock } from "@/lib/bi/employee-ot"
+import { comparePeriodOptions, employeeOTGroupValues, fmtPayrollLabel, GROUP_BY_LABELS, type EmployeeOTBlock } from "@/lib/bi/employee-ot"
 import { FilterChips } from "./filter-chips"
 
 const NONE = "__none__"
+const PREV = "__prev__"
 
 interface EmployeeOTControlsProps {
   state: ViewerState
@@ -60,6 +61,25 @@ export function EmployeeOTControls({ state, onChange, block, data, stale }: Empl
             {options.map((o) => (
               <SelectItem key={o} value={o}>
                 {GROUP_BY_LABELS[o] ?? o}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <span className="ml-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          Bandingkan dengan:
+        </span>
+        <Select
+          value={state.comparePeriod || PREV}
+          onValueChange={(v) => onChange({ ...state, comparePeriod: v === PREV ? "" : v })}
+        >
+          <SelectTrigger className="h-8 w-[180px]" aria-label="Bandingkan dengan">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={PREV}>Periode sebelumnya</SelectItem>
+            {comparePeriodOptions(block?.ranges?.periodFrom ?? "").map((p) => (
+              <SelectItem key={p} value={p}>
+                {fmtPayrollLabel(p)}
               </SelectItem>
             ))}
           </SelectContent>

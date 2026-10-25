@@ -197,6 +197,8 @@ export interface ViewerState {
   groupBy?: string
   /** Employee Overtime table: selected values of the groupBy attribute. Empty = all. */
   groupFilter?: string[]
+  /** Employee Overtime table (HD-25): payroll period YYYYMM to compare against. "" = previous period. */
+  comparePeriod?: string
   /**
    * Selected period (YYYYMM) for waterfall/bar breakdown and secondary data_table filtering.
    * Defaults to the latest available period in the loaded chart data.

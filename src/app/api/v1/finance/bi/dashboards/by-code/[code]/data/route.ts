@@ -73,6 +73,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const groupFilter = parseStringArray(sp.get("group_filter"))
     if (groupBy && groupFilter.length > 0) metadata.set("x-group-filter", JSON.stringify(groupFilter))
 
+    // Employee OT comparison period (HD-25): payroll period YYYYMM, validated again by the backend.
+    const comparePeriod = sp.get("compare_period")
+    if (comparePeriod && /^\d{6}$/.test(comparePeriod)) metadata.set("x-compare-period", comparePeriod)
+
     // force_trend=true: instructs the backend to override x_axis_field and return a
     // time-series payload instead of a categorical/waterfall one. Used by CrossDashboardCard
     // to merge a secondary trend line (e.g. EBITDA) with the primary NP series.

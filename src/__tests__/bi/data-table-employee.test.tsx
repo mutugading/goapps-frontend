@@ -131,7 +131,7 @@ describe("BiDataTable employee_ot", () => {
       },
     }
     render(<BiDataTable config={cfg} data={d} />)
-    expect(screen.getByRole("columnheader", { name: /vs periode lalu/ })).toBeTruthy()
+    expect(screen.getByRole("columnheader", { name: /vs Sep 2026/ })).toBeTruthy()
     expect(screen.getByText("26 Agu 2026 – 25 Sep 2026")).toBeTruthy()
     const rowDeltas = screen.getAllByTestId("employee-ot-row-delta").map((e) => e.textContent)
     expect(rowDeltas).toEqual(["▲ 25,0%", "▼ 50,0%", "–"])

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { readEmployeeOTBlock, localSubtotals, localSummary, pctDelta, fmtDelta, barPercent, otLevel, CHRONIC_WEEKS_THRESHOLD } from "@/lib/bi/employee-ot"
+import { readEmployeeOTBlock, localSubtotals, localSummary, pctDelta, fmtDelta, barPercent, otLevel, CHRONIC_WEEKS_THRESHOLD, payrollLabelOf, comparePeriodOptions, fmtPayrollLabel } from "@/lib/bi/employee-ot"
 
 const row = (group: string, period: number, excess: number, chronic = 0) => ({
   __group: group, PERIOD_HOURS: period, EXCESS: excess, CHRONIC: chronic,
@@ -103,4 +103,20 @@ describe("otLevel (H047)", () => {
     expect(otLevel(2, CHRONIC_WEEKS_THRESHOLD)).toBe("chronic")
     expect(otLevel(0, CHRONIC_WEEKS_THRESHOLD + 3)).toBe("chronic")
   })
+})
+
+describe("compare period helpers (HD-25)", () => {
+  it("payrollLabelOf: 26th rolls into next label", () => {
+    expect(payrollLabelOf("2026-09-26")).toBe("202610")
+    expect(payrollLabelOf("2026-10-25")).toBe("202610")
+    expect(payrollLabelOf("2026-12-26")).toBe("202701")
+    expect(payrollLabelOf("x")).toBe("")
+  })
+  it("comparePeriodOptions: newest first, crosses year, excludes current", () => {
+    expect(comparePeriodOptions("2026-09-26", 3)).toEqual(["202609", "202608", "202607"])
+    expect(comparePeriodOptions("2026-12-26", 2)).toEqual(["202612", "202611"])
+    expect(comparePeriodOptions("2026-01-26", 2)).toEqual(["202601", "202512"])
+    expect(comparePeriodOptions("")).toEqual([])
+  })
+  it("fmtPayrollLabel", () => expect(fmtPayrollLabel("202610")).toBe("Okt 2026"))
 })

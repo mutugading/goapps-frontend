@@ -38,6 +38,7 @@ function buildDataQuery(state: ViewerState, isTrendChart: boolean, calendar?: st
   // Employee Overtime (HD-18): values may contain commas (dept names), so the filter travels as JSON.
   if (state.groupBy) params.set("group_by", state.groupBy)
   if (state.groupBy && state.groupFilter?.length) params.set("group_filter", JSON.stringify(state.groupFilter))
+  if (state.comparePeriod && /^\d{6}$/.test(state.comparePeriod)) params.set("compare_period", state.comparePeriod)
   return params.toString()
 }
 

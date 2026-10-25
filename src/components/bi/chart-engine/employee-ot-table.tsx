@@ -21,6 +21,8 @@ import {
   otLevel,
   barPercent,
   GROUP_BY_LABELS,
+  fmtPayrollLabel,
+  payrollLabelOf,
   WEEK_LIMIT_HOURS,
   WEEK_HEADER_TOOLTIP,
   CHRONIC_WEEKS_THRESHOLD,
@@ -178,7 +180,7 @@ export function EmployeeOTTable({ config, data, onDrill, height }: ChartProps & 
                 </TableHead>
               ))}
               <TableHead className="text-right">
-                vs periode lalu
+                {r?.prevTo && payrollLabelOf(r.prevTo) ? `vs ${fmtPayrollLabel(payrollLabelOf(r.prevTo))}` : "vs periode lalu"}
                 {r?.prevFrom && r.prevTo && (
                   <div className="text-[10px] font-normal text-muted-foreground">{fmtRange(r.prevFrom, r.prevTo)}</div>
                 )}

@@ -243,6 +243,30 @@ export function fmtRange(from: string, to: string): string {
   return from && to ? `${fmtDay(from)} – ${fmtDay(to)}` : ""
 }
 
+/** Payroll period label (YYYYMM, window 26..25, K3/HD-06) a date belongs to; "" when not a date. */
+export function payrollLabelOf(iso: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso)
+  if (!m) return ""
+  const idx = Number(m[1]) * 12 + Number(m[2]) - 1 + (Number(m[3]) > 25 ? 1 : 0)
+  return `${Math.floor(idx / 12)}${String((idx % 12) + 1).padStart(2, "0")}`
+}
+
+/** Up to `count` payroll periods (YYYYMM) before the one `periodFrom` falls in, newest first. */
+export function comparePeriodOptions(periodFrom: string, count = 12): string[] {
+  const cur = payrollLabelOf(periodFrom)
+  if (!cur) return []
+  const base = Number(cur.slice(0, 4)) * 12 + Number(cur.slice(4)) - 1
+  return Array.from({ length: count }, (_, i) => {
+    const idx = base - 1 - i
+    return `${Math.floor(idx / 12)}${String((idx % 12) + 1).padStart(2, "0")}`
+  })
+}
+
+/** "Okt 2026" for a YYYYMM label. */
+export function fmtPayrollLabel(p: string): string {
+  return /^\d{6}$/.test(p) ? `${MONTHS_ID[Number(p.slice(4)) - 1] ?? ""} ${p.slice(0, 4)}` : p
+}
+
 /** Consecutive weeks over the limit from which a row counts as chronic (HD-18, H047). Single source for the table. */
 export const CHRONIC_WEEKS_THRESHOLD = 2
 
