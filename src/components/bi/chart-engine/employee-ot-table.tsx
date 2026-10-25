@@ -5,7 +5,7 @@
 // Drill NIK → day shows actual OT and limit hours per day.
 
 import { Fragment, useState } from "react"
-import { ArrowDown, ArrowUp } from "lucide-react"
+import { AlertOctagon, AlertTriangle, ArrowDown, ArrowUp } from "lucide-react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Checkbox } from "@/components/ui/checkbox"
 import type { ChartProps } from "@/components/bi/chart-engine/types"
@@ -18,8 +18,12 @@ import {
   fmtDelta,
   localSubtotals,
   localSummary,
+  otLevel,
+  barPercent,
   GROUP_BY_LABELS,
+  CHRONIC_WEEKS_THRESHOLD,
   type EmployeeOTSubtotal,
+  type OTLevel,
 } from "@/lib/bi/employee-ot"
 import { EmployeeOTKpiRow } from "@/components/bi/chart-engine/employee-ot-kpi"
 import { cn } from "@/lib/utils"
@@ -33,6 +37,45 @@ interface SortState {
 
 /** More OT than the previous window is the alert direction; no data keeps the default color. */
 const deltaClass = (d: unknown) => (typeof d === "number" && d > 0 ? "text-destructive" : "")
+
+const BAR_CLASS = {
+  none: "bg-primary/40",
+  over: "bg-amber-500 dark:bg-amber-400",
+  chronic: "bg-destructive",
+} as const
+
+const LEVEL_TEXT = {
+  none: "",
+  over: "Melebihi 14 jam/minggu",
+  chronic: `Kronis: melebihi batas ≥ ${CHRONIC_WEEKS_THRESHOLD} minggu berturut-turut`,
+} as const
+
+/** Period hours with a bar scaled to the largest displayed row; the level is also shown as icon + title, not color alone. */
+function PeriodHoursCell({ text, pct, level }: { text: string; pct: number; level: OTLevel }) {
+  const Icon = level === "chronic" ? AlertOctagon : AlertTriangle
+  return (
+    <div className="flex flex-col items-end gap-1" title={LEVEL_TEXT[level] || undefined}>
+      <span className="inline-flex items-center gap-1">
+        {level !== "none" && (
+          <Icon
+            className={cn("h-3 w-3", level === "chronic" ? "text-destructive" : "text-amber-600 dark:text-amber-400")}
+            aria-hidden="true"
+          />
+        )}
+        {text}
+        {level !== "none" && <span className="sr-only">{LEVEL_TEXT[level]}</span>}
+      </span>
+      <span className="block h-1.5 w-24 rounded-full bg-muted" aria-hidden="true">
+        <span
+          data-testid="employee-ot-bar"
+          data-level={level}
+          className={cn("block h-full rounded-full", BAR_CLASS[level])}
+          style={{ width: `${pct}%` }}
+        />
+      </span>
+    </div>
+  )
+}
 
 const num = (r: RechartsRow, k: string) => (typeof r[k] === "number" ? (r[k] as number) : 0)
 
@@ -68,6 +111,8 @@ export function EmployeeOTTable({ config, data, onDrill, height }: ChartProps & 
   const subtotals = new Map(
     (onlyOver || !block ? localSubtotals(rows) : block.subtotals).map((s) => [s.group, s]),
   )
+
+  const maxPeriod = rows.reduce((m, x) => Math.max(m, num(x, "PERIOD_HOURS")), 0)
 
   const summary = onlyOver || !block?.summary ? localSummary(rows) : block.summary
 
@@ -156,7 +201,15 @@ export function EmployeeOTTable({ config, data, onDrill, height }: ChartProps & 
                           c.key === "EXCESS" && num(row, "EXCESS") > 0 && "font-semibold text-destructive",
                         )}
                       >
-                        {fmtVal(num(row, c.key), c.decimals)}
+                        {c.key === "PERIOD_HOURS" ? (
+                          <PeriodHoursCell
+                            text={fmtVal(num(row, c.key), c.decimals)}
+                            pct={barPercent(num(row, c.key), maxPeriod)}
+                            level={otLevel(num(row, "EXCESS"), num(row, "CHRONIC"))}
+                          />
+                        ) : (
+                          fmtVal(num(row, c.key), c.decimals)
+                        )}
                       </TableCell>
                     ))}
                     <TableCell className={cn("text-right tabular-nums", deltaClass(row.__delta_pct))} data-testid="employee-ot-row-delta">

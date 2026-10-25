@@ -205,3 +205,20 @@ export function fmtDay(iso: string): string {
 export function fmtRange(from: string, to: string): string {
   return from && to ? `${fmtDay(from)} – ${fmtDay(to)}` : ""
 }
+
+/** Consecutive weeks over the limit from which a row counts as chronic (HD-18, H047). Single source for the table. */
+export const CHRONIC_WEEKS_THRESHOLD = 2
+
+export type OTLevel = "none" | "over" | "chronic"
+
+/** Warning level of a row: chronic wins over a plain excess; no excess and no chronic run is "none". */
+export function otLevel(excess: number, chronic: number): OTLevel {
+  if (chronic >= CHRONIC_WEEKS_THRESHOLD) return "chronic"
+  return excess > 0 ? "over" : "none"
+}
+
+/** Bar width in percent (0–100, 1 decimal) relative to the largest displayed row, not the total. */
+export function barPercent(value: number, max: number): number {
+  if (!(max > 0) || !(value > 0)) return 0
+  return Math.min(100, round1((value / max) * 100))
+}

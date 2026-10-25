@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { readEmployeeOTBlock, localSubtotals, localSummary, pctDelta, fmtDelta } from "@/lib/bi/employee-ot"
+import { readEmployeeOTBlock, localSubtotals, localSummary, pctDelta, fmtDelta, barPercent, otLevel, CHRONIC_WEEKS_THRESHOLD } from "@/lib/bi/employee-ot"
 
 const row = (group: string, period: number, excess: number, chronic = 0) => ({
   __group: group, PERIOD_HOURS: period, WEEK_HOURS: 0, EXCESS: excess, CHRONIC: chronic,
@@ -78,5 +78,29 @@ describe("comparison with the previous period (HD-24, H046)", () => {
   })
   it("localSummary has no comparison: the previous total needs rows that are filtered out", () => {
     expect(localSummary([{ ...row("A", 30, 0), __prev_hours: 20 }]).prev).toBeNull()
+  })
+})
+
+describe("barPercent (H047)", () => {
+  it("scales against the max of displayed rows", () => {
+    expect(barPercent(50, 100)).toBe(50)
+    expect(barPercent(100, 100)).toBe(100)
+    expect(barPercent(1, 3)).toBe(33.3)
+  })
+  it("is 0 for zero/negative values or no max, and never above 100", () => {
+    expect(barPercent(0, 10)).toBe(0)
+    expect(barPercent(-1, 10)).toBe(0)
+    expect(barPercent(5, 0)).toBe(0)
+    expect(barPercent(20, 10)).toBe(100)
+  })
+})
+
+describe("otLevel (H047)", () => {
+  it("classifies by excess and chronic threshold", () => {
+    expect(otLevel(0, 0)).toBe("none")
+    expect(otLevel(0, CHRONIC_WEEKS_THRESHOLD - 1)).toBe("none")
+    expect(otLevel(2, 1)).toBe("over")
+    expect(otLevel(2, CHRONIC_WEEKS_THRESHOLD)).toBe("chronic")
+    expect(otLevel(0, CHRONIC_WEEKS_THRESHOLD + 3)).toBe("chronic")
   })
 })
