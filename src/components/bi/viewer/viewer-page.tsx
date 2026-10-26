@@ -2,7 +2,7 @@
 
 // ViewerPage — composes the full executive-dashboard viewer for one dashboard code.
 
-import { useRef, useCallback, useEffect, useState } from "react"
+import { useRef, useCallback, useState } from "react"
 import { RefreshCw } from "lucide-react"
 import { TREND_CHART_TYPES } from "@/hooks/bi/use-chart-data"
 
@@ -96,15 +96,17 @@ export function ViewerPage({ code }: { code: string }) {
 
   // NIK → name, remembered from employee rows (point meta __name) so the breadcrumb of a day drill
   // can read "NIK — Nama" (HD-07). Names are only present when the user may see employee level.
+  // Merged while rendering when chartData changes (React "adjust state on prop change"), not in an effect.
   const [nikNames, setNikNames] = useState<Record<string, string>>({})
-  useEffect(() => {
-    if (!chartData) return
+  const [namesFrom, setNamesFrom] = useState(chartData)
+  if (chartData !== namesFrom) {
+    setNamesFrom(chartData)
     const found: Record<string, string> = {}
-    for (const r of toRechartsRows(chartData)) {
+    for (const r of chartData ? toRechartsRows(chartData) : []) {
       if (typeof r.__name === "string" && r.__name) found[String(r.category)] = r.__name
     }
     if (Object.keys(found).length) setNikNames((prev) => ({ ...prev, ...found }))
-  }, [chartData])
+  }
 
   // Toggle helpers — use local state for immediate refetch.
   const toggleGroup1 = useCallback((v: string) => {
