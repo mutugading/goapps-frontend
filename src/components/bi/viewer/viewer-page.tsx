@@ -26,7 +26,7 @@ import { FilterChips } from "./filter-chips"
 import { KpiGrid } from "./kpi-grid"
 import { DrillBreadcrumb } from "./drill-breadcrumb"
 import { SecondaryGrid } from "./secondary-grid"
-import { WorkforceNav, isWorkforceTab } from "./workforce-nav"
+import { WorkforceNav } from "./workforce-nav"
 import { OtOverMonthSection, type OtOverMonthConfig } from "./ot-over-month-section"
 import { EmployeeOTControls } from "./employee-ot-controls"
 import { EMPLOYEE_OT_MODE, EMPLOYEE_OT_PRESETS, readEmployeeOTBlock } from "@/lib/bi/employee-ot"
@@ -237,7 +237,7 @@ export function ViewerPage({ code }: { code: string }) {
 
       {isWorkforce && <JobStatusBanner />}
 
-      {isWorkforceTab(code) && <WorkforceNav code={code} />}
+      <WorkforceNav code={code} />
 
       {topOverMonth && (
         <OtOverMonthSection
