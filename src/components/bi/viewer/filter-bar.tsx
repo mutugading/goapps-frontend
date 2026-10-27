@@ -9,7 +9,7 @@ import {
   type ViewerState,
   type PeriodPreset,
   type CompareKey,
-  PERIOD_PRESETS,
+  presetsForGrain,
   periodPresetLabel,
   COMPARE_LABELS,
 } from "@/types/bi"
@@ -64,7 +64,7 @@ export function FilterBar({
   availableChartTypes = [],
   categories = [],
   periodCalendar,
-  allowedPresets = PERIOD_PRESETS,
+  allowedPresets = presetsForGrain(),
 }: FilterBarProps) {
   const availableCompares: CompareKey[] = ["NONE", ...compareModes.filter((c) => c !== "NONE")]
   const activeChartType = state.chartType || primaryChartType

@@ -20,7 +20,7 @@ import {
   ChartType,
   PeriodeGrain,
   CompareMode,
-  PERIOD_PRESETS,
+  presetsForGrain,
   PERIOD_CALENDAR_LABELS,
   periodPresetLabel,
   type DashboardFormData,
@@ -225,7 +225,7 @@ export function StepDataBinding({ form, setForm }: StepProps) {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {PERIOD_PRESETS.map((preset) => (
+            {presetsForGrain(form.periodeGrain).map((preset) => (
               <SelectItem key={preset} value={preset}>
                 {periodPresetLabel(preset, form.periodCalendar)}
               </SelectItem>

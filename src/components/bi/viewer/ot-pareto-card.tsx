@@ -7,17 +7,19 @@
 // month is read from /computed (group_by=group_1), like the OT comparison card. The ratio TOP/TOTAL×100
 // is computed here (HD-08), not stored. A month with no TOTAL is skipped, never shown as 0.
 
-import { useEffect, useState } from "react"
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
-import type { ChartDataResponse } from "@/types/bi"
 import { biColors } from "@/lib/bi/color-tokens"
 import { formatNumber } from "@/lib/bi/number-format"
+import { useOtComputedMany, useOtTrend } from "@/hooks/bi/use-ot-queries"
+import { periodLabel as formatPeriod } from "@/lib/bi/period"
 import { toTotals } from "./ot-compare-card"
 
 const MAX_MONTHS = 12
+
+const periodLabel = (p: string) => formatPeriod(p, "MONTHLY")
 
 interface OtParetoCardProps {
   title?: string
@@ -27,12 +29,6 @@ interface OtParetoCardProps {
   periodCalendar?: string
   decimals?: number
   span?: "full" | "half" | "third"
-}
-
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-
-function periodLabel(p: string): string {
-  return `${MONTHS[parseInt(p.slice(4, 6), 10) - 1] ?? ""} ${p.slice(0, 4)}`
 }
 
 export interface ParetoRow {
@@ -62,47 +58,20 @@ export function buildPareto(
   return rows
 }
 
-async function fetchJson(url: URL): Promise<ChartDataResponse | undefined> {
-  const r = await fetch(url.toString(), { credentials: "include" })
-  const j = (await r.json()) as { data?: ChartDataResponse }
-  return j.data
-}
-
-async function loadByPeriod(code: string, calendar: string | undefined): Promise<Record<string, Map<string, number> | null>> {
-  const base = `/api/v1/finance/bi/dashboards/by-code/${code}`
-  const list = new URL(`${base}/data`, window.location.origin)
-  list.searchParams.set("period", "L24M")
-  const months = ((await fetchJson(list))?.categories ?? []).filter((c) => /^\d{6}$/.test(c)).slice(-MAX_MONTHS)
-  const entries = await Promise.all(
-    months.map(async (p) => {
-      const u = new URL(`${base}/computed`, window.location.origin)
-      u.searchParams.set("numerator", "VALUE")
-      u.searchParams.set("denominator", "")
-      u.searchParams.set("scale", "1")
-      u.searchParams.set("group_by", "group_1")
-      u.searchParams.set("period", p)
-      if (calendar) u.searchParams.set("period_calendar", calendar)
-      return [p, toTotals(await fetchJson(u).catch(() => undefined))] as const
-    }),
-  )
-  return Object.fromEntries(entries)
-}
-
 export function OtParetoCard({ title, sourceDashboardCode, topKey, totalKey, periodCalendar, decimals, span }: OtParetoCardProps) {
   const dec = decimals ?? 1
-  const [state, setState] = useState<{ key: string; data: Record<string, Map<string, number> | null> } | null>(null)
-  const reqKey = `${sourceDashboardCode}|${periodCalendar ?? ""}`
-  const loaded = state?.key === reqKey ? state : null
+  const trend = useOtTrend(sourceDashboardCode, { period: "L24M", calendar: periodCalendar })
+  const months = (trend.data?.categories ?? []).filter((c) => /^\d{6}$/.test(c)).slice(-MAX_MONTHS)
+  const monthly = useOtComputedMany(
+    months.map((period) => ({ code: sourceDashboardCode, groupBy: "group_1", period, calendar: periodCalendar })),
+    trend.isSuccess,
+  )
+  const isError = trend.isError || monthly.some((q) => q.isError)
+  const loaded = trend.isSuccess && monthly.every((q) => !q.isPending)
+  const byPeriod: Record<string, Map<string, number> | null> = {}
+  months.forEach((p, i) => { byPeriod[p] = toTotals(monthly[i]?.data) })
 
-  useEffect(() => {
-    let cancelled = false
-    loadByPeriod(sourceDashboardCode, periodCalendar)
-      .then((data) => { if (!cancelled) setState({ key: reqKey, data }) })
-      .catch(() => { if (!cancelled) setState({ key: reqKey, data: {} }) })
-    return () => { cancelled = true }
-  }, [reqKey, sourceDashboardCode, periodCalendar])
-
-  const rows = buildPareto(loaded?.data ?? {}, topKey, totalKey)
+  const rows = buildPareto(byPeriod, topKey, totalKey)
   const last = rows[rows.length - 1]
   const chartData = rows.map((r) => ({ label: periodLabel(r.period), period: r.period, pct: r.pct }))
 
@@ -112,7 +81,9 @@ export function OtParetoCard({ title, sourceDashboardCode, topKey, totalKey, per
         <CardTitle className="text-sm font-semibold">{title ?? "Konsentrasi Lembur (Pareto)"}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        {loaded === null ? (
+        {isError ? (
+          <p className="py-6 text-center text-sm text-destructive">Gagal memuat data Pareto OT. Coba muat ulang.</p>
+        ) : !loaded ? (
           <div className="flex h-[200px] items-center justify-center text-sm text-muted-foreground">Loading…</div>
         ) : rows.length === 0 ? (
           <p className="py-6 text-center text-sm text-muted-foreground">Belum ada data Pareto OT</p>

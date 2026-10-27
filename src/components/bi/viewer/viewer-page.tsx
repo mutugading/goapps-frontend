@@ -15,7 +15,7 @@ import { usePermission } from "@/lib/hooks/use-permission"
 import { useDashboardByCode } from "@/hooks/bi/use-dashboard"
 import { useDashboardData } from "@/hooks/bi/use-chart-data"
 import { useFactDistincts } from "@/hooks/bi/use-fact-distincts"
-import { chartTypeToString, periodeGrainToString, type ViewerState, DEFAULT_VIEWER_STATE, type CompareKey, type ViewModeConfig } from "@/types/bi"
+import { chartTypeToString, periodeGrainToString, type ViewerState, DEFAULT_VIEWER_STATE, presetsForGrain, type CompareKey, type ViewModeConfig } from "@/types/bi"
 import { isEmpty, toRechartsRows } from "@/lib/bi/data-adapter"
 
 import { ChartEngine } from "@/components/bi/chart-engine/chart-engine"
@@ -255,7 +255,7 @@ export function ViewerPage({ code }: { code: string }) {
         availableChartTypes={availableChartTypes}
         periodCalendar={dashboard.periodCalendar}
         categories={monthSelectorCategories}
-        allowedPresets={isEmployeeOT ? EMPLOYEE_OT_PRESETS : undefined}
+        allowedPresets={isEmployeeOT ? EMPLOYEE_OT_PRESETS : presetsForGrain(dashboard.periodeGrain)}
       />
 
       {isEmployeeOT && state.drillPath.length === 0 && (

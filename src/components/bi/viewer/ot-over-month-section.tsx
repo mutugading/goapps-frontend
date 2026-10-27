@@ -4,7 +4,7 @@
 // line = karyawan unik (two different measures, never summed). Click a month to filter the weekly heatmap/table
 // below (via onSelectMonth), then drill dept → orang (NIK, needs workforceemployee.view; the backend gates it too).
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { Bar, CartesianGrid, ComposedChart, Legend, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils"
 import type { ChartDataResponse } from "@/types/bi"
 import { biColors } from "@/lib/bi/color-tokens"
 import { formatNumber } from "@/lib/bi/number-format"
+import { useOtComputed, useOtTrend } from "@/hooks/bi/use-ot-queries"
 import { usePermission } from "@/lib/hooks/use-permission"
 
 export interface OtOverMonthConfig {
@@ -28,7 +29,6 @@ interface Props {
   onSelectMonth: (period: string | undefined) => void
 }
 
-const BASE = "/api/v1/finance/bi/dashboards/by-code"
 
 /** Trend payload → map label (YYYYMM) → value of the first series. */
 export function toMonthMap(d: ChartDataResponse | undefined): Map<string, number> {
@@ -52,31 +52,6 @@ export function toRanked(d: ChartDataResponse | undefined): Array<[string, numbe
     }
   }
   return [...out.entries()].sort((a, b) => b[1] - a[1])
-}
-
-/** null = request failed or was refused (403/5xx), so the UI shows an error instead of "no data". */
-async function getJson(url: string): Promise<ChartDataResponse | null> {
-  try {
-    const r = await fetch(url, { credentials: "include" })
-    if (!r.ok) return null
-    const j = (await r.json()) as { data?: ChartDataResponse }
-    return j.data ?? null
-  } catch {
-    return null
-  }
-}
-
-function trendUrl(code: string, calendar?: string) {
-  const q = new URLSearchParams({ period: "L12M", force_trend: "true" })
-  if (calendar) q.set("period_calendar", calendar)
-  return `${BASE}/${code}/data?${q.toString()}`
-}
-
-function computedUrl(code: string, groupBy: string, period: string, calendar?: string, group1?: string) {
-  const q = new URLSearchParams({ numerator: "VALUE", denominator: "", scale: "1", group_by: groupBy, period })
-  if (calendar) q.set("period_calendar", calendar)
-  if (group1) q.set("group1_filter", group1)
-  return `${BASE}/${code}/computed?${q.toString()}`
 }
 
 function RankTable({ first, rows, onPick }: { first: string; rows: Array<[string, number]>; onPick?: (k: string) => void }) {
@@ -109,9 +84,6 @@ export function OtOverMonthSection({ config, selectedPeriod, onSelectMonth }: Pr
   const { hasPermission } = usePermission()
   const canEmployee = hasPermission("finance.bi.workforceemployee.view")
   const cal = config.period_calendar
-  const [trend, setTrend] = useState<{ weeks: Map<string, number>; emps: Map<string, number> } | "error" | null>(null)
-  const [depts, setDepts] = useState<{ key: string; rows: Array<[string, number]> | "error" } | null>(null)
-  const [niks, setNiks] = useState<{ key: string; rows: Array<[string, number]> | "error" } | null>(null)
   // The picked dept belongs to the month it was picked in, so changing the month elsewhere (FilterBar) drops it.
   const [pick, setPick] = useState<{ period: string; dept: string } | undefined>()
   const valid = selectedPeriod && /^\d{6}$/.test(selectedPeriod) ? selectedPeriod : undefined
@@ -119,39 +91,21 @@ export function OtOverMonthSection({ config, selectedPeriod, onSelectMonth }: Pr
   const dept = pick && pick.period === valid ? pick.dept : undefined
   const setDept = (d: string | undefined) => setPick(d && valid ? { period: valid, dept: d } : undefined)
 
-  useEffect(() => {
-    let off = false
-    void Promise.all([getJson(trendUrl(config.trend_dashboard, cal)), getJson(trendUrl(config.emp_dashboard, cal))]).then(
-      ([w, e]) => { if (!off) setTrend(w === null || e === null ? "error" : { weeks: toMonthMap(w), emps: toMonthMap(e) }) },
-    )
-    return () => { off = true }
-  }, [config.trend_dashboard, config.emp_dashboard, cal])
+  const weeksQ = useOtTrend(config.trend_dashboard, { period: "L12M", forceTrend: true, calendar: cal })
+  const empsQ = useOtTrend(config.emp_dashboard, { period: "L12M", forceTrend: true, calendar: cal })
+  const deptQ = useOtComputed({ code: config.trend_dashboard, groupBy: "group_1", period: valid ?? "", calendar: cal }, Boolean(valid))
+  const nikQ = useOtComputed(
+    { code: config.nik_dashboard, groupBy: "group_3", period: valid ?? "", calendar: cal, group1: dept },
+    Boolean(valid && dept && canEmployee),
+  )
 
-  const deptKey = valid ? `${config.trend_dashboard}|${valid}` : ""
-  useEffect(() => {
-    if (!valid) return
-    let off = false
-    void getJson(computedUrl(config.trend_dashboard, "group_1", valid, cal)).then((d) => {
-      if (!off) setDepts({ key: deptKey, rows: d === null ? "error" : toRanked(d) })
-    })
-    return () => { off = true }
-  }, [valid, deptKey, config.trend_dashboard, cal])
-
-  const nikKey = valid && dept ? `${deptKey}|${dept}` : ""
-  useEffect(() => {
-    if (!valid || !dept || !canEmployee) return
-    let off = false
-    void getJson(computedUrl(config.nik_dashboard, "group_3", valid, cal, dept)).then((d) => {
-      if (!off) setNiks({ key: nikKey, rows: d === null ? "error" : toRanked(d) })
-    })
-    return () => { off = true }
-  }, [valid, dept, canEmployee, nikKey, config.nik_dashboard, cal])
-
-  const ok = trend !== null && trend !== "error" ? trend : null
+  const trendError = weeksQ.isError || empsQ.isError
+  const trendReady = weeksQ.isSuccess && empsQ.isSuccess
+  const ok = trendReady ? { weeks: toMonthMap(weeksQ.data), emps: toMonthMap(empsQ.data) } : null
   const months = ok ? [...ok.weeks.keys()].sort() : []
   const chart = months.map((m) => ({ period: m, weeks: ok?.weeks.get(m) ?? 0, emps: ok?.emps.get(m) ?? 0 }))
-  const deptRows = depts?.key === deptKey ? depts.rows : null
-  const nikRows = niks?.key === nikKey ? niks.rows : null
+  const deptRows = deptQ.isError ? "error" : deptQ.isSuccess ? toRanked(deptQ.data) : null
+  const nikRows = nikQ.isError ? "error" : nikQ.isSuccess ? toRanked(nikQ.data) : null
 
   return (
     <Card>
@@ -171,9 +125,9 @@ export function OtOverMonthSection({ config, selectedPeriod, onSelectMonth }: Pr
         )}
       </CardHeader>
       <CardContent className="space-y-4">
-        {trend === null ? (
+        {!trendReady && !trendError ? (
           <div className="flex h-[240px] items-center justify-center text-sm text-muted-foreground">Loading…</div>
-        ) : trend === "error" ? (
+        ) : trendError ? (
           <p className="py-6 text-center text-sm text-destructive">Gagal memuat tren over-limit. Coba muat ulang.</p>
         ) : chart.length === 0 ? (
           <p className="py-6 text-center text-sm text-muted-foreground">Belum ada data over-limit</p>
@@ -193,7 +147,7 @@ export function OtOverMonthSection({ config, selectedPeriod, onSelectMonth }: Pr
               <Tooltip formatter={(v: number) => formatNumber(v, "raw", 0)} />
               <Legend />
               <Bar dataKey="weeks" name="Orang-minggu" fill={biColors.primary} radius={[3, 3, 0, 0]} />
-              <Line dataKey="emps" name="Karyawan unik" stroke="#f59e0b" strokeWidth={2} dot />
+              <Line dataKey="emps" name="Karyawan unik" stroke={biColors.series[3]} strokeWidth={2} dot />
             </ComposedChart>
           </ResponsiveContainer>
         )}

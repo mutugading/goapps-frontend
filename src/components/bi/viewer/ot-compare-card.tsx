@@ -5,7 +5,7 @@
 // Data comes from the /computed BFF (SUM of one metric grouped by group_2 / group_1) for two periods;
 // Δ is computed here. A period with no series at all means "no data" (shown as such, never as 0).
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -14,6 +14,8 @@ import { cn } from "@/lib/utils"
 import type { ChartDataResponse } from "@/types/bi"
 import { biColors } from "@/lib/bi/color-tokens"
 import { formatNumber } from "@/lib/bi/number-format"
+import { periodLabel as formatPeriod } from "@/lib/bi/period"
+import { useOtComputedMany } from "@/hooks/bi/use-ot-queries"
 
 type CompareKey = "MoM" | "YoY"
 type Totals = Map<string, number> | null // null = no data for that period
@@ -30,11 +32,7 @@ interface OtCompareCardProps {
   group2Filter?: string[]
 }
 
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-
-function periodLabel(p: string): string {
-  return `${MONTHS[parseInt(p.slice(4, 6), 10) - 1] ?? ""} ${p.slice(0, 4)}`
-}
+const periodLabel = (p: string) => formatPeriod(p, "MONTHLY")
 
 /** YYYYMM shifted back by one month (MoM) or twelve (YoY). */
 export function comparePeriod(p: string, mode: CompareKey): string {
@@ -81,25 +79,6 @@ export function buildDeltaRows(cur: Totals, prev: Totals): DeltaRow[] {
   return rows.sort((a, b) => (b.delta ?? -Infinity) - (a.delta ?? -Infinity))
 }
 
-function fetchTotals(
-  code: string, metric: string, groupBy: string, period: string, calendar: string | undefined,
-  g1: string, g2: string,
-): Promise<Totals> {
-  const url = new URL(`/api/v1/finance/bi/dashboards/by-code/${code}/computed`, window.location.origin)
-  url.searchParams.set("numerator", metric)
-  url.searchParams.set("denominator", "")
-  url.searchParams.set("scale", "1")
-  url.searchParams.set("group_by", groupBy)
-  url.searchParams.set("period", period)
-  if (calendar) url.searchParams.set("period_calendar", calendar)
-  if (g1) url.searchParams.set("group1_filter", g1)
-  if (g2) url.searchParams.set("group2_filter", g2)
-  return fetch(url.toString(), { credentials: "include" })
-    .then((r) => r.json())
-    .then((j: { data?: ChartDataResponse }) => toTotals(j.data))
-    .catch(() => null)
-}
-
 function DeltaCell({ v, dec, suffix = "" }: { v: number | null; dec: number; suffix?: string }) {
   if (v === null) return <span className="text-muted-foreground">—</span>
   const cls = v > 0 ? "text-red-600" : v < 0 ? "text-emerald-600" : "text-muted-foreground"
@@ -116,27 +95,22 @@ export function OtCompareCard(props: OtCompareCardProps) {
   const { title, dashboardCode, metric, periodCalendar, selectedPeriod, span, group1Filter, group2Filter } = props
   const dec = props.decimals ?? 1
   const [mode, setMode] = useState<CompareKey>("MoM")
-  const [result, setResult] = useState<{ key: string; types: [Totals, Totals]; depts: [Totals, Totals] } | null>(null)
   const g1 = (group1Filter ?? []).join(",")
   const g2 = (group2Filter ?? []).join(",")
   const validPeriod = selectedPeriod && /^\d{6}$/.test(selectedPeriod) ? selectedPeriod : undefined
   const prevPeriod = validPeriod ? comparePeriod(validPeriod, mode) : undefined
-  const reqKey = `${dashboardCode}|${metric}|${periodCalendar ?? ""}|${validPeriod ?? ""}|${prevPeriod ?? ""}|${g1}|${g2}`
-  // Stale result (key mismatch) counts as loading, so no setState is needed to reset on change.
-  const loaded = result?.key === reqKey ? result : null
-
-  useEffect(() => {
-    if (!validPeriod || !prevPeriod) return
-    let cancelled = false
-    const get = (by: string, p: string) => fetchTotals(dashboardCode, metric, by, p, periodCalendar, g1, g2)
-    void Promise.all([
-      get("group_2", validPeriod), get("group_2", prevPeriod),
-      get("group_1", validPeriod), get("group_1", prevPeriod),
-    ]).then(([tc, tp, dc, dp]) => {
-      if (!cancelled) setResult({ key: reqKey, types: [tc, tp], depts: [dc, dp] })
-    })
-    return () => { cancelled = true }
-  }, [reqKey, dashboardCode, metric, periodCalendar, validPeriod, prevPeriod, g1, g2])
+  const q = (groupBy: string, period: string | undefined) => ({
+    code: dashboardCode, numerator: metric, groupBy, period: period ?? "", calendar: periodCalendar, group1: g1, group2: g2,
+  })
+  const results = useOtComputedMany(
+    [q("group_2", validPeriod), q("group_2", prevPeriod), q("group_1", validPeriod), q("group_1", prevPeriod)],
+    Boolean(validPeriod && prevPeriod),
+  )
+  const isError = results.some((r) => r.isError)
+  const ready = Boolean(validPeriod) && results.every((r) => r.isSuccess)
+  const loaded = ready
+    ? { types: [toTotals(results[0].data), toTotals(results[1].data)] as [Totals, Totals], depts: [toTotals(results[2].data), toTotals(results[3].data)] as [Totals, Totals] }
+    : null
 
   const typeRows = loaded ? buildDeltaRows(...loaded.types) : []
   const deptRows = loaded ? buildDeltaRows(...loaded.depts) : []
@@ -159,6 +133,7 @@ export function OtCompareCard(props: OtCompareCardProps) {
             <button
               key={m}
               type="button"
+              aria-pressed={mode === m}
               onClick={() => setMode(m)}
               className={cn(
                 "rounded border px-2 py-0.5 text-xs",
@@ -173,6 +148,8 @@ export function OtCompareCard(props: OtCompareCardProps) {
       <CardContent className="space-y-4">
         {!validPeriod ? (
           <p className="py-6 text-center text-sm text-muted-foreground">Pilih periode untuk membandingkan.</p>
+        ) : isError ? (
+          <p className="py-6 text-center text-sm text-destructive">Gagal memuat perbandingan. Coba muat ulang.</p>
         ) : loaded === null ? (
           <div className="flex h-[200px] items-center justify-center text-sm text-muted-foreground">Loading…</div>
         ) : (
@@ -190,7 +167,7 @@ export function OtCompareCard(props: OtCompareCardProps) {
                 <Tooltip formatter={(v: number) => formatNumber(v, "raw", dec)} />
                 <Legend />
                 <Bar dataKey={curLabel} fill={biColors.primary} radius={[3, 3, 0, 0]} />
-                {!noPrev && <Bar dataKey={prevLabel} fill="#94a3b8" radius={[3, 3, 0, 0]} />}
+                {!noPrev && <Bar dataKey={prevLabel} fill={biColors.neutral} radius={[3, 3, 0, 0]} />}
               </BarChart>
             </ResponsiveContainer>
 

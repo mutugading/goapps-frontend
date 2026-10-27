@@ -23,7 +23,7 @@ const time = (d?: Date | string) => (d ? new Date(d).getTime() || 0 : 0)
 
 /** Shows the latest successful HR ETL run and a banner when the most recent run failed. */
 export function JobStatusBanner() {
-  const { data: jobs } = useBiJobs(false)
+  const { data: jobs, error } = useBiJobs(false)
   const hrJobs = (jobs ?? []).filter(j => j.jobName.startsWith(HR_JOB_PREFIX))
 
   // Most recently executed job decides whether to warn.
@@ -40,7 +40,9 @@ export function JobStatusBanner() {
   ].filter(Boolean) as Date[]
   const lastSuccess = candidates.sort((a, b) => time(b) - time(a))[0]
 
-  if (hrJobs.length === 0) return null
+  // Roles without job.view (e.g. HR) get 403: hide the banner quietly. A lightweight ETL status endpoint
+  // for them is tracked as H062. Any other error also hides it; the banner is informational only.
+  if (error || hrJobs.length === 0) return null
 
   return (
     <div className="space-y-3">

@@ -126,16 +126,25 @@ export {
 // Local UI types
 // ============================================================================
 
+import { PeriodeGrain } from "@/types/generated/finance/v1/bi"
 import type {
   Dashboard,
   CompareMode,
-  PeriodeGrain,
   ChartType,
 } from "@/types/generated/finance/v1/bi"
 
 /** Period preset enum (canonical string keys matching backend ResolvePeriod). */
 export type PeriodPreset = "L12M" | "L24M" | "THIS_YEAR" | "THIS_QTR" | "THIS_MONTH" | "LAST_MONTH" | "THIS_WEEK" | "LAST_WEEK" | "YESTERDAY" | "ALL" | "CUSTOM"
 export const PERIOD_PRESETS: PeriodPreset[] = ["L12M", "L24M", "THIS_YEAR", "THIS_QTR", "THIS_MONTH", "LAST_MONTH", "THIS_WEEK", "LAST_WEEK", "YESTERDAY", "ALL", "CUSTOM"]
+/** Short-window presets: only meaningful for DAILY/WEEKLY dashboards. */
+export const SHORT_WINDOW_PRESETS: PeriodPreset[] = ["THIS_WEEK", "LAST_WEEK", "YESTERDAY", "LAST_MONTH"]
+
+/** Presets offered for a dashboard grain; the global list stays as before unless DAILY/WEEKLY. */
+export function presetsForGrain(grain?: PeriodeGrain | number): PeriodPreset[] {
+  if (grain === PeriodeGrain.PERIODE_GRAIN_DAILY || grain === PeriodeGrain.PERIODE_GRAIN_WEEKLY) return PERIOD_PRESETS
+  return PERIOD_PRESETS.filter((p) => !SHORT_WINDOW_PRESETS.includes(p))
+}
+
 export const PERIOD_PRESET_LABELS: Record<PeriodPreset, string> = {
   L12M: "Last 12 Months",
   L24M: "Last 24 Months",
@@ -216,6 +225,7 @@ export const DEFAULT_VIEWER_STATE: ViewerState = {
   group2Filter: [],
   groupBy: "",
   groupFilter: [],
+  comparePeriod: "",
   selectedPeriod: undefined,
 }
 
