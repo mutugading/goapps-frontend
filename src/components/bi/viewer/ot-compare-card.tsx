@@ -9,6 +9,7 @@ import { useState } from "react"
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
 import type { ChartDataResponse } from "@/types/bi"
@@ -128,22 +129,17 @@ export function OtCompareCard(props: OtCompareCardProps) {
           {title ?? "Perbandingan periode"}
           {validPeriod && <span className="ml-2 text-xs font-normal text-muted-foreground">— {curLabel} vs {prevLabel}</span>}
         </CardTitle>
-        <div className="flex gap-1">
-          {(["MoM", "YoY"] as const).map((m) => (
-            <button
-              key={m}
-              type="button"
-              aria-pressed={mode === m}
-              onClick={() => setMode(m)}
-              className={cn(
-                "rounded border px-2 py-0.5 text-xs",
-                mode === m ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background",
-              )}
-            >
-              {m}
-            </button>
-          ))}
-        </div>
+        <ToggleGroup
+          type="single"
+          variant="outline"
+          size="sm"
+          value={mode}
+          onValueChange={(v) => v && setMode(v as CompareKey)}
+          aria-label="Pembanding periode"
+        >
+          <ToggleGroupItem value="MoM" className="px-2 text-xs">MoM</ToggleGroupItem>
+          <ToggleGroupItem value="YoY" className="px-2 text-xs">YoY</ToggleGroupItem>
+        </ToggleGroup>
       </CardHeader>
       <CardContent className="space-y-4">
         {!validPeriod ? (
