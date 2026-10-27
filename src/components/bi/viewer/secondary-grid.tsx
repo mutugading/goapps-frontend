@@ -509,11 +509,14 @@ export function SecondaryGrid({ layoutConfig, data, dashboardCode, selectedPerio
         // OT concentration trend (H037): top-10% share of OT hours per month, from companion dashboard.
         if (s.chart_type === "ot_pareto") {
           const cfg = (s.chart_config ?? {}) as Record<string, unknown>
+          // Companion dashboard comes from the seeded chart_config (000566); no hardcoded fallback.
+          const sourceCode = cfg.source_dashboard_code as string | undefined
+          if (!sourceCode) return null
           return (
             <OtParetoCard
               key={`${s.title ?? "ot-pareto"}-${i}`}
               title={s.title}
-              sourceDashboardCode={(cfg.source_dashboard_code as string | undefined) ?? "HR_OT_PARETO"}
+              sourceDashboardCode={sourceCode}
               topKey={cfg.top_key as string | undefined}
               totalKey={cfg.total_key as string | undefined}
               periodCalendar={cfg.period_calendar as string | undefined}
