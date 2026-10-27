@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils"
 import type { ChartDataResponse } from "@/types/bi"
 import { seriesColor } from "@/lib/bi/color-tokens"
 import { formatNumber } from "@/lib/bi/number-format"
+import { periodLabel as formatPeriod } from "@/lib/bi/period"
 
 interface OtMixCardProps {
   title?: string
@@ -20,11 +21,7 @@ interface OtMixCardProps {
   span?: "full" | "half" | "third"
 }
 
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-
-function periodLabel(p: string): string {
-  return `${MONTHS[parseInt(p.slice(4, 6), 10) - 1] ?? ""} ${p.slice(0, 4)}`
-}
+const periodLabel = (p: string) => formatPeriod(p, "MONTHLY")
 
 export interface MixRow {
   period: string

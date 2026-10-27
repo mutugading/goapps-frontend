@@ -61,6 +61,7 @@ export function useDashboardData(
   refreshIntervalMs: number,
   isTrendChart = false,
   calendar?: string,
+  ready = true,
 ) {
   return useQuery<ChartDataResponse | undefined>({
     queryKey: [...dashboardKeys.all, "data", code, state, isTrendChart, calendar] as const,
@@ -71,7 +72,7 @@ export function useDashboardData(
       if (!parsed.base?.isSuccess) throw new Error(parsed.base?.message ?? "Failed to load chart data")
       return parsed.data
     },
-    enabled: Boolean(code),
+    enabled: Boolean(code) && ready,
     refetchInterval: refreshIntervalMs > 0 ? refreshIntervalMs : false,
     refetchOnWindowFocus: false,
     staleTime: 30_000,

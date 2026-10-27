@@ -92,7 +92,7 @@ export function ViewerPage({ code }: { code: string }) {
     error,
     refetch,
     isPlaceholderData,
-  } = useDashboardData(code, stateWithFilters, refreshMs, earlyIsTrend, dashboard?.periodCalendar)
+  } = useDashboardData(code, stateWithFilters, refreshMs, earlyIsTrend, dashboard?.periodCalendar, Boolean(dashboard))
 
   // NIK → name, remembered from employee rows (point meta __name) so the breadcrumb of a day drill
   // can read "NIK — Nama" (HD-07). Names are only present when the user may see employee level.
@@ -155,7 +155,7 @@ export function ViewerPage({ code }: { code: string }) {
 
   // Employee Overtime (HD-18): payroll-period presets only, no month selector (selected_month would
   // turn the period into CUSTOM, which the backend rejects), group-by controls on the table level.
-  const isWorkforce = dashboard?.groupName === "Workforce" || dashboard?.filterType?.startsWith("HR_") === true
+  const isWorkforce = dashboard?.filterType?.startsWith("HR_") === true
   const isEmployeeOT =
     (dataConfig?.["table_mode"] ?? dashConfig?.["table_mode"] ?? dashConfig?.["tableMode"]) === EMPLOYEE_OT_MODE
 

@@ -22,6 +22,9 @@ function compareKeyToEnum(s: string | null): CompareMode {
 }
 
 /** Parse a JSON array of strings; anything else yields [] (no filter). */
+const ALLOWED_GROUP_BY = new Set(["DIVISION", "DEPT", "COMPANY"])
+const MAX_GROUP_FILTER = 50
+
 function parseStringArray(raw: string | null): string[] {
   if (!raw) return []
   try {
@@ -68,9 +71,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     // Employee Overtime table (table_mode=employee_ot, HD-18): group-by key (whitelisted by the
     // backend) and the selected group values as a JSON array (values may contain commas).
-    const groupBy = sp.get("group_by")
+    const groupByRaw = sp.get("group_by")
+    const groupBy = groupByRaw && ALLOWED_GROUP_BY.has(groupByRaw) ? groupByRaw : null
     if (groupBy) metadata.set("x-group-by", groupBy)
-    const groupFilter = parseStringArray(sp.get("group_filter"))
+    // Capped so a huge array cannot exceed the gRPC metadata size limit (would surface as an opaque 500).
+    const groupFilter = parseStringArray(sp.get("group_filter")).slice(0, MAX_GROUP_FILTER)
     if (groupBy && groupFilter.length > 0) metadata.set("x-group-filter", JSON.stringify(groupFilter))
 
     // Employee OT comparison period (HD-25): payroll period YYYYMM, validated again by the backend.
