@@ -673,6 +673,22 @@ export interface BiJobLog {
   durationMs: number;
 }
 
+/** EtlJobStatus is the operational status of one ETL_HR_* job (HD-27). No raw error text. */
+export interface EtlJobStatus {
+  jobName: string;
+  lastRunAt: Date | undefined;
+  lastStatus: string;
+  lastSuccessAt: Date | undefined;
+}
+
+export interface GetEtlStatusRequest {
+}
+
+export interface GetEtlStatusResponse {
+  base: BaseResponse | undefined;
+  data: EtlJobStatus[];
+}
+
 export interface ListJobsRequest {
   includeInactive: boolean;
 }
@@ -7537,6 +7553,251 @@ export const BiJobLog: MessageFns<BiJobLog> = {
   },
 };
 
+function createBaseEtlJobStatus(): EtlJobStatus {
+  return { jobName: "", lastRunAt: undefined, lastStatus: "", lastSuccessAt: undefined };
+}
+
+export const EtlJobStatus: MessageFns<EtlJobStatus> = {
+  encode(message: EtlJobStatus, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.jobName !== "") {
+      writer.uint32(10).string(message.jobName);
+    }
+    if (message.lastRunAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.lastRunAt), writer.uint32(18).fork()).join();
+    }
+    if (message.lastStatus !== "") {
+      writer.uint32(26).string(message.lastStatus);
+    }
+    if (message.lastSuccessAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.lastSuccessAt), writer.uint32(34).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): EtlJobStatus {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseEtlJobStatus();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.jobName = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.lastRunAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.lastStatus = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.lastSuccessAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): EtlJobStatus {
+    return {
+      jobName: isSet(object.jobName)
+        ? globalThis.String(object.jobName)
+        : isSet(object.job_name)
+        ? globalThis.String(object.job_name)
+        : "",
+      lastRunAt: isSet(object.lastRunAt)
+        ? fromJsonTimestamp(object.lastRunAt)
+        : isSet(object.last_run_at)
+        ? fromJsonTimestamp(object.last_run_at)
+        : undefined,
+      lastStatus: isSet(object.lastStatus)
+        ? globalThis.String(object.lastStatus)
+        : isSet(object.last_status)
+        ? globalThis.String(object.last_status)
+        : "",
+      lastSuccessAt: isSet(object.lastSuccessAt)
+        ? fromJsonTimestamp(object.lastSuccessAt)
+        : isSet(object.last_success_at)
+        ? fromJsonTimestamp(object.last_success_at)
+        : undefined,
+    };
+  },
+
+  toJSON(message: EtlJobStatus): unknown {
+    const obj: any = {};
+    if (message.jobName !== "") {
+      obj.jobName = message.jobName;
+    }
+    if (message.lastRunAt !== undefined) {
+      obj.lastRunAt = message.lastRunAt.toISOString();
+    }
+    if (message.lastStatus !== "") {
+      obj.lastStatus = message.lastStatus;
+    }
+    if (message.lastSuccessAt !== undefined) {
+      obj.lastSuccessAt = message.lastSuccessAt.toISOString();
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<EtlJobStatus>): EtlJobStatus {
+    return EtlJobStatus.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<EtlJobStatus>): EtlJobStatus {
+    const message = createBaseEtlJobStatus();
+    message.jobName = object.jobName ?? "";
+    message.lastRunAt = object.lastRunAt ?? undefined;
+    message.lastStatus = object.lastStatus ?? "";
+    message.lastSuccessAt = object.lastSuccessAt ?? undefined;
+    return message;
+  },
+};
+
+function createBaseGetEtlStatusRequest(): GetEtlStatusRequest {
+  return {};
+}
+
+export const GetEtlStatusRequest: MessageFns<GetEtlStatusRequest> = {
+  encode(_: GetEtlStatusRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetEtlStatusRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetEtlStatusRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): GetEtlStatusRequest {
+    return {};
+  },
+
+  toJSON(_: GetEtlStatusRequest): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetEtlStatusRequest>): GetEtlStatusRequest {
+    return GetEtlStatusRequest.fromPartial(base ?? {});
+  },
+  fromPartial(_: DeepPartial<GetEtlStatusRequest>): GetEtlStatusRequest {
+    const message = createBaseGetEtlStatusRequest();
+    return message;
+  },
+};
+
+function createBaseGetEtlStatusResponse(): GetEtlStatusResponse {
+  return { base: undefined, data: [] };
+}
+
+export const GetEtlStatusResponse: MessageFns<GetEtlStatusResponse> = {
+  encode(message: GetEtlStatusResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    for (const v of message.data) {
+      EtlJobStatus.encode(v!, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetEtlStatusResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetEtlStatusResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.data.push(EtlJobStatus.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetEtlStatusResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      data: globalThis.Array.isArray(object?.data) ? object.data.map((e: any) => EtlJobStatus.fromJSON(e)) : [],
+    };
+  },
+
+  toJSON(message: GetEtlStatusResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.data?.length) {
+      obj.data = message.data.map((e) => EtlJobStatus.toJSON(e));
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetEtlStatusResponse>): GetEtlStatusResponse {
+    return GetEtlStatusResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GetEtlStatusResponse>): GetEtlStatusResponse {
+    const message = createBaseGetEtlStatusResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.data = object.data?.map((e) => EtlJobStatus.fromPartial(e)) || [];
+    return message;
+  },
+};
+
 function createBaseListJobsRequest(): ListJobsRequest {
   return { includeInactive: false };
 }
@@ -10441,6 +10702,15 @@ export const BiJobServiceDefinition = {
       requestType: ListJobsRequest,
       requestStream: false,
       responseType: ListJobsResponse,
+      responseStream: false,
+      options: {},
+    },
+    /** GetEtlStatus returns last-run status of ETL_HR_* jobs only (HD-27, finance.bi.etlstatus.view). */
+    getEtlStatus: {
+      name: "GetEtlStatus",
+      requestType: GetEtlStatusRequest,
+      requestStream: false,
+      responseType: GetEtlStatusResponse,
       responseStream: false,
       options: {},
     },

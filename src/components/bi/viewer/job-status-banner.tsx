@@ -6,10 +6,7 @@ import { AlertTriangle } from "lucide-react"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
-import { useBiJobs, useBiJobLogs } from "@/hooks/bi/use-job"
-import type { BiJob } from "@/types/bi"
-
-const HR_JOB_PREFIX = "ETL_HR_"
+import { useEtlStatus } from "@/hooks/bi/use-etl-status"
 
 const fmt = (d?: Date | string) => {
   if (!d) return undefined
@@ -23,25 +20,19 @@ const time = (d?: Date | string) => (d ? new Date(d).getTime() || 0 : 0)
 
 /** Shows the latest successful HR ETL run and a banner when the most recent run failed. */
 export function JobStatusBanner() {
-  const { data: jobs, error } = useBiJobs(false)
-  const hrJobs = (jobs ?? []).filter(j => j.jobName.startsWith(HR_JOB_PREFIX))
+  // Server returns only ETL_HR_* jobs (HD-27), so no client-side filtering or log lookup is needed.
+  const { data: jobs, error } = useEtlStatus()
+  const hrJobs = jobs ?? []
 
   // Most recently executed job decides whether to warn.
-  const latest: BiJob | undefined = [...hrJobs].sort((a, b) => time(b.lastRunAt) - time(a.lastRunAt))[0]
+  const latest = [...hrJobs].sort((a, b) => time(b.lastRunAt) - time(a.lastRunAt))[0]
   const failed = latest?.lastStatus === "FAILED"
 
-  // Last success: a job whose last run succeeded gives it directly; otherwise look in the failing job's logs.
-  const okJobs = hrJobs.filter(j => j.lastStatus === "SUCCESS")
-  const { data: logs } = useBiJobLogs(failed ? latest?.jobId : undefined, 1, 20)
-  const logSuccess = logs?.find(l => l.status === "SUCCESS")
-  const candidates = [
-    ...okJobs.map(j => j.lastRunAt),
-    ...(logSuccess ? [logSuccess.endedAt ?? logSuccess.startedAt] : []),
-  ].filter(Boolean) as Date[]
-  const lastSuccess = candidates.sort((a, b) => time(b) - time(a))[0]
+  const lastSuccess = [...hrJobs.map(j => j.lastSuccessAt).filter(Boolean) as Date[]].sort(
+    (a, b) => time(b) - time(a)
+  )[0]
 
-  // Roles without job.view (e.g. HR) get 403: hide the banner quietly. A lightweight ETL status endpoint
-  // for them is tracked as H062. Any other error also hides it; the banner is informational only.
+  // The banner is informational only: any error (including 403 without etlstatus.view) hides it quietly.
   if (error || hrJobs.length === 0) return null
 
   return (

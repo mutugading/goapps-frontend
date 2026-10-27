@@ -80,6 +80,8 @@ export type {
   GetFactDistinctsResponse,
   ListJobsRequest,
   ListJobsResponse,
+  EtlJobStatus,
+  GetEtlStatusResponse,
   ListJobLogsRequest,
   ListJobLogsResponse,
   TriggerJobRequest,
@@ -118,6 +120,7 @@ export {
   ListDataSourcesResponse as ListDataSourcesResponseParser,
   GetFactDistinctsResponse as GetFactDistinctsResponseParser,
   ListJobsResponse as ListJobsResponseParser,
+  GetEtlStatusResponse as GetEtlStatusResponseParser,
   ListJobLogsResponse as ListJobLogsResponseParser,
   TriggerJobResponse as TriggerJobResponseParser,
 } from "@/types/generated/finance/v1/bi"
