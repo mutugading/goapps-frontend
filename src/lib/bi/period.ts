@@ -30,3 +30,31 @@ function isoWeekLabel(raw: string): string | null {
   const week = Math.ceil(((d.getTime() - yearStart) / 86400000 + 1) / 7)
   return `${d.getUTCFullYear()}-W${String(week).padStart(2, "0")}`
 }
+
+/**
+ * Derives YYYYMM period options for categorical charts (waterfall, bar, etc.) where chart
+ * categories are group names, not period strings. Builds the last N months (12, or 24 for
+ * L24M) anchored at the data's as-of date (or today), oldest-first.
+ *
+ * By default the list starts at the PREVIOUS month: for most dashboards the current month is
+ * not fully loaded by ETL yet (e.g. June 4 2026 → May 2026 … Jun 2025). Workforce (HR_*) facts
+ * are loaded per payroll period (26–25), so the current month already has data; pass
+ * `includeCurrentMonth` to start at the as-of month itself.
+ */
+export function derivePeriodOptions(
+  asOfDate: Date | undefined,
+  periodPreset: string,
+  includeCurrentMonth = false,
+): string[] {
+  const anchor = asOfDate ?? new Date()
+  const year = anchor.getFullYear()
+  const month = anchor.getMonth() // 0-indexed
+  const count = periodPreset === "L24M" ? 24 : 12
+  const start = includeCurrentMonth ? 0 : 1
+  const result: string[] = []
+  for (let i = start; i < start + count; i++) {
+    const d = new Date(year, month - i, 1)
+    result.push(`${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}`)
+  }
+  return result.reverse() // oldest first
+}
