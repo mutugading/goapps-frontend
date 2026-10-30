@@ -2,7 +2,7 @@
 
 // ViewerPage — composes the full executive-dashboard viewer for one dashboard code.
 
-import { useRef, useCallback, useState } from "react"
+import { useRef, useCallback, useMemo, useState } from "react"
 import { RefreshCw } from "lucide-react"
 import { TREND_CHART_TYPES } from "@/hooks/bi/use-chart-data"
 
@@ -17,10 +17,12 @@ import { useDashboardData } from "@/hooks/bi/use-chart-data"
 import { useFactDistincts } from "@/hooks/bi/use-fact-distincts"
 import { chartTypeToString, periodeGrainToString, type ViewerState, DEFAULT_VIEWER_STATE, type CompareKey, type ViewModeConfig } from "@/types/bi"
 import { isEmpty } from "@/lib/bi/data-adapter"
+import { viewerDefaultPeriod } from "@/lib/bi/default-period"
 
 import { ChartEngine } from "@/components/bi/chart-engine/chart-engine"
 import { ExportPngButton } from "@/components/bi/chart-engine/export-png-button"
 import { FullscreenButton } from "@/components/bi/chart-engine/fullscreen-button"
+import { DashboardTabs } from "./dashboard-tabs"
 import { FilterBar } from "./filter-bar"
 import { FilterChips } from "./filter-chips"
 import { KpiGrid } from "./kpi-grid"
@@ -32,8 +34,17 @@ export function ViewerPage({ code }: { code: string }) {
   const chartCardRef = useRef<HTMLDivElement>(null)
   const { hasPermission } = usePermission()
 
+  // Dashboard dimuat lebih dulu supaya defaultPeriod-nya jadi default URL state (nilai sama dengan
+  // default tidak ditulis ke URL, jadi memilih preset itu secara manual tetap berlaku).
+  const { data: dashboard, isLoading: dashLoading, isError: dashError } = useDashboardByCode(code)
+  const dashboardDefaultPeriod = dashboard?.defaultPeriod
+  const viewerDefaults = useMemo<ViewerState>(
+    () => ({ ...DEFAULT_VIEWER_STATE, period: viewerDefaultPeriod(dashboardDefaultPeriod, DEFAULT_VIEWER_STATE.period) }),
+    [dashboardDefaultPeriod],
+  )
+
   const [state, setState] = useUrlState<ViewerState>({
-    defaultValues: DEFAULT_VIEWER_STATE,
+    defaultValues: viewerDefaults,
     serialize: (key, value) => {
       // Suppress empty arrays so they don't pollute the URL.
       if (Array.isArray(value)) return value.length > 0 ? JSON.stringify(value) : undefined
@@ -42,8 +53,6 @@ export function ViewerPage({ code }: { code: string }) {
       return JSON.stringify(value)
     },
   })
-
-  const { data: dashboard, isLoading: dashLoading, isError: dashError } = useDashboardByCode(code)
 
   // Load distinct group values when the dashboard has filter_chips configured.
   // NOTE: dashboard.chartConfig (from the /by-code endpoint) may be a partial Struct and
@@ -202,6 +211,8 @@ export function ViewerPage({ code }: { code: string }) {
       <PageHeader title={dashboard.dashboardTitle} subtitle={dashboard.description}>
         <DataFreshnessBadge timestamp={chartData?.meta?.asOf} />
       </PageHeader>
+
+      <DashboardTabs code={code} />
 
       <FilterBar
         state={state}
