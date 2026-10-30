@@ -79,7 +79,11 @@ export interface CostRouteHead {
   lockedAt: string;
   unlockedBy: string;
   unlockedAt: string;
-  audit: AuditInfo | undefined;
+  audit:
+    | AuditInfo
+    | undefined;
+  /** RM ratio mode of the product ("INPUT" | "DENIER"). Response-only; ignored on save. */
+  rmRatioMode: string;
 }
 
 /** CostRouteSeq is one stage of the route at a given level + ordering. */
@@ -109,6 +113,8 @@ export interface CostRouteSeq {
   originProductCode: string;
   /** Flattening depth of this stage (0 = native to the requested head). */
   nestDepth: number;
+  /** RM ratio mode of the product owning this stage ("INPUT" | "DENIER"). Response-only; ignored on save. */
+  rmRatioMode: string;
 }
 
 /**
@@ -159,6 +165,22 @@ export interface CostRouteRm {
    * Populated only for PRODUCT-type rows; empty for ITEM/GROUP rows.
    */
   rmProductName: string;
+  /**
+   * Response-only (ignored on save): ratio actually used by the calc engine for this line.
+   * Equals route_rm_ratio for INPUT-mode products or non-denier lines.
+   */
+  computedRatio: number;
+  /**
+   * "" for INPUT-mode products, "DENIER" for denier-derived lines,
+   * "INPUT" for lines in a DENIER-mode product that keep the route ratio.
+   */
+  ratioSource: string;
+  /** Line denier used: upstream DENIER, or group denier / SPANDEX_DRAFT. */
+  denier: number;
+  /** Explanatory note, e.g. missing denier treated as 0. */
+  ratioNote: string;
+  /** True when the denier used for this line comes from a per-product override. */
+  denierOverridden: boolean;
 }
 
 /** RouteGraph bundles the head + all seqs (with rms inline). */
@@ -327,6 +349,7 @@ function createBaseCostRouteHead(): CostRouteHead {
     unlockedBy: "",
     unlockedAt: "",
     audit: undefined,
+    rmRatioMode: "",
   };
 }
 
@@ -379,6 +402,9 @@ export const CostRouteHead: MessageFns<CostRouteHead> = {
     }
     if (message.audit !== undefined) {
       AuditInfo.encode(message.audit, writer.uint32(130).fork()).join();
+    }
+    if (message.rmRatioMode !== "") {
+      writer.uint32(170).string(message.rmRatioMode);
     }
     return writer;
   },
@@ -518,6 +544,14 @@ export const CostRouteHead: MessageFns<CostRouteHead> = {
           message.audit = AuditInfo.decode(reader, reader.uint32());
           continue;
         }
+        case 21: {
+          if (tag !== 170) {
+            break;
+          }
+
+          message.rmRatioMode = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -597,6 +631,11 @@ export const CostRouteHead: MessageFns<CostRouteHead> = {
         ? globalThis.String(object.unlocked_at)
         : "",
       audit: isSet(object.audit) ? AuditInfo.fromJSON(object.audit) : undefined,
+      rmRatioMode: isSet(object.rmRatioMode)
+        ? globalThis.String(object.rmRatioMode)
+        : isSet(object.rm_ratio_mode)
+        ? globalThis.String(object.rm_ratio_mode)
+        : "",
     };
   },
 
@@ -650,6 +689,9 @@ export const CostRouteHead: MessageFns<CostRouteHead> = {
     if (message.audit !== undefined) {
       obj.audit = AuditInfo.toJSON(message.audit);
     }
+    if (message.rmRatioMode !== "") {
+      obj.rmRatioMode = message.rmRatioMode;
+    }
     return obj;
   },
 
@@ -676,6 +718,7 @@ export const CostRouteHead: MessageFns<CostRouteHead> = {
     message.audit = (object.audit !== undefined && object.audit !== null)
       ? AuditInfo.fromPartial(object.audit)
       : undefined;
+    message.rmRatioMode = object.rmRatioMode ?? "";
     return message;
   },
 };
@@ -699,6 +742,7 @@ function createBaseCostRouteSeq(): CostRouteSeq {
     originHeadId: 0,
     originProductCode: "",
     nestDepth: 0,
+    rmRatioMode: "",
   };
 }
 
@@ -754,6 +798,9 @@ export const CostRouteSeq: MessageFns<CostRouteSeq> = {
     }
     if (message.nestDepth !== 0) {
       writer.uint32(136).int32(message.nestDepth);
+    }
+    if (message.rmRatioMode !== "") {
+      writer.uint32(146).string(message.rmRatioMode);
     }
     return writer;
   },
@@ -901,6 +948,14 @@ export const CostRouteSeq: MessageFns<CostRouteSeq> = {
           message.nestDepth = reader.int32();
           continue;
         }
+        case 18: {
+          if (tag !== 146) {
+            break;
+          }
+
+          message.rmRatioMode = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -995,6 +1050,11 @@ export const CostRouteSeq: MessageFns<CostRouteSeq> = {
         : isSet(object.nest_depth)
         ? globalThis.Number(object.nest_depth)
         : 0,
+      rmRatioMode: isSet(object.rmRatioMode)
+        ? globalThis.String(object.rmRatioMode)
+        : isSet(object.rm_ratio_mode)
+        ? globalThis.String(object.rm_ratio_mode)
+        : "",
     };
   },
 
@@ -1051,6 +1111,9 @@ export const CostRouteSeq: MessageFns<CostRouteSeq> = {
     if (message.nestDepth !== 0) {
       obj.nestDepth = Math.round(message.nestDepth);
     }
+    if (message.rmRatioMode !== "") {
+      obj.rmRatioMode = message.rmRatioMode;
+    }
     return obj;
   },
 
@@ -1076,6 +1139,7 @@ export const CostRouteSeq: MessageFns<CostRouteSeq> = {
     message.originHeadId = object.originHeadId ?? 0;
     message.originProductCode = object.originProductCode ?? "";
     message.nestDepth = object.nestDepth ?? 0;
+    message.rmRatioMode = object.rmRatioMode ?? "";
     return message;
   },
 };
@@ -1107,6 +1171,11 @@ function createBaseCostRouteRm(): CostRouteRm {
     originProductName: "",
     rmProductCode: "",
     rmProductName: "",
+    computedRatio: 0,
+    ratioSource: "",
+    denier: 0,
+    ratioNote: "",
+    denierOverridden: false,
   };
 }
 
@@ -1186,6 +1255,21 @@ export const CostRouteRm: MessageFns<CostRouteRm> = {
     }
     if (message.rmProductName !== "") {
       writer.uint32(202).string(message.rmProductName);
+    }
+    if (message.computedRatio !== 0) {
+      writer.uint32(209).double(message.computedRatio);
+    }
+    if (message.ratioSource !== "") {
+      writer.uint32(218).string(message.ratioSource);
+    }
+    if (message.denier !== 0) {
+      writer.uint32(225).double(message.denier);
+    }
+    if (message.ratioNote !== "") {
+      writer.uint32(234).string(message.ratioNote);
+    }
+    if (message.denierOverridden !== false) {
+      writer.uint32(240).bool(message.denierOverridden);
     }
     return writer;
   },
@@ -1397,6 +1481,46 @@ export const CostRouteRm: MessageFns<CostRouteRm> = {
           message.rmProductName = reader.string();
           continue;
         }
+        case 26: {
+          if (tag !== 209) {
+            break;
+          }
+
+          message.computedRatio = reader.double();
+          continue;
+        }
+        case 27: {
+          if (tag !== 218) {
+            break;
+          }
+
+          message.ratioSource = reader.string();
+          continue;
+        }
+        case 28: {
+          if (tag !== 225) {
+            break;
+          }
+
+          message.denier = reader.double();
+          continue;
+        }
+        case 29: {
+          if (tag !== 234) {
+            break;
+          }
+
+          message.ratioNote = reader.string();
+          continue;
+        }
+        case 30: {
+          if (tag !== 240) {
+            break;
+          }
+
+          message.denierOverridden = reader.bool();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1529,6 +1653,27 @@ export const CostRouteRm: MessageFns<CostRouteRm> = {
         : isSet(object.rm_product_name)
         ? globalThis.String(object.rm_product_name)
         : "",
+      computedRatio: isSet(object.computedRatio)
+        ? globalThis.Number(object.computedRatio)
+        : isSet(object.computed_ratio)
+        ? globalThis.Number(object.computed_ratio)
+        : 0,
+      ratioSource: isSet(object.ratioSource)
+        ? globalThis.String(object.ratioSource)
+        : isSet(object.ratio_source)
+        ? globalThis.String(object.ratio_source)
+        : "",
+      denier: isSet(object.denier) ? globalThis.Number(object.denier) : 0,
+      ratioNote: isSet(object.ratioNote)
+        ? globalThis.String(object.ratioNote)
+        : isSet(object.ratio_note)
+        ? globalThis.String(object.ratio_note)
+        : "",
+      denierOverridden: isSet(object.denierOverridden)
+        ? globalThis.Boolean(object.denierOverridden)
+        : isSet(object.denier_overridden)
+        ? globalThis.Boolean(object.denier_overridden)
+        : false,
     };
   },
 
@@ -1609,6 +1754,21 @@ export const CostRouteRm: MessageFns<CostRouteRm> = {
     if (message.rmProductName !== "") {
       obj.rmProductName = message.rmProductName;
     }
+    if (message.computedRatio !== 0) {
+      obj.computedRatio = message.computedRatio;
+    }
+    if (message.ratioSource !== "") {
+      obj.ratioSource = message.ratioSource;
+    }
+    if (message.denier !== 0) {
+      obj.denier = message.denier;
+    }
+    if (message.ratioNote !== "") {
+      obj.ratioNote = message.ratioNote;
+    }
+    if (message.denierOverridden !== false) {
+      obj.denierOverridden = message.denierOverridden;
+    }
     return obj;
   },
 
@@ -1642,6 +1802,11 @@ export const CostRouteRm: MessageFns<CostRouteRm> = {
     message.originProductName = object.originProductName ?? "";
     message.rmProductCode = object.rmProductCode ?? "";
     message.rmProductName = object.rmProductName ?? "";
+    message.computedRatio = object.computedRatio ?? 0;
+    message.ratioSource = object.ratioSource ?? "";
+    message.denier = object.denier ?? 0;
+    message.ratioNote = object.ratioNote ?? "";
+    message.denierOverridden = object.denierOverridden ?? false;
     return message;
   },
 };

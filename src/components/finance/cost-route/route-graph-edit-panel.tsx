@@ -4,14 +4,26 @@
 // without leaving the React Flow canvas. Used by Bug 2 + Bug 5 to replace
 // the previous "click jumps to Cards view" + window.prompt() flows.
 
-import { Plus, Trash2, X } from "lucide-react"
+import { useState, type ComponentProps } from "react"
+import Link from "next/link"
+import { AlertTriangle, Plus, Trash2, X } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import {
+  DENIER_RATIO_DISABLED_HINT,
+  GROUP_MISSING_DENIER_HINT,
+  denierFormula,
+  displayRatio,
+  isDenierLine,
+  isGroupMissingDenier,
+} from "@/components/finance/cost-route/rm-ratio-display"
 import type { CostRouteRm, CostRouteSeq } from "@/types/finance/cost-route"
+import { routeRmKeyOf } from "@/types/finance/rm-denier-override"
 
 interface SeqPanelProps {
   mode: "seq"
@@ -125,20 +137,18 @@ function SeqBody({
                 <span className="min-w-0 flex-1 truncate font-mono">
                   {rmRefLabel(rm)}
                 </span>
-                <Input
-                  type="number"
-                  step="0.01"
-                  min={0.0001}
-                  value={rm.routeRmRatio}
-                  disabled={locked}
-                  onChange={(e) => {
-                    const next = Number(e.target.value)
-                    if (Number.isFinite(next) && next > 0) {
-                      onChangeRmRatio(rmIdx, next)
-                    }
-                  }}
-                  className="h-7 w-20 text-xs"
-                />
+                {isGroupMissingDenier(seq, rm) && <MissingDenierBadge />}
+                {isDenierLine(rm) ? (
+                  <DenierRatioBadge seq={seq} rm={rm} compact />
+                ) : (
+                  <RatioInput
+                    value={rm.routeRmRatio}
+                    disabled={locked}
+                    onCommit={(next) => onChangeRmRatio(rmIdx, next)}
+                    aria-label={`Ratio for ${rmRefLabel(rm)}`}
+                    className="h-7 w-20 text-xs"
+                  />
+                )}
                 {!locked && (
                   <Button
                     size="icon"
@@ -180,26 +190,71 @@ function SeqBody({
   )
 }
 
-function RmBody({ rm, locked, onChangeRatio, onRemove }: RmPanelProps) {
+function RmBody({ seq, rm, locked, onChangeRatio, onRemove }: RmPanelProps) {
+  const denier = isDenierLine(rm)
+  const overrideKey = routeRmKeyOf(rm)
   return (
     <>
+      {denier && (
+        <div className="space-y-1">
+          <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+            Calculated ratio
+          </Label>
+          <DenierRatioBadge seq={seq} rm={rm} />
+          <p className="text-xs text-muted-foreground">{denierFormula(seq, rm)}</p>
+          {rm.denierOverridden && (
+            <Badge
+              variant="outline"
+              className="text-[10px]"
+              data-testid="denier-override-badge"
+              title="Denier di-override khusus product ini"
+            >
+              OVERRIDE
+            </Badge>
+          )}
+        </div>
+      )}
+      {overrideKey && seq.productSysId > 0 && (
+        <div>
+          <Link
+            href={`/finance/product-master/${seq.productSysId}?tab=denier-rm&rm=${encodeURIComponent(overrideKey)}`}
+            className="text-xs text-primary underline"
+            data-testid="denier-override-link"
+          >
+            Override denier untuk product ini
+          </Link>
+        </div>
+      )}
       <div>
         <Label htmlFor="rm-ratio" className="text-xs uppercase tracking-wide text-muted-foreground">
           Ratio per output unit
         </Label>
-        <Input
+        {isGroupMissingDenier(seq, rm) && (
+          <div className="mb-1 space-y-1">
+            <MissingDenierBadge />
+            <p className="text-xs text-amber-600 dark:text-amber-500">{GROUP_MISSING_DENIER_HINT}</p>
+          </div>
+        )}
+        <RatioInput
+          // Keyed on the RM so switching edges never shows the previous RM's value.
+          key={rm.uid}
           id="rm-ratio"
-          type="number"
-          step="0.01"
-          min={0.0001}
-          defaultValue={rm.routeRmRatio}
-          disabled={locked}
-          onChange={(e) => {
-            const next = Number(e.target.value)
-            if (Number.isFinite(next) && next > 0) onChangeRatio(next)
-          }}
+          value={rm.routeRmRatio}
+          disabled={locked || denier}
+          title={denier ? DENIER_RATIO_DISABLED_HINT : undefined}
+          onCommit={onChangeRatio}
           className="mt-1"
         />
+        {!locked && !denier && (
+          <p className="mt-1 text-xs text-muted-foreground">
+            Changes apply to the route immediately — click &quot;Save draft&quot; at the top to persist.
+          </p>
+        )}
+        {denier && (
+          <p className="mt-1 text-xs text-muted-foreground">
+            Stored ratio is ignored by the calculation. {DENIER_RATIO_DISABLED_HINT}
+          </p>
+        )}
       </div>
       {!locked && (
         <Button
@@ -212,6 +267,105 @@ function RmBody({ rm, locked, onChangeRatio, onRemove }: RmPanelProps) {
         </Button>
       )}
     </>
+  )
+}
+
+// Ratio input with a local text draft. A controlled `value={number}` input
+// that only accepts positive numbers rejects every intermediate keystroke of
+// a ratio below 1 ("" → "0" → "0." are all <= 0), so React snapped the field
+// back to the old value and the edit (and the dirty flag / Save draft button)
+// never happened. The draft keeps whatever the user types; only valid
+// positive numbers are committed, and blur restores the committed value.
+function RatioInput({
+  value,
+  onCommit,
+  ...rest
+}: {
+  value: number
+  onCommit: (next: number) => void
+} & Omit<ComponentProps<typeof Input>, "value" | "defaultValue" | "onChange" | "type">) {
+  const [draft, setDraft] = useState(() => String(value))
+  // Re-sync when the committed value changes from outside (e.g. after save)
+  // — adjust-state-during-render pattern, no effect needed.
+  const [seen, setSeen] = useState(value)
+  if (seen !== value) {
+    setSeen(value)
+    if (Number(draft) !== value) setDraft(String(value))
+  }
+  return (
+    <Input
+      {...rest}
+      type="number"
+      step="any"
+      min={0}
+      inputMode="decimal"
+      value={draft}
+      onChange={(e) => {
+        setDraft(e.target.value)
+        const next = Number(e.target.value)
+        if (e.target.value.trim() !== "" && Number.isFinite(next) && next > 0) onCommit(next)
+      }}
+      onBlur={(e) => {
+        setDraft(String(value))
+        rest.onBlur?.(e)
+      }}
+    />
+  )
+}
+
+// Read-only computed ratio for a denier-derived line: value + "Denier" badge,
+// with the formula (or backend note) and the edit hint in a tooltip.
+function MissingDenierBadge() {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Badge
+          variant="outline"
+          className="shrink-0 gap-1 border-amber-500 text-[10px] text-amber-600 dark:text-amber-500"
+          data-testid="group-missing-denier"
+          tabIndex={0}
+        >
+          <AlertTriangle className="h-3 w-3" />
+          Denier kosong
+        </Badge>
+      </TooltipTrigger>
+      <TooltipContent className="max-w-xs">{GROUP_MISSING_DENIER_HINT}</TooltipContent>
+    </Tooltip>
+  )
+}
+
+function DenierRatioBadge({
+  seq,
+  rm,
+  compact = false,
+}: {
+  seq: CostRouteSeq
+  rm: CostRouteRm
+  compact?: boolean
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span
+          className="inline-flex shrink-0 items-center gap-1"
+          data-testid="denier-ratio"
+          tabIndex={0}
+        >
+          <span className={compact ? "font-mono text-xs" : "font-mono text-sm font-semibold"}>
+            {displayRatio(rm)}
+          </span>
+          <Badge variant="secondary" className="text-[10px]">
+            Denier
+          </Badge>
+        </span>
+      </TooltipTrigger>
+      <TooltipContent className="max-w-xs">
+        <div className="space-y-1 text-xs">
+          <div className="font-mono">{denierFormula(seq, rm)}</div>
+          <div>{DENIER_RATIO_DISABLED_HINT}</div>
+        </div>
+      </TooltipContent>
+    </Tooltip>
   )
 }
 

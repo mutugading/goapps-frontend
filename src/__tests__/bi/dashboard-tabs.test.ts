@@ -38,3 +38,16 @@ describe("resolveDashboardTabs", () => {
     expect(resolveDashboardTabs("A", list, only)).toEqual([])
   })
 })
+
+describe("resolveDashboardTabs: nav_tab tanpa group (HR Workforce)", () => {
+  const legacy = (code: string, order: number) => ({
+    dashboardCode: code,
+    displayOrder: order,
+    layoutConfig: { nav_tab: { label: code, permission: "finance.bi.workforce.view" } },
+  })
+  it("groups group-less tabs together and apart from named groups", () => {
+    const all = [legacy("HR_OT_DEPT", 10), legacy("HR_OT_TREND", 20), tab("PP_PACK_SUMMARY", 10, "PACKPROD"), tab("PP_PACK_PRODUCT", 20, "PACKPROD")]
+    expect(resolveDashboardTabs("HR_OT_DEPT", all, allow).map((t) => t.code)).toEqual(["HR_OT_DEPT", "HR_OT_TREND"])
+    expect(resolveDashboardTabs("PP_PACK_SUMMARY", all, allow).map((t) => t.code)).toEqual(["PP_PACK_SUMMARY", "PP_PACK_PRODUCT"])
+  })
+})

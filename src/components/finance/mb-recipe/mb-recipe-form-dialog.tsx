@@ -28,6 +28,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { Loader2 } from "lucide-react"
 
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogDescription, DialogTitle } from "@/components/ui/dialog"
 import {
@@ -81,6 +82,7 @@ const formSchema = z.object({
   // G9: proto caps mbh_oracle_sys_id at 30. The old max(100) let the FE accept
   // values the backend would reject.
   mbhOracleSysId: z.string().max(30).optional(),
+  mbhOrionItemCode: z.string().max(200).optional(),
   mbhMgtName: z.string().min(1, "MB Name is required").max(100),
   mbhDenier: z.coerce.number().positive("POY Denier is required"),
   mbhFilament: z.coerce.number().int().positive("POY Filament is required"),
@@ -121,7 +123,7 @@ type FormValues = z.infer<typeof formSchema>
 // ─── Tab wiring ──────────────────────────────────────────────────────────────
 
 const TAB_FIELDS = {
-  identitas: ["mbhMbCosting", "mbhMgtName", "mbhOracleSysId", "mbhDevCode", "mbhVsNumber"],
+  identitas: ["mbhMbCosting", "mbhMgtName", "mbhOracleSysId", "mbhOrionItemCode", "mbhDevCode", "mbhVsNumber"],
   spesifikasi: [
     "mbhNoOfProcess",
     "mbhCode",
@@ -155,6 +157,7 @@ const TAB_LABELS: Record<TabKey, string> = {
 const EMPTY_VALUES: FormValues = {
   mbhMbCosting: "",
   mbhOracleSysId: "",
+  mbhOrionItemCode: "",
   mbhMgtName: "",
   mbhDenier: "" as unknown as number,
   mbhFilament: "" as unknown as number,
@@ -216,6 +219,7 @@ export function MBRecipeFormDialog({ open, onOpenChange, mbHead, onSuccess }: MB
         ? {
             mbhMbCosting: mbHead.mbhMbCosting,
             mbhOracleSysId: mbHead.mbhOracleSysId || "",
+            mbhOrionItemCode: mbHead.mbhOrionItemCode || "",
             mbhMgtName: mbHead.mbhMgtName || "",
             mbhDenier: (mbHead.mbhDenier ?? "") as unknown as number,
             mbhFilament: (mbHead.mbhFilament ?? "") as unknown as number,
@@ -303,6 +307,8 @@ export function MBRecipeFormDialog({ open, onOpenChange, mbHead, onSuccess }: MB
           data: {
             mbhId: mbHead.mbhId,
             mbhMbCosting: values.mbhMbCosting,
+            // "" clears the code on update (undefined would leave it unchanged).
+            mbhOrionItemCode: (values.mbhOrionItemCode ?? "").trim(),
             mbhMgtName: values.mbhMgtName,
             mbhDenier: toOptNum(values.mbhDenier),
             mbhFilament: toOptNum(values.mbhFilament),
@@ -333,6 +339,7 @@ export function MBRecipeFormDialog({ open, onOpenChange, mbHead, onSuccess }: MB
         await createMutation.mutateAsync({
           mbhMbCosting: values.mbhMbCosting,
           mbhOracleSysId: toOptStr(values.mbhOracleSysId),
+          mbhOrionItemCode: toOptStr(values.mbhOrionItemCode),
           mbhMgtName: values.mbhMgtName,
           mbhDenier: toOptNum(values.mbhDenier),
           mbhFilament: toOptNum(values.mbhFilament),
@@ -375,6 +382,15 @@ export function MBRecipeFormDialog({ open, onOpenChange, mbHead, onSuccess }: MB
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="flex min-h-0 flex-1 flex-col">
             <ScrollableDialogBody>
+              {isEditing && Number(mbHead?.costProductId ?? 0) > 0 && (
+                <Alert className="mb-4" data-testid="mb-recipe-cascade-warning">
+                  <AlertDescription>
+                    Changes will be applied to all MB Spins of this recipe, the MB product (parameters are re-frozen when the machine changes)
+                    and the yarn products that use those spins (lookups sync in the background). Manual entries in
+                    MB Spin will be overwritten.
+                  </AlertDescription>
+                </Alert>
+              )}
               {/*
                 ~~UNCONTROLLED on purpose. The tab only needs to reset to the first
                 one each time the dialog opens on a different record, and `key`
@@ -415,9 +431,12 @@ export function MBRecipeFormDialog({ open, onOpenChange, mbHead, onSuccess }: MB
                           MB Costing Code <span className="text-destructive">*</span>
                         </FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="MBH-2024-001" disabled={isEditing || isPending} />
+                          <Input {...field} placeholder="MBH-2024-001" disabled={isPending} />
                         </FormControl>
-                        <FormDescription>Unique batch cost identifier</FormDescription>
+                        <FormDescription>
+                          Unique batch cost identifier
+                          {isEditing ? ". Changing it renames the MB product in Product Master and its spins." : ""}
+                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -448,6 +467,21 @@ export function MBRecipeFormDialog({ open, onOpenChange, mbHead, onSuccess }: MB
                           </FormLabel>
                           <FormControl>
                             <Input {...field} maxLength={30} placeholder="Optional" disabled={isEditing || isPending} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="mbhOrionItemCode"
+                      render={({ field }) => (
+                        <FormItem className="flex h-full flex-col">
+                          <FormLabel>
+                            Orion Item Code <span className="text-muted-foreground text-xs">(optional)</span>
+                          </FormLabel>
+                          <FormControl>
+                            <Input {...field} maxLength={200} placeholder="Optional" disabled={isPending} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -561,12 +595,14 @@ export function MBRecipeFormDialog({ open, onOpenChange, mbHead, onSuccess }: MB
                                   shouldDirty: true,
                                 })
                               }}
+                              allowCreate
                               disabled={isPending}
                             />
                           </FormControl>
                           <FormDescription>
-                            Picked from the shade master. Older recipes may show a shade code/name that no longer
-                            exists in master — it stays as-is until you pick a new one.
+                            Pick from the shade master or enter a new shade (auto-saved to master on save). Older
+                            recipes may show a shade code/name that no longer exists in master — it stays as-is
+                            until you pick a new one.
                           </FormDescription>
                           <FormMessage />
                         </FormItem>

@@ -62,7 +62,17 @@ export function RmTab({ rows }: { rows: CostRmDetail[] }) {
               </TableCell>
               {showDenier && (
                 <TableCell className="text-right font-mono text-sm tabular-nums">
-                  {r.ratioSource ? r.denier : "—"}
+                  {r.ratioSource ? formatNumeric(r.denier) : "—"}
+                  {r.denierSource === "OVERRIDE" && (
+                    <Badge
+                      variant="outline"
+                      className="ml-1 font-mono text-[10px] font-normal"
+                      title="Denier di-override khusus product ini"
+                      data-testid="denier-override-badge"
+                    >
+                      OVERRIDE
+                    </Badge>
+                  )}
                 </TableCell>
               )}
               {showDenier && (

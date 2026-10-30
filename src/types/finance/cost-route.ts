@@ -21,6 +21,8 @@ export interface CostRouteHead {
   // Read-time aggregates from ListRoutes (distinct route levels / total RM entries).
   levelCount: number
   rmCount: number
+  // Read-only product RM ratio mode of the head product (never saved back).
+  rmRatioMode?: RouteRmRatioMode
 }
 
 export interface CostRouteRm {
@@ -61,7 +63,24 @@ export interface CostRouteRm {
   // for MB-reference composition rows, which previously had no display name at all.
   rmProductCode?: string
   rmProductName?: string
+  // Read-only, computed by the backend on GetRouteGraph (never saved back).
+  // Optional so locally-created rows (add RM / splice) need not set them —
+  // displayRatio() treats a missing computedRatio as routeRmRatio.
+  // computedRatio is the ratio the cost calc engine actually uses: equal to
+  // routeRmRatio for INPUT-mode / non-denier lines, derived from line deniers
+  // when ratioSource === "DENIER". Old backends omit these — the normalizer
+  // falls back to routeRmRatio + "" so the UI renders exactly as before.
+  computedRatio?: number
+  ratioSource?: RmRatioSource
+  denier?: number
+  ratioNote?: string
+  // True when `denier` comes from a per-product RM denier override (the seq
+  // product's override for this RM). Read-only; false on older backends.
+  denierOverridden?: boolean
 }
+
+export type RmRatioSource = "" | "DENIER" | "INPUT"
+export type RouteRmRatioMode = "INPUT" | "DENIER"
 
 export interface CostRouteSeq {
   // Stable client-side id — see CostRouteRm.uid.
@@ -80,6 +99,8 @@ export interface CostRouteSeq {
   positionX: number
   positionY: number
   rms: CostRouteRm[]
+  // Read-only product RM ratio mode (backend computed; never saved back).
+  rmRatioMode?: RouteRmRatioMode
   // Display-only nested-MB flatten annotations — see CostRouteRm above.
   originHeadId?: number
   originProductCode?: string
@@ -124,7 +145,25 @@ const numOpt = (v: unknown): number | undefined => {
   return Number(v)
 }
 
+const ratioSourceOf = (v: unknown): RmRatioSource => {
+  const x = str(v).toUpperCase()
+  return x === "DENIER" || x === "INPUT" ? x : ""
+}
+const ratioModeOf = (v: unknown): RouteRmRatioMode | undefined => {
+  const x = str(v).toUpperCase()
+  return x === "DENIER" || x === "INPUT" ? x : undefined
+}
+
 export function normalizeCostRouteRm(raw: Record<string, unknown>): CostRouteRm {
+  const routeRmRatio = Number(raw.routeRmRatio ?? raw.route_rm_ratio ?? 1)
+  const ratioSource = ratioSourceOf(raw.ratioSource ?? raw.ratio_source)
+  const computedRaw = Number(raw.computedRatio ?? raw.computed_ratio ?? 0)
+  // A DENIER line may legitimately compute to 0 (missing denier) — keep it.
+  // Otherwise absent/0 means an older backend: fall back to the stored ratio.
+  const computedRatio =
+    ratioSource === "DENIER"
+      ? Number.isFinite(computedRaw) ? computedRaw : 0
+      : Number.isFinite(computedRaw) && computedRaw !== 0 ? computedRaw : routeRmRatio
   return {
     uid: newUid(),
     rmId: num(raw.rmId ?? raw.rm_id),
@@ -139,7 +178,7 @@ export function normalizeCostRouteRm(raw: Record<string, unknown>): CostRouteRm 
     routeRmItemCode: str(raw.routeRmItemCode ?? raw.route_rm_item_code) || undefined,
     routeRmShadeCode: str(raw.routeRmShadeCode ?? raw.route_rm_shade_code) || undefined,
     routeRmShadeName: str(raw.routeRmShadeName ?? raw.route_rm_shade_name) || undefined,
-    routeRmRatio: Number(raw.routeRmRatio ?? raw.route_rm_ratio ?? 1),
+    routeRmRatio,
     uomId: numOpt(raw.uomId ?? raw.uom_id),
     subType: str(raw.subType ?? raw.sub_type) || undefined,
     notes: str(raw.notes) || undefined,
@@ -154,6 +193,11 @@ export function normalizeCostRouteRm(raw: Record<string, unknown>): CostRouteRm 
     originProductName: str(raw.originProductName ?? raw.origin_product_name) || undefined,
     rmProductCode: str(raw.rmProductCode ?? raw.rm_product_code) || undefined,
     rmProductName: str(raw.rmProductName ?? raw.rm_product_name) || undefined,
+    computedRatio,
+    ratioSource,
+    denier: numOpt(raw.denier),
+    ratioNote: str(raw.ratioNote ?? raw.ratio_note) || undefined,
+    denierOverridden: (raw.denierOverridden ?? raw.denier_overridden) === true,
   }
 }
 
@@ -175,6 +219,7 @@ export function normalizeCostRouteSeq(raw: Record<string, unknown>): CostRouteSe
     positionX: Number(raw.positionX ?? raw.position_x ?? 0),
     positionY: Number(raw.positionY ?? raw.position_y ?? 0),
     rms: rms.map((r) => normalizeCostRouteRm(r as Record<string, unknown>)),
+    rmRatioMode: ratioModeOf(raw.rmRatioMode ?? raw.rm_ratio_mode),
     originHeadId: numOpt(raw.originHeadId ?? raw.origin_head_id),
     originProductCode: str(raw.originProductCode ?? raw.origin_product_code) || undefined,
     nestDepth: numOpt(raw.nestDepth ?? raw.nest_depth),
@@ -198,6 +243,7 @@ export function normalizeCostRouteHead(raw: Record<string, unknown>): CostRouteH
     unlockedAt: str(raw.unlockedAt ?? raw.unlocked_at),
     levelCount: num(raw.levelCount ?? raw.level_count),
     rmCount: num(raw.rmCount ?? raw.rm_count),
+    rmRatioMode: ratioModeOf(raw.rmRatioMode ?? raw.rm_ratio_mode),
   }
 }
 

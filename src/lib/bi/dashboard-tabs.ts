@@ -19,7 +19,10 @@ interface NavTabConfig {
   permission?: string
 }
 
-/** Tab untuk grup dashboard `code`; kosong bila `code` tidak punya nav_tab atau grupnya hanya satu tab. */
+/**
+ * Tab untuk grup dashboard `code`; kosong bila `code` tidak punya nav_tab atau grupnya hanya satu tab.
+ * nav_tab tanpa `group` (HR Workforce, migrasi 000598) membentuk satu grup bawaan sendiri.
+ */
 export function resolveDashboardTabs(
   code: string,
   dashboards: TabSource[],
@@ -27,13 +30,14 @@ export function resolveDashboardTabs(
 ): DashboardTab[] {
   const nav = (d: TabSource) => d.layoutConfig?.nav_tab as NavTabConfig | undefined
   const current = dashboards.find((d) => d.dashboardCode === code)
-  const group = current && nav(current)?.group
-  if (!group) return []
+  const currentNav = current && nav(current)
+  if (!currentNav) return []
+  const group = currentNav.group ?? ""
 
   const tabs = dashboards
     .flatMap((d) => {
       const n = nav(d)
-      if (!n || n.group !== group || !n.label) return []
+      if (!n || (n.group ?? "") !== group || !n.label) return []
       if (n.permission && !hasPermission(n.permission)) return []
       return [{ code: d.dashboardCode, label: n.label, order: d.displayOrder ?? 0 }]
     })
