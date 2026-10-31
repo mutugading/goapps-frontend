@@ -31,6 +31,7 @@ import { WorkforceNav } from "./workforce-nav"
 import { OtOverMonthSection, type OtOverMonthConfig } from "./ot-over-month-section"
 import { EmployeeOTControls } from "./employee-ot-controls"
 import { EMPLOYEE_OT_MODE, EMPLOYEE_OT_PRESETS, readEmployeeOTBlock } from "@/lib/bi/employee-ot"
+import { derivePeriodOptions } from "@/lib/bi/period"
 import { ViewerEmptyState, ViewerErrorState, DataFreshnessBadge } from "./states"
 import { JobStatusBanner } from "./job-status-banner"
 
@@ -185,7 +186,8 @@ export function ViewerPage({ code }: { code: string }) {
   const derivedPeriodOptions = !isTrendChart
     ? derivePeriodOptions(
         chartData?.meta?.asOf ? new Date(chartData.meta.asOf) : undefined,
-        state.period ?? "L12M"
+        state.period ?? "L12M",
+        isWorkforce,
       )
     : []
 
@@ -377,28 +379,6 @@ export function ViewerPage({ code }: { code: string }) {
       )}
     </div>
   )
-}
-
-/**
- * Derives YYYYMM period options for categorical charts (waterfall, bar, etc.) where
- * chart categories are group names, not period strings. Builds a list of the last N
- * months anchored at the data's as-of date (or today), oldest-first.
- */
-function derivePeriodOptions(asOfDate: Date | undefined, periodPreset: string): string[] {
-  const anchor = asOfDate ?? new Date()
-  const year = anchor.getFullYear()
-  const month = anchor.getMonth() // 0-indexed
-  const count = periodPreset === "L24M" ? 24 : 12 // default L12M
-  const result: string[] = []
-  // Start from the PREVIOUS month (last complete month), not the current month.
-  // The current month is excluded because ETL data is only available for completed months.
-  // e.g. June 4 2026 → start from May 2026 (i=1), show 12 months: May 2026 → Jun 2025.
-  for (let i = 1; i <= count; i++) {
-    const d = new Date(year, month - i, 1)
-    const yyyymm = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}`
-    result.push(yyyymm)
-  }
-  return result.reverse() // oldest first
 }
 
 /** Maps the proto CompareMode enum value to the FE CompareKey string. */
