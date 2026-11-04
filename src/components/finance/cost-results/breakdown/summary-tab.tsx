@@ -127,12 +127,15 @@ export function SummaryTab({ breakdown, productSysId }: { breakdown: CostBreakdo
         </CardHeader>
         <CardContent className="space-y-0">
           {snapshotEntries.length > 0 && (
-            <DebouncedSearchInput
-              value={query}
-              onValueChange={setQuery}
-              placeholder="Search parameter code, name, or value…"
-              containerClassName="mb-4"
-            />
+            // Sticky inside the sheet's scroll container so the search stays
+            // reachable while scrolling a long parameter list.
+            <div className="sticky top-0 z-10 -mx-6 mb-2 bg-card px-6 pt-1 pb-3">
+              <DebouncedSearchInput
+                value={query}
+                onValueChange={setQuery}
+                placeholder="Search parameter code, name, or value…"
+              />
+            </div>
           )}
           {snapshotEntries.length === 0 ? (
             <p className="text-sm text-muted-foreground">No parameters captured.</p>
