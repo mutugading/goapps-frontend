@@ -24,7 +24,10 @@ export function FormulaTraceTab({ rows }: { rows: FormulaEval[] }) {
   const filtering = query.trim() !== ""
   return (
     <div className="space-y-2">
-      <div className="flex flex-wrap items-center gap-3">
+      {/* Sticky inside the sheet's scroll container so the search stays
+          reachable while scrolling a long formula list. -mx-6/px-6 matches
+          the TabsContent padding so cards scroll fully underneath. */}
+      <div className="sticky top-0 z-10 -mx-6 flex flex-wrap items-center gap-3 bg-background px-6 py-2">
         <DebouncedSearchInput
           value={query}
           onValueChange={setQuery}
