@@ -344,7 +344,7 @@ function ConvField({
     body = (
       <Tooltip>
         <TooltipTrigger asChild>
-          <span className="cursor-help font-mono text-muted-foreground" title={hint}>
+          <span className="cursor-help font-mono text-muted-foreground">
             —
           </span>
         </TooltipTrigger>
