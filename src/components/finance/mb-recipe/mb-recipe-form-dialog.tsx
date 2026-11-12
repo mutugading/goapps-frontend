@@ -1,5 +1,6 @@
-import type { CreateMBHeadRequest } from "@/types/finance/mb-head"
 "use client"
+
+import type { CreateMBHeadRequest } from "@/types/finance/mb-head"
 
 // MBRecipeFormDialog — the MB recipe (mst_mb_head) create/edit form. P6 rebuild.
 //

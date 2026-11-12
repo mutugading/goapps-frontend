@@ -1,4 +1,3 @@
-import type { CreateMBHeadRequest } from "@/types/finance/mb-head"
 /**
  * FROZEN — jalur rollback D16.
  * Jangan menambahkan field/behaviour area A/B ke berkas ini.
@@ -9,6 +8,8 @@ import type { CreateMBHeadRequest } from "@/types/finance/mb-head"
  * rollback R22, dan harus tetap identik secara perilaku.
  */
 "use client"
+
+import type { CreateMBHeadRequest } from "@/types/finance/mb-head"
 
 import { useEffect } from "react"
 import { useForm } from "react-hook-form"
