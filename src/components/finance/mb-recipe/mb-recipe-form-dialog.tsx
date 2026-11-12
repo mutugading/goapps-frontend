@@ -264,7 +264,8 @@ export function MBRecipeFormDialog({ open, onOpenChange, mbHead, onSuccess }: MB
   const watchedShadeCode = useWatch({ control: form.control, name: "mbhCode" })
   // Shade of the FG picked in this session (unknown for a pre-existing link).
   // Used to clear the FG when the recipe shade changes to a different one.
-  const [fgShade, setFgShade] = useState("")
+  // null = unknown (FG came from the DB); "" = known FG without a shade.
+  const [fgShade, setFgShade] = useState<string | null>(null)
 
   const errors = form.formState.errors
   const tabHasError = useMemo(() => {
@@ -604,11 +605,19 @@ export function MBRecipeFormDialog({ open, onOpenChange, mbHead, onSuccess }: MB
                                 // handler, NOT a useEffect — this repo's lint
                                 // rule forbids synchronous setState inside
                                 // useEffect.
+                                const prevShade = (field.value ?? "").trim().toUpperCase()
+                                const nextShade = shadeCode.trim().toUpperCase()
                                 field.onChange(shadeCode)
-                                const fgS = fgShade.trim().toUpperCase()
-                                if (fgS && fgS !== shadeCode.trim().toUpperCase()) {
+                                const hasFg = Number(form.getValues("fgProductId") ?? 0) > 0
+                                const fgS = (fgShade ?? "").trim().toUpperCase()
+                                // Known FG shade: clear when it no longer matches the new shade.
+                                // Unknown FG shade (pre-existing link): clear whenever the
+                                // recipe shade actually changes (P7-R7).
+                                const mismatch =
+                                  fgShade === null ? hasFg && prevShade !== nextShade : fgS !== "" && fgS !== nextShade
+                                if (mismatch) {
                                   form.setValue("fgProductId", 0, { shouldValidate: false, shouldDirty: true })
-                                  setFgShade("")
+                                  setFgShade(null)
                                 }
                                 form.setValue("mbhShadeName", shadeName, {
                                   shouldValidate: true,
