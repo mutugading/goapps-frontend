@@ -3,6 +3,7 @@
 // MbSupersedeConfirmDialog — shown when Approve/Validate hits the 409
 // SUPERSEDE_CONFIRMATION_REQUIRED gate. Loads the read-only preview, lets the user
 // Cancel (no request) or "Replace & Validate" (validate with confirmSupersede:true).
+import { useState } from "react"
 import { Loader2 } from "lucide-react"
 
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -19,6 +20,7 @@ import {
 } from "@/components/ui/dialog"
 import { usePermissionContext } from "@/providers/permission-provider"
 import { useMBHeadSupersedePreview, useValidateMBHead } from "@/hooks/finance/use-mb-head"
+import { isSupersedeConfirmationRequiredError } from "@/services/finance/mb-head-api"
 
 interface Props {
   open: boolean
@@ -33,10 +35,23 @@ export function MbSupersedeConfirmDialog({ open, mbhId, onOpenChange }: Props) {
   const validateM = useValidateMBHead()
   const candidates = previewQ.data?.candidates ?? []
 
+  const [confirmError, setConfirmError] = useState<string | null>(null)
+
   const confirm = () => {
+    setConfirmError(null)
     validateM.mutate(
       { mbhId, confirmSupersede: true },
-      { onSuccess: () => onOpenChange(false) },
+      {
+        onSuccess: () => onOpenChange(false),
+        onError: (err) => {
+          if (isSupersedeConfirmationRequiredError(err)) {
+            previewQ.refetch()
+            setConfirmError("Conflicts changed — review and confirm again.")
+          } else {
+            setConfirmError(err.message || "Failed to validate MB Head")
+          }
+        },
+      },
     )
   }
 
@@ -59,6 +74,12 @@ export function MbSupersedeConfirmDialog({ open, mbhId, onOpenChange }: Props) {
         {previewQ.isError && (
           <Alert variant="destructive">
             <AlertDescription>{(previewQ.error as Error)?.message || "Failed to load preview"}</AlertDescription>
+          </Alert>
+        )}
+
+        {confirmError && (
+          <Alert variant="destructive">
+            <AlertDescription>{confirmError}</AlertDescription>
           </Alert>
         )}
 
@@ -118,7 +139,15 @@ export function MbSupersedeConfirmDialog({ open, mbhId, onOpenChange }: Props) {
           <Button variant="outline" disabled={validateM.isPending} onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button disabled={!canValidate || validateM.isPending} onClick={confirm}>
+          {!canValidate && (
+            <span className="text-muted-foreground self-center text-xs">
+              Requires finance.mb.head.validate permission
+            </span>
+          )}
+          <Button
+            disabled={!canValidate || validateM.isPending || previewQ.isLoading || previewQ.isError}
+            onClick={confirm}
+          >
             {validateM.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Replace &amp; Validate
           </Button>
