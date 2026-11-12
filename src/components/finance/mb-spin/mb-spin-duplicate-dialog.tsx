@@ -147,7 +147,7 @@ export function MBSpinDuplicateDialog({ open, onOpenChange, mbSpin, onSuccess }:
         mbsMgtName: `${mbSpin.mbsMgtName} (copy)`,
         mbsDenier: mbSpin.mbsDenier ?? 0,
         mbsFilament: mbSpin.mbsFilament ?? 0,
-        fgProductId: Number(mbSpin.fgProductId ?? 0),
+        fgProductId: 0, // must be picked on purpose: same shade + source FG is a guaranteed 409
       })
       setImpactSummary(null)
     }
@@ -176,8 +176,10 @@ export function MBSpinDuplicateDialog({ open, onOpenChange, mbSpin, onSuccess }:
       } else {
         onOpenChange(false)
       }
-    } catch {
-      // toast handled in hook
+    } catch (err) {
+      // toast handled in hook; also surface FG conflicts inline
+      const msg = err instanceof Error ? err.message : ""
+      if (/fg|shade|exist/i.test(msg)) form.setError("fgProductId", { message: msg })
     }
   }
 

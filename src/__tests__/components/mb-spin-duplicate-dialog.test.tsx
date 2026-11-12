@@ -166,6 +166,8 @@ describe("MBSpinDuplicateDialog — P7-T6 skip/impact summary", () => {
     const user = userEvent.setup()
     render(<MBSpinDuplicateDialog open onOpenChange={() => {}} mbSpin={spin} />)
 
+    await user.clear(screen.getByTestId("fg-input"))
+    await user.type(screen.getByTestId("fg-input"), "42")
     await user.click(screen.getByRole("button", { name: /^duplicate$/i }))
 
     expect(await screen.findByTestId("duplicate-impact-summary")).toBeInTheDocument()
@@ -198,6 +200,8 @@ describe("MBSpinDuplicateDialog — P7-T6 skip/impact summary", () => {
     const user = userEvent.setup()
     render(<MBSpinDuplicateDialog open onOpenChange={onOpenChange} mbSpin={spin} />)
 
+    await user.clear(screen.getByTestId("fg-input"))
+    await user.type(screen.getByTestId("fg-input"), "42")
     await user.click(screen.getByRole("button", { name: /^duplicate$/i }))
 
     await waitFor(() => expect(duplicateMutateAsync).toHaveBeenCalledTimes(1))
@@ -213,6 +217,8 @@ describe("MBSpinDuplicateDialog — P7-T6 skip/impact summary", () => {
     const user = userEvent.setup()
     render(<MBSpinDuplicateDialog open onOpenChange={onOpenChange} mbSpin={spin} />)
 
+    await user.clear(screen.getByTestId("fg-input"))
+    await user.type(screen.getByTestId("fg-input"), "42")
     await user.click(screen.getByRole("button", { name: /^duplicate$/i }))
 
     await waitFor(() => expect(duplicateMutateAsync).toHaveBeenCalledTimes(1))
@@ -310,6 +316,17 @@ describe("MBSpinDuplicateDialog — P7 FG (POY) required, shade locked", () => {
     render(<MBSpinDuplicateDialog open onOpenChange={() => {}} mbSpin={{ ...spin, fgProductId: 0 }} />)
     expect(screen.getByTestId("fg-input")).toHaveAttribute("data-shade", "SH-1")
     expect(screen.getByText(/locked from source/i)).toHaveTextContent("SH-1")
+    await user.click(screen.getByRole("button", { name: /^duplicate$/i }))
+    expect(await screen.findByText(/FG Product \(POY\) is required/i)).toBeInTheDocument()
+    expect(duplicateMutateAsync).not.toHaveBeenCalled()
+  })
+})
+
+describe("MBSpinDuplicateDialog — FG is not pre-filled from the source (P7-R1)", () => {
+  it("starts with an empty FG even when the source has one, and blocks submit", async () => {
+    const user = userEvent.setup()
+    render(<MBSpinDuplicateDialog open onOpenChange={() => {}} mbSpin={spin} />)
+    expect(screen.getByTestId("fg-input")).toHaveValue("")
     await user.click(screen.getByRole("button", { name: /^duplicate$/i }))
     expect(await screen.findByText(/FG Product \(POY\) is required/i)).toBeInTheDocument()
     expect(duplicateMutateAsync).not.toHaveBeenCalled()
