@@ -69,6 +69,8 @@ import {
   useGrantUnlockMBHead,
   useRejectUnlockMBHead,
 } from "@/hooks/finance/use-mb-head"
+import { isSupersedeConfirmationRequiredError } from "@/services/finance/mb-head-api"
+import { MbSupersedeConfirmDialog } from "@/components/finance/mb-recipe/mb-supersede-confirm-dialog"
 import { exceedsMbCompositionTotal } from "@/lib/finance/mb-composition-total"
 import type { MBHead, MBHeadEntryStatus } from "@/types/finance/mb-head"
 
@@ -91,6 +93,8 @@ export function MbRecipeActionBar({ mbHead, compositionTotalPct }: Props) {
   const [reasonDialog, setReasonDialog] = useState<
     "reject" | "return-to-draft" | "unrevoke" | "request-unlock" | "reject-unlock" | null
   >(null)
+
+  const [supersedeOpen, setSupersedeOpen] = useState(false)
 
   const { hasPermission } = usePermissionContext()
   const canRejectPerm = hasPermission("finance.mb.head.reject")
@@ -193,7 +197,14 @@ export function MbRecipeActionBar({ mbHead, compositionTotalPct }: Props) {
         </Button>
       )}
       {canApprove && (
-        <Button size="sm" disabled={approveM.isPending} onClick={() => approveM.mutate(mbHead.mbhId)}>
+        <Button size="sm" disabled={approveM.isPending} onClick={() =>
+            approveM.mutate(mbHead.mbhId, {
+              onError: (err) => {
+                if (isSupersedeConfirmationRequiredError(err)) setSupersedeOpen(true)
+              },
+            })
+          }
+        >
           {approveM.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Approve
         </Button>
@@ -257,6 +268,10 @@ export function MbRecipeActionBar({ mbHead, compositionTotalPct }: Props) {
             the composition before submitting.
           </AlertDescription>
         </Alert>
+      )}
+
+      {supersedeOpen && (
+        <MbSupersedeConfirmDialog open mbhId={mbHead.mbhId} onOpenChange={setSupersedeOpen} />
       )}
 
       <ReasonDialog
