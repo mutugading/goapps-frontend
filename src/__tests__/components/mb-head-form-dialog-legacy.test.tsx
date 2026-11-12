@@ -82,6 +82,12 @@ const EXISTING_ROW = {
   paramNoOfProcess: "",
   machineId: "mc-1",
   additionalShades: [],
+  fgProductId: 0,
+  fgItemCode: "",
+  fgProductCode: "",
+  fgProductName: "",
+  supersededByHeadId: "",
+  supersededAt: "",
 } satisfies MBHead
 
 function renderDialog(mbHead: MBHead | null = null) {

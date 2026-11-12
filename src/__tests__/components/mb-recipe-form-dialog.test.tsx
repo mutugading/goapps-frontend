@@ -172,6 +172,12 @@ const BASE_ROW = {
   mbhIsLocked: undefined,
   mbhUnlockRequestedAt: undefined,
   mbhUnlockRequestedBy: undefined,
+  fgProductId: 0,
+  fgItemCode: "",
+  fgProductCode: "",
+  fgProductName: "",
+  supersededByHeadId: "",
+  supersededAt: "",
 } satisfies MBHead
 
 /** A row whose `mbh_dozing` is NULL in the DB — the case the old chain corrupted. */
