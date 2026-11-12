@@ -2431,7 +2431,7 @@ export interface MBSpin {
   fgProductCode: string;
   /** FG product name (read-only, denormalized). */
   fgProductName: string;
-  /** How the FG link was derived (e.g. FG_MATCH | SHADE_ONLY | MANUAL; empty = none). */
+  /** How the FG link was derived (RECIPE | DUPLICATE | MANUAL | BACKFILL; empty = none). */
   fgLinkSource: string;
   /** UUID of the spin that superseded this one (empty = not superseded). */
   supersededBySpinId: string;
@@ -2687,10 +2687,7 @@ export interface ListMBSpinsRequest {
   fgProductId: number;
   /** Search by FG product code / name / orion item code (max 200 chars). */
   fgSearch: string;
-  /**
-   * Include superseded spins. NOTE: default behaviour is unchanged (superseded spins are
-   * still listed as before); this flag is reserved for explicit callers.
-   */
+  /** Include superseded spins. Default false = superseded spins are hidden; true = list them too. */
   includeSuperseded: boolean;
 }
 
@@ -2811,7 +2808,7 @@ export interface DuplicateMBSpinRequest {
   mbsFilament?:
     | number
     | undefined;
-  /** FG product link for the clone (cost_product_master id). 0 = not set / inherit. */
+  /** FG product link for the clone (cost_product_master id). 0 = no FG link (the source FG is never copied; it would collide on shade+FG). */
   fgProductId: number;
 }
 
