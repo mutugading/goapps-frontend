@@ -53,6 +53,7 @@ const BASE_SPIN: MbSpinStub = {
   mbsLdrAdjustmentPct: 0.5,
 }
 
+const unsupersedeMutate = vi.fn()
 const mockPush = vi.fn()
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: mockPush, replace: vi.fn(), refresh: vi.fn() }),
@@ -68,6 +69,16 @@ vi.mock("@/hooks/finance/use-mb-spin", () => ({
     isLoading: mbSpinState.isLoading,
   }),
   useMBSpinSiblings: () => ({ data: mbSpinState.siblings }),
+  useUnsupersedeMBSpin: () => ({
+    isPending: false,
+    mutate: (_in: unknown, opts?: { onSuccess?: (r: unknown) => void }) => {
+      unsupersedeMutate(_in)
+      opts?.onSuccess?.({
+        paramsReverted: 3,
+        skipped: [{ cppValueId: 1, productSysId: 9, productCode: "P-9", paramCode: "MB_SP_CODE", reason: "manually changed" }],
+      })
+    },
+  }),
 }))
 
 // Only the identity/lineage/action-bar rendering is under test — the dialogs'
@@ -254,6 +265,47 @@ describe("MbSpinDetailClient", () => {
 
       await user.click(screen.getByText("confirm-delete"))
       expect(mockPush).toHaveBeenCalledWith("/finance/yarn-master/mb-spins")
+    })
+  })
+
+  describe("P7-T4 FG + supersede", () => {
+    const SUPERSEDED = {
+      ...BASE_SPIN,
+      fgProductId: 5,
+      fgProductCode: "FG-POY-1",
+      fgProductName: "POY One",
+      supersededBySpinId: "99999999-9999-9999-9999-999999999999",
+      supersededBySpinCode: "MBS-NEW",
+    }
+
+    it("shows FG and superseded info and the Un-supersede button", () => {
+      mbSpinState.value = SUPERSEDED
+      render(<MbSpinDetailClient id={SPIN_ID} />)
+      expect(screen.getByText(/FG-POY-1/)).toBeInTheDocument()
+      expect(screen.getAllByText(/Superseded → MBS-NEW/).length).toBeGreaterThan(0)
+      expect(screen.getByRole("button", { name: /un-supersede/i })).toBeInTheDocument()
+    })
+
+    it("hides Un-supersede when not superseded or without restore permission", () => {
+      mbSpinState.value = BASE_SPIN
+      const { unmount } = render(<MbSpinDetailClient id={SPIN_ID} />)
+      expect(screen.queryByRole("button", { name: /un-supersede/i })).not.toBeInTheDocument()
+      unmount()
+      mbSpinState.value = SUPERSEDED
+      permissionState.hasPermission = (c) => c !== "finance.yarnmaster.mbspin.restore"
+      render(<MbSpinDetailClient id={SPIN_ID} />)
+      expect(screen.queryByRole("button", { name: /un-supersede/i })).not.toBeInTheDocument()
+    })
+
+    it("confirms, then renders paramsReverted and skipped reasons", async () => {
+      mbSpinState.value = SUPERSEDED
+      const user = userEvent.setup()
+      render(<MbSpinDetailClient id={SPIN_ID} />)
+      await user.click(screen.getByRole("button", { name: /^un-supersede$/i }))
+      await user.click(await screen.findByRole("button", { name: /confirm un-supersede/i }))
+      expect(unsupersedeMutate).toHaveBeenCalledWith({ mbsId: SPIN_ID, mbhId: MBH_ID })
+      expect(await screen.findByText(/Params reverted: 3/)).toBeInTheDocument()
+      expect(screen.getByText(/manually changed/)).toBeInTheDocument()
     })
   })
 })
