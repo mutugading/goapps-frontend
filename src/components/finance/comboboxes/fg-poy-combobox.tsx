@@ -42,6 +42,8 @@ interface FgPoyComboboxProps {
   className?: string
   /** Shown on the trigger when `value` is set but not in the current result list (e.g. edit mode). */
   selectedLabel?: string
+  /** Offer only POYs whose shade equals `shadeCode` (no blank-shade POYs). Needed where the backend never fills a blank shade (manual spin FG edit). */
+  requireShadeMatch?: boolean
 }
 
 const norm = (s?: string) => (s ?? "").trim().toUpperCase()
@@ -60,25 +62,44 @@ export function FgPoyCombobox({
   placeholder = "Select FG (POY)…",
   className,
   selectedLabel,
+  requireShadeMatch = false,
 }: FgPoyComboboxProps) {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState("")
   const [createOpen, setCreateOpen] = useState(false)
   const [picked, setPicked] = useState<FgPoyProduct | null>(null)
   const poyTypeId = usePoyTypeId()
-  const { data, isLoading } = useCostProductMasters({
+  const listParams = {
     search,
     productTypeIds: poyTypeId ? [poyTypeId] : undefined,
-    activeFilter: "active",
+    activeFilter: "active" as const,
     pageSize: 50,
-  })
+  }
+  // P8-R-FE-2: with a shade, query it server-side so matches past the first page are found;
+  // the generic query (same cache key as the unshaded case) supplies blank-shade POYs.
+  const wantShade = shadeCode?.trim() ?? ""
+  const shaded = useCostProductMasters({ ...listParams, shadeCode: wantShade || undefined })
+  const generic = useCostProductMasters(listParams)
+  const isLoading = shaded.isLoading || generic.isLoading
+  const truncated = [shaded.data, generic.data].some(
+    (d) => d && Number(d.pagination?.totalItems ?? 0) > (d.items?.length ?? 0),
+  )
 
   const items = useMemo(() => {
     const want = norm(shadeCode)
     if (!poyTypeId) return [] // never list non-POY products while the type is unresolved
-    return (data?.items ?? [])
+    const seen = new Set<number>()
+    const rows = [...(shaded.data?.items ?? []), ...(wantShade && requireShadeMatch ? [] : (generic.data?.items ?? []))]
+    return rows
       .filter((p) => p.productTypeId === poyTypeId)
-      .filter((p) => !want || !norm(p.shadeCode) || norm(p.shadeCode) === want)
+      .filter((p) => {
+        if (seen.has(p.productSysId)) return false
+        seen.add(p.productSysId)
+        return true
+      })
+      .filter((p) =>
+        requireShadeMatch && want ? norm(p.shadeCode) === want : !want || !norm(p.shadeCode) || norm(p.shadeCode) === want,
+      )
       .map<FgPoyProduct>((p) => ({
         productSysId: p.productSysId,
         productCode: p.productCode,
@@ -86,7 +107,7 @@ export function FgPoyCombobox({
         erpItemCode: p.erpItemCode ?? "",
         shadeCode: p.shadeCode ?? "",
       }))
-  }, [data, shadeCode, poyTypeId])
+  }, [shaded.data, generic.data, shadeCode, wantShade, poyTypeId, requireShadeMatch])
 
   const selected = useMemo(
     () => items.find((p) => p.productSysId === value) ?? (picked && picked.productSysId === value ? picked : null),
@@ -134,6 +155,9 @@ export function FgPoyCombobox({
                 </div>
               )}
               <CommandEmpty>No POY product matches.</CommandEmpty>
+              {truncated && (
+                <div className="px-3 py-1.5 text-xs text-muted-foreground">Showing the first 50 results. Refine your search.</div>
+              )}
               <CommandGroup>
                 {items.map((p) => (
                   <CommandItem key={p.productSysId} value={`${p.productCode} ${p.productName}`} onSelect={() => select(p)}>

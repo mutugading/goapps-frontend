@@ -41,6 +41,19 @@ describe("FgPoyCombobox", () => {
     expect(listSpy).toHaveBeenCalledWith(expect.objectContaining({ productTypeIds: [9], activeFilter: "active" }))
   })
 
+  it("requireShadeMatch hides blank-shade POYs", async () => {
+    const user = userEvent.setup()
+    render(<FgPoyCombobox shadeCode="SH-1" requireShadeMatch onChange={() => {}} />)
+    await user.click(screen.getByRole("combobox"))
+    expect(screen.getByText("Poy One")).toBeInTheDocument()
+    expect(screen.queryByText("Poy NoShade")).not.toBeInTheDocument()
+  })
+
+  it("queries the shade server-side when a shade is given", () => {
+    render(<FgPoyCombobox shadeCode="SH-1" onChange={() => {}} />)
+    expect(listSpy).toHaveBeenCalledWith(expect.objectContaining({ shadeCode: "SH-1" }))
+  })
+
   it("lists nothing when the POY type cannot be resolved", async () => {
     typeItems.length = 0
     const user = userEvent.setup()

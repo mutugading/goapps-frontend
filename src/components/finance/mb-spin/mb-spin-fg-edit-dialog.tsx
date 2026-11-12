@@ -29,11 +29,13 @@ export function MBSpinFgEditDialog({ open, onOpenChange, mbSpin }: Props) {
   const current = Number(mbSpin.fgProductId ?? 0)
   const value = picked ?? (current > 0 ? current : undefined)
 
+  const close = () => {
+    setPicked(undefined)
+    onOpenChange(false)
+  }
+
   const submit = (fgProductId: number) => {
-    updateM.mutate(
-      { mbhId: mbSpin.mbsMbhId, mbsId: mbSpin.mbsId, fgProductId },
-      { onSuccess: () => onOpenChange(false) },
-    )
+    updateM.mutate({ mbhId: mbSpin.mbsMbhId, mbsId: mbSpin.mbsId, fgProductId }, { onSuccess: close })
   }
 
   return (
@@ -55,6 +57,7 @@ export function MBSpinFgEditDialog({ open, onOpenChange, mbSpin }: Props) {
           value={value}
           shadeCode={mbSpin.mbsShadeCode || undefined}
           allowCreate={false}
+          requireShadeMatch
           disabled={updateM.isPending}
           selectedLabel={
             current > 0 && mbSpin.fgProductCode
@@ -77,7 +80,7 @@ export function MBSpinFgEditDialog({ open, onOpenChange, mbSpin }: Props) {
             <span />
           )}
           <div className="flex gap-2">
-            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="ghost" onClick={close}>
               Cancel
             </Button>
             <Button

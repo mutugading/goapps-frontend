@@ -53,6 +53,13 @@ describe("MBSpinFgEditDialog", () => {
     expect(mutate.mock.calls[0][0]).toEqual({ mbhId: "h1", mbsId: "s1", fgProductId: 0 })
   })
 
+  it("Cancel discards an unsaved pick", () => {
+    render(<MBSpinFgEditDialog open onOpenChange={vi.fn()} mbSpin={spin()} />)
+    fireEvent.change(screen.getByTestId("fg-input"), { target: { value: "42" } })
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }))
+    expect(screen.getByTestId("fg-input")).toHaveValue("")
+  })
+
   it("Cancel closes without a request", () => {
     const onOpenChange = vi.fn()
     render(<MBSpinFgEditDialog open onOpenChange={onOpenChange} mbSpin={spin()} />)
