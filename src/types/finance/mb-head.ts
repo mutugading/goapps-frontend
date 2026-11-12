@@ -316,3 +316,110 @@ export const ACTIVE_FILTER_OPTIONS = [
   { value: ActiveFilter.ACTIVE_FILTER_ACTIVE, label: "Active" },
   { value: ActiveFilter.ACTIVE_FILTER_INACTIVE, label: "Inactive" },
 ]
+
+// ============================================================================
+// P7 — Supersede preview (Validate replaces older spins/recipes)
+// ============================================================================
+
+export type {
+  MBHeadSupersedePreview,
+  MBSupersedeCandidate,
+  MBSupersedeFilledByCount,
+  MBSupersedeAffectedProduct,
+  PreviewMBHeadSupersedeRequest,
+  PreviewMBHeadSupersedeResponse,
+} from "@/types/generated/finance/v1/yarn_master"
+
+import type { MBHeadSupersedePreview as GeneratedSupersedePreview } from "@/types/generated/finance/v1/yarn_master"
+import { rawRecords, rawStrings, toBoolean, toNumber, toStringValue, type RawRecord } from "@/types/finance/raw-coerce"
+
+export interface NormalizedSupersedeFilledByCount {
+  filledBy: string
+  count: number
+}
+
+export interface NormalizedSupersedeAffectedProduct {
+  productSysId: number
+  productCode: string
+  productName: string
+  filledBy: string
+}
+
+export interface NormalizedSupersedeCandidate {
+  oldSpinId: string
+  oldSpinCode: string
+  shadeCode: string
+  fgProductId: number
+  fgProductCode: string
+  oldHeadId: string
+  oldHeadCode: string
+  oldHeadWillDeactivate: boolean
+  oldMbProductSysId: number
+  oldMbProductWillDeactivate: boolean
+  paramRowsPointer: number
+  paramRowsTextOnly: number
+  /** paramRowsPointer + paramRowsTextOnly — both kinds are repointed (Revisi 2). */
+  paramRowsTotal: number
+  filledByCounts: NormalizedSupersedeFilledByCount[]
+  affectedProducts: NormalizedSupersedeAffectedProduct[]
+  warnings: string[]
+}
+
+export interface NormalizedSupersedePreview {
+  requiresConfirmation: boolean
+  candidates: NormalizedSupersedeCandidate[]
+}
+
+/** Normalizes the preview payload. Accepts camelCase or snake_case; numbers via Number(). */
+export function normalizeSupersedePreview(raw: RawRecord | GeneratedSupersedePreview | undefined | null): NormalizedSupersedePreview {
+  const r = (raw ?? {}) as RawRecord
+  return {
+    requiresConfirmation: toBoolean(r.requiresConfirmation ?? r.requires_confirmation),
+    candidates: rawRecords(r.candidates).map(normalizeSupersedeCandidate),
+  }
+}
+
+function normalizeSupersedeCandidate(c: RawRecord): NormalizedSupersedeCandidate {
+  const pointer = toNumber(c.paramRowsPointer ?? c.param_rows_pointer)
+  const textOnly = toNumber(c.paramRowsTextOnly ?? c.param_rows_text_only)
+  return {
+    oldSpinId: toStringValue(c.oldSpinId ?? c.old_spin_id),
+    oldSpinCode: toStringValue(c.oldSpinCode ?? c.old_spin_code),
+    shadeCode: toStringValue(c.shadeCode ?? c.shade_code),
+    fgProductId: toNumber(c.fgProductId ?? c.fg_product_id),
+    fgProductCode: toStringValue(c.fgProductCode ?? c.fg_product_code),
+    oldHeadId: toStringValue(c.oldHeadId ?? c.old_head_id),
+    oldHeadCode: toStringValue(c.oldHeadCode ?? c.old_head_code),
+    oldHeadWillDeactivate: toBoolean(c.oldHeadWillDeactivate ?? c.old_head_will_deactivate),
+    oldMbProductSysId: toNumber(c.oldMbProductSysId ?? c.old_mb_product_sys_id),
+    oldMbProductWillDeactivate: toBoolean(c.oldMbProductWillDeactivate ?? c.old_mb_product_will_deactivate),
+    paramRowsPointer: pointer,
+    paramRowsTextOnly: textOnly,
+    paramRowsTotal: pointer + textOnly,
+    filledByCounts: rawRecords(c.filledByCounts ?? c.filled_by_counts).map((f) => ({
+      filledBy: toStringValue(f.filledBy ?? f.filled_by),
+      count: toNumber(f.count),
+    })),
+    affectedProducts: rawRecords(c.affectedProducts ?? c.affected_products).map((p) => ({
+      productSysId: toNumber(p.productSysId ?? p.product_sys_id),
+      productCode: toStringValue(p.productCode ?? p.product_code),
+      productName: toStringValue(p.productName ?? p.product_name),
+      filledBy: toStringValue(p.filledBy ?? p.filled_by),
+    })),
+    warnings: rawStrings(c.warnings),
+  }
+}
+
+/** Prefix the backend puts on Validate/Approve failures that need supersede confirmation. */
+export const SUPERSEDE_CONFIRMATION_PREFIX = "SUPERSEDE_CONFIRMATION_REQUIRED"
+
+/**
+ * True when a Validate/Approve base result is the 409 "confirm supersede" gate.
+ * Detected by statusCode 409 AND the message prefix (both must match).
+ */
+export function isSupersedeConfirmationError(
+  statusCode: string | number | undefined | null,
+  message: string | undefined | null,
+): boolean {
+  return String(statusCode ?? "") === "409" && (message ?? "").startsWith(SUPERSEDE_CONFIRMATION_PREFIX)
+}

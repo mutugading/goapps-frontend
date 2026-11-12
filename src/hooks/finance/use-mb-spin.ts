@@ -35,6 +35,8 @@ import {
   type DuplicateMBSpinInput,
   updateMBSpin,
   type UpdateMBSpinInput,
+  unsupersedeMBSpin,
+  type UnsupersedeMBSpinInput,
 } from "@/services/finance/mb-spin-api"
 
 // ============================================================================
@@ -347,6 +349,28 @@ export function useDownloadMBSpinTemplate() {
     },
     onError: (error: Error) => {
       toast.error(error.message || "Failed to download template")
+    },
+  })
+}
+
+// ============================================================================
+// Un-supersede Hook (P7)
+// ============================================================================
+
+// Reverts a supersede of a legacy spin (RPC UnsupersedeMBSpin, permission
+// finance.yarnmaster.mbspin.restore). Resolves with paramsReverted + skipped so the caller
+// can show the summary. Invalidates both the spin and the MB head caches (head state changes).
+export function useUnsupersedeMBSpin() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: UnsupersedeMBSpinInput) => unsupersedeMBSpin(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["finance", "mb-spin"] })
+      queryClient.invalidateQueries({ queryKey: ["finance", "mb-head"] })
+      toast.success("MB Spin un-superseded")
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to un-supersede MB Spin")
     },
   })
 }

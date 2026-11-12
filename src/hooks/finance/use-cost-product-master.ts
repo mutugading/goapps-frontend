@@ -4,6 +4,14 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 
 import {
+  getMbLink,
+  relinkMb,
+  previewProductEtl,
+  applyProductEtl,
+  type PreviewProductEtlInput,
+  type ApplyProductEtlInput,
+} from "@/services/finance/cost-product-master-mb-api"
+import {
   type CreateCostProductMasterPayload,
   type ListCostProductMastersParams,
   type UpdateCostProductMasterPayload,
@@ -176,3 +184,51 @@ export function useUnlockCostProductMaster() {
 }
 
 export const costProductMasterKeys = KEYS
+
+// ============================================================================
+// P7 — MB spin link + Oracle ETL
+// ============================================================================
+
+/** Resolved MB spin link for a product (read; permission finance.product.route.view). */
+export function useCostProductMbLink(productSysId: number | undefined) {
+  return useQuery({
+    queryKey: [...KEYS.all, "mb-link", productSysId ?? 0] as const,
+    queryFn: () => getMbLink(productSysId as number),
+    enabled: !!productSysId,
+  })
+}
+
+/** Forces MB autofill re-link for a product (permission finance.product.route.update). */
+export function useRelinkCostProductMb() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (productSysId: number) => relinkMb(productSysId),
+    onSuccess: (_, productSysId) => {
+      qc.invalidateQueries({ queryKey: [...KEYS.all, "mb-link", productSysId] })
+      qc.invalidateQueries({ queryKey: KEYS.detail(productSysId) })
+      toast.success("MB re-linked")
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to re-link MB")
+    },
+  })
+}
+
+/** Oracle legacy product preview (read-only). Errors surface as EtlError to the caller. */
+export function usePreviewProductEtl() {
+  return useMutation({
+    mutationFn: (input: PreviewProductEtlInput) => previewProductEtl(input),
+  })
+}
+
+/** Applies selected rows of a preview run (permission finance.product.master.sync). */
+export function useApplyProductEtl() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (input: ApplyProductEtlInput) => applyProductEtl(input),
+    onSuccess: (result) => {
+      qc.invalidateQueries({ queryKey: KEYS.all })
+      toast.success(`Oracle ETL applied: ${result.inserted} inserted, ${result.skipped} skipped, ${result.failed} failed`)
+    },
+  })
+}

@@ -1,3 +1,4 @@
+import type { CreateMBHeadRequest } from "@/types/finance/mb-head"
 /**
  * FROZEN — jalur rollback D16.
  * Jangan menambahkan field/behaviour area A/B ke berkas ini.
@@ -177,7 +178,7 @@ export function MBHeadFormDialogLegacy({ open, onOpenChange, mbHead, onSuccess }
           mbhLustureCode: values.mbhLustureCode || undefined,
           mbhMachineId: values.mbhMachineId || undefined,
           additionalShades: [],
-        })
+        } as unknown as CreateMBHeadRequest)
       }
       onOpenChange(false)
       onSuccess?.()

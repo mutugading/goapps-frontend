@@ -1,3 +1,4 @@
+import type { CreateMBHeadRequest } from "@/types/finance/mb-head"
 "use client"
 
 // MBRecipeFormDialog — the MB recipe (mst_mb_head) create/edit form. P6 rebuild.
@@ -358,7 +359,7 @@ export function MBRecipeFormDialog({ open, onOpenChange, mbHead, onSuccess }: MB
           mbhVsNumber: values.mbhVsNumber,
           mbhNoOfProcess: toOptStr(values.mbhNoOfProcess),
           additionalShades: shades,
-        })
+        } as unknown as CreateMBHeadRequest)
       }
       onOpenChange(false)
       onSuccess?.()
