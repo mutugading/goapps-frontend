@@ -35,6 +35,7 @@ describe("P7-R5 parameter cache invalidation", () => {
     await waitFor(() => expect(spy).toHaveBeenCalledWith(CPP))
     expect(spy).toHaveBeenCalledWith({ queryKey: ["finance", "mb-spin"] })
     expect(spy).toHaveBeenCalledWith({ queryKey: ["finance", "mb-head"] })
+    expect(spy).toHaveBeenCalledWith({ queryKey: ["finance", "cost-product-master"] })
   })
 
   it("validate with confirmSupersede invalidates mb-spin and parameters; plain validate does not", async () => {
@@ -43,6 +44,7 @@ describe("P7-R5 parameter cache invalidation", () => {
     r1.result.current.mutate({ mbhId: "h1", confirmSupersede: true })
     await waitFor(() => expect(a.spy).toHaveBeenCalledWith(CPP))
     expect(a.spy).toHaveBeenCalledWith({ queryKey: ["finance", "mb-spin"] })
+    expect(a.spy).toHaveBeenCalledWith({ queryKey: ["finance", "cost-product-master"] })
 
     const b = setup({ base: { isSuccess: true }, data: {} })
     const r2 = renderHook(() => useValidateMBHead(), { wrapper: b.wrapper })

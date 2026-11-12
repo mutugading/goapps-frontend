@@ -329,6 +329,7 @@ export function useValidateMBHead() {
       if (typeof vars !== "string" && vars.confirmSupersede) {
         queryClient.invalidateQueries({ queryKey: ["finance", "mb-spin"] })
         queryClient.invalidateQueries({ queryKey: ["finance", "cost-product-parameter"] })
+        queryClient.invalidateQueries({ queryKey: ["finance", "cost-product-master"] })
       }
       toast.success("MB Head validated")
     },

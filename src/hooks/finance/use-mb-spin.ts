@@ -371,6 +371,7 @@ export function useUnsupersedeMBSpin() {
       queryClient.invalidateQueries({ queryKey: ["finance", "mb-spin"] })
       queryClient.invalidateQueries({ queryKey: ["finance", "mb-head"] })
       queryClient.invalidateQueries({ queryKey: ["finance", "cost-product-parameter"] })
+      queryClient.invalidateQueries({ queryKey: ["finance", "cost-product-master"] })
       toast.success("MB Spin un-superseded")
     },
     onError: (error: Error) => {
