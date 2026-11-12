@@ -59,4 +59,12 @@ describe("MbSpinLinkCard", () => {
     await user.click(screen.getByRole("button", { name: "Re-link" }))
     expect(relinkMutate).toHaveBeenCalledWith(7)
   })
+
+  it("NONE state shows reason and no param mismatch warning", () => {
+    perms.add("finance.product.route.view")
+    link = { ...base, linkSource: "NONE", paramMatches: false, reason: "no spin found" }
+    render(<MbSpinLinkCard productSysId={1} />)
+    expect(screen.getByText("no spin found")).toBeInTheDocument()
+    expect(screen.queryByRole("alert")).toBeNull()
+  })
 })

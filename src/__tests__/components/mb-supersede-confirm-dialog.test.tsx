@@ -16,8 +16,10 @@ const previewData = {
   ],
 }
 
+let previewState: Record<string, unknown> = { data: previewData, isLoading: false, isError: false }
+
 vi.mock("@/hooks/finance/use-mb-head", () => ({
-  useMBHeadSupersedePreview: () => ({ data: previewData, isLoading: false, isError: false }),
+  useMBHeadSupersedePreview: () => previewState,
   useValidateMBHead: () => ({ mutate: validateMutate, isPending: false }),
 }))
 const mockHasPermission = vi.fn<(code: string) => boolean>(() => true)
@@ -30,6 +32,7 @@ import { MbSupersedeConfirmDialog } from "@/components/finance/mb-recipe/mb-supe
 describe("MbSupersedeConfirmDialog", () => {
   beforeEach(() => {
     validateMutate.mockReset()
+    previewState = { data: previewData, isLoading: false, isError: false }
     mockHasPermission.mockImplementation(() => true)
   })
 
@@ -57,5 +60,17 @@ describe("MbSupersedeConfirmDialog", () => {
     mockHasPermission.mockImplementation((c) => c !== "finance.mb.head.validate")
     render(<MbSupersedeConfirmDialog open mbhId="m1" onOpenChange={vi.fn()} />)
     expect(screen.getByRole("button", { name: /replace & validate/i })).toBeDisabled()
+  })
+
+  it("shows loading state while preview loads", () => {
+    previewState = { data: undefined, isLoading: true, isError: false }
+    render(<MbSupersedeConfirmDialog open mbhId="m1" onOpenChange={vi.fn()} />)
+    expect(screen.getByText(/Loading preview/)).toBeInTheDocument()
+  })
+
+  it("shows error message when preview fails", () => {
+    previewState = { data: undefined, isLoading: false, isError: true, error: new Error("boom preview") }
+    render(<MbSupersedeConfirmDialog open mbhId="m1" onOpenChange={vi.fn()} />)
+    expect(screen.getByText("boom preview")).toBeInTheDocument()
   })
 })

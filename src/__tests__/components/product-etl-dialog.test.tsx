@@ -87,4 +87,15 @@ describe("ProductEtlDialog", () => {
     await user.click(screen.getByRole("button", { name: "Confirm apply" }))
     expect(await screen.findByText(/Preview expired, run preview again/)).toBeInTheDocument()
   })
+
+  it("sends search and includeExisting toggle to preview", async () => {
+    previewFn.mockResolvedValue(PREVIEW())
+    const user = userEvent.setup()
+    render(<ProductEtlDialog open onOpenChange={() => {}} />)
+    await user.type(screen.getByLabelText("Search"), "abc")
+    await user.click(screen.getByLabelText("Include existing"))
+    await user.click(screen.getByRole("button", { name: "Preview" }))
+    await waitFor(() => expect(previewFn).toHaveBeenCalled())
+    expect(previewFn.mock.calls[0][0]).toMatchObject({ search: "abc", includeExisting: true })
+  })
 })
