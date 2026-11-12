@@ -26,6 +26,7 @@ import { ProductTypeName } from "@/components/common/product-type-name"
 import { ProductMasterFormDialog } from "@/components/finance/cost-product-master/product-master-form-dialog"
 import { UnlockProductMasterDialog } from "@/components/finance/cost-product-master/unlock-dialog"
 import { MbRecipeLinkCard } from "@/components/finance/cost-product-master/mb-recipe-link-card"
+import { MbSpinLinkCard } from "@/components/finance/cost-product-master/mb-spin-link-card"
 import { exportBulkProductRouting } from "@/services/finance/cost-import-api"
 import type { CostProductMaster } from "@/types/finance/cost-product-master"
 
@@ -212,6 +213,7 @@ export default function ProductMasterDetailClient({ productSysId, initialTab, hi
           empty card) for products whose source is not "MB_RECIPE"; see mb-recipe-link-card.tsx
           for the honest handling of the "recipe not yet validated" ambiguous case. */}
       {product && <MbRecipeLinkCard productSysId={product.productSysId} source={product.source} />}
+      {product && <MbSpinLinkCard productSysId={product.productSysId} />}
 
       <Tabs defaultValue={defaultTab}>
         {/* Sticky under the page header (z-20): tabs + Parameters toolbar stay visible.

@@ -38,6 +38,8 @@ import { ColumnVisibilityMenu, DataTablePagination } from "@/components/shared"
 import { filterToSyncScope } from "@/components/finance/lookup-sync/scope"
 import { useCostProductMasterCounts, useCostProductMasters, costProductMasterKeys } from "@/hooks/finance/use-cost-product-master"
 import { useExportData } from "@/hooks/finance/use-cost-import"
+import { usePermissionContext } from "@/providers/permission-provider"
+import { ProductEtlDialog } from "@/components/finance/cost-product-master/product-etl-dialog"
 import { useUrlState } from "@/lib/hooks"
 import { exportBulkProductRouting } from "@/services/finance/cost-import-api"
 import type { CostProductMaster, ListCostProductMastersParams } from "@/types/finance/cost-product-master"
@@ -98,6 +100,8 @@ export default function ProductMasterPageClient() {
   const { columns, visibility, toggle, setAll, reset } = useProductMasterTableColumns()
 
   const [formOpen, setFormOpen] = useState(false)
+  const [etlOpen, setEtlOpen] = useState(false)
+  const { hasPermission } = usePermissionContext()
   const [deactivateOpen, setDeactivateOpen] = useState(false)
   const [duplicateOpen, setDuplicateOpen] = useState(false)
   const [viewOpen, setViewOpen] = useState(false)
@@ -283,6 +287,12 @@ export default function ProductMasterPageClient() {
           label="Sync dari master (filter)"
         />
 
+        {hasPermission("finance.product.master.sync") && (
+          <Button variant="outline" onClick={() => setEtlOpen(true)}>
+            Sync from Oracle
+          </Button>
+        )}
+
         <Button onClick={openCreate} aria-label="New product">
           <Plus className="h-4 w-4" />
           <span className="hidden sm:inline">New product</span>
@@ -386,6 +396,7 @@ export default function ProductMasterPageClient() {
         }
       />
       <ProductMasterFormDialog open={formOpen} onOpenChange={setFormOpen} product={editing} />
+      {hasPermission("finance.product.master.sync") && <ProductEtlDialog open={etlOpen} onOpenChange={setEtlOpen} />}
       <DeactivateProductMasterDialog
         open={deactivateOpen}
         onOpenChange={setDeactivateOpen}
