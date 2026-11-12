@@ -120,6 +120,28 @@ vi.mock("@/components/finance/shade/shade-combobox", () => ({
   ),
 }))
 
+// P7: FG (POY) is required. Stubbed as a number input so tests can pick an FG;
+// its own popover behaviour is covered in fg-poy-combobox.test.tsx.
+vi.mock("@/components/finance/comboboxes/fg-poy-combobox", () => ({
+  FgPoyCombobox: ({
+    value,
+    shadeCode,
+    onChange,
+  }: {
+    value?: number
+    shadeCode?: string
+    onChange: (id: number, p: { shadeCode: string }) => void
+  }) => (
+    <input
+      data-testid="fg-input"
+      data-shade={shadeCode ?? ""}
+      aria-label="FG Product (POY) picker"
+      value={value ?? ""}
+      onChange={(e) => onChange(Number(e.target.value), { shadeCode: "" })}
+    />
+  ),
+}))
+
 // ─── Import under test (after the mocks are registered) ───────────────────────
 
 import { MBRecipeFormDialog } from "@/components/finance/mb-recipe/mb-recipe-form-dialog"
@@ -172,7 +194,7 @@ const BASE_ROW = {
   mbhIsLocked: undefined,
   mbhUnlockRequestedAt: undefined,
   mbhUnlockRequestedBy: undefined,
-  fgProductId: 0,
+  fgProductId: 5, // P7: FG is required on edit, so the base row carries one
   fgItemCode: "",
   fgProductCode: "",
   fgProductName: "",
@@ -242,6 +264,7 @@ function fillRequiredForCreate(vsNumber = "71125") {
   setField(/cross section/i, "RND")
   setField(/^ldr %/i, "3.55")
   setField(/final product/i, "FP-9")
+  fireEvent.change(screen.getByTestId("fg-input"), { target: { value: "77" } })
 }
 
 beforeEach(() => {
@@ -640,5 +663,44 @@ describe("MBRecipeFormDialog — R7 tab wizard", () => {
     renderDialog(BASE_ROW)
     await userEvent.click(screen.getByTestId("status-tab"))
     expect(screen.getByRole("button", { name: /^update$/i })).toBeTruthy()
+  })
+})
+
+// ============================================================================
+// P7 — FG (POY) required on create and edit
+// ============================================================================
+
+describe("MBRecipeFormDialog — P7 FG (POY) link", () => {
+  it("blocks create when FG is not selected", async () => {
+    renderDialog()
+    fillRequiredForCreate()
+    fireEvent.change(screen.getByTestId("fg-input"), { target: { value: "0" } })
+    await submit()
+    await waitFor(() => expect(screen.getAllByText(/FG Product \(POY\) is required/i).length).toBeGreaterThan(0))
+    expect(createMutateAsync).not.toHaveBeenCalled()
+  })
+
+  it("sends fgProductId on create and passes the recipe shade to the picker", async () => {
+    renderDialog()
+    fillRequiredForCreate()
+    expect(screen.getByTestId("fg-input")).toHaveAttribute("data-shade", "SC-9")
+    await submit()
+    await waitFor(() => expect(createMutateAsync).toHaveBeenCalledTimes(1))
+    expect(createMutateAsync.mock.calls[0][0].fgProductId).toBe(77)
+  })
+
+  it("on edit with an unchanged FG, omits fgProductId; when changed, sends it", async () => {
+    renderDialog({ ...BASE_ROW, fgProductId: 5, fgProductCode: "POY-5", fgProductName: "Poy Five" } as MBHead)
+    await submit()
+    await waitFor(() => expect(updateMutateAsync).toHaveBeenCalledTimes(1))
+    expect("fgProductId" in updateMutateAsync.mock.calls[0][0].data).toBe(false)
+  })
+
+  it("on edit, sends fgProductId when the FG was changed", async () => {
+    renderDialog({ ...BASE_ROW, fgProductId: 5 } as MBHead)
+    fireEvent.change(screen.getByTestId("fg-input"), { target: { value: "9" } })
+    await submit()
+    await waitFor(() => expect(updateMutateAsync).toHaveBeenCalledTimes(1))
+    expect(updateMutateAsync.mock.calls[0][0].data.fgProductId).toBe(9)
   })
 })
