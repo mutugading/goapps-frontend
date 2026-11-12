@@ -208,10 +208,12 @@ export function MBRecipeFormDialog({ open, onOpenChange, mbHead, onSuccess }: MB
   // React-sanctioned "adjust state while rendering" pattern, NOT an effect: a
   // setState inside useEffect here trips react-hooks' cascading-render rule.
   const openKey = open ? (mbHead?.mbhId ?? "new") : "closed"
+  const [fgShade, setFgShade] = useState<string | null>(null)
   const [prevOpenKey, setPrevOpenKey] = useState(openKey)
   if (prevOpenKey !== openKey) {
     setPrevOpenKey(openKey)
     setActiveTab(TAB_ORDER[0])
+    setFgShade(null)
   }
 
   const form = useForm<FormValues>({
@@ -265,7 +267,6 @@ export function MBRecipeFormDialog({ open, onOpenChange, mbHead, onSuccess }: MB
   // Shade of the FG picked in this session (unknown for a pre-existing link).
   // Used to clear the FG when the recipe shade changes to a different one.
   // null = unknown (FG came from the DB); "" = known FG without a shade.
-  const [fgShade, setFgShade] = useState<string | null>(null)
 
   const errors = form.formState.errors
   const tabHasError = useMemo(() => {
