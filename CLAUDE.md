@@ -1313,6 +1313,8 @@ const STATUS_OPTIONS = [
 | **`totalItems` from proto is a string** | Always cast `Number(totalItems)` before display or math |
 | **DebouncedSearchInput for all search inputs** | Prevents keystroke lag on every filter |
 | **`useUrlState` for all filter/pagination state** | Enables shareable URLs and browser back/forward |
+| **Most BFF routes return HTTP 200 with the error in `base`** — check `base.isSuccess` / `base.statusCode`, not only the HTTP status | e.g. MB recipe Approve/Validate signals supersede with `base.statusCode` 409 + message prefix `SUPERSEDE_CONFIRMATION_REQUIRED` (`isSupersedeConfirmationError`) |
+| **MB spin FG is editable only when `!fgFollowsRecipe && fgLinkSource !== "RECIPE"`** and the spin is live | Backend rule `mbspin.FgFollowsRecipe`; FG pickers (`FgPoyCombobox`) must filter by the spin/recipe shade |
 
 ### Forms
 
