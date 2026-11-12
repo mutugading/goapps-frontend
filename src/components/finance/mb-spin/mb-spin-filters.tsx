@@ -28,6 +28,13 @@ export function MBSpinFilters({ filters, onFiltersChange }: MBSpinFiltersProps) 
     [filters, onFiltersChange]
   )
 
+  const handleFgSearchChange = useCallback(
+    (value: string) => {
+      onFiltersChange({ ...filters, fgSearch: value, page: 1 })
+    },
+    [filters, onFiltersChange]
+  )
+
   const handleActiveFilterChange = (value: string) => {
     onFiltersChange({
       ...filters,
@@ -41,6 +48,7 @@ export function MBSpinFilters({ filters, onFiltersChange }: MBSpinFiltersProps) 
       page: 1,
       pageSize: filters.pageSize,
       search: "",
+      fgSearch: "",
       activeFilter: ActiveFilter.ACTIVE_FILTER_UNSPECIFIED,
       sortBy: "code",
       sortOrder: "asc",
@@ -49,6 +57,7 @@ export function MBSpinFilters({ filters, onFiltersChange }: MBSpinFiltersProps) 
 
   const hasActiveFilters =
     !!filters.search ||
+    !!filters.fgSearch ||
     (filters.activeFilter !== undefined &&
       filters.activeFilter !== ActiveFilter.ACTIVE_FILTER_UNSPECIFIED)
 
@@ -67,6 +76,14 @@ export function MBSpinFilters({ filters, onFiltersChange }: MBSpinFiltersProps) 
         placeholder="Search code, name, or Orion Item Code..."
         debounceMs={300}
         containerClassName="flex-1 sm:max-w-sm"
+      />
+
+      <DebouncedSearchInput
+        value={filters.fgSearch || ""}
+        onValueChange={handleFgSearchChange}
+        placeholder="Search FG (POY)..."
+        debounceMs={300}
+        containerClassName="flex-1 sm:max-w-[220px]"
       />
 
       <Select

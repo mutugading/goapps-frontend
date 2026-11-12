@@ -3,7 +3,7 @@
 import { ReactNode, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, Copy, GitBranch, Layers, Pencil, Trash2 } from "lucide-react"
+import { ArrowLeft, Copy, GitBranch, Layers, Pencil, Trash2, Undo2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -12,7 +12,19 @@ import { StatusBadge } from "@/components/common/status-badge"
 import { EmptyState } from "@/components/common/empty-state"
 import { useBreadcrumbOverride } from "@/components/common/dynamic-breadcrumb"
 import { usePermissionContext } from "@/providers/permission-provider"
-import { useMBSpinDetail, useMBSpinSiblings } from "@/hooks/finance/use-mb-spin"
+import { Badge } from "@/components/ui/badge"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import type { NormalizedUnsupersedeResult } from "@/types/finance/mb-spin"
+import { useMBSpinDetail, useMBSpinSiblings, useUnsupersedeMBSpin } from "@/hooks/finance/use-mb-spin"
 import { MBSpinDeleteDialog, MBSpinDuplicateDialog, MBSpinFormDialog } from "@/components/finance/mb-spin"
 
 interface Props {
@@ -28,6 +40,9 @@ export default function MbSpinDetailClient({ id }: Props) {
   const [editOpen, setEditOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [duplicateOpen, setDuplicateOpen] = useState(false)
+  const [unsupersedeOpen, setUnsupersedeOpen] = useState(false)
+  const [unsupersedeResult, setUnsupersedeResult] = useState<NormalizedUnsupersedeResult | null>(null)
+  const unsupersedeM = useUnsupersedeMBSpin()
 
   // Same permission pattern as mb-spin-table.tsx (list page): each action is gated on
   // the code its RPC maps to in auth_interceptor.go. Duplicate uses "create" because
@@ -35,6 +50,7 @@ export default function MbSpinDetailClient({ id }: Props) {
   const canDuplicate = hasPermission("finance.yarnmaster.mbspin.create")
   const canUpdate = hasPermission("finance.yarnmaster.mbspin.update")
   const canDelete = hasPermission("finance.yarnmaster.mbspin.delete")
+  const canRestore = hasPermission("finance.yarnmaster.mbspin.restore")
 
   useBreadcrumbOverride(mbSpin ? mbSpin.mbsMgtName || mbSpin.mbsMbCosting || null : null)
 
@@ -100,6 +116,12 @@ export default function MbSpinDetailClient({ id }: Props) {
               Duplicate
             </Button>
           )}
+          {canRestore && mbSpin.supersededBySpinId && (
+            <Button size="sm" variant="outline" onClick={() => setUnsupersedeOpen(true)}>
+              <Undo2 className="h-4 w-4 mr-1" />
+              Un-supersede
+            </Button>
+          )}
           {canDelete && (
             <Button size="sm" variant="destructive" onClick={() => setDeleteOpen(true)}>
               <Trash2 className="h-4 w-4 mr-1" />
@@ -156,6 +178,33 @@ export default function MbSpinDetailClient({ id }: Props) {
           */}
           <Field label="VS Number" value={mbSpin.mbsVsNumber || "—"} />
           <Field label="Final Product" value={mbSpin.mbsFinalProduct || "—"} />
+          <Field
+            label="FG (POY)"
+            value={
+              mbSpin.fgProductId
+                ? `${mbSpin.fgProductCode || "-"}${mbSpin.fgProductName ? ` — ${mbSpin.fgProductName}` : ""}`
+                : "—"
+            }
+          />
+          <Field label="FG Item Code" value={mbSpin.fgItemCode || "—"} mono />
+          <Field label="FG Link Source" value={mbSpin.fgLinkSource || "—"} />
+          <Field
+            label="Superseded"
+            value={
+              mbSpin.supersededBySpinId ? (
+                <span className="flex flex-wrap items-center gap-1.5">
+                  <Badge variant="outline" className="text-amber-700 border-amber-400">
+                    Superseded → {mbSpin.supersededBySpinCode || "newer spin"}
+                  </Badge>
+                  {mbSpin.supersededAt ? (
+                    <span className="text-xs text-muted-foreground">{mbSpin.supersededAt}</span>
+                  ) : null}
+                </span>
+              ) : (
+                "—"
+              )
+            }
+          />
         </CardContent>
         <CardContent className="border-t pt-4">
           <div className="text-xs uppercase tracking-wide text-muted-foreground mb-3">LDR</div>
@@ -258,6 +307,72 @@ export default function MbSpinDetailClient({ id }: Props) {
         onSuccess={() => router.push("/finance/yarn-master/mb-spins")}
       />
       <MBSpinDuplicateDialog open={duplicateOpen} onOpenChange={setDuplicateOpen} mbSpin={mbSpin} />
+
+      <AlertDialog open={unsupersedeOpen} onOpenChange={setUnsupersedeOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Un-supersede this MB Spin?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This spin will be active again and the MB_SP_CODE parameters that were repointed to{" "}
+              {mbSpin.supersededBySpinCode || "the newer spin"} will be reverted where possible.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={unsupersedeM.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={unsupersedeM.isPending}
+              onClick={(e) => {
+                e.preventDefault()
+                unsupersedeM.mutate(
+                  { mbsId: mbSpin.mbsId, mbhId: mbSpin.mbsMbhId },
+                  {
+                    onSuccess: (res) => {
+                      setUnsupersedeOpen(false)
+                      setUnsupersedeResult(res)
+                    },
+                  }
+                )
+              }}
+            >
+              Confirm un-supersede
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={unsupersedeResult != null}
+        onOpenChange={(o) => {
+          if (!o) setUnsupersedeResult(null)
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Un-supersede result</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <p>Params reverted: {unsupersedeResult?.paramsReverted ?? 0}</p>
+                {unsupersedeResult && unsupersedeResult.skipped.length > 0 ? (
+                  <div>
+                    <p className="font-medium">Skipped ({unsupersedeResult.skipped.length})</p>
+                    <ul className="max-h-48 overflow-auto space-y-1 text-xs">
+                      {unsupersedeResult.skipped.map((s) => (
+                        <li key={s.cppValueId}>
+                          <span className="font-mono">{s.productCode || s.productSysId}</span>{" "}
+                          {s.paramCode} — {s.reason}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Close</AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

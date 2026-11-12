@@ -5,6 +5,7 @@ import { Pencil, Trash2, Copy, Eye } from "lucide-react"
 
 import { DataTable, type ColumnDef, type RowAction } from "@/components/shared"
 import { StatusBadge } from "@/components/common"
+import { Badge } from "@/components/ui/badge"
 import { usePermissionContext } from "@/providers/permission-provider"
 
 import type { MBSpin } from "@/types/finance/mb-spin"
@@ -30,7 +31,35 @@ export function MBSpinTable({ data, isLoading, onEdit, onDelete, onDuplicate }: 
     {
       id: "mbsMgtName",
       header: "Mgt Name",
-      cell: (row) => row.mbsMgtName || "-",
+      cell: (row) => (
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span>{row.mbsMgtName || "-"}</span>
+          {row.supersededBySpinId ? (
+            <Badge variant="outline" className="text-[10px] text-amber-700 border-amber-400">
+              Superseded → {row.supersededBySpinCode || "newer spin"}
+            </Badge>
+          ) : null}
+        </div>
+      ),
+    },
+    {
+      id: "fgProduct",
+      header: "FG (POY)",
+      hideOnMobile: true,
+      cell: (row) =>
+        row.fgProductId ? (
+          <div className="leading-tight">
+            <div>
+              {row.fgProductCode || "-"}
+              {row.fgProductName ? ` — ${row.fgProductName}` : ""}
+            </div>
+            {row.fgItemCode ? (
+              <div className="text-xs text-muted-foreground">{row.fgItemCode}</div>
+            ) : null}
+          </div>
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        ),
     },
     {
       id: "mbsMbCosting",
