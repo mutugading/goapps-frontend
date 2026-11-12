@@ -2439,6 +2439,11 @@ export interface MBSpin {
   supersededAt: string;
   /** Code of the superseding spin (convenience for the "Superseded -> <code>" badge). */
   supersededBySpinCode: string;
+  /**
+   * True when the FG link follows the recipe and cannot be edited on the spin
+   * (link source RECIPE, or root spin of a recipe that has an FG). Read-only.
+   */
+  fgFollowsRecipe: boolean;
 }
 
 /** CreateMBSpinRequest is the request for creating an MB Spin record. */
@@ -21480,6 +21485,7 @@ function createBaseMBSpin(): MBSpin {
     supersededBySpinId: "",
     supersededAt: "",
     supersededBySpinCode: "",
+    fgFollowsRecipe: false,
   };
 }
 
@@ -21589,6 +21595,9 @@ export const MBSpin: MessageFns<MBSpin> = {
     }
     if (message.supersededBySpinCode !== "") {
       writer.uint32(282).string(message.supersededBySpinCode);
+    }
+    if (message.fgFollowsRecipe !== false) {
+      writer.uint32(288).bool(message.fgFollowsRecipe);
     }
     return writer;
   },
@@ -21880,6 +21889,14 @@ export const MBSpin: MessageFns<MBSpin> = {
           message.supersededBySpinCode = reader.string();
           continue;
         }
+        case 36: {
+          if (tag !== 288) {
+            break;
+          }
+
+          message.fgFollowsRecipe = reader.bool();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -22062,6 +22079,11 @@ export const MBSpin: MessageFns<MBSpin> = {
         : isSet(object.superseded_by_spin_code)
         ? globalThis.String(object.superseded_by_spin_code)
         : "",
+      fgFollowsRecipe: isSet(object.fgFollowsRecipe)
+        ? globalThis.Boolean(object.fgFollowsRecipe)
+        : isSet(object.fg_follows_recipe)
+        ? globalThis.Boolean(object.fg_follows_recipe)
+        : false,
     };
   },
 
@@ -22172,6 +22194,9 @@ export const MBSpin: MessageFns<MBSpin> = {
     if (message.supersededBySpinCode !== "") {
       obj.supersededBySpinCode = message.supersededBySpinCode;
     }
+    if (message.fgFollowsRecipe !== false) {
+      obj.fgFollowsRecipe = message.fgFollowsRecipe;
+    }
     return obj;
   },
 
@@ -22217,6 +22242,7 @@ export const MBSpin: MessageFns<MBSpin> = {
     message.supersededBySpinId = object.supersededBySpinId ?? "";
     message.supersededAt = object.supersededAt ?? "";
     message.supersededBySpinCode = object.supersededBySpinCode ?? "";
+    message.fgFollowsRecipe = object.fgFollowsRecipe ?? false;
     return message;
   },
 };
