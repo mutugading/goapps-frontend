@@ -4,11 +4,12 @@ import userEvent from "@testing-library/user-event"
 
 const createMutateAsync = vi.fn()
 const products = [
-  { productSysId: 1, productCode: "P-1", productName: "Poy One", shadeCode: "SH-1", erpItemCode: "OR1" },
-  { productSysId: 2, productCode: "P-2", productName: "Poy Two", shadeCode: "SH-2", erpItemCode: "" },
-  { productSysId: 3, productCode: "P-3", productName: "Poy NoShade", shadeCode: "", erpItemCode: "" },
+  { productTypeId: 9, productSysId: 1, productCode: "P-1", productName: "Poy One", shadeCode: "SH-1", erpItemCode: "OR1" },
+  { productTypeId: 9, productSysId: 2, productCode: "P-2", productName: "Poy Two", shadeCode: "SH-2", erpItemCode: "" },
+  { productTypeId: 9, productSysId: 3, productCode: "P-3", productName: "Poy NoShade", shadeCode: "", erpItemCode: "" },
 ]
 const listSpy = vi.fn()
+const typeItems: { typeId: number; typeCode: string; typeName: string }[] = [{ typeId: 9, typeCode: "POY", typeName: "POY" }]
 
 vi.mock("@/hooks/finance/use-cost-product-master", () => ({
   useCostProductMasters: (params: unknown) => {
@@ -18,7 +19,7 @@ vi.mock("@/hooks/finance/use-cost-product-master", () => ({
   useCreateCostProductMaster: () => ({ mutateAsync: createMutateAsync, isPending: false }),
 }))
 vi.mock("@/hooks/finance/use-cost-product-type", () => ({
-  useCostProductTypes: () => ({ data: { items: [{ typeId: 9, typeCode: "POY", typeName: "POY" }] } }),
+  useCostProductTypes: () => ({ data: { items: typeItems } }),
 }))
 
 import { FgPoyCombobox } from "@/components/finance/comboboxes/fg-poy-combobox"
@@ -38,6 +39,15 @@ describe("FgPoyCombobox", () => {
     expect(screen.getByText("Poy NoShade")).toBeInTheDocument()
     expect(screen.queryByText("Poy Two")).not.toBeInTheDocument()
     expect(listSpy).toHaveBeenCalledWith(expect.objectContaining({ productTypeIds: [9], activeFilter: "active" }))
+  })
+
+  it("lists nothing when the POY type cannot be resolved", async () => {
+    typeItems.length = 0
+    const user = userEvent.setup()
+    render(<FgPoyCombobox onChange={() => {}} />)
+    await user.click(screen.getByRole("combobox"))
+    expect(screen.queryByText("Poy One")).not.toBeInTheDocument()
+    typeItems.push({ typeId: 9, typeCode: "POY", typeName: "POY" })
   })
 
   it("selecting an item calls onChange with the product", async () => {

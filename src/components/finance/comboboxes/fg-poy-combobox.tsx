@@ -75,7 +75,9 @@ export function FgPoyCombobox({
 
   const items = useMemo(() => {
     const want = norm(shadeCode)
+    if (!poyTypeId) return [] // never list non-POY products while the type is unresolved
     return (data?.items ?? [])
+      .filter((p) => p.productTypeId === poyTypeId)
       .filter((p) => !want || !norm(p.shadeCode) || norm(p.shadeCode) === want)
       .map<FgPoyProduct>((p) => ({
         productSysId: p.productSysId,
@@ -84,7 +86,7 @@ export function FgPoyCombobox({
         erpItemCode: p.erpItemCode ?? "",
         shadeCode: p.shadeCode ?? "",
       }))
-  }, [data, shadeCode])
+  }, [data, shadeCode, poyTypeId])
 
   const selected = useMemo(
     () => items.find((p) => p.productSysId === value) ?? (picked && picked.productSysId === value ? picked : null),
