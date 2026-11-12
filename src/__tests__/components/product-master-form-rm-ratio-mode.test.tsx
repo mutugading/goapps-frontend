@@ -9,6 +9,9 @@ vi.mock("@/hooks/finance/use-cost-product-master", () => ({
 }))
 vi.mock("@/components/finance/comboboxes", () => ({ ProductTypeCombobox: () => null }))
 
+vi.mock("@/components/finance/shade", () => ({
+  ShadeCombobox: ({ code }: { code?: string }) => <div data-testid="shade-combobox">{code}</div>,
+}))
 import { ProductMasterFormDialog } from "@/components/finance/cost-product-master/product-master-form-dialog"
 import { normalizeCostProductMaster } from "@/types/finance/cost-product-master"
 
