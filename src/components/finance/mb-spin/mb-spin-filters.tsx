@@ -4,6 +4,8 @@ import { useCallback } from "react"
 import { X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { Switch } from "@/components/ui/switch"
+import { Label } from "@/components/ui/label"
 import {
   Select,
   SelectContent,
@@ -49,6 +51,7 @@ export function MBSpinFilters({ filters, onFiltersChange }: MBSpinFiltersProps) 
       pageSize: filters.pageSize,
       search: "",
       fgSearch: "",
+      includeSuperseded: false,
       activeFilter: ActiveFilter.ACTIVE_FILTER_UNSPECIFIED,
       sortBy: "code",
       sortOrder: "asc",
@@ -58,6 +61,7 @@ export function MBSpinFilters({ filters, onFiltersChange }: MBSpinFiltersProps) 
   const hasActiveFilters =
     !!filters.search ||
     !!filters.fgSearch ||
+    !!filters.includeSuperseded ||
     (filters.activeFilter !== undefined &&
       filters.activeFilter !== ActiveFilter.ACTIVE_FILTER_UNSPECIFIED)
 
@@ -101,6 +105,17 @@ export function MBSpinFilters({ filters, onFiltersChange }: MBSpinFiltersProps) 
           ))}
         </SelectContent>
       </Select>
+
+      <div className="flex h-10 items-center gap-2">
+        <Switch
+          id="mb-spin-include-superseded"
+          checked={!!filters.includeSuperseded}
+          onCheckedChange={(v) => onFiltersChange({ ...filters, includeSuperseded: v, page: 1 })}
+        />
+        <Label htmlFor="mb-spin-include-superseded" className="text-sm font-normal">
+          Show superseded
+        </Label>
+      </div>
 
       <Select value={currentSort} onValueChange={handleSortChange}>
         <SelectTrigger className="w-[150px]">
