@@ -31,7 +31,7 @@ export function MbSpinLinkCard({ productSysId }: Props) {
 }
 
 function Content({ productSysId, canRelink }: { productSysId: number; canRelink: boolean }) {
-  const { data: link, isLoading } = useCostProductMbLink(productSysId)
+  const { data: link, isLoading, isError, error } = useCostProductMbLink(productSysId)
   const relink = useRelinkCostProductMb()
   const [confirmOpen, setConfirmOpen] = useState(false)
 
@@ -41,8 +41,8 @@ function Content({ productSysId, canRelink }: { productSysId: number; canRelink:
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between gap-2 py-3">
-        <CardTitle className="flex items-center gap-2 text-sm font-medium">
+      <CardHeader className="flex flex-row items-center justify-between gap-2">
+        <CardTitle className="flex items-center gap-2 text-sm font-semibold">
           <Link2 className="h-4 w-4" /> MB Spin link
         </CardTitle>
         {canRelink && (
@@ -53,8 +53,10 @@ function Content({ productSysId, canRelink }: { productSysId: number; canRelink:
         )}
       </CardHeader>
       <CardContent className="space-y-2 text-sm">
-        {isLoading || !link ? (
-          <p className="text-muted-foreground">{isLoading ? "Loading…" : "No link information."}</p>
+        {isLoading || isError || !link ? (
+          <p className={isError ? "text-destructive" : "text-muted-foreground"}>
+            {isLoading ? "Loading…" : isError ? (error as Error)?.message || "Failed to load link information." : "No link information."}
+          </p>
         ) : (
           <>
             <div className="flex flex-wrap items-center gap-2">
