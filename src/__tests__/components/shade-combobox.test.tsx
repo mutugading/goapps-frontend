@@ -66,3 +66,22 @@ describe("ShadeCombobox", () => {
     expect(onSelect).not.toHaveBeenCalled()
   })
 })
+
+describe("ShadeCombobox clear (P7-R6)", () => {
+  it("does not show a clear control by default", () => {
+    render(<ShadeCombobox code="RED01" name="Bright Red" onSelect={vi.fn()} />)
+    expect(screen.queryByRole("button", { name: "Clear shade" })).not.toBeInTheDocument()
+  })
+
+  it("shows a clear control with allowClear and a value, and fires onClear", () => {
+    const onClear = vi.fn()
+    render(<ShadeCombobox allowClear onClear={onClear} code="RED01" name="Bright Red" onSelect={vi.fn()} />)
+    fireEvent.click(screen.getByRole("button", { name: "Clear shade" }))
+    expect(onClear).toHaveBeenCalledTimes(1)
+  })
+
+  it("hides the clear control when no value is set", () => {
+    render(<ShadeCombobox allowClear onClear={vi.fn()} code={undefined} name={undefined} onSelect={vi.fn()} />)
+    expect(screen.queryByRole("button", { name: "Clear shade" })).not.toBeInTheDocument()
+  })
+})

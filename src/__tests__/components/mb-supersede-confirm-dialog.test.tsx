@@ -73,4 +73,13 @@ describe("MbSupersedeConfirmDialog", () => {
     render(<MbSupersedeConfirmDialog open mbhId="m1" onOpenChange={vi.fn()} />)
     expect(screen.getByText("boom preview")).toBeInTheDocument()
   })
+
+  it("shows the error when the confirm request fails (P7-R3)", () => {
+    validateMutate.mockImplementation((_v: unknown, opts: { onError?: (e: Error) => void }) =>
+      opts.onError?.(new Error("server rejected")),
+    )
+    render(<MbSupersedeConfirmDialog open mbhId="m1" onOpenChange={vi.fn()} />)
+    fireEvent.click(screen.getByRole("button", { name: /replace & validate/i }))
+    expect(screen.getByText("server rejected")).toBeInTheDocument()
+  })
 })

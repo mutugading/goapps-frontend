@@ -95,6 +95,7 @@ vi.mock("@/components/finance/mb-spin", () => ({
       </div>
     ) : null,
   MBSpinDuplicateDialog: ({ open }: { open: boolean }) => (open ? <div>duplicate-dialog-open</div> : null),
+  MBSpinFgEditDialog: ({ open }: { open: boolean }) => (open ? <div>fg-edit-dialog-open</div> : null),
 }))
 
 import MbSpinDetailClient from "@/app/(dashboard)/finance/yarn-master/mb-spins/[id]/detail-client"
@@ -207,7 +208,7 @@ describe("MbSpinDetailClient", () => {
       mbSpinState.value = BASE_SPIN
       render(<MbSpinDetailClient id={SPIN_ID} />)
 
-      expect(screen.queryByRole("button", { name: /edit/i })).not.toBeInTheDocument()
+      expect(screen.queryByRole("button", { name: /^edit$/i })).not.toBeInTheDocument()
       expect(screen.queryByRole("button", { name: /delete/i })).not.toBeInTheDocument()
     })
 
@@ -217,7 +218,7 @@ describe("MbSpinDetailClient", () => {
       mbSpinState.value = BASE_SPIN
       render(<MbSpinDetailClient id={SPIN_ID} />)
 
-      expect(screen.getByRole("button", { name: /edit/i })).toBeInTheDocument()
+      expect(screen.getByRole("button", { name: /^edit$/i })).toBeInTheDocument()
       expect(screen.getByRole("button", { name: /delete/i })).toBeInTheDocument()
     })
 
@@ -242,7 +243,7 @@ describe("MbSpinDetailClient", () => {
       mbSpinState.value = BASE_SPIN
       render(<MbSpinDetailClient id={SPIN_ID} />)
 
-      await user.click(screen.getByRole("button", { name: /edit/i }))
+      await user.click(screen.getByRole("button", { name: /^edit$/i }))
       expect(screen.getByText("edit-dialog-open")).toBeInTheDocument()
     })
 
@@ -306,6 +307,47 @@ describe("MbSpinDetailClient", () => {
       expect(unsupersedeMutate).toHaveBeenCalledWith({ mbsId: SPIN_ID, mbhId: MBH_ID })
       expect(await screen.findByText(/Params reverted: 3/)).toBeInTheDocument()
       expect(screen.getByText(/manually changed/)).toBeInTheDocument()
+    })
+  })
+
+  describe("manual FG edit (P8)", () => {
+    it("shows Edit FG for a live legacy spin with update permission and opens the dialog", async () => {
+      mbSpinState.value = { ...BASE_SPIN, mbsIsActive: true, fgLinkSource: "MANUAL" }
+      render(<MbSpinDetailClient id={SPIN_ID} />)
+      await userEvent.click(screen.getByRole("button", { name: "Edit FG" }))
+      expect(screen.getByText("fg-edit-dialog-open")).toBeInTheDocument()
+    })
+
+    it("hides Edit FG without the update permission", () => {
+      permissionState.hasPermission = (c) => c !== "finance.yarnmaster.mbspin.update"
+      mbSpinState.value = { ...BASE_SPIN, mbsIsActive: true }
+      render(<MbSpinDetailClient id={SPIN_ID} />)
+      expect(screen.queryByRole("button", { name: "Edit FG" })).not.toBeInTheDocument()
+    })
+
+    it("hides Edit FG and shows a hint when the FG follows the recipe", () => {
+      mbSpinState.value = { ...BASE_SPIN, mbsIsActive: true, fgLinkSource: "RECIPE" }
+      render(<MbSpinDetailClient id={SPIN_ID} />)
+      expect(screen.queryByRole("button", { name: "Edit FG" })).not.toBeInTheDocument()
+      expect(screen.getByText("FG follows recipe")).toBeInTheDocument()
+    })
+
+    it("hides Edit FG for a superseded spin", () => {
+      mbSpinState.value = { ...BASE_SPIN, mbsIsActive: true, supersededBySpinId: "x" }
+      render(<MbSpinDetailClient id={SPIN_ID} />)
+      expect(screen.queryByRole("button", { name: "Edit FG" })).not.toBeInTheDocument()
+    })
+
+    it("hides Edit FG for an inactive spin", () => {
+      mbSpinState.value = { ...BASE_SPIN, mbsIsActive: false }
+      render(<MbSpinDetailClient id={SPIN_ID} />)
+      expect(screen.queryByRole("button", { name: "Edit FG" })).not.toBeInTheDocument()
+    })
+
+    it("disables Edit FG when the spin has no shade", () => {
+      mbSpinState.value = { ...BASE_SPIN, mbsIsActive: true, mbsShadeCode: "" }
+      render(<MbSpinDetailClient id={SPIN_ID} />)
+      expect(screen.getByRole("button", { name: "Edit FG" })).toBeDisabled()
     })
   })
 })

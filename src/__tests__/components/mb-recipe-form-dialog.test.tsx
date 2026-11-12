@@ -704,3 +704,19 @@ describe("MBRecipeFormDialog — P7 FG (POY) link", () => {
     expect(updateMutateAsync.mock.calls[0][0].data.fgProductId).toBe(9)
   })
 })
+
+describe("MBRecipeFormDialog — P7-R7 FG cleared when shade changes on edit", () => {
+  it("clears a pre-existing FG when a different shade is picked", () => {
+    renderDialog({ ...BASE_ROW, fgProductId: 5 } as MBHead)
+    expect(screen.getByTestId("fg-input")).toHaveValue("5")
+    fireEvent.change(screen.getByTestId("shade-code-input"), { target: { value: "OTHER-SHADE" } })
+    expect(screen.getByTestId("fg-input")).toHaveValue("")
+  })
+
+  it("keeps a pre-existing FG when the same shade is re-selected", () => {
+    renderDialog({ ...BASE_ROW, fgProductId: 5 } as MBHead)
+    const code = (screen.getByTestId("shade-code-input") as HTMLInputElement).value
+    fireEvent.change(screen.getByTestId("shade-code-input"), { target: { value: code.toLowerCase() + " " } })
+    expect(screen.getByTestId("fg-input")).toHaveValue("5")
+  })
+})
