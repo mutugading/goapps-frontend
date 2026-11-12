@@ -33,6 +33,7 @@ vi.mock("@/hooks/finance/use-cost-product-master", () => ({
   }),
 }))
 
+vi.mock("@/components/finance/cost-product-master/mb-spin-link-card", () => ({ MbSpinLinkCard: () => null }))
 vi.mock("@/providers/permission-provider", () => ({
   usePermissionContext: () => ({ hasPermission: () => true }),
 }))

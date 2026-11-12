@@ -37,6 +37,8 @@ import { ActiveFilter } from "@/types/finance/mb-spin"
 
 const defaultFilters: ListMBSpinsParams = {
   search: "",
+  fgSearch: "",
+  includeSuperseded: false,
   activeFilter: ActiveFilter.ACTIVE_FILTER_UNSPECIFIED,
   page: 1,
   pageSize: 20,

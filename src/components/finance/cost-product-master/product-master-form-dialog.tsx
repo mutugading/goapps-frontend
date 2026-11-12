@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { ProductTypeCombobox } from "@/components/finance/comboboxes"
+import { ShadeCombobox } from "@/components/finance/shade"
 import { useCreateCostProductMaster, useUpdateCostProductMaster } from "@/hooks/finance/use-cost-product-master"
 import type { CostProductMaster } from "@/types/finance/cost-product-master"
 
@@ -186,7 +187,14 @@ export function ProductMasterFormDialog({ open, onOpenChange, product, onSuccess
                   <FormItem>
                     <FormLabel>Shade</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="NL / Z114S / …" />
+                      <ShadeCombobox
+                        allowCreate
+                        allowClear
+                        onClear={() => field.onChange("")}
+                        code={field.value || undefined}
+                        name={product?.shadeCode && product.shadeCode === field.value ? product.shadeName : undefined}
+                        onSelect={(shadeCode) => field.onChange(shadeCode)}
+                      />
                     </FormControl>
                     <FormDescription>Optional master shade reference. MB SP Code & Dye will be filled automatically from this shade (if found in MB Spin or Superba Cost SP).</FormDescription>
                     <FormMessage />

@@ -3,7 +3,9 @@
 import type { MBSpin } from "@/types/finance/mb-spin"
 import {
   normalizeMBSpinDuplicateImpact,
+  normalizeUnsupersedeResult,
   type NormalizedMBSpinDuplicateImpact,
+  type NormalizedUnsupersedeResult,
   type RawMBSpinDuplicateImpact,
 } from "@/types/finance/mb-spin"
 
@@ -34,6 +36,8 @@ export interface DuplicateMBSpinInput {
   mbsMgtName?: string
   mbsDenier?: number
   mbsFilament?: number
+  // P7 — FG (POY) link for the clone. Optional; 0 / absent = inherit/none.
+  fgProductId?: number
 }
 
 // Clones mbsId into a fresh "R and D" draft child under mbhId. mbsMgtName/
@@ -46,12 +50,13 @@ export async function duplicateMBSpin({
   mbsMgtName,
   mbsDenier,
   mbsFilament,
+  fgProductId,
 }: DuplicateMBSpinInput): Promise<DuplicateMBSpinResult> {
   const res = await fetch(`/api/v1/finance/mb-spins/${mbsId}/duplicate`, {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ mbhId, mbsMgtName, mbsDenier, mbsFilament }),
+    body: JSON.stringify({ mbhId, mbsMgtName, mbsDenier, mbsFilament, fgProductId }),
   })
   const json = (await res.json()) as BFFEnvelope<MBSpin> & RawMBSpinDuplicateImpact
   if (json.base?.isSuccess === false) {
@@ -91,6 +96,8 @@ export interface UpdateMBSpinInput {
   mbsIsActive?: boolean
   mbsLdrAdjustmentPct?: number
   mbsLdrLockActual?: boolean
+  /** Manual FG link (P8): >0 link, 0 remove, omitted = unchanged. */
+  fgProductId?: number
 }
 
 // Updates mbsId and returns the saved spin plus whatever cascade result the
@@ -111,4 +118,32 @@ export async function updateMBSpin({ mbsId, ...body }: UpdateMBSpinInput): Promi
     spin: json.data as MBSpin,
     impact: normalizeMBSpinDuplicateImpact(json),
   }
+}
+
+// ============================================================================
+// P7 — Un-supersede (revert a legacy spin's supersede; RPC UnsupersedeMBSpin)
+// ============================================================================
+
+export interface UnsupersedeMBSpinInput {
+  mbsId: string
+  /** Parent MB Head UUID (optional; the backend ignores it when empty). */
+  mbhId?: string
+}
+
+// Forwards paramsReverted + skipped so the caller can show the revert summary.
+export async function unsupersedeMBSpin({
+  mbsId,
+  mbhId,
+}: UnsupersedeMBSpinInput): Promise<NormalizedUnsupersedeResult> {
+  const res = await fetch(`/api/v1/finance/mb-spins/${mbsId}/unsupersede`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ mbhId: mbhId ?? "" }),
+  })
+  const json = (await res.json()) as BFFEnvelope<MBSpin> & Record<string, unknown>
+  if (json.base?.isSuccess === false) {
+    throw new Error(json.base.message || "Failed to un-supersede MB Spin")
+  }
+  return normalizeUnsupersedeResult(json as unknown as Record<string, unknown>)
 }

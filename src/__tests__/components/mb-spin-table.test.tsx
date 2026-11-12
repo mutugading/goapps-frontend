@@ -100,3 +100,27 @@ describe("MBSpinTable optional row actions", () => {
     expect(screen.queryByTitle("Delete")).not.toBeInTheDocument()
   })
 })
+
+describe("MBSpinTable FG + superseded (P7-T4)", () => {
+  it("renders FG column and the superseded badge", () => {
+    render(
+      <MBSpinTable
+        data={[
+          {
+            ...items[0],
+            fgProductId: 5,
+            fgProductCode: "FG-1",
+            fgProductName: "POY One",
+            fgItemCode: "ORI-1",
+            supersededBySpinId: "33333333-3333-3333-3333-333333333333",
+            supersededBySpinCode: "MBS-NEW",
+          } as MBSpin,
+        ]}
+      />
+    )
+    expect(screen.getByText("FG (POY)")).toBeInTheDocument()
+    expect(screen.getByText(/FG-1/)).toBeInTheDocument()
+    expect(screen.getByText("ORI-1")).toBeInTheDocument()
+    expect(screen.getByText(/Superseded → MBS-NEW/)).toBeInTheDocument()
+  })
+})

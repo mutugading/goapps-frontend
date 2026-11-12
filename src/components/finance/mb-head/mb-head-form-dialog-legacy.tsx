@@ -9,6 +9,8 @@
  */
 "use client"
 
+import type { CreateMBHeadRequest } from "@/types/finance/mb-head"
+
 import { useEffect } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -177,7 +179,7 @@ export function MBHeadFormDialogLegacy({ open, onOpenChange, mbHead, onSuccess }
           mbhLustureCode: values.mbhLustureCode || undefined,
           mbhMachineId: values.mbhMachineId || undefined,
           additionalShades: [],
-        })
+        } as unknown as CreateMBHeadRequest)
       }
       onOpenChange(false)
       onSuccess?.()

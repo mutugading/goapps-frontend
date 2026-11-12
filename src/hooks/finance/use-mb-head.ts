@@ -2,7 +2,7 @@
 
 // MB Head Hooks - TanStack Query hooks for MB Head operations
 
-import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 
 import { createCrudHooks } from "@/lib/hooks"
@@ -40,6 +40,8 @@ import {
   submitMBHead,
   approveMBHead,
   validateMBHead,
+  getMBHeadSupersedePreview,
+  isSupersedeConfirmationRequiredError,
   unApproveMBHead,
   revokeMBHead,
   rejectMBHead,
@@ -290,12 +292,62 @@ export function useSubmitMBHead() {
   return useMbHeadTransition(submitMBHead, "MB Head submitted for approval", "Failed to submit MB Head")
 }
 
+// P7: Approve can return the 409 supersede gate (it lands in VALIDATED and repeats the same
+// check). The gate is NOT an error toast: it is re-thrown so the caller opens the supersede
+// confirm dialog. Every other failure toasts exactly like useMbHeadTransition.
 export function useApproveMBHead() {
-  return useMbHeadTransition(approveMBHead, "MB Head approved", "Failed to approve MB Head")
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (mbhId: string) => approveMBHead(mbhId),
+    onSuccess: (_, mbhId) => {
+      queryClient.invalidateQueries({ queryKey: mbHeadKeys.detail(mbhId) })
+      queryClient.invalidateQueries({ queryKey: mbHeadKeys.lists() })
+      toast.success("MB Head approved")
+    },
+    onError: (error: Error) => {
+      if (isSupersedeConfirmationRequiredError(error)) return
+      toast.error(error.message || "Failed to approve MB Head")
+    },
+  })
 }
 
+// P7: accepts the old `mutate(mbhId)` call shape OR `{ mbhId, confirmSupersede }` for the
+// supersede confirm flow. The 409 gate is rethrown, not toasted (see SupersedeConfirmationRequiredError).
+export type ValidateMBHeadVariables = string | { mbhId: string; confirmSupersede?: boolean }
+
 export function useValidateMBHead() {
-  return useMbHeadTransition(validateMBHead, "MB Head validated", "Failed to validate MB Head")
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (vars: ValidateMBHeadVariables) => {
+      const input = typeof vars === "string" ? { mbhId: vars } : vars
+      return validateMBHead(input.mbhId, { confirmSupersede: input.confirmSupersede === true })
+    },
+    onSuccess: (_, vars) => {
+      const mbhId = typeof vars === "string" ? vars : vars.mbhId
+      queryClient.invalidateQueries({ queryKey: mbHeadKeys.detail(mbhId) })
+      queryClient.invalidateQueries({ queryKey: mbHeadKeys.lists() })
+      if (typeof vars !== "string" && vars.confirmSupersede) {
+        queryClient.invalidateQueries({ queryKey: ["finance", "mb-spin"] })
+        queryClient.invalidateQueries({ queryKey: ["finance", "cost-product-parameter"] })
+        queryClient.invalidateQueries({ queryKey: ["finance", "cost-product-master"] })
+      }
+      toast.success("MB Head validated")
+    },
+    onError: (error: Error) => {
+      if (isSupersedeConfirmationRequiredError(error)) return
+      toast.error(error.message || "Failed to validate MB Head")
+    },
+  })
+}
+
+// P7: read-only supersede preview for the confirm dialog. Only fetches while the dialog is open.
+export function useMBHeadSupersedePreview(mbhId: string | undefined, enabled = true) {
+  return useQuery({
+    queryKey: [...mbHeadKeys.all, "supersede-preview", mbhId ?? ""] as const,
+    queryFn: () => getMBHeadSupersedePreview(mbhId as string),
+    enabled: enabled && !!mbhId,
+    staleTime: 0,
+  })
 }
 
 export function useUnApproveMBHead() {

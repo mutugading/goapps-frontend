@@ -63,7 +63,7 @@ export type { MBSpinRecalcSkipped } from "@/types/generated/finance/v1/yarn_mast
 // ============================================================================
 
 import { ActiveFilter } from "@/types/generated/finance/v1/uom"
-import type { MBSpinRecalcSkipped } from "@/types/generated/finance/v1/yarn_master"
+import type { MBSpin, MBSpinRecalcSkipped } from "@/types/generated/finance/v1/yarn_master"
 import {
   normalizeDozingImpactRow,
   type NormalizedDozingImpactRow,
@@ -85,6 +85,10 @@ export interface ListMBSpinsParams {
   activeFilter?: ActiveFilter
   sortBy?: string
   sortOrder?: string
+  // P7 — FG (POY) filter, free-text FG search (≤200 chars), and superseded-spin visibility.
+  fgProductId?: number
+  fgSearch?: string
+  includeSuperseded?: boolean
 }
 
 export interface ExportMBSpinsParams {
@@ -221,4 +225,57 @@ export function normalizeMBSpinDuplicateImpact(
     impactTotalLocked: Number(raw.impactTotalLocked ?? raw.impact_total_locked ?? 0),
     impactTruncated: raw.impactTruncated ?? raw.impact_truncated ?? false,
   }
+}
+
+// ============================================================================
+// P7 — Un-supersede (revert a supersede of a legacy spin)
+// ============================================================================
+
+export type {
+  UnsupersedeMBSpinRequest,
+  UnsupersedeMBSpinResponse,
+  MBUnsupersedeSkippedParam,
+} from "@/types/generated/finance/v1/yarn_master"
+
+import { rawRecords, toNumber, toStringValue, type RawRecord } from "@/types/finance/raw-coerce"
+
+export interface NormalizedUnsupersedeSkippedParam {
+  cppValueId: number
+  productSysId: number
+  productCode: string
+  paramCode: string
+  reason: string
+}
+
+export interface NormalizedUnsupersedeResult {
+  /** Restored spin as returned by the backend (null when the BFF sent none). */
+  spin: MBSpin | null
+  paramsReverted: number
+  skipped: NormalizedUnsupersedeSkippedParam[]
+}
+
+/** Normalizes the un-supersede envelope (BFF forwards data / paramsReverted / skipped). */
+export function normalizeUnsupersedeResult(raw: RawRecord | undefined | null): NormalizedUnsupersedeResult {
+  const r = (raw ?? {}) as RawRecord
+  return {
+    spin: (r.data ?? null) as MBSpin | null,
+    paramsReverted: toNumber(r.paramsReverted ?? r.params_reverted),
+    skipped: rawRecords(r.skipped).map((s) => ({
+      cppValueId: toNumber(s.cppValueId ?? s.cpp_value_id),
+      productSysId: toNumber(s.productSysId ?? s.product_sys_id),
+      productCode: toStringValue(s.productCode ?? s.product_code),
+      paramCode: toStringValue(s.paramCode ?? s.param_code),
+      reason: toStringValue(s.reason),
+    })),
+  }
+}
+
+/**
+ * Reads MBSpin.fg_follows_recipe (read-only; true when the backend would reject
+ * a manual FG edit with ErrFgFollowsRecipe). Accepts camelCase and snake_case,
+ * defaults to false for older responses.
+ */
+export function normalizeFgFollowsRecipe(raw: unknown): boolean {
+  const r = (raw ?? {}) as RawRecord
+  return (r.fgFollowsRecipe ?? r.fg_follows_recipe) === true
 }

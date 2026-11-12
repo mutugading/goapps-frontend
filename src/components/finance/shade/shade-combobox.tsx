@@ -24,7 +24,7 @@
 // whether that pair matches any row returned by the search. Selecting a row
 // from the list always overwrites both via onSelect — nothing here can make
 // an already-saved value blank or unsavable.
-import { Check, ChevronsUpDown, Loader2, Plus } from "lucide-react"
+import { Check, ChevronsUpDown, Loader2, Plus, X } from "lucide-react"
 import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
@@ -55,6 +55,10 @@ interface ShadeComboboxProps {
   onSelect: (shadeCode: string, shadeName: string) => void
   /** Allow entering a shade not in master (backend auto-creates it on recipe save). Default false. */
   allowCreate?: boolean
+  /** Show a clear control when a value is set (default off). */
+  allowClear?: boolean
+  /** Fired when the clear control is used. */
+  onClear?: () => void
   placeholder?: string
   disabled?: boolean
   className?: string
@@ -65,6 +69,8 @@ export function ShadeCombobox({
   name,
   onSelect,
   allowCreate = false,
+  allowClear = false,
+  onClear,
   placeholder = "Select shade…",
   disabled,
   className,
@@ -90,6 +96,7 @@ export function ShadeCombobox({
   const hasValue = Boolean(code || name)
 
   return (
+    <div className="flex items-center gap-1">
     <Popover
       open={open}
       onOpenChange={(o) => {
@@ -234,5 +241,17 @@ export function ShadeCombobox({
         )}
       </PopoverContent>
     </Popover>
+    {allowClear && hasValue && !disabled && (
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        aria-label="Clear shade"
+        onClick={() => onClear?.()}
+      >
+        <X className="h-4 w-4" />
+      </Button>
+    )}
+    </div>
   )
 }

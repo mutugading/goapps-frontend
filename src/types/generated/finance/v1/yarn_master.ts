@@ -1509,6 +1509,18 @@ export interface MBHead {
     | undefined;
   /** Oracle Orion item code (VARCHAR(200), optional; empty = none). */
   mbhOrionItemCode: string;
+  /** FG (finished-goods) product link, cost_product_master id (0 = not linked). mb-spin-fg-poy-link. */
+  fgProductId: number;
+  /** FG product ERP item code (read-only, denormalized). */
+  fgItemCode: string;
+  /** FG product code (read-only, denormalized). */
+  fgProductCode: string;
+  /** FG product name (read-only, denormalized). */
+  fgProductName: string;
+  /** UUID of the newer head that superseded this one (empty = not superseded). */
+  supersededByHeadId: string;
+  /** Timestamp when superseded (empty = not superseded). */
+  supersededAt: string;
 }
 
 /** CreateMBHeadRequest is the request for creating an MB Head record. */
@@ -1602,7 +1614,11 @@ export interface CreateMBHeadRequest {
   /** Additional shades (max 2). */
   additionalShades: MBHeadShadeInput[];
   /** Oracle Orion item code (optional, max 200; empty = none). */
-  mbhOrionItemCode?: string | undefined;
+  mbhOrionItemCode?:
+    | string
+    | undefined;
+  /** FG product link (cost_product_master id). 0 = not set. */
+  fgProductId: number;
 }
 
 /** CreateMBHeadResponse is the response for creating an MB Head record. */
@@ -1731,7 +1747,11 @@ export interface UpdateMBHeadRequest {
     | boolean
     | undefined;
   /** Oracle Orion item code (max 200). Absent = unchanged, "" = clear. */
-  mbhOrionItemCode?: string | undefined;
+  mbhOrionItemCode?:
+    | string
+    | undefined;
+  /** FG product link (cost_product_master id). Absent = unchanged; 0 = clear the link. */
+  fgProductId?: number | undefined;
 }
 
 /** UpdateMBHeadResponse is the response for updating an MB Head record. */
@@ -1998,6 +2018,8 @@ export interface ApproveMBHeadResponse {
 export interface ValidateMBHeadRequest {
   /** MB Head UUID. */
   mbhId: string;
+  /** Set true to confirm superseding older spins reported by PreviewMBHeadSupersede. */
+  confirmSupersede: boolean;
 }
 
 /** ValidateMBHeadResponse is the response for validating an MB Head. */
@@ -2401,6 +2423,27 @@ export interface MBSpin {
   mbsCrossSection: string;
   /** Oracle Orion item code (output-only, read-only; inherited from head when empty). */
   mbsOrionItemCode: string;
+  /** FG product link, cost_product_master id (0 = not linked). mb-spin-fg-poy-link. */
+  fgProductId: number;
+  /** FG product ERP item code (read-only, denormalized). */
+  fgItemCode: string;
+  /** FG product code (read-only, denormalized). */
+  fgProductCode: string;
+  /** FG product name (read-only, denormalized). */
+  fgProductName: string;
+  /** How the FG link was derived (RECIPE | DUPLICATE | MANUAL | BACKFILL; empty = none). */
+  fgLinkSource: string;
+  /** UUID of the spin that superseded this one (empty = not superseded). */
+  supersededBySpinId: string;
+  /** Timestamp when superseded (empty = not superseded). */
+  supersededAt: string;
+  /** Code of the superseding spin (convenience for the "Superseded -> <code>" badge). */
+  supersededBySpinCode: string;
+  /**
+   * True when the FG link follows the recipe and cannot be edited on the spin
+   * (link source RECIPE, or root spin of a recipe that has an FG). Read-only.
+   */
+  fgFollowsRecipe: boolean;
 }
 
 /** CreateMBSpinRequest is the request for creating an MB Spin record. */
@@ -2570,7 +2613,15 @@ export interface UpdateMBSpinRequest {
     | boolean
     | undefined;
   /** Optional VS reference number. Absent = leave unchanged. */
-  mbsVsNumber?: string | undefined;
+  mbsVsNumber?:
+    | string
+    | undefined;
+  /**
+   * Optional FG (POY) product link (mb-spin-fg-poy-link P8). Absent = leave unchanged,
+   * 0 = clear the link, >0 = link to this active POY product (link source MANUAL).
+   * Rejected for spins whose FG comes from their recipe (link source RECIPE) and for superseded/inactive spins.
+   */
+  fgProductId?: number | undefined;
 }
 
 /** UpdateMBSpinResponse is the response for updating an MB Spin record. */
@@ -2637,6 +2688,12 @@ export interface ListMBSpinsRequest {
   sortBy: string;
   /** Sort direction. */
   sortOrder: string;
+  /** Filter by FG product id. 0 = no filter. */
+  fgProductId: number;
+  /** Search by FG product code / name / orion item code (max 200 chars). */
+  fgSearch: string;
+  /** Include superseded spins. Default false = superseded spins are hidden; true = list them too. */
+  includeSuperseded: boolean;
 }
 
 /** ListMBSpinsResponse is the response for listing MB Spin records. */
@@ -2753,7 +2810,11 @@ export interface DuplicateMBSpinRequest {
    * zero. Absent means the source value is copied as-is. Same stricter-than-
    * Create/Update reasoning as mbs_denier above.
    */
-  mbsFilament?: number | undefined;
+  mbsFilament?:
+    | number
+    | undefined;
+  /** FG product link for the clone (cost_product_master id). 0 = no FG link (the source FG is never copied; it would collide on shade+FG). */
+  fgProductId: number;
 }
 
 /**
@@ -4316,6 +4377,122 @@ export interface PreviewDozingImpactResponse {
   truncated: boolean;
   /** Free-form note used to report data anomalies detected while resolving impact. */
   note: string;
+}
+
+/** PreviewMBHeadSupersedeRequest asks what Validate of this head would supersede. */
+export interface PreviewMBHeadSupersedeRequest {
+  /** MB Head UUID. */
+  mbhId: string;
+}
+
+/** MBSupersedeFilledByCount counts affected param rows per filled_by source. */
+export interface MBSupersedeFilledByCount {
+  /** Param filled_by source (e.g. AUTOFILL, MANUAL, IMPORT). */
+  filledBy: string;
+  /** Number of rows. */
+  count: number;
+}
+
+/** MBSupersedeAffectedProduct is a product whose MB_SP_CODE param would be repointed. */
+export interface MBSupersedeAffectedProduct {
+  /** cost_product_master id. */
+  productSysId: number;
+  /** Product code. */
+  productCode: string;
+  /** Product name. */
+  productName: string;
+  /** Param filled_by source for this product. */
+  filledBy: string;
+}
+
+/** MBSupersedeCandidate describes one old spin that would be superseded. */
+export interface MBSupersedeCandidate {
+  /** Old spin UUID. */
+  oldSpinId: string;
+  /** Old spin code. */
+  oldSpinCode: string;
+  /** Shade code. */
+  shadeCode: string;
+  /** FG product id (0 = none). */
+  fgProductId: number;
+  /** FG product code. */
+  fgProductCode: string;
+  /** Old head UUID. */
+  oldHeadId: string;
+  /** Old head code. */
+  oldHeadCode: string;
+  /** True if the old head would be deactivated. */
+  oldHeadWillDeactivate: boolean;
+  /** Product sys id of the old MB product. */
+  oldMbProductSysId: number;
+  /** True if the old MB product would be deactivated. */
+  oldMbProductWillDeactivate: boolean;
+  /** Param rows that would be repointed (pointer rows). */
+  paramRowsPointer: number;
+  /** Param rows that are text-only (not repointed). */
+  paramRowsTextOnly: number;
+  /** Breakdown of affected rows by filled_by. */
+  filledByCounts: MBSupersedeFilledByCount[];
+  /** Products affected. */
+  affectedProducts: MBSupersedeAffectedProduct[];
+  /** Warnings (e.g. duplicated orion code text rows not repointed). */
+  warnings: string[];
+}
+
+/** MBHeadSupersedePreview is the preview payload. */
+export interface MBHeadSupersedePreview {
+  /** True when the caller must pass confirm_supersede=true on Validate. */
+  requiresConfirmation: boolean;
+  /** Candidates that would be superseded. */
+  candidates: MBSupersedeCandidate[];
+}
+
+/** PreviewMBHeadSupersedeResponse is the response for PreviewMBHeadSupersede. */
+export interface PreviewMBHeadSupersedeResponse {
+  /** Standard response metadata. */
+  base:
+    | BaseResponse
+    | undefined;
+  /** Preview data. */
+  data: MBHeadSupersedePreview | undefined;
+}
+
+/** UnsupersedeMBSpinRequest reverts a supersede of a spin. */
+export interface UnsupersedeMBSpinRequest {
+  /** Parent MB Head UUID (path parameter; optional, ignored when empty). */
+  mbhId: string;
+  /** Superseded MB Spin UUID. */
+  mbsId: string;
+}
+
+/** MBUnsupersedeSkippedParam is a param row that could not be reverted. */
+export interface MBUnsupersedeSkippedParam {
+  /** cost_product_param_value id. */
+  cppValueId: number;
+  /** Product sys id. */
+  productSysId: number;
+  /** Product code. */
+  productCode: string;
+  /** Param code. */
+  paramCode: string;
+  /** Reason skipped. */
+  reason: string;
+}
+
+/** UnsupersedeMBSpinResponse is the response for UnsupersedeMBSpin. */
+export interface UnsupersedeMBSpinResponse {
+  /** Standard response metadata. */
+  base:
+    | BaseResponse
+    | undefined;
+  /** Restored spin. */
+  data:
+    | MBSpin
+    | undefined;
+  /** Number of param rows reverted. */
+  paramsReverted: number;
+  /** Param rows skipped. */
+  skipped: MBUnsupersedeSkippedParam[];
 }
 
 function createBaseMachine(): Machine {
@@ -14514,6 +14691,12 @@ function createBaseMBHead(): MBHead {
     mbhCheckStatusCalc: undefined,
     mbhUnlockReason: undefined,
     mbhOrionItemCode: "",
+    fgProductId: 0,
+    fgItemCode: "",
+    fgProductCode: "",
+    fgProductName: "",
+    supersededByHeadId: "",
+    supersededAt: "",
   };
 }
 
@@ -14656,6 +14839,24 @@ export const MBHead: MessageFns<MBHead> = {
     }
     if (message.mbhOrionItemCode !== "") {
       writer.uint32(370).string(message.mbhOrionItemCode);
+    }
+    if (message.fgProductId !== 0) {
+      writer.uint32(376).int64(message.fgProductId);
+    }
+    if (message.fgItemCode !== "") {
+      writer.uint32(386).string(message.fgItemCode);
+    }
+    if (message.fgProductCode !== "") {
+      writer.uint32(394).string(message.fgProductCode);
+    }
+    if (message.fgProductName !== "") {
+      writer.uint32(402).string(message.fgProductName);
+    }
+    if (message.supersededByHeadId !== "") {
+      writer.uint32(410).string(message.supersededByHeadId);
+    }
+    if (message.supersededAt !== "") {
+      writer.uint32(418).string(message.supersededAt);
     }
     return writer;
   },
@@ -15035,6 +15236,54 @@ export const MBHead: MessageFns<MBHead> = {
           message.mbhOrionItemCode = reader.string();
           continue;
         }
+        case 47: {
+          if (tag !== 376) {
+            break;
+          }
+
+          message.fgProductId = longToNumber(reader.int64());
+          continue;
+        }
+        case 48: {
+          if (tag !== 386) {
+            break;
+          }
+
+          message.fgItemCode = reader.string();
+          continue;
+        }
+        case 49: {
+          if (tag !== 394) {
+            break;
+          }
+
+          message.fgProductCode = reader.string();
+          continue;
+        }
+        case 50: {
+          if (tag !== 402) {
+            break;
+          }
+
+          message.fgProductName = reader.string();
+          continue;
+        }
+        case 51: {
+          if (tag !== 410) {
+            break;
+          }
+
+          message.supersededByHeadId = reader.string();
+          continue;
+        }
+        case 52: {
+          if (tag !== 418) {
+            break;
+          }
+
+          message.supersededAt = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -15272,6 +15521,36 @@ export const MBHead: MessageFns<MBHead> = {
         : isSet(object.mbh_orion_item_code)
         ? globalThis.String(object.mbh_orion_item_code)
         : "",
+      fgProductId: isSet(object.fgProductId)
+        ? globalThis.Number(object.fgProductId)
+        : isSet(object.fg_product_id)
+        ? globalThis.Number(object.fg_product_id)
+        : 0,
+      fgItemCode: isSet(object.fgItemCode)
+        ? globalThis.String(object.fgItemCode)
+        : isSet(object.fg_item_code)
+        ? globalThis.String(object.fg_item_code)
+        : "",
+      fgProductCode: isSet(object.fgProductCode)
+        ? globalThis.String(object.fgProductCode)
+        : isSet(object.fg_product_code)
+        ? globalThis.String(object.fg_product_code)
+        : "",
+      fgProductName: isSet(object.fgProductName)
+        ? globalThis.String(object.fgProductName)
+        : isSet(object.fg_product_name)
+        ? globalThis.String(object.fg_product_name)
+        : "",
+      supersededByHeadId: isSet(object.supersededByHeadId)
+        ? globalThis.String(object.supersededByHeadId)
+        : isSet(object.superseded_by_head_id)
+        ? globalThis.String(object.superseded_by_head_id)
+        : "",
+      supersededAt: isSet(object.supersededAt)
+        ? globalThis.String(object.supersededAt)
+        : isSet(object.superseded_at)
+        ? globalThis.String(object.superseded_at)
+        : "",
     };
   },
 
@@ -15415,6 +15694,24 @@ export const MBHead: MessageFns<MBHead> = {
     if (message.mbhOrionItemCode !== "") {
       obj.mbhOrionItemCode = message.mbhOrionItemCode;
     }
+    if (message.fgProductId !== 0) {
+      obj.fgProductId = Math.round(message.fgProductId);
+    }
+    if (message.fgItemCode !== "") {
+      obj.fgItemCode = message.fgItemCode;
+    }
+    if (message.fgProductCode !== "") {
+      obj.fgProductCode = message.fgProductCode;
+    }
+    if (message.fgProductName !== "") {
+      obj.fgProductName = message.fgProductName;
+    }
+    if (message.supersededByHeadId !== "") {
+      obj.supersededByHeadId = message.supersededByHeadId;
+    }
+    if (message.supersededAt !== "") {
+      obj.supersededAt = message.supersededAt;
+    }
     return obj;
   },
 
@@ -15471,6 +15768,12 @@ export const MBHead: MessageFns<MBHead> = {
     message.mbhCheckStatusCalc = object.mbhCheckStatusCalc ?? undefined;
     message.mbhUnlockReason = object.mbhUnlockReason ?? undefined;
     message.mbhOrionItemCode = object.mbhOrionItemCode ?? "";
+    message.fgProductId = object.fgProductId ?? 0;
+    message.fgItemCode = object.fgItemCode ?? "";
+    message.fgProductCode = object.fgProductCode ?? "";
+    message.fgProductName = object.fgProductName ?? "";
+    message.supersededByHeadId = object.supersededByHeadId ?? "";
+    message.supersededAt = object.supersededAt ?? "";
     return message;
   },
 };
@@ -15500,6 +15803,7 @@ function createBaseCreateMBHeadRequest(): CreateMBHeadRequest {
     mbhNoOfProcess: undefined,
     additionalShades: [],
     mbhOrionItemCode: undefined,
+    fgProductId: 0,
   };
 }
 
@@ -15573,6 +15877,9 @@ export const CreateMBHeadRequest: MessageFns<CreateMBHeadRequest> = {
     }
     if (message.mbhOrionItemCode !== undefined) {
       writer.uint32(186).string(message.mbhOrionItemCode);
+    }
+    if (message.fgProductId !== 0) {
+      writer.uint32(192).int64(message.fgProductId);
     }
     return writer;
   },
@@ -15768,6 +16075,14 @@ export const CreateMBHeadRequest: MessageFns<CreateMBHeadRequest> = {
           message.mbhOrionItemCode = reader.string();
           continue;
         }
+        case 24: {
+          if (tag !== 192) {
+            break;
+          }
+
+          message.fgProductId = longToNumber(reader.int64());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -15894,6 +16209,11 @@ export const CreateMBHeadRequest: MessageFns<CreateMBHeadRequest> = {
         : isSet(object.mbh_orion_item_code)
         ? globalThis.String(object.mbh_orion_item_code)
         : undefined,
+      fgProductId: isSet(object.fgProductId)
+        ? globalThis.Number(object.fgProductId)
+        : isSet(object.fg_product_id)
+        ? globalThis.Number(object.fg_product_id)
+        : 0,
     };
   },
 
@@ -15968,6 +16288,9 @@ export const CreateMBHeadRequest: MessageFns<CreateMBHeadRequest> = {
     if (message.mbhOrionItemCode !== undefined) {
       obj.mbhOrionItemCode = message.mbhOrionItemCode;
     }
+    if (message.fgProductId !== 0) {
+      obj.fgProductId = Math.round(message.fgProductId);
+    }
     return obj;
   },
 
@@ -15999,6 +16322,7 @@ export const CreateMBHeadRequest: MessageFns<CreateMBHeadRequest> = {
     message.mbhNoOfProcess = object.mbhNoOfProcess ?? undefined;
     message.additionalShades = object.additionalShades?.map((e) => MBHeadShadeInput.fromPartial(e)) || [];
     message.mbhOrionItemCode = object.mbhOrionItemCode ?? undefined;
+    message.fgProductId = object.fgProductId ?? 0;
     return message;
   },
 };
@@ -16249,6 +16573,7 @@ function createBaseUpdateMBHeadRequest(): UpdateMBHeadRequest {
     additionalShades: [],
     replaceAdditionalShades: undefined,
     mbhOrionItemCode: undefined,
+    fgProductId: undefined,
   };
 }
 
@@ -16325,6 +16650,9 @@ export const UpdateMBHeadRequest: MessageFns<UpdateMBHeadRequest> = {
     }
     if (message.mbhOrionItemCode !== undefined) {
       writer.uint32(194).string(message.mbhOrionItemCode);
+    }
+    if (message.fgProductId !== undefined) {
+      writer.uint32(200).int64(message.fgProductId);
     }
     return writer;
   },
@@ -16528,6 +16856,14 @@ export const UpdateMBHeadRequest: MessageFns<UpdateMBHeadRequest> = {
           message.mbhOrionItemCode = reader.string();
           continue;
         }
+        case 25: {
+          if (tag !== 200) {
+            break;
+          }
+
+          message.fgProductId = longToNumber(reader.int64());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -16659,6 +16995,11 @@ export const UpdateMBHeadRequest: MessageFns<UpdateMBHeadRequest> = {
         : isSet(object.mbh_orion_item_code)
         ? globalThis.String(object.mbh_orion_item_code)
         : undefined,
+      fgProductId: isSet(object.fgProductId)
+        ? globalThis.Number(object.fgProductId)
+        : isSet(object.fg_product_id)
+        ? globalThis.Number(object.fg_product_id)
+        : undefined,
     };
   },
 
@@ -16736,6 +17077,9 @@ export const UpdateMBHeadRequest: MessageFns<UpdateMBHeadRequest> = {
     if (message.mbhOrionItemCode !== undefined) {
       obj.mbhOrionItemCode = message.mbhOrionItemCode;
     }
+    if (message.fgProductId !== undefined) {
+      obj.fgProductId = Math.round(message.fgProductId);
+    }
     return obj;
   },
 
@@ -16768,6 +17112,7 @@ export const UpdateMBHeadRequest: MessageFns<UpdateMBHeadRequest> = {
     message.additionalShades = object.additionalShades?.map((e) => MBHeadShadeInput.fromPartial(e)) || [];
     message.replaceAdditionalShades = object.replaceAdditionalShades ?? undefined;
     message.mbhOrionItemCode = object.mbhOrionItemCode ?? undefined;
+    message.fgProductId = object.fgProductId ?? undefined;
     return message;
   },
 };
@@ -18588,13 +18933,16 @@ export const ApproveMBHeadResponse: MessageFns<ApproveMBHeadResponse> = {
 };
 
 function createBaseValidateMBHeadRequest(): ValidateMBHeadRequest {
-  return { mbhId: "" };
+  return { mbhId: "", confirmSupersede: false };
 }
 
 export const ValidateMBHeadRequest: MessageFns<ValidateMBHeadRequest> = {
   encode(message: ValidateMBHeadRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.mbhId !== "") {
       writer.uint32(10).string(message.mbhId);
+    }
+    if (message.confirmSupersede !== false) {
+      writer.uint32(16).bool(message.confirmSupersede);
     }
     return writer;
   },
@@ -18614,6 +18962,14 @@ export const ValidateMBHeadRequest: MessageFns<ValidateMBHeadRequest> = {
           message.mbhId = reader.string();
           continue;
         }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.confirmSupersede = reader.bool();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -18630,6 +18986,11 @@ export const ValidateMBHeadRequest: MessageFns<ValidateMBHeadRequest> = {
         : isSet(object.mbh_id)
         ? globalThis.String(object.mbh_id)
         : "",
+      confirmSupersede: isSet(object.confirmSupersede)
+        ? globalThis.Boolean(object.confirmSupersede)
+        : isSet(object.confirm_supersede)
+        ? globalThis.Boolean(object.confirm_supersede)
+        : false,
     };
   },
 
@@ -18637,6 +18998,9 @@ export const ValidateMBHeadRequest: MessageFns<ValidateMBHeadRequest> = {
     const obj: any = {};
     if (message.mbhId !== "") {
       obj.mbhId = message.mbhId;
+    }
+    if (message.confirmSupersede !== false) {
+      obj.confirmSupersede = message.confirmSupersede;
     }
     return obj;
   },
@@ -18647,6 +19011,7 @@ export const ValidateMBHeadRequest: MessageFns<ValidateMBHeadRequest> = {
   fromPartial(object: DeepPartial<ValidateMBHeadRequest>): ValidateMBHeadRequest {
     const message = createBaseValidateMBHeadRequest();
     message.mbhId = object.mbhId ?? "";
+    message.confirmSupersede = object.confirmSupersede ?? false;
     return message;
   },
 };
@@ -21112,6 +21477,15 @@ function createBaseMBSpin(): MBSpin {
     mbsShadeName: "",
     mbsCrossSection: "",
     mbsOrionItemCode: "",
+    fgProductId: 0,
+    fgItemCode: "",
+    fgProductCode: "",
+    fgProductName: "",
+    fgLinkSource: "",
+    supersededBySpinId: "",
+    supersededAt: "",
+    supersededBySpinCode: "",
+    fgFollowsRecipe: false,
   };
 }
 
@@ -21197,6 +21571,33 @@ export const MBSpin: MessageFns<MBSpin> = {
     }
     if (message.mbsOrionItemCode !== "") {
       writer.uint32(218).string(message.mbsOrionItemCode);
+    }
+    if (message.fgProductId !== 0) {
+      writer.uint32(224).int64(message.fgProductId);
+    }
+    if (message.fgItemCode !== "") {
+      writer.uint32(234).string(message.fgItemCode);
+    }
+    if (message.fgProductCode !== "") {
+      writer.uint32(242).string(message.fgProductCode);
+    }
+    if (message.fgProductName !== "") {
+      writer.uint32(250).string(message.fgProductName);
+    }
+    if (message.fgLinkSource !== "") {
+      writer.uint32(258).string(message.fgLinkSource);
+    }
+    if (message.supersededBySpinId !== "") {
+      writer.uint32(266).string(message.supersededBySpinId);
+    }
+    if (message.supersededAt !== "") {
+      writer.uint32(274).string(message.supersededAt);
+    }
+    if (message.supersededBySpinCode !== "") {
+      writer.uint32(282).string(message.supersededBySpinCode);
+    }
+    if (message.fgFollowsRecipe !== false) {
+      writer.uint32(288).bool(message.fgFollowsRecipe);
     }
     return writer;
   },
@@ -21424,6 +21825,78 @@ export const MBSpin: MessageFns<MBSpin> = {
           message.mbsOrionItemCode = reader.string();
           continue;
         }
+        case 28: {
+          if (tag !== 224) {
+            break;
+          }
+
+          message.fgProductId = longToNumber(reader.int64());
+          continue;
+        }
+        case 29: {
+          if (tag !== 234) {
+            break;
+          }
+
+          message.fgItemCode = reader.string();
+          continue;
+        }
+        case 30: {
+          if (tag !== 242) {
+            break;
+          }
+
+          message.fgProductCode = reader.string();
+          continue;
+        }
+        case 31: {
+          if (tag !== 250) {
+            break;
+          }
+
+          message.fgProductName = reader.string();
+          continue;
+        }
+        case 32: {
+          if (tag !== 258) {
+            break;
+          }
+
+          message.fgLinkSource = reader.string();
+          continue;
+        }
+        case 33: {
+          if (tag !== 266) {
+            break;
+          }
+
+          message.supersededBySpinId = reader.string();
+          continue;
+        }
+        case 34: {
+          if (tag !== 274) {
+            break;
+          }
+
+          message.supersededAt = reader.string();
+          continue;
+        }
+        case 35: {
+          if (tag !== 282) {
+            break;
+          }
+
+          message.supersededBySpinCode = reader.string();
+          continue;
+        }
+        case 36: {
+          if (tag !== 288) {
+            break;
+          }
+
+          message.fgFollowsRecipe = reader.bool();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -21566,6 +22039,51 @@ export const MBSpin: MessageFns<MBSpin> = {
         : isSet(object.mbs_orion_item_code)
         ? globalThis.String(object.mbs_orion_item_code)
         : "",
+      fgProductId: isSet(object.fgProductId)
+        ? globalThis.Number(object.fgProductId)
+        : isSet(object.fg_product_id)
+        ? globalThis.Number(object.fg_product_id)
+        : 0,
+      fgItemCode: isSet(object.fgItemCode)
+        ? globalThis.String(object.fgItemCode)
+        : isSet(object.fg_item_code)
+        ? globalThis.String(object.fg_item_code)
+        : "",
+      fgProductCode: isSet(object.fgProductCode)
+        ? globalThis.String(object.fgProductCode)
+        : isSet(object.fg_product_code)
+        ? globalThis.String(object.fg_product_code)
+        : "",
+      fgProductName: isSet(object.fgProductName)
+        ? globalThis.String(object.fgProductName)
+        : isSet(object.fg_product_name)
+        ? globalThis.String(object.fg_product_name)
+        : "",
+      fgLinkSource: isSet(object.fgLinkSource)
+        ? globalThis.String(object.fgLinkSource)
+        : isSet(object.fg_link_source)
+        ? globalThis.String(object.fg_link_source)
+        : "",
+      supersededBySpinId: isSet(object.supersededBySpinId)
+        ? globalThis.String(object.supersededBySpinId)
+        : isSet(object.superseded_by_spin_id)
+        ? globalThis.String(object.superseded_by_spin_id)
+        : "",
+      supersededAt: isSet(object.supersededAt)
+        ? globalThis.String(object.supersededAt)
+        : isSet(object.superseded_at)
+        ? globalThis.String(object.superseded_at)
+        : "",
+      supersededBySpinCode: isSet(object.supersededBySpinCode)
+        ? globalThis.String(object.supersededBySpinCode)
+        : isSet(object.superseded_by_spin_code)
+        ? globalThis.String(object.superseded_by_spin_code)
+        : "",
+      fgFollowsRecipe: isSet(object.fgFollowsRecipe)
+        ? globalThis.Boolean(object.fgFollowsRecipe)
+        : isSet(object.fg_follows_recipe)
+        ? globalThis.Boolean(object.fg_follows_recipe)
+        : false,
     };
   },
 
@@ -21652,6 +22170,33 @@ export const MBSpin: MessageFns<MBSpin> = {
     if (message.mbsOrionItemCode !== "") {
       obj.mbsOrionItemCode = message.mbsOrionItemCode;
     }
+    if (message.fgProductId !== 0) {
+      obj.fgProductId = Math.round(message.fgProductId);
+    }
+    if (message.fgItemCode !== "") {
+      obj.fgItemCode = message.fgItemCode;
+    }
+    if (message.fgProductCode !== "") {
+      obj.fgProductCode = message.fgProductCode;
+    }
+    if (message.fgProductName !== "") {
+      obj.fgProductName = message.fgProductName;
+    }
+    if (message.fgLinkSource !== "") {
+      obj.fgLinkSource = message.fgLinkSource;
+    }
+    if (message.supersededBySpinId !== "") {
+      obj.supersededBySpinId = message.supersededBySpinId;
+    }
+    if (message.supersededAt !== "") {
+      obj.supersededAt = message.supersededAt;
+    }
+    if (message.supersededBySpinCode !== "") {
+      obj.supersededBySpinCode = message.supersededBySpinCode;
+    }
+    if (message.fgFollowsRecipe !== false) {
+      obj.fgFollowsRecipe = message.fgFollowsRecipe;
+    }
     return obj;
   },
 
@@ -21689,6 +22234,15 @@ export const MBSpin: MessageFns<MBSpin> = {
     message.mbsShadeName = object.mbsShadeName ?? "";
     message.mbsCrossSection = object.mbsCrossSection ?? "";
     message.mbsOrionItemCode = object.mbsOrionItemCode ?? "";
+    message.fgProductId = object.fgProductId ?? 0;
+    message.fgItemCode = object.fgItemCode ?? "";
+    message.fgProductCode = object.fgProductCode ?? "";
+    message.fgProductName = object.fgProductName ?? "";
+    message.fgLinkSource = object.fgLinkSource ?? "";
+    message.supersededBySpinId = object.supersededBySpinId ?? "";
+    message.supersededAt = object.supersededAt ?? "";
+    message.supersededBySpinCode = object.supersededBySpinCode ?? "";
+    message.fgFollowsRecipe = object.fgFollowsRecipe ?? false;
     return message;
   },
 };
@@ -22335,6 +22889,7 @@ function createBaseUpdateMBSpinRequest(): UpdateMBSpinRequest {
     mbsLdrAdjustmentPct: undefined,
     mbsLdrLockActual: undefined,
     mbsVsNumber: undefined,
+    fgProductId: undefined,
   };
 }
 
@@ -22396,6 +22951,9 @@ export const UpdateMBSpinRequest: MessageFns<UpdateMBSpinRequest> = {
     }
     if (message.mbsVsNumber !== undefined) {
       writer.uint32(154).string(message.mbsVsNumber);
+    }
+    if (message.fgProductId !== undefined) {
+      writer.uint32(160).int64(message.fgProductId);
     }
     return writer;
   },
@@ -22559,6 +23117,14 @@ export const UpdateMBSpinRequest: MessageFns<UpdateMBSpinRequest> = {
           message.mbsVsNumber = reader.string();
           continue;
         }
+        case 20: {
+          if (tag !== 160) {
+            break;
+          }
+
+          message.fgProductId = longToNumber(reader.int64());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -22665,6 +23231,11 @@ export const UpdateMBSpinRequest: MessageFns<UpdateMBSpinRequest> = {
         : isSet(object.mbs_vs_number)
         ? globalThis.String(object.mbs_vs_number)
         : undefined,
+      fgProductId: isSet(object.fgProductId)
+        ? globalThis.Number(object.fgProductId)
+        : isSet(object.fg_product_id)
+        ? globalThis.Number(object.fg_product_id)
+        : undefined,
     };
   },
 
@@ -22727,6 +23298,9 @@ export const UpdateMBSpinRequest: MessageFns<UpdateMBSpinRequest> = {
     if (message.mbsVsNumber !== undefined) {
       obj.mbsVsNumber = message.mbsVsNumber;
     }
+    if (message.fgProductId !== undefined) {
+      obj.fgProductId = Math.round(message.fgProductId);
+    }
     return obj;
   },
 
@@ -22754,6 +23328,7 @@ export const UpdateMBSpinRequest: MessageFns<UpdateMBSpinRequest> = {
     message.mbsLdrAdjustmentPct = object.mbsLdrAdjustmentPct ?? undefined;
     message.mbsLdrLockActual = object.mbsLdrLockActual ?? undefined;
     message.mbsVsNumber = object.mbsVsNumber ?? undefined;
+    message.fgProductId = object.fgProductId ?? undefined;
     return message;
   },
 };
@@ -23108,7 +23683,18 @@ export const DeleteMBSpinResponse: MessageFns<DeleteMBSpinResponse> = {
 };
 
 function createBaseListMBSpinsRequest(): ListMBSpinsRequest {
-  return { mbhId: "", page: 0, pageSize: 0, search: "", activeFilter: 0, sortBy: "", sortOrder: "" };
+  return {
+    mbhId: "",
+    page: 0,
+    pageSize: 0,
+    search: "",
+    activeFilter: 0,
+    sortBy: "",
+    sortOrder: "",
+    fgProductId: 0,
+    fgSearch: "",
+    includeSuperseded: false,
+  };
 }
 
 export const ListMBSpinsRequest: MessageFns<ListMBSpinsRequest> = {
@@ -23133,6 +23719,15 @@ export const ListMBSpinsRequest: MessageFns<ListMBSpinsRequest> = {
     }
     if (message.sortOrder !== "") {
       writer.uint32(58).string(message.sortOrder);
+    }
+    if (message.fgProductId !== 0) {
+      writer.uint32(64).int64(message.fgProductId);
+    }
+    if (message.fgSearch !== "") {
+      writer.uint32(74).string(message.fgSearch);
+    }
+    if (message.includeSuperseded !== false) {
+      writer.uint32(80).bool(message.includeSuperseded);
     }
     return writer;
   },
@@ -23200,6 +23795,30 @@ export const ListMBSpinsRequest: MessageFns<ListMBSpinsRequest> = {
           message.sortOrder = reader.string();
           continue;
         }
+        case 8: {
+          if (tag !== 64) {
+            break;
+          }
+
+          message.fgProductId = longToNumber(reader.int64());
+          continue;
+        }
+        case 9: {
+          if (tag !== 74) {
+            break;
+          }
+
+          message.fgSearch = reader.string();
+          continue;
+        }
+        case 10: {
+          if (tag !== 80) {
+            break;
+          }
+
+          message.includeSuperseded = reader.bool();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -23238,6 +23857,21 @@ export const ListMBSpinsRequest: MessageFns<ListMBSpinsRequest> = {
         : isSet(object.sort_order)
         ? globalThis.String(object.sort_order)
         : "",
+      fgProductId: isSet(object.fgProductId)
+        ? globalThis.Number(object.fgProductId)
+        : isSet(object.fg_product_id)
+        ? globalThis.Number(object.fg_product_id)
+        : 0,
+      fgSearch: isSet(object.fgSearch)
+        ? globalThis.String(object.fgSearch)
+        : isSet(object.fg_search)
+        ? globalThis.String(object.fg_search)
+        : "",
+      includeSuperseded: isSet(object.includeSuperseded)
+        ? globalThis.Boolean(object.includeSuperseded)
+        : isSet(object.include_superseded)
+        ? globalThis.Boolean(object.include_superseded)
+        : false,
     };
   },
 
@@ -23264,6 +23898,15 @@ export const ListMBSpinsRequest: MessageFns<ListMBSpinsRequest> = {
     if (message.sortOrder !== "") {
       obj.sortOrder = message.sortOrder;
     }
+    if (message.fgProductId !== 0) {
+      obj.fgProductId = Math.round(message.fgProductId);
+    }
+    if (message.fgSearch !== "") {
+      obj.fgSearch = message.fgSearch;
+    }
+    if (message.includeSuperseded !== false) {
+      obj.includeSuperseded = message.includeSuperseded;
+    }
     return obj;
   },
 
@@ -23279,6 +23922,9 @@ export const ListMBSpinsRequest: MessageFns<ListMBSpinsRequest> = {
     message.activeFilter = object.activeFilter ?? 0;
     message.sortBy = object.sortBy ?? "";
     message.sortOrder = object.sortOrder ?? "";
+    message.fgProductId = object.fgProductId ?? 0;
+    message.fgSearch = object.fgSearch ?? "";
+    message.includeSuperseded = object.includeSuperseded ?? false;
     return message;
   },
 };
@@ -23974,7 +24620,7 @@ export const DownloadMBSpinTemplateResponse: MessageFns<DownloadMBSpinTemplateRe
 };
 
 function createBaseDuplicateMBSpinRequest(): DuplicateMBSpinRequest {
-  return { mbhId: "", mbsId: "", mbsMgtName: undefined, mbsDenier: undefined, mbsFilament: undefined };
+  return { mbhId: "", mbsId: "", mbsMgtName: undefined, mbsDenier: undefined, mbsFilament: undefined, fgProductId: 0 };
 }
 
 export const DuplicateMBSpinRequest: MessageFns<DuplicateMBSpinRequest> = {
@@ -23993,6 +24639,9 @@ export const DuplicateMBSpinRequest: MessageFns<DuplicateMBSpinRequest> = {
     }
     if (message.mbsFilament !== undefined) {
       writer.uint32(40).int32(message.mbsFilament);
+    }
+    if (message.fgProductId !== 0) {
+      writer.uint32(48).int64(message.fgProductId);
     }
     return writer;
   },
@@ -24044,6 +24693,14 @@ export const DuplicateMBSpinRequest: MessageFns<DuplicateMBSpinRequest> = {
           message.mbsFilament = reader.int32();
           continue;
         }
+        case 6: {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.fgProductId = longToNumber(reader.int64());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -24080,6 +24737,11 @@ export const DuplicateMBSpinRequest: MessageFns<DuplicateMBSpinRequest> = {
         : isSet(object.mbs_filament)
         ? globalThis.Number(object.mbs_filament)
         : undefined,
+      fgProductId: isSet(object.fgProductId)
+        ? globalThis.Number(object.fgProductId)
+        : isSet(object.fg_product_id)
+        ? globalThis.Number(object.fg_product_id)
+        : 0,
     };
   },
 
@@ -24100,6 +24762,9 @@ export const DuplicateMBSpinRequest: MessageFns<DuplicateMBSpinRequest> = {
     if (message.mbsFilament !== undefined) {
       obj.mbsFilament = Math.round(message.mbsFilament);
     }
+    if (message.fgProductId !== 0) {
+      obj.fgProductId = Math.round(message.fgProductId);
+    }
     return obj;
   },
 
@@ -24113,6 +24778,7 @@ export const DuplicateMBSpinRequest: MessageFns<DuplicateMBSpinRequest> = {
     message.mbsMgtName = object.mbsMgtName ?? undefined;
     message.mbsDenier = object.mbsDenier ?? undefined;
     message.mbsFilament = object.mbsFilament ?? undefined;
+    message.fgProductId = object.fgProductId ?? 0;
     return message;
   },
 };
@@ -38185,6 +38851,1134 @@ export const PreviewDozingImpactResponse: MessageFns<PreviewDozingImpactResponse
   },
 };
 
+function createBasePreviewMBHeadSupersedeRequest(): PreviewMBHeadSupersedeRequest {
+  return { mbhId: "" };
+}
+
+export const PreviewMBHeadSupersedeRequest: MessageFns<PreviewMBHeadSupersedeRequest> = {
+  encode(message: PreviewMBHeadSupersedeRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.mbhId !== "") {
+      writer.uint32(10).string(message.mbhId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): PreviewMBHeadSupersedeRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePreviewMBHeadSupersedeRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.mbhId = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PreviewMBHeadSupersedeRequest {
+    return {
+      mbhId: isSet(object.mbhId)
+        ? globalThis.String(object.mbhId)
+        : isSet(object.mbh_id)
+        ? globalThis.String(object.mbh_id)
+        : "",
+    };
+  },
+
+  toJSON(message: PreviewMBHeadSupersedeRequest): unknown {
+    const obj: any = {};
+    if (message.mbhId !== "") {
+      obj.mbhId = message.mbhId;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<PreviewMBHeadSupersedeRequest>): PreviewMBHeadSupersedeRequest {
+    return PreviewMBHeadSupersedeRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<PreviewMBHeadSupersedeRequest>): PreviewMBHeadSupersedeRequest {
+    const message = createBasePreviewMBHeadSupersedeRequest();
+    message.mbhId = object.mbhId ?? "";
+    return message;
+  },
+};
+
+function createBaseMBSupersedeFilledByCount(): MBSupersedeFilledByCount {
+  return { filledBy: "", count: 0 };
+}
+
+export const MBSupersedeFilledByCount: MessageFns<MBSupersedeFilledByCount> = {
+  encode(message: MBSupersedeFilledByCount, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.filledBy !== "") {
+      writer.uint32(10).string(message.filledBy);
+    }
+    if (message.count !== 0) {
+      writer.uint32(16).int32(message.count);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): MBSupersedeFilledByCount {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMBSupersedeFilledByCount();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.filledBy = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.count = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): MBSupersedeFilledByCount {
+    return {
+      filledBy: isSet(object.filledBy)
+        ? globalThis.String(object.filledBy)
+        : isSet(object.filled_by)
+        ? globalThis.String(object.filled_by)
+        : "",
+      count: isSet(object.count) ? globalThis.Number(object.count) : 0,
+    };
+  },
+
+  toJSON(message: MBSupersedeFilledByCount): unknown {
+    const obj: any = {};
+    if (message.filledBy !== "") {
+      obj.filledBy = message.filledBy;
+    }
+    if (message.count !== 0) {
+      obj.count = Math.round(message.count);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<MBSupersedeFilledByCount>): MBSupersedeFilledByCount {
+    return MBSupersedeFilledByCount.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<MBSupersedeFilledByCount>): MBSupersedeFilledByCount {
+    const message = createBaseMBSupersedeFilledByCount();
+    message.filledBy = object.filledBy ?? "";
+    message.count = object.count ?? 0;
+    return message;
+  },
+};
+
+function createBaseMBSupersedeAffectedProduct(): MBSupersedeAffectedProduct {
+  return { productSysId: 0, productCode: "", productName: "", filledBy: "" };
+}
+
+export const MBSupersedeAffectedProduct: MessageFns<MBSupersedeAffectedProduct> = {
+  encode(message: MBSupersedeAffectedProduct, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.productSysId !== 0) {
+      writer.uint32(8).int64(message.productSysId);
+    }
+    if (message.productCode !== "") {
+      writer.uint32(18).string(message.productCode);
+    }
+    if (message.productName !== "") {
+      writer.uint32(26).string(message.productName);
+    }
+    if (message.filledBy !== "") {
+      writer.uint32(34).string(message.filledBy);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): MBSupersedeAffectedProduct {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMBSupersedeAffectedProduct();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.productSysId = longToNumber(reader.int64());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.productCode = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.productName = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.filledBy = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): MBSupersedeAffectedProduct {
+    return {
+      productSysId: isSet(object.productSysId)
+        ? globalThis.Number(object.productSysId)
+        : isSet(object.product_sys_id)
+        ? globalThis.Number(object.product_sys_id)
+        : 0,
+      productCode: isSet(object.productCode)
+        ? globalThis.String(object.productCode)
+        : isSet(object.product_code)
+        ? globalThis.String(object.product_code)
+        : "",
+      productName: isSet(object.productName)
+        ? globalThis.String(object.productName)
+        : isSet(object.product_name)
+        ? globalThis.String(object.product_name)
+        : "",
+      filledBy: isSet(object.filledBy)
+        ? globalThis.String(object.filledBy)
+        : isSet(object.filled_by)
+        ? globalThis.String(object.filled_by)
+        : "",
+    };
+  },
+
+  toJSON(message: MBSupersedeAffectedProduct): unknown {
+    const obj: any = {};
+    if (message.productSysId !== 0) {
+      obj.productSysId = Math.round(message.productSysId);
+    }
+    if (message.productCode !== "") {
+      obj.productCode = message.productCode;
+    }
+    if (message.productName !== "") {
+      obj.productName = message.productName;
+    }
+    if (message.filledBy !== "") {
+      obj.filledBy = message.filledBy;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<MBSupersedeAffectedProduct>): MBSupersedeAffectedProduct {
+    return MBSupersedeAffectedProduct.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<MBSupersedeAffectedProduct>): MBSupersedeAffectedProduct {
+    const message = createBaseMBSupersedeAffectedProduct();
+    message.productSysId = object.productSysId ?? 0;
+    message.productCode = object.productCode ?? "";
+    message.productName = object.productName ?? "";
+    message.filledBy = object.filledBy ?? "";
+    return message;
+  },
+};
+
+function createBaseMBSupersedeCandidate(): MBSupersedeCandidate {
+  return {
+    oldSpinId: "",
+    oldSpinCode: "",
+    shadeCode: "",
+    fgProductId: 0,
+    fgProductCode: "",
+    oldHeadId: "",
+    oldHeadCode: "",
+    oldHeadWillDeactivate: false,
+    oldMbProductSysId: 0,
+    oldMbProductWillDeactivate: false,
+    paramRowsPointer: 0,
+    paramRowsTextOnly: 0,
+    filledByCounts: [],
+    affectedProducts: [],
+    warnings: [],
+  };
+}
+
+export const MBSupersedeCandidate: MessageFns<MBSupersedeCandidate> = {
+  encode(message: MBSupersedeCandidate, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.oldSpinId !== "") {
+      writer.uint32(10).string(message.oldSpinId);
+    }
+    if (message.oldSpinCode !== "") {
+      writer.uint32(18).string(message.oldSpinCode);
+    }
+    if (message.shadeCode !== "") {
+      writer.uint32(26).string(message.shadeCode);
+    }
+    if (message.fgProductId !== 0) {
+      writer.uint32(32).int64(message.fgProductId);
+    }
+    if (message.fgProductCode !== "") {
+      writer.uint32(42).string(message.fgProductCode);
+    }
+    if (message.oldHeadId !== "") {
+      writer.uint32(50).string(message.oldHeadId);
+    }
+    if (message.oldHeadCode !== "") {
+      writer.uint32(58).string(message.oldHeadCode);
+    }
+    if (message.oldHeadWillDeactivate !== false) {
+      writer.uint32(64).bool(message.oldHeadWillDeactivate);
+    }
+    if (message.oldMbProductSysId !== 0) {
+      writer.uint32(72).int64(message.oldMbProductSysId);
+    }
+    if (message.oldMbProductWillDeactivate !== false) {
+      writer.uint32(80).bool(message.oldMbProductWillDeactivate);
+    }
+    if (message.paramRowsPointer !== 0) {
+      writer.uint32(88).int32(message.paramRowsPointer);
+    }
+    if (message.paramRowsTextOnly !== 0) {
+      writer.uint32(96).int32(message.paramRowsTextOnly);
+    }
+    for (const v of message.filledByCounts) {
+      MBSupersedeFilledByCount.encode(v!, writer.uint32(106).fork()).join();
+    }
+    for (const v of message.affectedProducts) {
+      MBSupersedeAffectedProduct.encode(v!, writer.uint32(114).fork()).join();
+    }
+    for (const v of message.warnings) {
+      writer.uint32(122).string(v!);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): MBSupersedeCandidate {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMBSupersedeCandidate();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.oldSpinId = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.oldSpinCode = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.shadeCode = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.fgProductId = longToNumber(reader.int64());
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.fgProductCode = reader.string();
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.oldHeadId = reader.string();
+          continue;
+        }
+        case 7: {
+          if (tag !== 58) {
+            break;
+          }
+
+          message.oldHeadCode = reader.string();
+          continue;
+        }
+        case 8: {
+          if (tag !== 64) {
+            break;
+          }
+
+          message.oldHeadWillDeactivate = reader.bool();
+          continue;
+        }
+        case 9: {
+          if (tag !== 72) {
+            break;
+          }
+
+          message.oldMbProductSysId = longToNumber(reader.int64());
+          continue;
+        }
+        case 10: {
+          if (tag !== 80) {
+            break;
+          }
+
+          message.oldMbProductWillDeactivate = reader.bool();
+          continue;
+        }
+        case 11: {
+          if (tag !== 88) {
+            break;
+          }
+
+          message.paramRowsPointer = reader.int32();
+          continue;
+        }
+        case 12: {
+          if (tag !== 96) {
+            break;
+          }
+
+          message.paramRowsTextOnly = reader.int32();
+          continue;
+        }
+        case 13: {
+          if (tag !== 106) {
+            break;
+          }
+
+          message.filledByCounts.push(MBSupersedeFilledByCount.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 14: {
+          if (tag !== 114) {
+            break;
+          }
+
+          message.affectedProducts.push(MBSupersedeAffectedProduct.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 15: {
+          if (tag !== 122) {
+            break;
+          }
+
+          message.warnings.push(reader.string());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): MBSupersedeCandidate {
+    return {
+      oldSpinId: isSet(object.oldSpinId)
+        ? globalThis.String(object.oldSpinId)
+        : isSet(object.old_spin_id)
+        ? globalThis.String(object.old_spin_id)
+        : "",
+      oldSpinCode: isSet(object.oldSpinCode)
+        ? globalThis.String(object.oldSpinCode)
+        : isSet(object.old_spin_code)
+        ? globalThis.String(object.old_spin_code)
+        : "",
+      shadeCode: isSet(object.shadeCode)
+        ? globalThis.String(object.shadeCode)
+        : isSet(object.shade_code)
+        ? globalThis.String(object.shade_code)
+        : "",
+      fgProductId: isSet(object.fgProductId)
+        ? globalThis.Number(object.fgProductId)
+        : isSet(object.fg_product_id)
+        ? globalThis.Number(object.fg_product_id)
+        : 0,
+      fgProductCode: isSet(object.fgProductCode)
+        ? globalThis.String(object.fgProductCode)
+        : isSet(object.fg_product_code)
+        ? globalThis.String(object.fg_product_code)
+        : "",
+      oldHeadId: isSet(object.oldHeadId)
+        ? globalThis.String(object.oldHeadId)
+        : isSet(object.old_head_id)
+        ? globalThis.String(object.old_head_id)
+        : "",
+      oldHeadCode: isSet(object.oldHeadCode)
+        ? globalThis.String(object.oldHeadCode)
+        : isSet(object.old_head_code)
+        ? globalThis.String(object.old_head_code)
+        : "",
+      oldHeadWillDeactivate: isSet(object.oldHeadWillDeactivate)
+        ? globalThis.Boolean(object.oldHeadWillDeactivate)
+        : isSet(object.old_head_will_deactivate)
+        ? globalThis.Boolean(object.old_head_will_deactivate)
+        : false,
+      oldMbProductSysId: isSet(object.oldMbProductSysId)
+        ? globalThis.Number(object.oldMbProductSysId)
+        : isSet(object.old_mb_product_sys_id)
+        ? globalThis.Number(object.old_mb_product_sys_id)
+        : 0,
+      oldMbProductWillDeactivate: isSet(object.oldMbProductWillDeactivate)
+        ? globalThis.Boolean(object.oldMbProductWillDeactivate)
+        : isSet(object.old_mb_product_will_deactivate)
+        ? globalThis.Boolean(object.old_mb_product_will_deactivate)
+        : false,
+      paramRowsPointer: isSet(object.paramRowsPointer)
+        ? globalThis.Number(object.paramRowsPointer)
+        : isSet(object.param_rows_pointer)
+        ? globalThis.Number(object.param_rows_pointer)
+        : 0,
+      paramRowsTextOnly: isSet(object.paramRowsTextOnly)
+        ? globalThis.Number(object.paramRowsTextOnly)
+        : isSet(object.param_rows_text_only)
+        ? globalThis.Number(object.param_rows_text_only)
+        : 0,
+      filledByCounts: globalThis.Array.isArray(object?.filledByCounts)
+        ? object.filledByCounts.map((e: any) => MBSupersedeFilledByCount.fromJSON(e))
+        : globalThis.Array.isArray(object?.filled_by_counts)
+        ? object.filled_by_counts.map((e: any) => MBSupersedeFilledByCount.fromJSON(e))
+        : [],
+      affectedProducts: globalThis.Array.isArray(object?.affectedProducts)
+        ? object.affectedProducts.map((e: any) => MBSupersedeAffectedProduct.fromJSON(e))
+        : globalThis.Array.isArray(object?.affected_products)
+        ? object.affected_products.map((e: any) => MBSupersedeAffectedProduct.fromJSON(e))
+        : [],
+      warnings: globalThis.Array.isArray(object?.warnings)
+        ? object.warnings.map((e: any) => globalThis.String(e))
+        : [],
+    };
+  },
+
+  toJSON(message: MBSupersedeCandidate): unknown {
+    const obj: any = {};
+    if (message.oldSpinId !== "") {
+      obj.oldSpinId = message.oldSpinId;
+    }
+    if (message.oldSpinCode !== "") {
+      obj.oldSpinCode = message.oldSpinCode;
+    }
+    if (message.shadeCode !== "") {
+      obj.shadeCode = message.shadeCode;
+    }
+    if (message.fgProductId !== 0) {
+      obj.fgProductId = Math.round(message.fgProductId);
+    }
+    if (message.fgProductCode !== "") {
+      obj.fgProductCode = message.fgProductCode;
+    }
+    if (message.oldHeadId !== "") {
+      obj.oldHeadId = message.oldHeadId;
+    }
+    if (message.oldHeadCode !== "") {
+      obj.oldHeadCode = message.oldHeadCode;
+    }
+    if (message.oldHeadWillDeactivate !== false) {
+      obj.oldHeadWillDeactivate = message.oldHeadWillDeactivate;
+    }
+    if (message.oldMbProductSysId !== 0) {
+      obj.oldMbProductSysId = Math.round(message.oldMbProductSysId);
+    }
+    if (message.oldMbProductWillDeactivate !== false) {
+      obj.oldMbProductWillDeactivate = message.oldMbProductWillDeactivate;
+    }
+    if (message.paramRowsPointer !== 0) {
+      obj.paramRowsPointer = Math.round(message.paramRowsPointer);
+    }
+    if (message.paramRowsTextOnly !== 0) {
+      obj.paramRowsTextOnly = Math.round(message.paramRowsTextOnly);
+    }
+    if (message.filledByCounts?.length) {
+      obj.filledByCounts = message.filledByCounts.map((e) => MBSupersedeFilledByCount.toJSON(e));
+    }
+    if (message.affectedProducts?.length) {
+      obj.affectedProducts = message.affectedProducts.map((e) => MBSupersedeAffectedProduct.toJSON(e));
+    }
+    if (message.warnings?.length) {
+      obj.warnings = message.warnings;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<MBSupersedeCandidate>): MBSupersedeCandidate {
+    return MBSupersedeCandidate.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<MBSupersedeCandidate>): MBSupersedeCandidate {
+    const message = createBaseMBSupersedeCandidate();
+    message.oldSpinId = object.oldSpinId ?? "";
+    message.oldSpinCode = object.oldSpinCode ?? "";
+    message.shadeCode = object.shadeCode ?? "";
+    message.fgProductId = object.fgProductId ?? 0;
+    message.fgProductCode = object.fgProductCode ?? "";
+    message.oldHeadId = object.oldHeadId ?? "";
+    message.oldHeadCode = object.oldHeadCode ?? "";
+    message.oldHeadWillDeactivate = object.oldHeadWillDeactivate ?? false;
+    message.oldMbProductSysId = object.oldMbProductSysId ?? 0;
+    message.oldMbProductWillDeactivate = object.oldMbProductWillDeactivate ?? false;
+    message.paramRowsPointer = object.paramRowsPointer ?? 0;
+    message.paramRowsTextOnly = object.paramRowsTextOnly ?? 0;
+    message.filledByCounts = object.filledByCounts?.map((e) => MBSupersedeFilledByCount.fromPartial(e)) || [];
+    message.affectedProducts = object.affectedProducts?.map((e) => MBSupersedeAffectedProduct.fromPartial(e)) || [];
+    message.warnings = object.warnings?.map((e) => e) || [];
+    return message;
+  },
+};
+
+function createBaseMBHeadSupersedePreview(): MBHeadSupersedePreview {
+  return { requiresConfirmation: false, candidates: [] };
+}
+
+export const MBHeadSupersedePreview: MessageFns<MBHeadSupersedePreview> = {
+  encode(message: MBHeadSupersedePreview, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.requiresConfirmation !== false) {
+      writer.uint32(8).bool(message.requiresConfirmation);
+    }
+    for (const v of message.candidates) {
+      MBSupersedeCandidate.encode(v!, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): MBHeadSupersedePreview {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMBHeadSupersedePreview();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.requiresConfirmation = reader.bool();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.candidates.push(MBSupersedeCandidate.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): MBHeadSupersedePreview {
+    return {
+      requiresConfirmation: isSet(object.requiresConfirmation)
+        ? globalThis.Boolean(object.requiresConfirmation)
+        : isSet(object.requires_confirmation)
+        ? globalThis.Boolean(object.requires_confirmation)
+        : false,
+      candidates: globalThis.Array.isArray(object?.candidates)
+        ? object.candidates.map((e: any) => MBSupersedeCandidate.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: MBHeadSupersedePreview): unknown {
+    const obj: any = {};
+    if (message.requiresConfirmation !== false) {
+      obj.requiresConfirmation = message.requiresConfirmation;
+    }
+    if (message.candidates?.length) {
+      obj.candidates = message.candidates.map((e) => MBSupersedeCandidate.toJSON(e));
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<MBHeadSupersedePreview>): MBHeadSupersedePreview {
+    return MBHeadSupersedePreview.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<MBHeadSupersedePreview>): MBHeadSupersedePreview {
+    const message = createBaseMBHeadSupersedePreview();
+    message.requiresConfirmation = object.requiresConfirmation ?? false;
+    message.candidates = object.candidates?.map((e) => MBSupersedeCandidate.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBasePreviewMBHeadSupersedeResponse(): PreviewMBHeadSupersedeResponse {
+  return { base: undefined, data: undefined };
+}
+
+export const PreviewMBHeadSupersedeResponse: MessageFns<PreviewMBHeadSupersedeResponse> = {
+  encode(message: PreviewMBHeadSupersedeResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    if (message.data !== undefined) {
+      MBHeadSupersedePreview.encode(message.data, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): PreviewMBHeadSupersedeResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePreviewMBHeadSupersedeResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.data = MBHeadSupersedePreview.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PreviewMBHeadSupersedeResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      data: isSet(object.data) ? MBHeadSupersedePreview.fromJSON(object.data) : undefined,
+    };
+  },
+
+  toJSON(message: PreviewMBHeadSupersedeResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.data !== undefined) {
+      obj.data = MBHeadSupersedePreview.toJSON(message.data);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<PreviewMBHeadSupersedeResponse>): PreviewMBHeadSupersedeResponse {
+    return PreviewMBHeadSupersedeResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<PreviewMBHeadSupersedeResponse>): PreviewMBHeadSupersedeResponse {
+    const message = createBasePreviewMBHeadSupersedeResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.data = (object.data !== undefined && object.data !== null)
+      ? MBHeadSupersedePreview.fromPartial(object.data)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseUnsupersedeMBSpinRequest(): UnsupersedeMBSpinRequest {
+  return { mbhId: "", mbsId: "" };
+}
+
+export const UnsupersedeMBSpinRequest: MessageFns<UnsupersedeMBSpinRequest> = {
+  encode(message: UnsupersedeMBSpinRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.mbhId !== "") {
+      writer.uint32(10).string(message.mbhId);
+    }
+    if (message.mbsId !== "") {
+      writer.uint32(18).string(message.mbsId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): UnsupersedeMBSpinRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUnsupersedeMBSpinRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.mbhId = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.mbsId = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UnsupersedeMBSpinRequest {
+    return {
+      mbhId: isSet(object.mbhId)
+        ? globalThis.String(object.mbhId)
+        : isSet(object.mbh_id)
+        ? globalThis.String(object.mbh_id)
+        : "",
+      mbsId: isSet(object.mbsId)
+        ? globalThis.String(object.mbsId)
+        : isSet(object.mbs_id)
+        ? globalThis.String(object.mbs_id)
+        : "",
+    };
+  },
+
+  toJSON(message: UnsupersedeMBSpinRequest): unknown {
+    const obj: any = {};
+    if (message.mbhId !== "") {
+      obj.mbhId = message.mbhId;
+    }
+    if (message.mbsId !== "") {
+      obj.mbsId = message.mbsId;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<UnsupersedeMBSpinRequest>): UnsupersedeMBSpinRequest {
+    return UnsupersedeMBSpinRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<UnsupersedeMBSpinRequest>): UnsupersedeMBSpinRequest {
+    const message = createBaseUnsupersedeMBSpinRequest();
+    message.mbhId = object.mbhId ?? "";
+    message.mbsId = object.mbsId ?? "";
+    return message;
+  },
+};
+
+function createBaseMBUnsupersedeSkippedParam(): MBUnsupersedeSkippedParam {
+  return { cppValueId: 0, productSysId: 0, productCode: "", paramCode: "", reason: "" };
+}
+
+export const MBUnsupersedeSkippedParam: MessageFns<MBUnsupersedeSkippedParam> = {
+  encode(message: MBUnsupersedeSkippedParam, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.cppValueId !== 0) {
+      writer.uint32(8).int64(message.cppValueId);
+    }
+    if (message.productSysId !== 0) {
+      writer.uint32(16).int64(message.productSysId);
+    }
+    if (message.productCode !== "") {
+      writer.uint32(26).string(message.productCode);
+    }
+    if (message.paramCode !== "") {
+      writer.uint32(34).string(message.paramCode);
+    }
+    if (message.reason !== "") {
+      writer.uint32(42).string(message.reason);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): MBUnsupersedeSkippedParam {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMBUnsupersedeSkippedParam();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.cppValueId = longToNumber(reader.int64());
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.productSysId = longToNumber(reader.int64());
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.productCode = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.paramCode = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.reason = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): MBUnsupersedeSkippedParam {
+    return {
+      cppValueId: isSet(object.cppValueId)
+        ? globalThis.Number(object.cppValueId)
+        : isSet(object.cpp_value_id)
+        ? globalThis.Number(object.cpp_value_id)
+        : 0,
+      productSysId: isSet(object.productSysId)
+        ? globalThis.Number(object.productSysId)
+        : isSet(object.product_sys_id)
+        ? globalThis.Number(object.product_sys_id)
+        : 0,
+      productCode: isSet(object.productCode)
+        ? globalThis.String(object.productCode)
+        : isSet(object.product_code)
+        ? globalThis.String(object.product_code)
+        : "",
+      paramCode: isSet(object.paramCode)
+        ? globalThis.String(object.paramCode)
+        : isSet(object.param_code)
+        ? globalThis.String(object.param_code)
+        : "",
+      reason: isSet(object.reason) ? globalThis.String(object.reason) : "",
+    };
+  },
+
+  toJSON(message: MBUnsupersedeSkippedParam): unknown {
+    const obj: any = {};
+    if (message.cppValueId !== 0) {
+      obj.cppValueId = Math.round(message.cppValueId);
+    }
+    if (message.productSysId !== 0) {
+      obj.productSysId = Math.round(message.productSysId);
+    }
+    if (message.productCode !== "") {
+      obj.productCode = message.productCode;
+    }
+    if (message.paramCode !== "") {
+      obj.paramCode = message.paramCode;
+    }
+    if (message.reason !== "") {
+      obj.reason = message.reason;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<MBUnsupersedeSkippedParam>): MBUnsupersedeSkippedParam {
+    return MBUnsupersedeSkippedParam.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<MBUnsupersedeSkippedParam>): MBUnsupersedeSkippedParam {
+    const message = createBaseMBUnsupersedeSkippedParam();
+    message.cppValueId = object.cppValueId ?? 0;
+    message.productSysId = object.productSysId ?? 0;
+    message.productCode = object.productCode ?? "";
+    message.paramCode = object.paramCode ?? "";
+    message.reason = object.reason ?? "";
+    return message;
+  },
+};
+
+function createBaseUnsupersedeMBSpinResponse(): UnsupersedeMBSpinResponse {
+  return { base: undefined, data: undefined, paramsReverted: 0, skipped: [] };
+}
+
+export const UnsupersedeMBSpinResponse: MessageFns<UnsupersedeMBSpinResponse> = {
+  encode(message: UnsupersedeMBSpinResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    if (message.data !== undefined) {
+      MBSpin.encode(message.data, writer.uint32(18).fork()).join();
+    }
+    if (message.paramsReverted !== 0) {
+      writer.uint32(24).int32(message.paramsReverted);
+    }
+    for (const v of message.skipped) {
+      MBUnsupersedeSkippedParam.encode(v!, writer.uint32(34).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): UnsupersedeMBSpinResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUnsupersedeMBSpinResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.data = MBSpin.decode(reader, reader.uint32());
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.paramsReverted = reader.int32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.skipped.push(MBUnsupersedeSkippedParam.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UnsupersedeMBSpinResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      data: isSet(object.data) ? MBSpin.fromJSON(object.data) : undefined,
+      paramsReverted: isSet(object.paramsReverted)
+        ? globalThis.Number(object.paramsReverted)
+        : isSet(object.params_reverted)
+        ? globalThis.Number(object.params_reverted)
+        : 0,
+      skipped: globalThis.Array.isArray(object?.skipped)
+        ? object.skipped.map((e: any) => MBUnsupersedeSkippedParam.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: UnsupersedeMBSpinResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.data !== undefined) {
+      obj.data = MBSpin.toJSON(message.data);
+    }
+    if (message.paramsReverted !== 0) {
+      obj.paramsReverted = Math.round(message.paramsReverted);
+    }
+    if (message.skipped?.length) {
+      obj.skipped = message.skipped.map((e) => MBUnsupersedeSkippedParam.toJSON(e));
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<UnsupersedeMBSpinResponse>): UnsupersedeMBSpinResponse {
+    return UnsupersedeMBSpinResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<UnsupersedeMBSpinResponse>): UnsupersedeMBSpinResponse {
+    const message = createBaseUnsupersedeMBSpinResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.data = (object.data !== undefined && object.data !== null) ? MBSpin.fromPartial(object.data) : undefined;
+    message.paramsReverted = object.paramsReverted ?? 0;
+    message.skipped = object.skipped?.map((e) => MBUnsupersedeSkippedParam.fromPartial(e)) || [];
+    return message;
+  },
+};
+
 /** MachineService manages yarn machine master data. */
 export type MachineServiceDefinition = typeof MachineServiceDefinition;
 export const MachineServiceDefinition = {
@@ -38809,6 +40603,15 @@ export const MBHeadServiceDefinition = {
       responseStream: false,
       options: {},
     },
+    /** PreviewMBHeadSupersede previews which older spins/heads/products a Validate would supersede. */
+    previewMBHeadSupersede: {
+      name: "PreviewMBHeadSupersede",
+      requestType: PreviewMBHeadSupersedeRequest,
+      requestStream: false,
+      responseType: PreviewMBHeadSupersedeResponse,
+      responseStream: false,
+      options: {},
+    },
   },
 } as const;
 
@@ -38902,6 +40705,15 @@ export const MBSpinServiceDefinition = {
       requestType: DuplicateMBSpinRequest,
       requestStream: false,
       responseType: DuplicateMBSpinResponse,
+      responseStream: false,
+      options: {},
+    },
+    /** UnsupersedeMBSpin reverts a supersede, restoring the old spin and repointing params back. */
+    unsupersedeMBSpin: {
+      name: "UnsupersedeMBSpin",
+      requestType: UnsupersedeMBSpinRequest,
+      requestStream: false,
+      responseType: UnsupersedeMBSpinResponse,
       responseStream: false,
       options: {},
     },

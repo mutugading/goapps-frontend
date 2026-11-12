@@ -46,7 +46,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const metadata = createMetadataFromRequest(request)
     const client = getCostProductMasterClient()
-    const response = await client.createCostProductMaster(body, metadata)
+    // P7 — erpItemCode is optional on create (used by the minimal POY create flow).
+    const response = await client.createCostProductMaster({ ...body, erpItemCode: body.erpItemCode ?? "" }, metadata)
     return NextResponse.json({ base: response.base, data: response.data })
   } catch (error) {
     if (isGrpcError(error)) return handleGrpcError(error)

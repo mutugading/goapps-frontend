@@ -48,6 +48,7 @@ vi.mock("@/components/finance/cost-product-master/unlock-dialog", () => ({
 vi.mock("@/components/finance/cost-product-master/mb-recipe-link-card", () => ({
   MbRecipeLinkCard: () => null,
 }))
+vi.mock("@/components/finance/cost-product-master/mb-spin-link-card", () => ({ MbSpinLinkCard: () => null }))
 
 const mockUseCostProductMaster = vi.fn()
 vi.mock("@/hooks/finance/use-cost-product-master", () => ({

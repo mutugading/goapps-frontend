@@ -5,22 +5,54 @@ import type {
   BulkMBHeadJobInfo,
   GetBulkMBHeadJobStatusResponse,
   BulkMBHeadJobFailure,
+  NormalizedSupersedePreview,
 } from "@/types/finance/mb-head"
+import {
+  isSupersedeConfirmationError,
+  normalizeSupersedePreview,
+} from "@/types/finance/mb-head"
+
+/**
+ * Thrown when Validate/Approve returns the 409 "SUPERSEDE_CONFIRMATION_REQUIRED" gate.
+ * Callers (action bar) catch this and open the supersede confirm dialog instead of toasting.
+ */
+export class SupersedeConfirmationRequiredError extends Error {
+  readonly mbhId: string
+  readonly statusCode = "409"
+
+  constructor(mbhId: string, message: string) {
+    super(message)
+    this.name = "SupersedeConfirmationRequiredError"
+    this.mbhId = mbhId
+  }
+}
+
+export function isSupersedeConfirmationRequiredError(err: unknown): err is SupersedeConfirmationRequiredError {
+  return err instanceof SupersedeConfirmationRequiredError
+}
 
 interface BFFEnvelope<T> {
   base?: { isSuccess?: boolean; message?: string }
   data?: T
 }
 
-async function postTransition(path: string, body?: Record<string, unknown>): Promise<MBHead> {
+async function postTransition(
+  path: string,
+  body?: Record<string, unknown>,
+  mbhId?: string,
+): Promise<MBHead> {
   const res = await fetch(path, {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body ?? {}),
   })
-  const json = (await res.json()) as BFFEnvelope<MBHead>
+  const json = (await res.json()) as BFFEnvelope<MBHead> & { base?: { statusCode?: string } }
   if (json.base?.isSuccess === false) {
+    // P7: the 409 supersede gate is typed so the caller can open the confirm dialog.
+    if (mbhId && isSupersedeConfirmationError(json.base.statusCode, json.base.message)) {
+      throw new SupersedeConfirmationRequiredError(mbhId, json.base.message ?? "")
+    }
     throw new Error(json.base.message || "MB Head transition failed")
   }
   return json.data as MBHead
@@ -31,11 +63,33 @@ export async function submitMBHead(mbhId: string): Promise<MBHead> {
 }
 
 export async function approveMBHead(mbhId: string): Promise<MBHead> {
-  return postTransition(`/api/v1/finance/mb-heads/${mbhId}/approve`)
+  return postTransition(`/api/v1/finance/mb-heads/${mbhId}/approve`, undefined, mbhId)
 }
 
-export async function validateMBHead(mbhId: string): Promise<MBHead> {
-  return postTransition(`/api/v1/finance/mb-heads/${mbhId}/validate`)
+// P7: `opts.confirmSupersede` confirms superseding older spins reported by the preview.
+// Call shape `validateMBHead(mbhId)` is unchanged for existing callers.
+export async function validateMBHead(
+  mbhId: string,
+  opts?: { confirmSupersede?: boolean },
+): Promise<MBHead> {
+  return postTransition(
+    `/api/v1/finance/mb-heads/${mbhId}/validate`,
+    { confirmSupersede: opts?.confirmSupersede === true },
+    mbhId,
+  )
+}
+
+// P7: read-only preview of what Validate would supersede (drives the confirm dialog).
+export async function getMBHeadSupersedePreview(mbhId: string): Promise<NormalizedSupersedePreview> {
+  const res = await fetch(`/api/v1/finance/mb-heads/${mbhId}/supersede-preview`, {
+    method: "GET",
+    credentials: "include",
+  })
+  const json = (await res.json()) as BFFEnvelope<unknown>
+  if (json.base?.isSuccess === false) {
+    throw new Error(json.base.message || "Failed to load supersede preview")
+  }
+  return normalizeSupersedePreview(json.data as Record<string, unknown> | undefined)
 }
 
 export async function unApproveMBHead(mbhId: string, reason: string): Promise<MBHead> {

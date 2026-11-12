@@ -3,6 +3,11 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getMBSpinClient, createMetadataFromRequest, isGrpcError, handleGrpcError } from "@/lib/grpc"
 
+/** "true" / "1" → true; anything else (including absent) → false. */
+function parseBoolParam(raw: string | null): boolean {
+    return raw === "true" || raw === "1"
+}
+
 // GET /api/v1/finance/mb-spins - List MB Spins with filters
 export async function GET(request: NextRequest) {
     try {
@@ -19,6 +24,13 @@ export async function GET(request: NextRequest) {
                 activeFilter: Number(searchParams.get("activeFilter") || searchParams.get("active_filter")) || 0,
                 sortBy: searchParams.get("sortBy") || searchParams.get("sort_by") || "",
                 sortOrder: searchParams.get("sortOrder") || searchParams.get("sort_order") || "",
+                // P7 — FG (POY) filter, free-text FG search, and superseded-spin visibility.
+                // Absent params keep the pre-P7 list behaviour (includeSuperseded defaults false).
+                fgProductId: Number(searchParams.get("fgProductId") || searchParams.get("fg_product_id")) || 0,
+                fgSearch: searchParams.get("fgSearch") || searchParams.get("fg_search") || "",
+                includeSuperseded: parseBoolParam(
+                    searchParams.get("includeSuperseded") || searchParams.get("include_superseded")
+                ),
             },
             metadata
         )

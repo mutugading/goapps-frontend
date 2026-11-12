@@ -13,6 +13,9 @@ vi.mock("@/components/finance/comboboxes", () => ({
   ),
 }))
 
+vi.mock("@/components/finance/shade", () => ({
+  ShadeCombobox: ({ code }: { code?: string }) => <div data-testid="shade-combobox">{code}</div>,
+}))
 import { ProductMasterFormDialog } from "@/components/finance/cost-product-master/product-master-form-dialog"
 
 async function fill(user: ReturnType<typeof userEvent.setup>, prdPerDay: string) {

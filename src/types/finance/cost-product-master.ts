@@ -61,6 +61,8 @@ export interface CreateCostProductMasterPayload {
   erpMsBatchItem?: string
   erpItemType?: string
   erpPrdPerDay?: string
+  /** Orion item code (optional, <=50). Used by the minimal POY create. */
+  erpItemCode?: string
 }
 
 export interface UpdateCostProductMasterPayload {
@@ -127,5 +129,193 @@ export function normalizeCostProductMaster(raw: Raw): CostProductMaster {
     createdBy: raw.audit?.createdBy ?? raw.audit?.created_by,
     updatedAt: raw.audit?.updatedAt ?? raw.audit?.updated_at,
     updatedBy: raw.audit?.updatedBy ?? raw.audit?.updated_by,
+  }
+}
+
+// ============================================================================
+// P7 — MB spin link (FG-aware), Oracle ETL preview/apply
+// ============================================================================
+
+export type {
+  CostProductMbLink,
+  GetCostProductMbLinkResponse,
+  RelinkCostProductMbResponse,
+  ProductEtlRow,
+  ProductEtlCounts,
+  ProductEtlPreview,
+  PreviewProductEtlFromOracleResponse,
+  ProductEtlApplyRow,
+  ProductEtlApplyResult,
+  ApplyProductEtlFromOracleResponse,
+} from "@/types/generated/finance/v1/cost_product_master"
+
+import { rawNumbers, rawRecords, toBoolean, toNumber, toStringValue, type RawRecord } from "@/types/finance/raw-coerce"
+
+export type MbLinkSource = "FG_MATCH" | "SHADE_ONLY" | "SUPERBA" | "NONE"
+
+export const MB_LINK_SOURCE_LABELS: Record<MbLinkSource, string> = {
+  FG_MATCH: "FG match",
+  SHADE_ONLY: "Shade only",
+  SUPERBA: "Superba",
+  NONE: "None",
+}
+
+export type EtlRowStatus =
+  | "EXISTS"
+  | "EXISTS_MULTI"
+  | "NEW_SHADE"
+  | "NEW_ITEM"
+  | "POSSIBLE_DUPLICATE"
+  | "INVALID_TYPE"
+
+export const ETL_STATUS_LABELS: Record<EtlRowStatus, string> = {
+  EXISTS: "Already exists",
+  EXISTS_MULTI: "Exists (multiple)",
+  NEW_SHADE: "New shade",
+  NEW_ITEM: "New item",
+  POSSIBLE_DUPLICATE: "Possible duplicate",
+  INVALID_TYPE: "Invalid type",
+}
+
+/** Statuses whose rows can never be applied (the backend marks them selectable=false). */
+export const ETL_NON_SELECTABLE_STATUSES: readonly EtlRowStatus[] = [
+  "EXISTS",
+  "EXISTS_MULTI",
+  "POSSIBLE_DUPLICATE",
+  "INVALID_TYPE",
+]
+
+export interface NormalizedMbLink {
+  linkSource: MbLinkSource | string
+  spinId: string
+  spinCode: string
+  spinShadeCode: string
+  fgProductId: number
+  fgProductCode: string
+  candidatePoyProductIds: number[]
+  reason: string
+  currentParamValue: string
+  paramMatches: boolean
+}
+
+/** Normalizes CostProductMbLink (GetCostProductMbLink / RelinkCostProductMb data). */
+export function normalizeMbLink(raw: RawRecord | undefined | null): NormalizedMbLink {
+  const r = (raw ?? {}) as RawRecord
+  return {
+    linkSource: toStringValue(r.linkSource ?? r.link_source) || "NONE",
+    spinId: toStringValue(r.spinId ?? r.spin_id),
+    spinCode: toStringValue(r.spinCode ?? r.spin_code),
+    spinShadeCode: toStringValue(r.spinShadeCode ?? r.spin_shade_code),
+    fgProductId: toNumber(r.fgProductId ?? r.fg_product_id),
+    fgProductCode: toStringValue(r.fgProductCode ?? r.fg_product_code),
+    candidatePoyProductIds: rawNumbers(r.candidatePoyProductIds ?? r.candidate_poy_product_ids),
+    reason: toStringValue(r.reason),
+    currentParamValue: toStringValue(r.currentParamValue ?? r.current_param_value),
+    paramMatches: toBoolean(r.paramMatches ?? r.param_matches),
+  }
+}
+
+export interface NormalizedEtlCounts {
+  exists: number
+  existsMulti: number
+  newShade: number
+  newItem: number
+  possibleDuplicate: number
+  invalidType: number
+  total: number
+}
+
+export interface NormalizedEtlRow {
+  rowKey: string
+  mergeItemOrion: string
+  itemName: string
+  shadeCode: string
+  shadeName: string
+  typeCode: string
+  status: EtlRowStatus | string
+  selectable: boolean
+  matchedProductIds: number[]
+  denier: string
+  filament: string
+  note: string
+}
+
+export interface NormalizedEtlPreview {
+  runId: string
+  fromDate: string
+  rows: NormalizedEtlRow[]
+  counts: NormalizedEtlCounts
+  applyLimit: number
+}
+
+function normalizeEtlCounts(raw: unknown): NormalizedEtlCounts {
+  const c = (raw ?? {}) as RawRecord
+  return {
+    exists: toNumber(c.exists),
+    existsMulti: toNumber(c.existsMulti ?? c.exists_multi),
+    newShade: toNumber(c.newShade ?? c.new_shade),
+    newItem: toNumber(c.newItem ?? c.new_item),
+    possibleDuplicate: toNumber(c.possibleDuplicate ?? c.possible_duplicate),
+    invalidType: toNumber(c.invalidType ?? c.invalid_type),
+    total: toNumber(c.total),
+  }
+}
+
+/** Normalizes ProductEtlPreview. Counts are BEFORE the includeExisting filter (backend). */
+export function normalizeEtlPreview(raw: RawRecord | undefined | null): NormalizedEtlPreview {
+  const r = (raw ?? {}) as RawRecord
+  return {
+    runId: toStringValue(r.runId ?? r.run_id),
+    fromDate: toStringValue(r.fromDate ?? r.from_date),
+    rows: rawRecords(r.rows).map((row) => ({
+      rowKey: toStringValue(row.rowKey ?? row.row_key),
+      mergeItemOrion: toStringValue(row.mergeItemOrion ?? row.merge_item_orion),
+      itemName: toStringValue(row.itemName ?? row.item_name),
+      shadeCode: toStringValue(row.shadeCode ?? row.shade_code),
+      shadeName: toStringValue(row.shadeName ?? row.shade_name),
+      typeCode: toStringValue(row.typeCode ?? row.type_code),
+      status: toStringValue(row.status),
+      selectable: toBoolean(row.selectable),
+      matchedProductIds: rawNumbers(row.matchedProductIds ?? row.matched_product_ids),
+      denier: toStringValue(row.denier),
+      filament: toStringValue(row.filament),
+      note: toStringValue(row.note),
+    })),
+    counts: normalizeEtlCounts(r.counts),
+    applyLimit: toNumber(r.applyLimit ?? r.apply_limit),
+  }
+}
+
+export interface NormalizedEtlApplyRow {
+  rowKey: string
+  result: "INSERTED" | "SKIPPED" | "FAILED" | string
+  productSysId: number
+  productCode: string
+  message: string
+}
+
+export interface NormalizedEtlApplyResult {
+  runId: string
+  inserted: number
+  skipped: number
+  failed: number
+  rows: NormalizedEtlApplyRow[]
+}
+
+/** Normalizes ProductEtlApplyResult. */
+export function normalizeEtlApplyResult(raw: RawRecord | undefined | null): NormalizedEtlApplyResult {
+  const r = (raw ?? {}) as RawRecord
+  return {
+    runId: toStringValue(r.runId ?? r.run_id),
+    inserted: toNumber(r.inserted),
+    skipped: toNumber(r.skipped),
+    failed: toNumber(r.failed),
+    rows: rawRecords(r.rows).map((row) => ({
+      rowKey: toStringValue(row.rowKey ?? row.row_key),
+      result: toStringValue(row.result),
+      productSysId: toNumber(row.productSysId ?? row.product_sys_id),
+      productCode: toStringValue(row.productCode ?? row.product_code),
+      message: toStringValue(row.message),
+    })),
   }
 }

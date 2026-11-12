@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/form"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { FgPoyCombobox } from "@/components/finance/comboboxes/fg-poy-combobox"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import type { MBSpin } from "@/types/finance/mb-spin"
@@ -41,6 +42,8 @@ const formSchema = z.object({
   mbsMgtName: z.string().min(1, "Name is required").max(100),
   mbsDenier: z.coerce.number().positive("Denier must be greater than zero"),
   mbsFilament: z.coerce.number().int().positive("Filament must be greater than zero"),
+  // P7: FG (POY) is required on duplicate; shade is locked to the source spin.
+  fgProductId: z.number().int().min(1, "FG Product (POY) is required"),
 })
 
 type FormValues = z.infer<typeof formSchema>
@@ -68,7 +71,7 @@ export function MBSpinDuplicateDialog({ open, onOpenChange, mbSpin, onSuccess }:
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema) as never,
-    defaultValues: { mbsMgtName: "", mbsDenier: 0, mbsFilament: 0 },
+    defaultValues: { mbsMgtName: "", mbsDenier: 0, mbsFilament: 0, fgProductId: 0 },
   })
 
   // ⭐ DIPERBARUI 2026-08-31 (P7-T3) — live LDR preview while the user edits
@@ -144,6 +147,7 @@ export function MBSpinDuplicateDialog({ open, onOpenChange, mbSpin, onSuccess }:
         mbsMgtName: `${mbSpin.mbsMgtName} (copy)`,
         mbsDenier: mbSpin.mbsDenier ?? 0,
         mbsFilament: mbSpin.mbsFilament ?? 0,
+        fgProductId: 0, // must be picked on purpose: same shade + source FG is a guaranteed 409
       })
       setImpactSummary(null)
     }
@@ -158,6 +162,7 @@ export function MBSpinDuplicateDialog({ open, onOpenChange, mbSpin, onSuccess }:
         mbsMgtName: values.mbsMgtName,
         mbsDenier: values.mbsDenier,
         mbsFilament: values.mbsFilament,
+        fgProductId: values.fgProductId,
       })
       onSuccess?.()
 
@@ -171,8 +176,10 @@ export function MBSpinDuplicateDialog({ open, onOpenChange, mbSpin, onSuccess }:
       } else {
         onOpenChange(false)
       }
-    } catch {
-      // toast handled in hook
+    } catch (err) {
+      // toast handled in hook; also surface FG conflicts inline
+      const msg = err instanceof Error ? err.message : ""
+      if (/fg|shade|exist/i.test(msg)) form.setError("fgProductId", { message: msg })
     }
   }
 
@@ -225,6 +232,35 @@ export function MBSpinDuplicateDialog({ open, onOpenChange, mbSpin, onSuccess }:
                     <FormControl>
                       <Input type="number" step="1" {...field} />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="fgProductId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      FG Product (POY) <span className="text-destructive">*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <FgPoyCombobox
+                        value={field.value || undefined}
+                        shadeCode={mbSpin?.mbsShadeCode || undefined}
+                        selectedLabel={
+                          mbSpin && mbSpin.fgProductId === field.value && mbSpin.fgProductCode
+                            ? `${mbSpin.fgProductCode} — ${mbSpin.fgProductName}`
+                            : undefined
+                        }
+                        onChange={(id) => field.onChange(id)}
+                        allowCreate
+                      />
+                    </FormControl>
+                    <p className="text-muted-foreground text-xs">
+                      Shade (locked from source): {mbSpin?.mbsShadeCode || "—"}
+                    </p>
                     <FormMessage />
                   </FormItem>
                 )}

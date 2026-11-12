@@ -1,5 +1,7 @@
 "use client"
 
+import type { CreateMBHeadRequest } from "@/types/finance/mb-head"
+
 // MBRecipeFormDialog — the MB recipe (mst_mb_head) create/edit form. P6 rebuild.
 //
 // Layout (B14): ScrollableDialogContent + sticky header/footer + three tabs in
@@ -63,6 +65,7 @@ import {
 } from "@/components/finance/mb-recipe/fields"
 import { MBFinalProductCombobox } from "@/components/finance/comboboxes/mb-final-product-combobox"
 import { ShadeCombobox } from "@/components/finance/shade/shade-combobox"
+import { FgPoyCombobox } from "@/components/finance/comboboxes/fg-poy-combobox"
 
 import type { MBHead } from "@/types/finance/mb-head"
 import { useCreateMBHead, useUpdateMBHead } from "@/hooks/finance/use-mb-head"
@@ -115,6 +118,8 @@ const formSchema = z.object({
   // empty string is a legal submitted state and is omitted from the payload.
   mbhNoOfProcess: z.string().max(10).optional(),
   additionalShades: z.array(shadeRowSchema).max(MAX_ADDITIONAL_SHADES, `At most ${MAX_ADDITIONAL_SHADES} additional shades`),
+  // P7: FG (POY) link — required whenever this form is editable (create + edit).
+  fgProductId: z.number().int().min(1, "FG Product (POY) is required"),
   mbhIsActive: z.boolean(),
 })
 
@@ -134,6 +139,7 @@ const TAB_FIELDS = {
     "mbhFilament",
     "mbhCrossSection",
     "mbhLustureCode",
+    "fgProductId",
     "mbhLdrPrsn",
     "mbhRunLdrPct",
   ],
@@ -177,6 +183,7 @@ const EMPTY_VALUES: FormValues = {
   // 🔴 EMPTY on purpose — see U-B above. Do not seed 'D'.
   mbhNoOfProcess: "",
   additionalShades: [],
+  fgProductId: 0,
   mbhIsActive: true,
 }
 
@@ -201,10 +208,12 @@ export function MBRecipeFormDialog({ open, onOpenChange, mbHead, onSuccess }: MB
   // React-sanctioned "adjust state while rendering" pattern, NOT an effect: a
   // setState inside useEffect here trips react-hooks' cascading-render rule.
   const openKey = open ? (mbHead?.mbhId ?? "new") : "closed"
+  const [fgShade, setFgShade] = useState<string | null>(null)
   const [prevOpenKey, setPrevOpenKey] = useState(openKey)
   if (prevOpenKey !== openKey) {
     setPrevOpenKey(openKey)
     setActiveTab(TAB_ORDER[0])
+    setFgShade(null)
   }
 
   const form = useForm<FormValues>({
@@ -242,6 +251,7 @@ export function MBRecipeFormDialog({ open, onOpenChange, mbHead, onSuccess }: MB
               mbhsShadeCode: s.mbhsShadeCode ?? "",
               mbhsShadeName: s.mbhsShadeName ?? "",
             })),
+            fgProductId: Number(mbHead.fgProductId ?? 0),
             mbhIsActive: mbHead.mbhIsActive ?? true,
           }
         : EMPTY_VALUES
@@ -253,6 +263,10 @@ export function MBRecipeFormDialog({ open, onOpenChange, mbHead, onSuccess }: MB
   // react-hooks/incompatible-library rule that flags calling library methods
   // mid-render.
   const watchedShadeName = useWatch({ control: form.control, name: "mbhShadeName" })
+  const watchedShadeCode = useWatch({ control: form.control, name: "mbhCode" })
+  // Shade of the FG picked in this session (unknown for a pre-existing link).
+  // Used to clear the FG when the recipe shade changes to a different one.
+  // null = unknown (FG came from the DB); "" = known FG without a shade.
 
   const errors = form.formState.errors
   const tabHasError = useMemo(() => {
@@ -332,6 +346,8 @@ export function MBRecipeFormDialog({ open, onOpenChange, mbHead, onSuccess }: MB
             // With false/absent the backend leaves stored shades untouched, so a
             // deletion made here would silently not persist.
             replaceAdditionalShades: true,
+            // Only when changed (absent = unchanged on the backend).
+            ...(values.fgProductId !== Number(mbHead.fgProductId ?? 0) ? { fgProductId: values.fgProductId } : {}),
             mbhIsActive: values.mbhIsActive,
           },
         })
@@ -358,7 +374,8 @@ export function MBRecipeFormDialog({ open, onOpenChange, mbHead, onSuccess }: MB
           mbhVsNumber: values.mbhVsNumber,
           mbhNoOfProcess: toOptStr(values.mbhNoOfProcess),
           additionalShades: shades,
-        })
+          fgProductId: values.fgProductId,
+        } as CreateMBHeadRequest)
       }
       onOpenChange(false)
       onSuccess?.()
@@ -589,7 +606,20 @@ export function MBRecipeFormDialog({ open, onOpenChange, mbHead, onSuccess }: MB
                                 // handler, NOT a useEffect — this repo's lint
                                 // rule forbids synchronous setState inside
                                 // useEffect.
+                                const prevShade = (field.value ?? "").trim().toUpperCase()
+                                const nextShade = shadeCode.trim().toUpperCase()
                                 field.onChange(shadeCode)
+                                const hasFg = Number(form.getValues("fgProductId") ?? 0) > 0
+                                const fgS = (fgShade ?? "").trim().toUpperCase()
+                                // Known FG shade: clear when it no longer matches the new shade.
+                                // Unknown FG shade (pre-existing link): clear whenever the
+                                // recipe shade actually changes (P7-R7).
+                                const mismatch =
+                                  fgShade === null ? hasFg && prevShade !== nextShade : fgS !== "" && fgS !== nextShade
+                                if (mismatch) {
+                                  form.setValue("fgProductId", 0, { shouldValidate: false, shouldDirty: true })
+                                  setFgShade(null)
+                                }
                                 form.setValue("mbhShadeName", shadeName, {
                                   shouldValidate: true,
                                   shouldDirty: true,
@@ -603,6 +633,38 @@ export function MBRecipeFormDialog({ open, onOpenChange, mbHead, onSuccess }: MB
                             Pick from the shade master or enter a new shade (auto-saved to master on save). Older
                             recipes may show a shade code/name that no longer exists in master — it stays as-is
                             until you pick a new one.
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="fgProductId"
+                      render={({ field }) => (
+                        <FormItem className="col-span-2">
+                          <FormLabel>
+                            FG Product (POY) <span className="text-destructive">*</span>
+                          </FormLabel>
+                          <FormControl>
+                            <FgPoyCombobox
+                              value={field.value || undefined}
+                              shadeCode={watchedShadeCode || undefined}
+                              selectedLabel={
+                                mbHead && mbHead.fgProductId === field.value && mbHead.fgProductCode
+                                  ? `${mbHead.fgProductCode} — ${mbHead.fgProductName}`
+                                  : undefined
+                              }
+                              onChange={(id, product) => {
+                                field.onChange(id)
+                                setFgShade(product.shadeCode)
+                              }}
+                              allowCreate
+                              disabled={isPending}
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            The POY product this recipe produces. Only POY products with this shade (or no shade) are listed.
                           </FormDescription>
                           <FormMessage />
                         </FormItem>

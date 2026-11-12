@@ -567,6 +567,11 @@ export function MbRecipeBulkJobProgressDialog({ open, onOpenChange, selection, o
                   {panelFailures.map((f) => (
                     <li key={f.mbhId} className="flex flex-col gap-0.5 border-b pb-1 last:border-0">
                       <span className="font-mono text-xs">{f.mbCosting || f.mbhId}</span>
+                      {f.errorMessage?.startsWith("SUPERSEDE_CONFIRMATION_REQUIRED") && (
+                        <span className="text-xs font-medium text-amber-600">
+                          Needs supersede confirmation — validate individually
+                        </span>
+                      )}
                       <span className="text-xs text-destructive">{f.errorMessage}</span>
                     </li>
                   ))}

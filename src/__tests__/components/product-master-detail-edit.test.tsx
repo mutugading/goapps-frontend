@@ -37,6 +37,7 @@ vi.mock("@/components/finance/cost-product-master/routing-tab", () => ({ Product
 vi.mock("@/components/finance/cost-product-master/audit-tab", () => ({ ProductAuditTab: () => null }))
 vi.mock("@/components/finance/cost-results/cost-history-tab", () => ({ CostHistoryTab: () => null }))
 vi.mock("@/components/finance/cost-product-master/mb-recipe-link-card", () => ({ MbRecipeLinkCard: () => null }))
+vi.mock("@/components/finance/cost-product-master/mb-spin-link-card", () => ({ MbSpinLinkCard: () => null }))
 vi.mock("@/components/finance/cost-product-master/unlock-dialog", () => ({ UnlockProductMasterDialog: () => null }))
 vi.mock("@/components/finance/cost-product-master/product-master-form-dialog", () => ({
   ProductMasterFormDialog: ({ open, product }: { open: boolean; product?: { productCode: string } | null }) =>
