@@ -56,7 +56,11 @@ export async function POST(request: NextRequest) {
         const metadata = createMetadataFromRequest(request)
         const client = getMBHeadClient()
 
-        const response = await client.createMBHead(body, metadata)
+        // P7 — FG (POY) product id; 0 = unset (backend validates FG on create).
+        const response = await client.createMBHead(
+            { ...body, fgProductId: Number(body.fgProductId) || 0 },
+            metadata
+        )
 
         return NextResponse.json({
             base: response.base,

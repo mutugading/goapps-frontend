@@ -41,7 +41,10 @@ export async function PUT(request: NextRequest, context: RouteContext) {
         const body = await request.json()
         const metadata = createMetadataFromRequest(request)
         const client = getMBHeadClient()
-        const response = await client.updateMBHead({ ...body, mbhId }, metadata)
+        // P7 — fgProductId is forwarded ONLY when the key is present in the body:
+        // absent = unchanged, 0 = clear, >0 = set (UpdateMBHeadRequest.fgProductId optional).
+        const fgPatch = "fgProductId" in body ? { fgProductId: Number(body.fgProductId) || 0 } : {}
+        const response = await client.updateMBHead({ ...body, ...fgPatch, mbhId }, metadata)
 
         return NextResponse.json({
             base: response.base,

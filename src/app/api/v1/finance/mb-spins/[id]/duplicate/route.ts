@@ -30,6 +30,8 @@ export async function POST(request: NextRequest, context: RouteContext) {
                 mbsMgtName: body.mbsMgtName,
                 mbsDenier: body.mbsDenier,
                 mbsFilament: body.mbsFilament,
+                // P7 — FG (POY) link for the clone. 0 = inherit/none (backend default).
+                fgProductId: Number(body.fgProductId) || 0,
             },
             metadata
         )
