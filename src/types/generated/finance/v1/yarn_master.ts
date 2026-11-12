@@ -2608,7 +2608,15 @@ export interface UpdateMBSpinRequest {
     | boolean
     | undefined;
   /** Optional VS reference number. Absent = leave unchanged. */
-  mbsVsNumber?: string | undefined;
+  mbsVsNumber?:
+    | string
+    | undefined;
+  /**
+   * Optional FG (POY) product link (mb-spin-fg-poy-link P8). Absent = leave unchanged,
+   * 0 = clear the link, >0 = link to this active POY product (link source MANUAL).
+   * Rejected for spins whose FG comes from their recipe (link source RECIPE) and for superseded/inactive spins.
+   */
+  fgProductId?: number | undefined;
 }
 
 /** UpdateMBSpinResponse is the response for updating an MB Spin record. */
@@ -22858,6 +22866,7 @@ function createBaseUpdateMBSpinRequest(): UpdateMBSpinRequest {
     mbsLdrAdjustmentPct: undefined,
     mbsLdrLockActual: undefined,
     mbsVsNumber: undefined,
+    fgProductId: undefined,
   };
 }
 
@@ -22919,6 +22928,9 @@ export const UpdateMBSpinRequest: MessageFns<UpdateMBSpinRequest> = {
     }
     if (message.mbsVsNumber !== undefined) {
       writer.uint32(154).string(message.mbsVsNumber);
+    }
+    if (message.fgProductId !== undefined) {
+      writer.uint32(160).int64(message.fgProductId);
     }
     return writer;
   },
@@ -23082,6 +23094,14 @@ export const UpdateMBSpinRequest: MessageFns<UpdateMBSpinRequest> = {
           message.mbsVsNumber = reader.string();
           continue;
         }
+        case 20: {
+          if (tag !== 160) {
+            break;
+          }
+
+          message.fgProductId = longToNumber(reader.int64());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -23188,6 +23208,11 @@ export const UpdateMBSpinRequest: MessageFns<UpdateMBSpinRequest> = {
         : isSet(object.mbs_vs_number)
         ? globalThis.String(object.mbs_vs_number)
         : undefined,
+      fgProductId: isSet(object.fgProductId)
+        ? globalThis.Number(object.fgProductId)
+        : isSet(object.fg_product_id)
+        ? globalThis.Number(object.fg_product_id)
+        : undefined,
     };
   },
 
@@ -23250,6 +23275,9 @@ export const UpdateMBSpinRequest: MessageFns<UpdateMBSpinRequest> = {
     if (message.mbsVsNumber !== undefined) {
       obj.mbsVsNumber = message.mbsVsNumber;
     }
+    if (message.fgProductId !== undefined) {
+      obj.fgProductId = Math.round(message.fgProductId);
+    }
     return obj;
   },
 
@@ -23277,6 +23305,7 @@ export const UpdateMBSpinRequest: MessageFns<UpdateMBSpinRequest> = {
     message.mbsLdrAdjustmentPct = object.mbsLdrAdjustmentPct ?? undefined;
     message.mbsLdrLockActual = object.mbsLdrLockActual ?? undefined;
     message.mbsVsNumber = object.mbsVsNumber ?? undefined;
+    message.fgProductId = object.fgProductId ?? undefined;
     return message;
   },
 };
