@@ -61,6 +61,8 @@ export interface CreateCostProductMasterPayload {
   erpMsBatchItem?: string
   erpItemType?: string
   erpPrdPerDay?: string
+  /** Orion item code (optional, <=50). Used by the minimal POY create. */
+  erpItemCode?: string
 }
 
 export interface UpdateCostProductMasterPayload {
