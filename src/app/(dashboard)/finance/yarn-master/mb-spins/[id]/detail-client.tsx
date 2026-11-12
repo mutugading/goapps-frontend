@@ -23,7 +23,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import type { NormalizedUnsupersedeResult } from "@/types/finance/mb-spin"
+import { normalizeFgFollowsRecipe, type NormalizedUnsupersedeResult } from "@/types/finance/mb-spin"
 import { useMBSpinDetail, useMBSpinSiblings, useUnsupersedeMBSpin } from "@/hooks/finance/use-mb-spin"
 import { MBSpinDeleteDialog, MBSpinDuplicateDialog, MBSpinFormDialog, MBSpinFgEditDialog } from "@/components/finance/mb-spin"
 
@@ -86,7 +86,11 @@ export default function MbSpinDetailClient({ id }: Props) {
     : null
 
   const isLive = mbSpin.mbsIsActive !== false && !mbSpin.supersededBySpinId
-  const fgFollowsRecipe = mbSpin.fgLinkSource === "RECIPE"
+  // Backend rejects a manual FG edit (ErrFgFollowsRecipe) for link source RECIPE
+  // or a root spin whose head has an FG; fgFollowsRecipe covers both. The RECIPE
+  // check is kept for older responses that lack the field.
+  const fgFollowsRecipe =
+    mbSpin.fgLinkSource === "RECIPE" || normalizeFgFollowsRecipe(mbSpin)
   const canEditFg = canUpdate && isLive && !fgFollowsRecipe
   const noShade = !mbSpin.mbsShadeCode
 

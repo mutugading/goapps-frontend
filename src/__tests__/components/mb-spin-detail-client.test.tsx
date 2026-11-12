@@ -332,6 +332,18 @@ describe("MbSpinDetailClient", () => {
       expect(screen.getByText("FG follows recipe")).toBeInTheDocument()
     })
 
+    it("hides Edit FG and shows the hint for a root spin with fgFollowsRecipe despite BACKFILL source", () => {
+      mbSpinState.value = {
+        ...BASE_SPIN,
+        mbsIsActive: true,
+        fgLinkSource: "BACKFILL",
+        fgFollowsRecipe: true,
+      }
+      render(<MbSpinDetailClient id={SPIN_ID} />)
+      expect(screen.queryByRole("button", { name: "Edit FG" })).not.toBeInTheDocument()
+      expect(screen.getByText("FG follows recipe")).toBeInTheDocument()
+    })
+
     it("hides Edit FG for a superseded spin", () => {
       mbSpinState.value = { ...BASE_SPIN, mbsIsActive: true, supersededBySpinId: "x" }
       render(<MbSpinDetailClient id={SPIN_ID} />)

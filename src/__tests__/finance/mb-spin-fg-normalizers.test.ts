@@ -10,7 +10,7 @@ import {
   isSupersedeConfirmationError,
   SUPERSEDE_CONFIRMATION_PREFIX,
 } from "@/types/finance/mb-head"
-import { normalizeUnsupersedeResult } from "@/types/finance/mb-spin"
+import { normalizeUnsupersedeResult, normalizeFgFollowsRecipe } from "@/types/finance/mb-spin"
 import {
   normalizeMbLink,
   normalizeEtlPreview,
@@ -221,5 +221,14 @@ describe("normalizeEtlApplyResult", () => {
     expect(snake.rows[0].rowKey).toBe("X")
     expect(snake.rows[0].productSysId).toBe(4)
     expect(normalizeEtlApplyResult(undefined).rows).toEqual([])
+  })
+})
+
+describe("normalizeFgFollowsRecipe (P8-RBE-3)", () => {
+  it("reads camelCase and snake_case, defaults to false", () => {
+    expect(normalizeFgFollowsRecipe({ fgFollowsRecipe: true })).toBe(true)
+    expect(normalizeFgFollowsRecipe({ fg_follows_recipe: true })).toBe(true)
+    expect(normalizeFgFollowsRecipe({})).toBe(false)
+    expect(normalizeFgFollowsRecipe(null)).toBe(false)
   })
 })

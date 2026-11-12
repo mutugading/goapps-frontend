@@ -269,3 +269,13 @@ export function normalizeUnsupersedeResult(raw: RawRecord | undefined | null): N
     })),
   }
 }
+
+/**
+ * Reads MBSpin.fg_follows_recipe (read-only; true when the backend would reject
+ * a manual FG edit with ErrFgFollowsRecipe). Accepts camelCase and snake_case,
+ * defaults to false for older responses.
+ */
+export function normalizeFgFollowsRecipe(raw: unknown): boolean {
+  const r = (raw ?? {}) as RawRecord
+  return (r.fgFollowsRecipe ?? r.fg_follows_recipe) === true
+}
