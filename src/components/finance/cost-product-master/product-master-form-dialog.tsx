@@ -189,6 +189,8 @@ export function ProductMasterFormDialog({ open, onOpenChange, product, onSuccess
                     <FormControl>
                       <ShadeCombobox
                         allowCreate
+                        allowClear
+                        onClear={() => field.onChange("")}
                         code={field.value || undefined}
                         name={product?.shadeCode && product.shadeCode === field.value ? product.shadeName : undefined}
                         onSelect={(shadeCode) => field.onChange(shadeCode)}
