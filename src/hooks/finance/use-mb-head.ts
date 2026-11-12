@@ -326,6 +326,10 @@ export function useValidateMBHead() {
       const mbhId = typeof vars === "string" ? vars : vars.mbhId
       queryClient.invalidateQueries({ queryKey: mbHeadKeys.detail(mbhId) })
       queryClient.invalidateQueries({ queryKey: mbHeadKeys.lists() })
+      if (typeof vars !== "string" && vars.confirmSupersede) {
+        queryClient.invalidateQueries({ queryKey: ["finance", "mb-spin"] })
+        queryClient.invalidateQueries({ queryKey: ["finance", "cost-product-parameter"] })
+      }
       toast.success("MB Head validated")
     },
     onError: (error: Error) => {

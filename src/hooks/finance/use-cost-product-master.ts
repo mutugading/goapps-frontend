@@ -206,6 +206,7 @@ export function useRelinkCostProductMb() {
     onSuccess: (_, productSysId) => {
       qc.invalidateQueries({ queryKey: [...KEYS.all, "mb-link", productSysId] })
       qc.invalidateQueries({ queryKey: KEYS.detail(productSysId) })
+      qc.invalidateQueries({ queryKey: CPP_KEY })
       toast.success("MB re-linked")
     },
     onError: (error: Error) => {
