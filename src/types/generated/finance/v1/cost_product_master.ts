@@ -69,6 +69,8 @@ export interface CreateCostProductMasterRequest {
   erpItemType: string;
   /** decimal string */
   erpPrdPerDay: string;
+  /** ERP item code (optional; used for inline minimal POY creation). Empty = unset. */
+  erpItemCode: string;
 }
 
 export interface CreateCostProductMasterResponse {
@@ -286,6 +288,134 @@ export interface DeleteRMDenierOverrideResponse {
   base: BaseResponse | undefined;
   deletedCount: number;
   appliedProductSysIds: number[];
+}
+
+/** CostProductMbLink describes how a product resolves to an MB spin. */
+export interface CostProductMbLink {
+  /** FG_MATCH | SHADE_ONLY | SUPERBA | NONE. */
+  linkSource: string;
+  /** Resolved spin UUID. */
+  spinId: string;
+  /** Resolved spin code. */
+  spinCode: string;
+  /** Resolved spin shade code. */
+  spinShadeCode: string;
+  /** FG product id (0 = none). */
+  fgProductId: number;
+  /** FG product code. */
+  fgProductCode: string;
+  /** Candidate POY product ids when ambiguous. */
+  candidatePoyProductIds: number[];
+  /** Human-readable reason. */
+  reason: string;
+  /** Current MB_SP_CODE param text value. */
+  currentParamValue: string;
+  /** True when current_param_value matches the resolved spin. */
+  paramMatches: boolean;
+}
+
+export interface GetCostProductMbLinkRequest {
+  productSysId: number;
+}
+
+export interface GetCostProductMbLinkResponse {
+  base: BaseResponse | undefined;
+  data: CostProductMbLink | undefined;
+}
+
+export interface RelinkCostProductMbRequest {
+  productSysId: number;
+}
+
+export interface RelinkCostProductMbResponse {
+  base: BaseResponse | undefined;
+  data: CostProductMbLink | undefined;
+}
+
+export interface PreviewProductEtlFromOracleRequest {
+  /** Start date YYYY-MM-DD. */
+  fromDate: string;
+  /** Free-text search (max 200 chars). */
+  search: string;
+  /** Include rows that already exist. */
+  includeExisting: boolean;
+}
+
+/** ProductEtlRow is one preview row. */
+export interface ProductEtlRow {
+  /** "<item>|<shade>". */
+  rowKey: string;
+  mergeItemOrion: string;
+  itemName: string;
+  shadeCode: string;
+  shadeName: string;
+  typeCode: string;
+  /** EXISTS | EXISTS_MULTI | NEW_SHADE | NEW_ITEM | POSSIBLE_DUPLICATE | INVALID_TYPE. */
+  status: string;
+  /** Whether the row can be applied. */
+  selectable: boolean;
+  matchedProductIds: number[];
+  denier: string;
+  filament: string;
+  note: string;
+}
+
+/** ProductEtlCounts holds per-status counts. */
+export interface ProductEtlCounts {
+  exists: number;
+  existsMulti: number;
+  newShade: number;
+  newItem: number;
+  possibleDuplicate: number;
+  invalidType: number;
+  total: number;
+}
+
+export interface ProductEtlPreview {
+  /** Run token (UUID) to pass to apply. */
+  runId: string;
+  fromDate: string;
+  rows: ProductEtlRow[];
+  counts:
+    | ProductEtlCounts
+    | undefined;
+  /** Max rows accepted per apply call. */
+  applyLimit: number;
+}
+
+export interface PreviewProductEtlFromOracleResponse {
+  base: BaseResponse | undefined;
+  data: ProductEtlPreview | undefined;
+}
+
+export interface ApplyProductEtlFromOracleRequest {
+  /** Run token returned by preview. */
+  previewRunId: string;
+  /** Selected row keys. */
+  rowKeys: string[];
+}
+
+/** ProductEtlApplyRow is the per-row apply result. */
+export interface ProductEtlApplyRow {
+  rowKey: string;
+  /** INSERTED | SKIPPED | FAILED. */
+  result: string;
+  productSysId: number;
+  productCode: string;
+  message: string;
+}
+
+export interface ProductEtlApplyResult {
+  runId: string;
+  inserted: number;
+  skipped: number;
+  failed: number;
+  rows: ProductEtlApplyRow[];
+}
+
+export interface ApplyProductEtlFromOracleResponse {
+  base: BaseResponse | undefined;
+  data: ProductEtlApplyResult | undefined;
 }
 
 function createBaseCostProductMaster(): CostProductMaster {
@@ -947,6 +1077,7 @@ function createBaseCreateCostProductMasterRequest(): CreateCostProductMasterRequ
     erpMsBatchItem: "",
     erpItemType: "",
     erpPrdPerDay: "",
+    erpItemCode: "",
   };
 }
 
@@ -990,6 +1121,9 @@ export const CreateCostProductMasterRequest: MessageFns<CreateCostProductMasterR
     }
     if (message.erpPrdPerDay !== "") {
       writer.uint32(106).string(message.erpPrdPerDay);
+    }
+    if (message.erpItemCode !== "") {
+      writer.uint32(114).string(message.erpItemCode);
     }
     return writer;
   },
@@ -1105,6 +1239,14 @@ export const CreateCostProductMasterRequest: MessageFns<CreateCostProductMasterR
           message.erpPrdPerDay = reader.string();
           continue;
         }
+        case 14: {
+          if (tag !== 114) {
+            break;
+          }
+
+          message.erpItemCode = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1177,6 +1319,11 @@ export const CreateCostProductMasterRequest: MessageFns<CreateCostProductMasterR
         : isSet(object.erp_prd_per_day)
         ? globalThis.String(object.erp_prd_per_day)
         : "",
+      erpItemCode: isSet(object.erpItemCode)
+        ? globalThis.String(object.erpItemCode)
+        : isSet(object.erp_item_code)
+        ? globalThis.String(object.erp_item_code)
+        : "",
     };
   },
 
@@ -1221,6 +1368,9 @@ export const CreateCostProductMasterRequest: MessageFns<CreateCostProductMasterR
     if (message.erpPrdPerDay !== "") {
       obj.erpPrdPerDay = message.erpPrdPerDay;
     }
+    if (message.erpItemCode !== "") {
+      obj.erpItemCode = message.erpItemCode;
+    }
     return obj;
   },
 
@@ -1242,6 +1392,7 @@ export const CreateCostProductMasterRequest: MessageFns<CreateCostProductMasterR
     message.erpMsBatchItem = object.erpMsBatchItem ?? "";
     message.erpItemType = object.erpItemType ?? "";
     message.erpPrdPerDay = object.erpPrdPerDay ?? "";
+    message.erpItemCode = object.erpItemCode ?? "";
     return message;
   },
 };
@@ -4832,6 +4983,1768 @@ export const DeleteRMDenierOverrideResponse: MessageFns<DeleteRMDenierOverrideRe
   },
 };
 
+function createBaseCostProductMbLink(): CostProductMbLink {
+  return {
+    linkSource: "",
+    spinId: "",
+    spinCode: "",
+    spinShadeCode: "",
+    fgProductId: 0,
+    fgProductCode: "",
+    candidatePoyProductIds: [],
+    reason: "",
+    currentParamValue: "",
+    paramMatches: false,
+  };
+}
+
+export const CostProductMbLink: MessageFns<CostProductMbLink> = {
+  encode(message: CostProductMbLink, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.linkSource !== "") {
+      writer.uint32(10).string(message.linkSource);
+    }
+    if (message.spinId !== "") {
+      writer.uint32(18).string(message.spinId);
+    }
+    if (message.spinCode !== "") {
+      writer.uint32(26).string(message.spinCode);
+    }
+    if (message.spinShadeCode !== "") {
+      writer.uint32(34).string(message.spinShadeCode);
+    }
+    if (message.fgProductId !== 0) {
+      writer.uint32(40).int64(message.fgProductId);
+    }
+    if (message.fgProductCode !== "") {
+      writer.uint32(50).string(message.fgProductCode);
+    }
+    writer.uint32(58).fork();
+    for (const v of message.candidatePoyProductIds) {
+      writer.int64(v);
+    }
+    writer.join();
+    if (message.reason !== "") {
+      writer.uint32(66).string(message.reason);
+    }
+    if (message.currentParamValue !== "") {
+      writer.uint32(74).string(message.currentParamValue);
+    }
+    if (message.paramMatches !== false) {
+      writer.uint32(80).bool(message.paramMatches);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CostProductMbLink {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCostProductMbLink();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.linkSource = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.spinId = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.spinCode = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.spinShadeCode = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.fgProductId = longToNumber(reader.int64());
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.fgProductCode = reader.string();
+          continue;
+        }
+        case 7: {
+          if (tag === 56) {
+            message.candidatePoyProductIds.push(longToNumber(reader.int64()));
+
+            continue;
+          }
+
+          if (tag === 58) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.candidatePoyProductIds.push(longToNumber(reader.int64()));
+            }
+
+            continue;
+          }
+
+          break;
+        }
+        case 8: {
+          if (tag !== 66) {
+            break;
+          }
+
+          message.reason = reader.string();
+          continue;
+        }
+        case 9: {
+          if (tag !== 74) {
+            break;
+          }
+
+          message.currentParamValue = reader.string();
+          continue;
+        }
+        case 10: {
+          if (tag !== 80) {
+            break;
+          }
+
+          message.paramMatches = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CostProductMbLink {
+    return {
+      linkSource: isSet(object.linkSource)
+        ? globalThis.String(object.linkSource)
+        : isSet(object.link_source)
+        ? globalThis.String(object.link_source)
+        : "",
+      spinId: isSet(object.spinId)
+        ? globalThis.String(object.spinId)
+        : isSet(object.spin_id)
+        ? globalThis.String(object.spin_id)
+        : "",
+      spinCode: isSet(object.spinCode)
+        ? globalThis.String(object.spinCode)
+        : isSet(object.spin_code)
+        ? globalThis.String(object.spin_code)
+        : "",
+      spinShadeCode: isSet(object.spinShadeCode)
+        ? globalThis.String(object.spinShadeCode)
+        : isSet(object.spin_shade_code)
+        ? globalThis.String(object.spin_shade_code)
+        : "",
+      fgProductId: isSet(object.fgProductId)
+        ? globalThis.Number(object.fgProductId)
+        : isSet(object.fg_product_id)
+        ? globalThis.Number(object.fg_product_id)
+        : 0,
+      fgProductCode: isSet(object.fgProductCode)
+        ? globalThis.String(object.fgProductCode)
+        : isSet(object.fg_product_code)
+        ? globalThis.String(object.fg_product_code)
+        : "",
+      candidatePoyProductIds: globalThis.Array.isArray(object?.candidatePoyProductIds)
+        ? object.candidatePoyProductIds.map((e: any) => globalThis.Number(e))
+        : globalThis.Array.isArray(object?.candidate_poy_product_ids)
+        ? object.candidate_poy_product_ids.map((e: any) => globalThis.Number(e))
+        : [],
+      reason: isSet(object.reason) ? globalThis.String(object.reason) : "",
+      currentParamValue: isSet(object.currentParamValue)
+        ? globalThis.String(object.currentParamValue)
+        : isSet(object.current_param_value)
+        ? globalThis.String(object.current_param_value)
+        : "",
+      paramMatches: isSet(object.paramMatches)
+        ? globalThis.Boolean(object.paramMatches)
+        : isSet(object.param_matches)
+        ? globalThis.Boolean(object.param_matches)
+        : false,
+    };
+  },
+
+  toJSON(message: CostProductMbLink): unknown {
+    const obj: any = {};
+    if (message.linkSource !== "") {
+      obj.linkSource = message.linkSource;
+    }
+    if (message.spinId !== "") {
+      obj.spinId = message.spinId;
+    }
+    if (message.spinCode !== "") {
+      obj.spinCode = message.spinCode;
+    }
+    if (message.spinShadeCode !== "") {
+      obj.spinShadeCode = message.spinShadeCode;
+    }
+    if (message.fgProductId !== 0) {
+      obj.fgProductId = Math.round(message.fgProductId);
+    }
+    if (message.fgProductCode !== "") {
+      obj.fgProductCode = message.fgProductCode;
+    }
+    if (message.candidatePoyProductIds?.length) {
+      obj.candidatePoyProductIds = message.candidatePoyProductIds.map((e) => Math.round(e));
+    }
+    if (message.reason !== "") {
+      obj.reason = message.reason;
+    }
+    if (message.currentParamValue !== "") {
+      obj.currentParamValue = message.currentParamValue;
+    }
+    if (message.paramMatches !== false) {
+      obj.paramMatches = message.paramMatches;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<CostProductMbLink>): CostProductMbLink {
+    return CostProductMbLink.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<CostProductMbLink>): CostProductMbLink {
+    const message = createBaseCostProductMbLink();
+    message.linkSource = object.linkSource ?? "";
+    message.spinId = object.spinId ?? "";
+    message.spinCode = object.spinCode ?? "";
+    message.spinShadeCode = object.spinShadeCode ?? "";
+    message.fgProductId = object.fgProductId ?? 0;
+    message.fgProductCode = object.fgProductCode ?? "";
+    message.candidatePoyProductIds = object.candidatePoyProductIds?.map((e) => e) || [];
+    message.reason = object.reason ?? "";
+    message.currentParamValue = object.currentParamValue ?? "";
+    message.paramMatches = object.paramMatches ?? false;
+    return message;
+  },
+};
+
+function createBaseGetCostProductMbLinkRequest(): GetCostProductMbLinkRequest {
+  return { productSysId: 0 };
+}
+
+export const GetCostProductMbLinkRequest: MessageFns<GetCostProductMbLinkRequest> = {
+  encode(message: GetCostProductMbLinkRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.productSysId !== 0) {
+      writer.uint32(8).int64(message.productSysId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetCostProductMbLinkRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetCostProductMbLinkRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.productSysId = longToNumber(reader.int64());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetCostProductMbLinkRequest {
+    return {
+      productSysId: isSet(object.productSysId)
+        ? globalThis.Number(object.productSysId)
+        : isSet(object.product_sys_id)
+        ? globalThis.Number(object.product_sys_id)
+        : 0,
+    };
+  },
+
+  toJSON(message: GetCostProductMbLinkRequest): unknown {
+    const obj: any = {};
+    if (message.productSysId !== 0) {
+      obj.productSysId = Math.round(message.productSysId);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetCostProductMbLinkRequest>): GetCostProductMbLinkRequest {
+    return GetCostProductMbLinkRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GetCostProductMbLinkRequest>): GetCostProductMbLinkRequest {
+    const message = createBaseGetCostProductMbLinkRequest();
+    message.productSysId = object.productSysId ?? 0;
+    return message;
+  },
+};
+
+function createBaseGetCostProductMbLinkResponse(): GetCostProductMbLinkResponse {
+  return { base: undefined, data: undefined };
+}
+
+export const GetCostProductMbLinkResponse: MessageFns<GetCostProductMbLinkResponse> = {
+  encode(message: GetCostProductMbLinkResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    if (message.data !== undefined) {
+      CostProductMbLink.encode(message.data, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetCostProductMbLinkResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetCostProductMbLinkResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.data = CostProductMbLink.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetCostProductMbLinkResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      data: isSet(object.data) ? CostProductMbLink.fromJSON(object.data) : undefined,
+    };
+  },
+
+  toJSON(message: GetCostProductMbLinkResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.data !== undefined) {
+      obj.data = CostProductMbLink.toJSON(message.data);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetCostProductMbLinkResponse>): GetCostProductMbLinkResponse {
+    return GetCostProductMbLinkResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GetCostProductMbLinkResponse>): GetCostProductMbLinkResponse {
+    const message = createBaseGetCostProductMbLinkResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.data = (object.data !== undefined && object.data !== null)
+      ? CostProductMbLink.fromPartial(object.data)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseRelinkCostProductMbRequest(): RelinkCostProductMbRequest {
+  return { productSysId: 0 };
+}
+
+export const RelinkCostProductMbRequest: MessageFns<RelinkCostProductMbRequest> = {
+  encode(message: RelinkCostProductMbRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.productSysId !== 0) {
+      writer.uint32(8).int64(message.productSysId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): RelinkCostProductMbRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRelinkCostProductMbRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.productSysId = longToNumber(reader.int64());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RelinkCostProductMbRequest {
+    return {
+      productSysId: isSet(object.productSysId)
+        ? globalThis.Number(object.productSysId)
+        : isSet(object.product_sys_id)
+        ? globalThis.Number(object.product_sys_id)
+        : 0,
+    };
+  },
+
+  toJSON(message: RelinkCostProductMbRequest): unknown {
+    const obj: any = {};
+    if (message.productSysId !== 0) {
+      obj.productSysId = Math.round(message.productSysId);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<RelinkCostProductMbRequest>): RelinkCostProductMbRequest {
+    return RelinkCostProductMbRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<RelinkCostProductMbRequest>): RelinkCostProductMbRequest {
+    const message = createBaseRelinkCostProductMbRequest();
+    message.productSysId = object.productSysId ?? 0;
+    return message;
+  },
+};
+
+function createBaseRelinkCostProductMbResponse(): RelinkCostProductMbResponse {
+  return { base: undefined, data: undefined };
+}
+
+export const RelinkCostProductMbResponse: MessageFns<RelinkCostProductMbResponse> = {
+  encode(message: RelinkCostProductMbResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    if (message.data !== undefined) {
+      CostProductMbLink.encode(message.data, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): RelinkCostProductMbResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRelinkCostProductMbResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.data = CostProductMbLink.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RelinkCostProductMbResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      data: isSet(object.data) ? CostProductMbLink.fromJSON(object.data) : undefined,
+    };
+  },
+
+  toJSON(message: RelinkCostProductMbResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.data !== undefined) {
+      obj.data = CostProductMbLink.toJSON(message.data);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<RelinkCostProductMbResponse>): RelinkCostProductMbResponse {
+    return RelinkCostProductMbResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<RelinkCostProductMbResponse>): RelinkCostProductMbResponse {
+    const message = createBaseRelinkCostProductMbResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.data = (object.data !== undefined && object.data !== null)
+      ? CostProductMbLink.fromPartial(object.data)
+      : undefined;
+    return message;
+  },
+};
+
+function createBasePreviewProductEtlFromOracleRequest(): PreviewProductEtlFromOracleRequest {
+  return { fromDate: "", search: "", includeExisting: false };
+}
+
+export const PreviewProductEtlFromOracleRequest: MessageFns<PreviewProductEtlFromOracleRequest> = {
+  encode(message: PreviewProductEtlFromOracleRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.fromDate !== "") {
+      writer.uint32(10).string(message.fromDate);
+    }
+    if (message.search !== "") {
+      writer.uint32(18).string(message.search);
+    }
+    if (message.includeExisting !== false) {
+      writer.uint32(24).bool(message.includeExisting);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): PreviewProductEtlFromOracleRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePreviewProductEtlFromOracleRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.fromDate = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.search = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.includeExisting = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PreviewProductEtlFromOracleRequest {
+    return {
+      fromDate: isSet(object.fromDate)
+        ? globalThis.String(object.fromDate)
+        : isSet(object.from_date)
+        ? globalThis.String(object.from_date)
+        : "",
+      search: isSet(object.search) ? globalThis.String(object.search) : "",
+      includeExisting: isSet(object.includeExisting)
+        ? globalThis.Boolean(object.includeExisting)
+        : isSet(object.include_existing)
+        ? globalThis.Boolean(object.include_existing)
+        : false,
+    };
+  },
+
+  toJSON(message: PreviewProductEtlFromOracleRequest): unknown {
+    const obj: any = {};
+    if (message.fromDate !== "") {
+      obj.fromDate = message.fromDate;
+    }
+    if (message.search !== "") {
+      obj.search = message.search;
+    }
+    if (message.includeExisting !== false) {
+      obj.includeExisting = message.includeExisting;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<PreviewProductEtlFromOracleRequest>): PreviewProductEtlFromOracleRequest {
+    return PreviewProductEtlFromOracleRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<PreviewProductEtlFromOracleRequest>): PreviewProductEtlFromOracleRequest {
+    const message = createBasePreviewProductEtlFromOracleRequest();
+    message.fromDate = object.fromDate ?? "";
+    message.search = object.search ?? "";
+    message.includeExisting = object.includeExisting ?? false;
+    return message;
+  },
+};
+
+function createBaseProductEtlRow(): ProductEtlRow {
+  return {
+    rowKey: "",
+    mergeItemOrion: "",
+    itemName: "",
+    shadeCode: "",
+    shadeName: "",
+    typeCode: "",
+    status: "",
+    selectable: false,
+    matchedProductIds: [],
+    denier: "",
+    filament: "",
+    note: "",
+  };
+}
+
+export const ProductEtlRow: MessageFns<ProductEtlRow> = {
+  encode(message: ProductEtlRow, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.rowKey !== "") {
+      writer.uint32(10).string(message.rowKey);
+    }
+    if (message.mergeItemOrion !== "") {
+      writer.uint32(18).string(message.mergeItemOrion);
+    }
+    if (message.itemName !== "") {
+      writer.uint32(26).string(message.itemName);
+    }
+    if (message.shadeCode !== "") {
+      writer.uint32(34).string(message.shadeCode);
+    }
+    if (message.shadeName !== "") {
+      writer.uint32(42).string(message.shadeName);
+    }
+    if (message.typeCode !== "") {
+      writer.uint32(50).string(message.typeCode);
+    }
+    if (message.status !== "") {
+      writer.uint32(58).string(message.status);
+    }
+    if (message.selectable !== false) {
+      writer.uint32(64).bool(message.selectable);
+    }
+    writer.uint32(74).fork();
+    for (const v of message.matchedProductIds) {
+      writer.int64(v);
+    }
+    writer.join();
+    if (message.denier !== "") {
+      writer.uint32(82).string(message.denier);
+    }
+    if (message.filament !== "") {
+      writer.uint32(90).string(message.filament);
+    }
+    if (message.note !== "") {
+      writer.uint32(98).string(message.note);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ProductEtlRow {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseProductEtlRow();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.rowKey = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.mergeItemOrion = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.itemName = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.shadeCode = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.shadeName = reader.string();
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.typeCode = reader.string();
+          continue;
+        }
+        case 7: {
+          if (tag !== 58) {
+            break;
+          }
+
+          message.status = reader.string();
+          continue;
+        }
+        case 8: {
+          if (tag !== 64) {
+            break;
+          }
+
+          message.selectable = reader.bool();
+          continue;
+        }
+        case 9: {
+          if (tag === 72) {
+            message.matchedProductIds.push(longToNumber(reader.int64()));
+
+            continue;
+          }
+
+          if (tag === 74) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.matchedProductIds.push(longToNumber(reader.int64()));
+            }
+
+            continue;
+          }
+
+          break;
+        }
+        case 10: {
+          if (tag !== 82) {
+            break;
+          }
+
+          message.denier = reader.string();
+          continue;
+        }
+        case 11: {
+          if (tag !== 90) {
+            break;
+          }
+
+          message.filament = reader.string();
+          continue;
+        }
+        case 12: {
+          if (tag !== 98) {
+            break;
+          }
+
+          message.note = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ProductEtlRow {
+    return {
+      rowKey: isSet(object.rowKey)
+        ? globalThis.String(object.rowKey)
+        : isSet(object.row_key)
+        ? globalThis.String(object.row_key)
+        : "",
+      mergeItemOrion: isSet(object.mergeItemOrion)
+        ? globalThis.String(object.mergeItemOrion)
+        : isSet(object.merge_item_orion)
+        ? globalThis.String(object.merge_item_orion)
+        : "",
+      itemName: isSet(object.itemName)
+        ? globalThis.String(object.itemName)
+        : isSet(object.item_name)
+        ? globalThis.String(object.item_name)
+        : "",
+      shadeCode: isSet(object.shadeCode)
+        ? globalThis.String(object.shadeCode)
+        : isSet(object.shade_code)
+        ? globalThis.String(object.shade_code)
+        : "",
+      shadeName: isSet(object.shadeName)
+        ? globalThis.String(object.shadeName)
+        : isSet(object.shade_name)
+        ? globalThis.String(object.shade_name)
+        : "",
+      typeCode: isSet(object.typeCode)
+        ? globalThis.String(object.typeCode)
+        : isSet(object.type_code)
+        ? globalThis.String(object.type_code)
+        : "",
+      status: isSet(object.status) ? globalThis.String(object.status) : "",
+      selectable: isSet(object.selectable) ? globalThis.Boolean(object.selectable) : false,
+      matchedProductIds: globalThis.Array.isArray(object?.matchedProductIds)
+        ? object.matchedProductIds.map((e: any) => globalThis.Number(e))
+        : globalThis.Array.isArray(object?.matched_product_ids)
+        ? object.matched_product_ids.map((e: any) => globalThis.Number(e))
+        : [],
+      denier: isSet(object.denier) ? globalThis.String(object.denier) : "",
+      filament: isSet(object.filament) ? globalThis.String(object.filament) : "",
+      note: isSet(object.note) ? globalThis.String(object.note) : "",
+    };
+  },
+
+  toJSON(message: ProductEtlRow): unknown {
+    const obj: any = {};
+    if (message.rowKey !== "") {
+      obj.rowKey = message.rowKey;
+    }
+    if (message.mergeItemOrion !== "") {
+      obj.mergeItemOrion = message.mergeItemOrion;
+    }
+    if (message.itemName !== "") {
+      obj.itemName = message.itemName;
+    }
+    if (message.shadeCode !== "") {
+      obj.shadeCode = message.shadeCode;
+    }
+    if (message.shadeName !== "") {
+      obj.shadeName = message.shadeName;
+    }
+    if (message.typeCode !== "") {
+      obj.typeCode = message.typeCode;
+    }
+    if (message.status !== "") {
+      obj.status = message.status;
+    }
+    if (message.selectable !== false) {
+      obj.selectable = message.selectable;
+    }
+    if (message.matchedProductIds?.length) {
+      obj.matchedProductIds = message.matchedProductIds.map((e) => Math.round(e));
+    }
+    if (message.denier !== "") {
+      obj.denier = message.denier;
+    }
+    if (message.filament !== "") {
+      obj.filament = message.filament;
+    }
+    if (message.note !== "") {
+      obj.note = message.note;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ProductEtlRow>): ProductEtlRow {
+    return ProductEtlRow.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ProductEtlRow>): ProductEtlRow {
+    const message = createBaseProductEtlRow();
+    message.rowKey = object.rowKey ?? "";
+    message.mergeItemOrion = object.mergeItemOrion ?? "";
+    message.itemName = object.itemName ?? "";
+    message.shadeCode = object.shadeCode ?? "";
+    message.shadeName = object.shadeName ?? "";
+    message.typeCode = object.typeCode ?? "";
+    message.status = object.status ?? "";
+    message.selectable = object.selectable ?? false;
+    message.matchedProductIds = object.matchedProductIds?.map((e) => e) || [];
+    message.denier = object.denier ?? "";
+    message.filament = object.filament ?? "";
+    message.note = object.note ?? "";
+    return message;
+  },
+};
+
+function createBaseProductEtlCounts(): ProductEtlCounts {
+  return { exists: 0, existsMulti: 0, newShade: 0, newItem: 0, possibleDuplicate: 0, invalidType: 0, total: 0 };
+}
+
+export const ProductEtlCounts: MessageFns<ProductEtlCounts> = {
+  encode(message: ProductEtlCounts, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.exists !== 0) {
+      writer.uint32(8).int32(message.exists);
+    }
+    if (message.existsMulti !== 0) {
+      writer.uint32(16).int32(message.existsMulti);
+    }
+    if (message.newShade !== 0) {
+      writer.uint32(24).int32(message.newShade);
+    }
+    if (message.newItem !== 0) {
+      writer.uint32(32).int32(message.newItem);
+    }
+    if (message.possibleDuplicate !== 0) {
+      writer.uint32(40).int32(message.possibleDuplicate);
+    }
+    if (message.invalidType !== 0) {
+      writer.uint32(48).int32(message.invalidType);
+    }
+    if (message.total !== 0) {
+      writer.uint32(56).int32(message.total);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ProductEtlCounts {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseProductEtlCounts();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.exists = reader.int32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.existsMulti = reader.int32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.newShade = reader.int32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.newItem = reader.int32();
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.possibleDuplicate = reader.int32();
+          continue;
+        }
+        case 6: {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.invalidType = reader.int32();
+          continue;
+        }
+        case 7: {
+          if (tag !== 56) {
+            break;
+          }
+
+          message.total = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ProductEtlCounts {
+    return {
+      exists: isSet(object.exists) ? globalThis.Number(object.exists) : 0,
+      existsMulti: isSet(object.existsMulti)
+        ? globalThis.Number(object.existsMulti)
+        : isSet(object.exists_multi)
+        ? globalThis.Number(object.exists_multi)
+        : 0,
+      newShade: isSet(object.newShade)
+        ? globalThis.Number(object.newShade)
+        : isSet(object.new_shade)
+        ? globalThis.Number(object.new_shade)
+        : 0,
+      newItem: isSet(object.newItem)
+        ? globalThis.Number(object.newItem)
+        : isSet(object.new_item)
+        ? globalThis.Number(object.new_item)
+        : 0,
+      possibleDuplicate: isSet(object.possibleDuplicate)
+        ? globalThis.Number(object.possibleDuplicate)
+        : isSet(object.possible_duplicate)
+        ? globalThis.Number(object.possible_duplicate)
+        : 0,
+      invalidType: isSet(object.invalidType)
+        ? globalThis.Number(object.invalidType)
+        : isSet(object.invalid_type)
+        ? globalThis.Number(object.invalid_type)
+        : 0,
+      total: isSet(object.total) ? globalThis.Number(object.total) : 0,
+    };
+  },
+
+  toJSON(message: ProductEtlCounts): unknown {
+    const obj: any = {};
+    if (message.exists !== 0) {
+      obj.exists = Math.round(message.exists);
+    }
+    if (message.existsMulti !== 0) {
+      obj.existsMulti = Math.round(message.existsMulti);
+    }
+    if (message.newShade !== 0) {
+      obj.newShade = Math.round(message.newShade);
+    }
+    if (message.newItem !== 0) {
+      obj.newItem = Math.round(message.newItem);
+    }
+    if (message.possibleDuplicate !== 0) {
+      obj.possibleDuplicate = Math.round(message.possibleDuplicate);
+    }
+    if (message.invalidType !== 0) {
+      obj.invalidType = Math.round(message.invalidType);
+    }
+    if (message.total !== 0) {
+      obj.total = Math.round(message.total);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ProductEtlCounts>): ProductEtlCounts {
+    return ProductEtlCounts.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ProductEtlCounts>): ProductEtlCounts {
+    const message = createBaseProductEtlCounts();
+    message.exists = object.exists ?? 0;
+    message.existsMulti = object.existsMulti ?? 0;
+    message.newShade = object.newShade ?? 0;
+    message.newItem = object.newItem ?? 0;
+    message.possibleDuplicate = object.possibleDuplicate ?? 0;
+    message.invalidType = object.invalidType ?? 0;
+    message.total = object.total ?? 0;
+    return message;
+  },
+};
+
+function createBaseProductEtlPreview(): ProductEtlPreview {
+  return { runId: "", fromDate: "", rows: [], counts: undefined, applyLimit: 0 };
+}
+
+export const ProductEtlPreview: MessageFns<ProductEtlPreview> = {
+  encode(message: ProductEtlPreview, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.runId !== "") {
+      writer.uint32(10).string(message.runId);
+    }
+    if (message.fromDate !== "") {
+      writer.uint32(18).string(message.fromDate);
+    }
+    for (const v of message.rows) {
+      ProductEtlRow.encode(v!, writer.uint32(26).fork()).join();
+    }
+    if (message.counts !== undefined) {
+      ProductEtlCounts.encode(message.counts, writer.uint32(34).fork()).join();
+    }
+    if (message.applyLimit !== 0) {
+      writer.uint32(40).int32(message.applyLimit);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ProductEtlPreview {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseProductEtlPreview();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.runId = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.fromDate = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.rows.push(ProductEtlRow.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.counts = ProductEtlCounts.decode(reader, reader.uint32());
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.applyLimit = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ProductEtlPreview {
+    return {
+      runId: isSet(object.runId)
+        ? globalThis.String(object.runId)
+        : isSet(object.run_id)
+        ? globalThis.String(object.run_id)
+        : "",
+      fromDate: isSet(object.fromDate)
+        ? globalThis.String(object.fromDate)
+        : isSet(object.from_date)
+        ? globalThis.String(object.from_date)
+        : "",
+      rows: globalThis.Array.isArray(object?.rows) ? object.rows.map((e: any) => ProductEtlRow.fromJSON(e)) : [],
+      counts: isSet(object.counts) ? ProductEtlCounts.fromJSON(object.counts) : undefined,
+      applyLimit: isSet(object.applyLimit)
+        ? globalThis.Number(object.applyLimit)
+        : isSet(object.apply_limit)
+        ? globalThis.Number(object.apply_limit)
+        : 0,
+    };
+  },
+
+  toJSON(message: ProductEtlPreview): unknown {
+    const obj: any = {};
+    if (message.runId !== "") {
+      obj.runId = message.runId;
+    }
+    if (message.fromDate !== "") {
+      obj.fromDate = message.fromDate;
+    }
+    if (message.rows?.length) {
+      obj.rows = message.rows.map((e) => ProductEtlRow.toJSON(e));
+    }
+    if (message.counts !== undefined) {
+      obj.counts = ProductEtlCounts.toJSON(message.counts);
+    }
+    if (message.applyLimit !== 0) {
+      obj.applyLimit = Math.round(message.applyLimit);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ProductEtlPreview>): ProductEtlPreview {
+    return ProductEtlPreview.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ProductEtlPreview>): ProductEtlPreview {
+    const message = createBaseProductEtlPreview();
+    message.runId = object.runId ?? "";
+    message.fromDate = object.fromDate ?? "";
+    message.rows = object.rows?.map((e) => ProductEtlRow.fromPartial(e)) || [];
+    message.counts = (object.counts !== undefined && object.counts !== null)
+      ? ProductEtlCounts.fromPartial(object.counts)
+      : undefined;
+    message.applyLimit = object.applyLimit ?? 0;
+    return message;
+  },
+};
+
+function createBasePreviewProductEtlFromOracleResponse(): PreviewProductEtlFromOracleResponse {
+  return { base: undefined, data: undefined };
+}
+
+export const PreviewProductEtlFromOracleResponse: MessageFns<PreviewProductEtlFromOracleResponse> = {
+  encode(message: PreviewProductEtlFromOracleResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    if (message.data !== undefined) {
+      ProductEtlPreview.encode(message.data, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): PreviewProductEtlFromOracleResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePreviewProductEtlFromOracleResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.data = ProductEtlPreview.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PreviewProductEtlFromOracleResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      data: isSet(object.data) ? ProductEtlPreview.fromJSON(object.data) : undefined,
+    };
+  },
+
+  toJSON(message: PreviewProductEtlFromOracleResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.data !== undefined) {
+      obj.data = ProductEtlPreview.toJSON(message.data);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<PreviewProductEtlFromOracleResponse>): PreviewProductEtlFromOracleResponse {
+    return PreviewProductEtlFromOracleResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<PreviewProductEtlFromOracleResponse>): PreviewProductEtlFromOracleResponse {
+    const message = createBasePreviewProductEtlFromOracleResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.data = (object.data !== undefined && object.data !== null)
+      ? ProductEtlPreview.fromPartial(object.data)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseApplyProductEtlFromOracleRequest(): ApplyProductEtlFromOracleRequest {
+  return { previewRunId: "", rowKeys: [] };
+}
+
+export const ApplyProductEtlFromOracleRequest: MessageFns<ApplyProductEtlFromOracleRequest> = {
+  encode(message: ApplyProductEtlFromOracleRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.previewRunId !== "") {
+      writer.uint32(10).string(message.previewRunId);
+    }
+    for (const v of message.rowKeys) {
+      writer.uint32(18).string(v!);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ApplyProductEtlFromOracleRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseApplyProductEtlFromOracleRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.previewRunId = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.rowKeys.push(reader.string());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ApplyProductEtlFromOracleRequest {
+    return {
+      previewRunId: isSet(object.previewRunId)
+        ? globalThis.String(object.previewRunId)
+        : isSet(object.preview_run_id)
+        ? globalThis.String(object.preview_run_id)
+        : "",
+      rowKeys: globalThis.Array.isArray(object?.rowKeys)
+        ? object.rowKeys.map((e: any) => globalThis.String(e))
+        : globalThis.Array.isArray(object?.row_keys)
+        ? object.row_keys.map((e: any) => globalThis.String(e))
+        : [],
+    };
+  },
+
+  toJSON(message: ApplyProductEtlFromOracleRequest): unknown {
+    const obj: any = {};
+    if (message.previewRunId !== "") {
+      obj.previewRunId = message.previewRunId;
+    }
+    if (message.rowKeys?.length) {
+      obj.rowKeys = message.rowKeys;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ApplyProductEtlFromOracleRequest>): ApplyProductEtlFromOracleRequest {
+    return ApplyProductEtlFromOracleRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ApplyProductEtlFromOracleRequest>): ApplyProductEtlFromOracleRequest {
+    const message = createBaseApplyProductEtlFromOracleRequest();
+    message.previewRunId = object.previewRunId ?? "";
+    message.rowKeys = object.rowKeys?.map((e) => e) || [];
+    return message;
+  },
+};
+
+function createBaseProductEtlApplyRow(): ProductEtlApplyRow {
+  return { rowKey: "", result: "", productSysId: 0, productCode: "", message: "" };
+}
+
+export const ProductEtlApplyRow: MessageFns<ProductEtlApplyRow> = {
+  encode(message: ProductEtlApplyRow, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.rowKey !== "") {
+      writer.uint32(10).string(message.rowKey);
+    }
+    if (message.result !== "") {
+      writer.uint32(18).string(message.result);
+    }
+    if (message.productSysId !== 0) {
+      writer.uint32(24).int64(message.productSysId);
+    }
+    if (message.productCode !== "") {
+      writer.uint32(34).string(message.productCode);
+    }
+    if (message.message !== "") {
+      writer.uint32(42).string(message.message);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ProductEtlApplyRow {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseProductEtlApplyRow();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.rowKey = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.result = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.productSysId = longToNumber(reader.int64());
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.productCode = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.message = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ProductEtlApplyRow {
+    return {
+      rowKey: isSet(object.rowKey)
+        ? globalThis.String(object.rowKey)
+        : isSet(object.row_key)
+        ? globalThis.String(object.row_key)
+        : "",
+      result: isSet(object.result) ? globalThis.String(object.result) : "",
+      productSysId: isSet(object.productSysId)
+        ? globalThis.Number(object.productSysId)
+        : isSet(object.product_sys_id)
+        ? globalThis.Number(object.product_sys_id)
+        : 0,
+      productCode: isSet(object.productCode)
+        ? globalThis.String(object.productCode)
+        : isSet(object.product_code)
+        ? globalThis.String(object.product_code)
+        : "",
+      message: isSet(object.message) ? globalThis.String(object.message) : "",
+    };
+  },
+
+  toJSON(message: ProductEtlApplyRow): unknown {
+    const obj: any = {};
+    if (message.rowKey !== "") {
+      obj.rowKey = message.rowKey;
+    }
+    if (message.result !== "") {
+      obj.result = message.result;
+    }
+    if (message.productSysId !== 0) {
+      obj.productSysId = Math.round(message.productSysId);
+    }
+    if (message.productCode !== "") {
+      obj.productCode = message.productCode;
+    }
+    if (message.message !== "") {
+      obj.message = message.message;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ProductEtlApplyRow>): ProductEtlApplyRow {
+    return ProductEtlApplyRow.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ProductEtlApplyRow>): ProductEtlApplyRow {
+    const message = createBaseProductEtlApplyRow();
+    message.rowKey = object.rowKey ?? "";
+    message.result = object.result ?? "";
+    message.productSysId = object.productSysId ?? 0;
+    message.productCode = object.productCode ?? "";
+    message.message = object.message ?? "";
+    return message;
+  },
+};
+
+function createBaseProductEtlApplyResult(): ProductEtlApplyResult {
+  return { runId: "", inserted: 0, skipped: 0, failed: 0, rows: [] };
+}
+
+export const ProductEtlApplyResult: MessageFns<ProductEtlApplyResult> = {
+  encode(message: ProductEtlApplyResult, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.runId !== "") {
+      writer.uint32(10).string(message.runId);
+    }
+    if (message.inserted !== 0) {
+      writer.uint32(16).int32(message.inserted);
+    }
+    if (message.skipped !== 0) {
+      writer.uint32(24).int32(message.skipped);
+    }
+    if (message.failed !== 0) {
+      writer.uint32(32).int32(message.failed);
+    }
+    for (const v of message.rows) {
+      ProductEtlApplyRow.encode(v!, writer.uint32(42).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ProductEtlApplyResult {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseProductEtlApplyResult();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.runId = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.inserted = reader.int32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.skipped = reader.int32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.failed = reader.int32();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.rows.push(ProductEtlApplyRow.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ProductEtlApplyResult {
+    return {
+      runId: isSet(object.runId)
+        ? globalThis.String(object.runId)
+        : isSet(object.run_id)
+        ? globalThis.String(object.run_id)
+        : "",
+      inserted: isSet(object.inserted) ? globalThis.Number(object.inserted) : 0,
+      skipped: isSet(object.skipped) ? globalThis.Number(object.skipped) : 0,
+      failed: isSet(object.failed) ? globalThis.Number(object.failed) : 0,
+      rows: globalThis.Array.isArray(object?.rows) ? object.rows.map((e: any) => ProductEtlApplyRow.fromJSON(e)) : [],
+    };
+  },
+
+  toJSON(message: ProductEtlApplyResult): unknown {
+    const obj: any = {};
+    if (message.runId !== "") {
+      obj.runId = message.runId;
+    }
+    if (message.inserted !== 0) {
+      obj.inserted = Math.round(message.inserted);
+    }
+    if (message.skipped !== 0) {
+      obj.skipped = Math.round(message.skipped);
+    }
+    if (message.failed !== 0) {
+      obj.failed = Math.round(message.failed);
+    }
+    if (message.rows?.length) {
+      obj.rows = message.rows.map((e) => ProductEtlApplyRow.toJSON(e));
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ProductEtlApplyResult>): ProductEtlApplyResult {
+    return ProductEtlApplyResult.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ProductEtlApplyResult>): ProductEtlApplyResult {
+    const message = createBaseProductEtlApplyResult();
+    message.runId = object.runId ?? "";
+    message.inserted = object.inserted ?? 0;
+    message.skipped = object.skipped ?? 0;
+    message.failed = object.failed ?? 0;
+    message.rows = object.rows?.map((e) => ProductEtlApplyRow.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseApplyProductEtlFromOracleResponse(): ApplyProductEtlFromOracleResponse {
+  return { base: undefined, data: undefined };
+}
+
+export const ApplyProductEtlFromOracleResponse: MessageFns<ApplyProductEtlFromOracleResponse> = {
+  encode(message: ApplyProductEtlFromOracleResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    if (message.data !== undefined) {
+      ProductEtlApplyResult.encode(message.data, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ApplyProductEtlFromOracleResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseApplyProductEtlFromOracleResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.data = ProductEtlApplyResult.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ApplyProductEtlFromOracleResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      data: isSet(object.data) ? ProductEtlApplyResult.fromJSON(object.data) : undefined,
+    };
+  },
+
+  toJSON(message: ApplyProductEtlFromOracleResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.data !== undefined) {
+      obj.data = ProductEtlApplyResult.toJSON(message.data);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ApplyProductEtlFromOracleResponse>): ApplyProductEtlFromOracleResponse {
+    return ApplyProductEtlFromOracleResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ApplyProductEtlFromOracleResponse>): ApplyProductEtlFromOracleResponse {
+    const message = createBaseApplyProductEtlFromOracleResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.data = (object.data !== undefined && object.data !== null)
+      ? ProductEtlApplyResult.fromPartial(object.data)
+      : undefined;
+    return message;
+  },
+};
+
 export type CostProductMasterServiceDefinition = typeof CostProductMasterServiceDefinition;
 export const CostProductMasterServiceDefinition = {
   name: "CostProductMasterService",
@@ -4954,6 +6867,42 @@ export const CostProductMasterServiceDefinition = {
       requestType: DeleteRMDenierOverrideRequest,
       requestStream: false,
       responseType: DeleteRMDenierOverrideResponse,
+      responseStream: false,
+      options: {},
+    },
+    /** GetCostProductMbLink resolves the MB spin link for a product (FG_MATCH | SHADE_ONLY | SUPERBA | NONE). */
+    getCostProductMbLink: {
+      name: "GetCostProductMbLink",
+      requestType: GetCostProductMbLinkRequest,
+      requestStream: false,
+      responseType: GetCostProductMbLinkResponse,
+      responseStream: false,
+      options: {},
+    },
+    /** RelinkCostProductMb forces MB autofill (re-link) for a product. */
+    relinkCostProductMb: {
+      name: "RelinkCostProductMb",
+      requestType: RelinkCostProductMbRequest,
+      requestStream: false,
+      responseType: RelinkCostProductMbResponse,
+      responseStream: false,
+      options: {},
+    },
+    /** PreviewProductEtlFromOracle previews products to import from Oracle legacy. */
+    previewProductEtlFromOracle: {
+      name: "PreviewProductEtlFromOracle",
+      requestType: PreviewProductEtlFromOracleRequest,
+      requestStream: false,
+      responseType: PreviewProductEtlFromOracleResponse,
+      responseStream: false,
+      options: {},
+    },
+    /** ApplyProductEtlFromOracle inserts the selected rows of a previous preview run. */
+    applyProductEtlFromOracle: {
+      name: "ApplyProductEtlFromOracle",
+      requestType: ApplyProductEtlFromOracleRequest,
+      requestStream: false,
+      responseType: ApplyProductEtlFromOracleResponse,
       responseStream: false,
       options: {},
     },
