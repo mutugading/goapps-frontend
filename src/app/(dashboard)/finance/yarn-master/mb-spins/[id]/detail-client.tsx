@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import type { NormalizedUnsupersedeResult } from "@/types/finance/mb-spin"
 import { useMBSpinDetail, useMBSpinSiblings, useUnsupersedeMBSpin } from "@/hooks/finance/use-mb-spin"
-import { MBSpinDeleteDialog, MBSpinDuplicateDialog, MBSpinFormDialog } from "@/components/finance/mb-spin"
+import { MBSpinDeleteDialog, MBSpinDuplicateDialog, MBSpinFormDialog, MBSpinFgEditDialog } from "@/components/finance/mb-spin"
 
 interface Props {
   id: string
@@ -40,6 +40,7 @@ export default function MbSpinDetailClient({ id }: Props) {
   const [editOpen, setEditOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [duplicateOpen, setDuplicateOpen] = useState(false)
+  const [fgEditOpen, setFgEditOpen] = useState(false)
   const [unsupersedeOpen, setUnsupersedeOpen] = useState(false)
   const [unsupersedeResult, setUnsupersedeResult] = useState<NormalizedUnsupersedeResult | null>(null)
   const unsupersedeM = useUnsupersedeMBSpin()
@@ -83,6 +84,11 @@ export default function MbSpinDetailClient({ id }: Props) {
   const effectiveLdr = hasLdrValue
     ? (mbSpin.mbsLdrCalculatedPct ?? 0) + (mbSpin.mbsLdrAdjustmentPct ?? 0)
     : null
+
+  const isLive = mbSpin.mbsIsActive !== false && !mbSpin.supersededBySpinId
+  const fgFollowsRecipe = mbSpin.fgLinkSource === "RECIPE"
+  const canEditFg = canUpdate && isLive && !fgFollowsRecipe
+  const noShade = !mbSpin.mbsShadeCode
 
   // Siblings under the same parent MB Head, excluding this spin itself — see
   // the "KNOWN LIMITATION" comment on the Lineage card below for why this is
@@ -181,9 +187,28 @@ export default function MbSpinDetailClient({ id }: Props) {
           <Field
             label="FG (POY)"
             value={
-              mbSpin.fgProductId
-                ? `${mbSpin.fgProductCode || "-"}${mbSpin.fgProductName ? ` — ${mbSpin.fgProductName}` : ""}`
-                : "—"
+              <span className="flex flex-wrap items-center gap-2">
+                <span>
+                  {mbSpin.fgProductId
+                    ? `${mbSpin.fgProductCode || "-"}${mbSpin.fgProductName ? ` — ${mbSpin.fgProductName}` : ""}`
+                    : "—"}
+                </span>
+                {canEditFg && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-6 px-2 text-xs"
+                    disabled={noShade}
+                    title={noShade ? "Spin has no shade" : undefined}
+                    onClick={() => setFgEditOpen(true)}
+                  >
+                    Edit FG
+                  </Button>
+                )}
+                {canUpdate && isLive && fgFollowsRecipe && (
+                  <span className="text-xs text-muted-foreground">FG follows recipe</span>
+                )}
+              </span>
             }
           />
           <Field label="FG Item Code" value={mbSpin.fgItemCode || "—"} mono />
@@ -300,6 +325,7 @@ export default function MbSpinDetailClient({ id }: Props) {
       </Card>
 
       <MBSpinFormDialog open={editOpen} onOpenChange={setEditOpen} mbSpin={mbSpin} />
+      {canEditFg && <MBSpinFgEditDialog open={fgEditOpen} onOpenChange={setFgEditOpen} mbSpin={mbSpin} />}
       <MBSpinDeleteDialog
         open={deleteOpen}
         onOpenChange={setDeleteOpen}

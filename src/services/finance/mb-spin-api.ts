@@ -96,6 +96,8 @@ export interface UpdateMBSpinInput {
   mbsIsActive?: boolean
   mbsLdrAdjustmentPct?: number
   mbsLdrLockActual?: boolean
+  /** Manual FG link (P8): >0 link, 0 remove, omitted = unchanged. */
+  fgProductId?: number
 }
 
 // Updates mbsId and returns the saved spin plus whatever cascade result the

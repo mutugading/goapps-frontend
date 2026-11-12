@@ -321,6 +321,9 @@ export function useUpdateMBSpinWithCascade() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: mbSpinKeys.detail(variables.mbsId) })
       queryClient.invalidateQueries({ queryKey: mbSpinKeys.lists() })
+      if (variables.fgProductId !== undefined) {
+        queryClient.invalidateQueries({ queryKey: ["finance", "mb-head"] })
+      }
       toast.success("MB Spin updated successfully")
     },
     onError: (error: Error) => {
