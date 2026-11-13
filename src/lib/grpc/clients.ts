@@ -69,6 +69,7 @@ import {
 import { CostRouteServiceDefinition } from "@/types/generated/finance/v1/cost_route"
 import { YarnTxWeightGroupServiceDefinition } from "@/types/generated/finance/v1/yarn_tx_weight"
 import { PPCServiceDefinition } from "@/types/generated/ppc/v1/ppc_service"
+import { PayrollServiceDefinition } from "@/types/generated/payroll/v1/payroll_service"
 import { CostRequestTypeServiceDefinition } from "@/types/generated/finance/v1/cost_request_type"
 import { CostPaperTubeTypeServiceDefinition } from "@/types/generated/finance/v1/cost_paper_tube_type"
 import { CostProductRequestServiceDefinition } from "@/types/generated/finance/v1/cost_product_request"
@@ -111,6 +112,7 @@ const SERVICE_ADDRESSES = {
   iam: `${process.env.IAM_GRPC_HOST || "localhost"}:${process.env.IAM_GRPC_PORT || "50052"}`,
   finance: `${process.env.FINANCE_GRPC_HOST || "localhost"}:${process.env.FINANCE_GRPC_PORT || "50051"}`,
   ppc: `${process.env.PPC_GRPC_HOST || "localhost"}:${process.env.PPC_GRPC_PORT || "50053"}`,
+  payroll: `${process.env.PAYROLL_GRPC_HOST || "localhost"}:${process.env.PAYROLL_GRPC_PORT || "50054"}`,
 }
 
 // Type-safe global store for clients (survives HMR)
@@ -623,5 +625,13 @@ export function getMbWorkflowLogClient() {
 export function getPpcClient() {
   return getOrCreate("ppc", () =>
     createServiceClient(PPCServiceDefinition, SERVICE_ADDRESSES.ppc, insecure, CHANNEL_OPTIONS)
+  )
+}
+
+// Payroll service client (services/payroll, gRPC :50054). Single PayrollService exposes every
+// payroll RPC; BFF routes (src/app/api/v1/payroll/*) proxy through this one client.
+export function getPayrollClient() {
+  return getOrCreate("payroll", () =>
+    createServiceClient(PayrollServiceDefinition, SERVICE_ADDRESSES.payroll, insecure, CHANNEL_OPTIONS)
   )
 }
