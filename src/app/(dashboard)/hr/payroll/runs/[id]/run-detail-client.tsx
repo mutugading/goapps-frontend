@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { PageHeader } from "@/components/common/page-header"
-import { RunLinesTable, formatNominal, formatYymm, runStatusVariant } from "@/components/payroll"
+import { RunDiffPanel, RunLinesTable, formatNominal, formatYymm, runStatusVariant } from "@/components/payroll"
 import { usePayrollRun, usePayrollRunLines } from "@/hooks/payroll"
 import { useDebounce } from "@/lib/hooks"
 
@@ -65,6 +65,7 @@ export default function RunDetailClient({ id }: { id: string }) {
         <TabsList>
           <TabsTrigger value="summary">Summary</TabsTrigger>
           <TabsTrigger value="lines">Lines</TabsTrigger>
+          <TabsTrigger value="diff">Diff</TabsTrigger>
         </TabsList>
 
         <TabsContent value="summary">
@@ -150,6 +151,10 @@ export default function RunDetailClient({ id }: { id: string }) {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="diff">
+          <RunDiffPanel runId={runId} />
         </TabsContent>
       </Tabs>
     </div>

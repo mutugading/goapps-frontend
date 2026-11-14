@@ -10,6 +10,7 @@ import { apiClient, buildQueryString } from "@/lib/api"
 import {
   ApprovePeriodResponse,
   ClosePeriodResponse,
+  GetRunDiffResponse,
   GetRunResponse,
   ListPeriodsResponse,
   ListRunLinesResponse,
@@ -28,6 +29,15 @@ export interface ListRunLinesParams {
   pageSize?: number
 }
 
+export interface RunDiffParams {
+  /** "" / "active" | "legacy" | "run:<id>". */
+  against?: string
+  nik?: string
+  category?: string
+  page?: number
+  pageSize?: number
+}
+
 export type PeriodAction = "approve" | "close" | "reopen"
 
 export const payrollRunKeys = {
@@ -37,6 +47,8 @@ export const payrollRunKeys = {
   detail: (runId: number) => [...payrollRunKeys.all, "detail", runId] as const,
   lines: (runId: number, params: ListRunLinesParams) =>
     [...payrollRunKeys.all, "lines", runId, JSON.stringify(params)] as const,
+  diff: (runId: number, params: RunDiffParams) =>
+    [...payrollRunKeys.all, "diff", runId, JSON.stringify(params)] as const,
 }
 
 export const payrollPeriodKeys = {
@@ -91,6 +103,29 @@ export function usePayrollRunLines(runId: number, params: ListRunLinesParams = {
       }
     },
     enabled: runId > 0,
+    staleTime: 30_000,
+  })
+}
+
+export function usePayrollRunDiff(runId: number, params: RunDiffParams = {}, enabled = true) {
+  return useQuery({
+    queryKey: payrollRunKeys.diff(runId, params),
+    queryFn: async () => {
+      const raw = await apiClient.get<unknown>(
+        `/api/v1/payroll/runs/${runId}/diff${buildQueryString({ ...params })}`
+      )
+      const res = GetRunDiffResponse.fromJSON(raw)
+      return {
+        data: res.data ?? null,
+        pagination: {
+          currentPage: res.pagination?.currentPage || 1,
+          pageSize: res.pagination?.pageSize || params.pageSize || 100,
+          totalItems: Number(res.pagination?.totalItems ?? 0),
+          totalPages: res.pagination?.totalPages || 0,
+        },
+      }
+    },
+    enabled: runId > 0 && enabled,
     staleTime: 30_000,
   })
 }

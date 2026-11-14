@@ -185,6 +185,120 @@ export interface ListRunLinesResponse {
   pagination: PaginationResponse | undefined;
 }
 
+export interface GetRunDiffRequest {
+  runId: number;
+  /**
+   * Empty or active = the ACTIVE run of the period | legacy = the LEGACY run of the
+   * period (recon, D-41) | run:<id> = another run of the same period.
+   */
+  against: string;
+  /** Empty = all. */
+  nik: string;
+  /** Line category filter (e.g. FORMULA); empty = every non-MATCH line. */
+  category: string;
+  /** 0 = 1. */
+  page: number;
+  /** 0 = 100. */
+  pageSize: number;
+}
+
+/** RunDiffLine is one non-MATCH (nik, component) line; delta = run - against. */
+export interface RunDiffLine {
+  nik: string;
+  /** T001 / P032 */
+  component: string;
+  /** Nominal: decimal string ("" = no line / NULL), or "***" when masked. */
+  legacyAmount: string;
+  /** Nominal: decimal string ("" = no line / NULL), or "***" when masked. */
+  targetAmount: string;
+  /** Nominal: decimal string, or "***" when masked. */
+  deltaAmount: string;
+  /**
+   * ROUNDING | FORMULA | INPUT_ATT | INPUT_MASTER | ONLY_LEGACY | ONLY_TARGET |
+   * MASTER_DRIFT | KNOWN_DEFECT.
+   */
+  category: string;
+}
+
+/** RunDiffHead is a NIK whose header totals differ or exist on one side only. */
+export interface RunDiffHead {
+  nik: string;
+  hasLegacy: boolean;
+  hasTarget: boolean;
+  /**
+   * Nominals: decimal string ("" when the side is missing), or "***" when masked
+   * (a missing side is "***" too).
+   */
+  legacyTotalTunjangan: string;
+  legacyTotalPotongan: string;
+  legacyTakeHome: string;
+  targetTotalTunjangan: string;
+  targetTotalPotongan: string;
+  targetTakeHome: string;
+  /** D-47/D-50 exclusion reason (against=legacy only); empty = counted. */
+  excluded: string;
+}
+
+/** RunDiffExclusion aggregates the NIKs left out of parity (D-47/D-50). */
+export interface RunDiffExclusion {
+  reason: string;
+  nik: number;
+  lines: number;
+  otherLines: number;
+  headMismatch: number;
+  /** Nominals: decimal string, or "***" when masked. */
+  takeHomeLegacy: string;
+  takeHomeTarget: string;
+  takeHomeDelta: string;
+}
+
+export interface RunDiffSummary {
+  /** Line count per category (MATCH included). */
+  categories: { [key: string]: number };
+  nikLegacy: number;
+  nikTarget: number;
+  headMismatch: number;
+  /** Nominals: decimal string, or "***" when masked. */
+  takeHomeLegacy: string;
+  takeHomeTarget: string;
+  takeHomeDelta: string;
+  /** Parity verdict of rule set v1 (09§4, D-49). */
+  parity: boolean;
+  excluded: RunDiffExclusion[];
+}
+
+export interface RunDiffSummary_CategoriesEntry {
+  key: string;
+  value: number;
+}
+
+export interface RunDiff {
+  runId: number;
+  against: string;
+  /** Run id of the against side (the LEGACY run for against=legacy). */
+  againstRunId: number;
+  yymm: number;
+  division: string;
+  summary:
+    | RunDiffSummary
+    | undefined;
+  /** Lines of the requested page (filters applied). */
+  lines: RunDiffLine[];
+  /** Every header mismatch (nik filter applied). */
+  heads: RunDiffHead[];
+  /** Code and NIK stay visible; the message is masked like Run.warnings. */
+  warnings: string[];
+}
+
+export interface GetRunDiffResponse {
+  base: BaseResponse | undefined;
+  data:
+    | RunDiff
+    | undefined;
+  /** Pagination of data.lines. */
+  pagination: PaginationResponse | undefined;
+}
+
 export interface ListPeriodsRequest {
   /** Empty = all in scope. */
   division: string;
@@ -1990,6 +2104,1383 @@ export const ListRunLinesResponse: MessageFns<ListRunLinesResponse> = {
   },
 };
 
+function createBaseGetRunDiffRequest(): GetRunDiffRequest {
+  return { runId: 0, against: "", nik: "", category: "", page: 0, pageSize: 0 };
+}
+
+export const GetRunDiffRequest: MessageFns<GetRunDiffRequest> = {
+  encode(message: GetRunDiffRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.runId !== 0) {
+      writer.uint32(8).int64(message.runId);
+    }
+    if (message.against !== "") {
+      writer.uint32(18).string(message.against);
+    }
+    if (message.nik !== "") {
+      writer.uint32(26).string(message.nik);
+    }
+    if (message.category !== "") {
+      writer.uint32(34).string(message.category);
+    }
+    if (message.page !== 0) {
+      writer.uint32(40).int32(message.page);
+    }
+    if (message.pageSize !== 0) {
+      writer.uint32(48).int32(message.pageSize);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetRunDiffRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetRunDiffRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.runId = longToNumber(reader.int64());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.against = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.nik = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.category = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.page = reader.int32();
+          continue;
+        }
+        case 6: {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.pageSize = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetRunDiffRequest {
+    return {
+      runId: isSet(object.runId)
+        ? globalThis.Number(object.runId)
+        : isSet(object.run_id)
+        ? globalThis.Number(object.run_id)
+        : 0,
+      against: isSet(object.against) ? globalThis.String(object.against) : "",
+      nik: isSet(object.nik) ? globalThis.String(object.nik) : "",
+      category: isSet(object.category) ? globalThis.String(object.category) : "",
+      page: isSet(object.page) ? globalThis.Number(object.page) : 0,
+      pageSize: isSet(object.pageSize)
+        ? globalThis.Number(object.pageSize)
+        : isSet(object.page_size)
+        ? globalThis.Number(object.page_size)
+        : 0,
+    };
+  },
+
+  toJSON(message: GetRunDiffRequest): unknown {
+    const obj: any = {};
+    if (message.runId !== 0) {
+      obj.runId = Math.round(message.runId);
+    }
+    if (message.against !== "") {
+      obj.against = message.against;
+    }
+    if (message.nik !== "") {
+      obj.nik = message.nik;
+    }
+    if (message.category !== "") {
+      obj.category = message.category;
+    }
+    if (message.page !== 0) {
+      obj.page = Math.round(message.page);
+    }
+    if (message.pageSize !== 0) {
+      obj.pageSize = Math.round(message.pageSize);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetRunDiffRequest>): GetRunDiffRequest {
+    return GetRunDiffRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GetRunDiffRequest>): GetRunDiffRequest {
+    const message = createBaseGetRunDiffRequest();
+    message.runId = object.runId ?? 0;
+    message.against = object.against ?? "";
+    message.nik = object.nik ?? "";
+    message.category = object.category ?? "";
+    message.page = object.page ?? 0;
+    message.pageSize = object.pageSize ?? 0;
+    return message;
+  },
+};
+
+function createBaseRunDiffLine(): RunDiffLine {
+  return { nik: "", component: "", legacyAmount: "", targetAmount: "", deltaAmount: "", category: "" };
+}
+
+export const RunDiffLine: MessageFns<RunDiffLine> = {
+  encode(message: RunDiffLine, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.nik !== "") {
+      writer.uint32(10).string(message.nik);
+    }
+    if (message.component !== "") {
+      writer.uint32(18).string(message.component);
+    }
+    if (message.legacyAmount !== "") {
+      writer.uint32(26).string(message.legacyAmount);
+    }
+    if (message.targetAmount !== "") {
+      writer.uint32(34).string(message.targetAmount);
+    }
+    if (message.deltaAmount !== "") {
+      writer.uint32(42).string(message.deltaAmount);
+    }
+    if (message.category !== "") {
+      writer.uint32(50).string(message.category);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): RunDiffLine {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRunDiffLine();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.nik = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.component = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.legacyAmount = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.targetAmount = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.deltaAmount = reader.string();
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.category = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RunDiffLine {
+    return {
+      nik: isSet(object.nik) ? globalThis.String(object.nik) : "",
+      component: isSet(object.component) ? globalThis.String(object.component) : "",
+      legacyAmount: isSet(object.legacyAmount)
+        ? globalThis.String(object.legacyAmount)
+        : isSet(object.legacy_amount)
+        ? globalThis.String(object.legacy_amount)
+        : "",
+      targetAmount: isSet(object.targetAmount)
+        ? globalThis.String(object.targetAmount)
+        : isSet(object.target_amount)
+        ? globalThis.String(object.target_amount)
+        : "",
+      deltaAmount: isSet(object.deltaAmount)
+        ? globalThis.String(object.deltaAmount)
+        : isSet(object.delta_amount)
+        ? globalThis.String(object.delta_amount)
+        : "",
+      category: isSet(object.category) ? globalThis.String(object.category) : "",
+    };
+  },
+
+  toJSON(message: RunDiffLine): unknown {
+    const obj: any = {};
+    if (message.nik !== "") {
+      obj.nik = message.nik;
+    }
+    if (message.component !== "") {
+      obj.component = message.component;
+    }
+    if (message.legacyAmount !== "") {
+      obj.legacyAmount = message.legacyAmount;
+    }
+    if (message.targetAmount !== "") {
+      obj.targetAmount = message.targetAmount;
+    }
+    if (message.deltaAmount !== "") {
+      obj.deltaAmount = message.deltaAmount;
+    }
+    if (message.category !== "") {
+      obj.category = message.category;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<RunDiffLine>): RunDiffLine {
+    return RunDiffLine.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<RunDiffLine>): RunDiffLine {
+    const message = createBaseRunDiffLine();
+    message.nik = object.nik ?? "";
+    message.component = object.component ?? "";
+    message.legacyAmount = object.legacyAmount ?? "";
+    message.targetAmount = object.targetAmount ?? "";
+    message.deltaAmount = object.deltaAmount ?? "";
+    message.category = object.category ?? "";
+    return message;
+  },
+};
+
+function createBaseRunDiffHead(): RunDiffHead {
+  return {
+    nik: "",
+    hasLegacy: false,
+    hasTarget: false,
+    legacyTotalTunjangan: "",
+    legacyTotalPotongan: "",
+    legacyTakeHome: "",
+    targetTotalTunjangan: "",
+    targetTotalPotongan: "",
+    targetTakeHome: "",
+    excluded: "",
+  };
+}
+
+export const RunDiffHead: MessageFns<RunDiffHead> = {
+  encode(message: RunDiffHead, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.nik !== "") {
+      writer.uint32(10).string(message.nik);
+    }
+    if (message.hasLegacy !== false) {
+      writer.uint32(16).bool(message.hasLegacy);
+    }
+    if (message.hasTarget !== false) {
+      writer.uint32(24).bool(message.hasTarget);
+    }
+    if (message.legacyTotalTunjangan !== "") {
+      writer.uint32(34).string(message.legacyTotalTunjangan);
+    }
+    if (message.legacyTotalPotongan !== "") {
+      writer.uint32(42).string(message.legacyTotalPotongan);
+    }
+    if (message.legacyTakeHome !== "") {
+      writer.uint32(50).string(message.legacyTakeHome);
+    }
+    if (message.targetTotalTunjangan !== "") {
+      writer.uint32(58).string(message.targetTotalTunjangan);
+    }
+    if (message.targetTotalPotongan !== "") {
+      writer.uint32(66).string(message.targetTotalPotongan);
+    }
+    if (message.targetTakeHome !== "") {
+      writer.uint32(74).string(message.targetTakeHome);
+    }
+    if (message.excluded !== "") {
+      writer.uint32(82).string(message.excluded);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): RunDiffHead {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRunDiffHead();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.nik = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.hasLegacy = reader.bool();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.hasTarget = reader.bool();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.legacyTotalTunjangan = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.legacyTotalPotongan = reader.string();
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.legacyTakeHome = reader.string();
+          continue;
+        }
+        case 7: {
+          if (tag !== 58) {
+            break;
+          }
+
+          message.targetTotalTunjangan = reader.string();
+          continue;
+        }
+        case 8: {
+          if (tag !== 66) {
+            break;
+          }
+
+          message.targetTotalPotongan = reader.string();
+          continue;
+        }
+        case 9: {
+          if (tag !== 74) {
+            break;
+          }
+
+          message.targetTakeHome = reader.string();
+          continue;
+        }
+        case 10: {
+          if (tag !== 82) {
+            break;
+          }
+
+          message.excluded = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RunDiffHead {
+    return {
+      nik: isSet(object.nik) ? globalThis.String(object.nik) : "",
+      hasLegacy: isSet(object.hasLegacy)
+        ? globalThis.Boolean(object.hasLegacy)
+        : isSet(object.has_legacy)
+        ? globalThis.Boolean(object.has_legacy)
+        : false,
+      hasTarget: isSet(object.hasTarget)
+        ? globalThis.Boolean(object.hasTarget)
+        : isSet(object.has_target)
+        ? globalThis.Boolean(object.has_target)
+        : false,
+      legacyTotalTunjangan: isSet(object.legacyTotalTunjangan)
+        ? globalThis.String(object.legacyTotalTunjangan)
+        : isSet(object.legacy_total_tunjangan)
+        ? globalThis.String(object.legacy_total_tunjangan)
+        : "",
+      legacyTotalPotongan: isSet(object.legacyTotalPotongan)
+        ? globalThis.String(object.legacyTotalPotongan)
+        : isSet(object.legacy_total_potongan)
+        ? globalThis.String(object.legacy_total_potongan)
+        : "",
+      legacyTakeHome: isSet(object.legacyTakeHome)
+        ? globalThis.String(object.legacyTakeHome)
+        : isSet(object.legacy_take_home)
+        ? globalThis.String(object.legacy_take_home)
+        : "",
+      targetTotalTunjangan: isSet(object.targetTotalTunjangan)
+        ? globalThis.String(object.targetTotalTunjangan)
+        : isSet(object.target_total_tunjangan)
+        ? globalThis.String(object.target_total_tunjangan)
+        : "",
+      targetTotalPotongan: isSet(object.targetTotalPotongan)
+        ? globalThis.String(object.targetTotalPotongan)
+        : isSet(object.target_total_potongan)
+        ? globalThis.String(object.target_total_potongan)
+        : "",
+      targetTakeHome: isSet(object.targetTakeHome)
+        ? globalThis.String(object.targetTakeHome)
+        : isSet(object.target_take_home)
+        ? globalThis.String(object.target_take_home)
+        : "",
+      excluded: isSet(object.excluded) ? globalThis.String(object.excluded) : "",
+    };
+  },
+
+  toJSON(message: RunDiffHead): unknown {
+    const obj: any = {};
+    if (message.nik !== "") {
+      obj.nik = message.nik;
+    }
+    if (message.hasLegacy !== false) {
+      obj.hasLegacy = message.hasLegacy;
+    }
+    if (message.hasTarget !== false) {
+      obj.hasTarget = message.hasTarget;
+    }
+    if (message.legacyTotalTunjangan !== "") {
+      obj.legacyTotalTunjangan = message.legacyTotalTunjangan;
+    }
+    if (message.legacyTotalPotongan !== "") {
+      obj.legacyTotalPotongan = message.legacyTotalPotongan;
+    }
+    if (message.legacyTakeHome !== "") {
+      obj.legacyTakeHome = message.legacyTakeHome;
+    }
+    if (message.targetTotalTunjangan !== "") {
+      obj.targetTotalTunjangan = message.targetTotalTunjangan;
+    }
+    if (message.targetTotalPotongan !== "") {
+      obj.targetTotalPotongan = message.targetTotalPotongan;
+    }
+    if (message.targetTakeHome !== "") {
+      obj.targetTakeHome = message.targetTakeHome;
+    }
+    if (message.excluded !== "") {
+      obj.excluded = message.excluded;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<RunDiffHead>): RunDiffHead {
+    return RunDiffHead.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<RunDiffHead>): RunDiffHead {
+    const message = createBaseRunDiffHead();
+    message.nik = object.nik ?? "";
+    message.hasLegacy = object.hasLegacy ?? false;
+    message.hasTarget = object.hasTarget ?? false;
+    message.legacyTotalTunjangan = object.legacyTotalTunjangan ?? "";
+    message.legacyTotalPotongan = object.legacyTotalPotongan ?? "";
+    message.legacyTakeHome = object.legacyTakeHome ?? "";
+    message.targetTotalTunjangan = object.targetTotalTunjangan ?? "";
+    message.targetTotalPotongan = object.targetTotalPotongan ?? "";
+    message.targetTakeHome = object.targetTakeHome ?? "";
+    message.excluded = object.excluded ?? "";
+    return message;
+  },
+};
+
+function createBaseRunDiffExclusion(): RunDiffExclusion {
+  return {
+    reason: "",
+    nik: 0,
+    lines: 0,
+    otherLines: 0,
+    headMismatch: 0,
+    takeHomeLegacy: "",
+    takeHomeTarget: "",
+    takeHomeDelta: "",
+  };
+}
+
+export const RunDiffExclusion: MessageFns<RunDiffExclusion> = {
+  encode(message: RunDiffExclusion, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.reason !== "") {
+      writer.uint32(10).string(message.reason);
+    }
+    if (message.nik !== 0) {
+      writer.uint32(16).int32(message.nik);
+    }
+    if (message.lines !== 0) {
+      writer.uint32(24).int32(message.lines);
+    }
+    if (message.otherLines !== 0) {
+      writer.uint32(32).int32(message.otherLines);
+    }
+    if (message.headMismatch !== 0) {
+      writer.uint32(40).int32(message.headMismatch);
+    }
+    if (message.takeHomeLegacy !== "") {
+      writer.uint32(50).string(message.takeHomeLegacy);
+    }
+    if (message.takeHomeTarget !== "") {
+      writer.uint32(58).string(message.takeHomeTarget);
+    }
+    if (message.takeHomeDelta !== "") {
+      writer.uint32(66).string(message.takeHomeDelta);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): RunDiffExclusion {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRunDiffExclusion();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.reason = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.nik = reader.int32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.lines = reader.int32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.otherLines = reader.int32();
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.headMismatch = reader.int32();
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.takeHomeLegacy = reader.string();
+          continue;
+        }
+        case 7: {
+          if (tag !== 58) {
+            break;
+          }
+
+          message.takeHomeTarget = reader.string();
+          continue;
+        }
+        case 8: {
+          if (tag !== 66) {
+            break;
+          }
+
+          message.takeHomeDelta = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RunDiffExclusion {
+    return {
+      reason: isSet(object.reason) ? globalThis.String(object.reason) : "",
+      nik: isSet(object.nik) ? globalThis.Number(object.nik) : 0,
+      lines: isSet(object.lines) ? globalThis.Number(object.lines) : 0,
+      otherLines: isSet(object.otherLines)
+        ? globalThis.Number(object.otherLines)
+        : isSet(object.other_lines)
+        ? globalThis.Number(object.other_lines)
+        : 0,
+      headMismatch: isSet(object.headMismatch)
+        ? globalThis.Number(object.headMismatch)
+        : isSet(object.head_mismatch)
+        ? globalThis.Number(object.head_mismatch)
+        : 0,
+      takeHomeLegacy: isSet(object.takeHomeLegacy)
+        ? globalThis.String(object.takeHomeLegacy)
+        : isSet(object.take_home_legacy)
+        ? globalThis.String(object.take_home_legacy)
+        : "",
+      takeHomeTarget: isSet(object.takeHomeTarget)
+        ? globalThis.String(object.takeHomeTarget)
+        : isSet(object.take_home_target)
+        ? globalThis.String(object.take_home_target)
+        : "",
+      takeHomeDelta: isSet(object.takeHomeDelta)
+        ? globalThis.String(object.takeHomeDelta)
+        : isSet(object.take_home_delta)
+        ? globalThis.String(object.take_home_delta)
+        : "",
+    };
+  },
+
+  toJSON(message: RunDiffExclusion): unknown {
+    const obj: any = {};
+    if (message.reason !== "") {
+      obj.reason = message.reason;
+    }
+    if (message.nik !== 0) {
+      obj.nik = Math.round(message.nik);
+    }
+    if (message.lines !== 0) {
+      obj.lines = Math.round(message.lines);
+    }
+    if (message.otherLines !== 0) {
+      obj.otherLines = Math.round(message.otherLines);
+    }
+    if (message.headMismatch !== 0) {
+      obj.headMismatch = Math.round(message.headMismatch);
+    }
+    if (message.takeHomeLegacy !== "") {
+      obj.takeHomeLegacy = message.takeHomeLegacy;
+    }
+    if (message.takeHomeTarget !== "") {
+      obj.takeHomeTarget = message.takeHomeTarget;
+    }
+    if (message.takeHomeDelta !== "") {
+      obj.takeHomeDelta = message.takeHomeDelta;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<RunDiffExclusion>): RunDiffExclusion {
+    return RunDiffExclusion.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<RunDiffExclusion>): RunDiffExclusion {
+    const message = createBaseRunDiffExclusion();
+    message.reason = object.reason ?? "";
+    message.nik = object.nik ?? 0;
+    message.lines = object.lines ?? 0;
+    message.otherLines = object.otherLines ?? 0;
+    message.headMismatch = object.headMismatch ?? 0;
+    message.takeHomeLegacy = object.takeHomeLegacy ?? "";
+    message.takeHomeTarget = object.takeHomeTarget ?? "";
+    message.takeHomeDelta = object.takeHomeDelta ?? "";
+    return message;
+  },
+};
+
+function createBaseRunDiffSummary(): RunDiffSummary {
+  return {
+    categories: {},
+    nikLegacy: 0,
+    nikTarget: 0,
+    headMismatch: 0,
+    takeHomeLegacy: "",
+    takeHomeTarget: "",
+    takeHomeDelta: "",
+    parity: false,
+    excluded: [],
+  };
+}
+
+export const RunDiffSummary: MessageFns<RunDiffSummary> = {
+  encode(message: RunDiffSummary, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    globalThis.Object.entries(message.categories).forEach(([key, value]: [string, number]) => {
+      RunDiffSummary_CategoriesEntry.encode({ key: key as any, value }, writer.uint32(10).fork()).join();
+    });
+    if (message.nikLegacy !== 0) {
+      writer.uint32(16).int32(message.nikLegacy);
+    }
+    if (message.nikTarget !== 0) {
+      writer.uint32(24).int32(message.nikTarget);
+    }
+    if (message.headMismatch !== 0) {
+      writer.uint32(32).int32(message.headMismatch);
+    }
+    if (message.takeHomeLegacy !== "") {
+      writer.uint32(42).string(message.takeHomeLegacy);
+    }
+    if (message.takeHomeTarget !== "") {
+      writer.uint32(50).string(message.takeHomeTarget);
+    }
+    if (message.takeHomeDelta !== "") {
+      writer.uint32(58).string(message.takeHomeDelta);
+    }
+    if (message.parity !== false) {
+      writer.uint32(64).bool(message.parity);
+    }
+    for (const v of message.excluded) {
+      RunDiffExclusion.encode(v!, writer.uint32(74).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): RunDiffSummary {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRunDiffSummary();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          const entry1 = RunDiffSummary_CategoriesEntry.decode(reader, reader.uint32());
+          if (entry1.value !== undefined) {
+            message.categories[entry1.key] = entry1.value;
+          }
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.nikLegacy = reader.int32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.nikTarget = reader.int32();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.headMismatch = reader.int32();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.takeHomeLegacy = reader.string();
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.takeHomeTarget = reader.string();
+          continue;
+        }
+        case 7: {
+          if (tag !== 58) {
+            break;
+          }
+
+          message.takeHomeDelta = reader.string();
+          continue;
+        }
+        case 8: {
+          if (tag !== 64) {
+            break;
+          }
+
+          message.parity = reader.bool();
+          continue;
+        }
+        case 9: {
+          if (tag !== 74) {
+            break;
+          }
+
+          message.excluded.push(RunDiffExclusion.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RunDiffSummary {
+    return {
+      categories: isObject(object.categories)
+        ? (globalThis.Object.entries(object.categories) as [string, any][]).reduce(
+          (acc: { [key: string]: number }, [key, value]: [string, any]) => {
+            acc[key] = globalThis.Number(value);
+            return acc;
+          },
+          {},
+        )
+        : {},
+      nikLegacy: isSet(object.nikLegacy)
+        ? globalThis.Number(object.nikLegacy)
+        : isSet(object.nik_legacy)
+        ? globalThis.Number(object.nik_legacy)
+        : 0,
+      nikTarget: isSet(object.nikTarget)
+        ? globalThis.Number(object.nikTarget)
+        : isSet(object.nik_target)
+        ? globalThis.Number(object.nik_target)
+        : 0,
+      headMismatch: isSet(object.headMismatch)
+        ? globalThis.Number(object.headMismatch)
+        : isSet(object.head_mismatch)
+        ? globalThis.Number(object.head_mismatch)
+        : 0,
+      takeHomeLegacy: isSet(object.takeHomeLegacy)
+        ? globalThis.String(object.takeHomeLegacy)
+        : isSet(object.take_home_legacy)
+        ? globalThis.String(object.take_home_legacy)
+        : "",
+      takeHomeTarget: isSet(object.takeHomeTarget)
+        ? globalThis.String(object.takeHomeTarget)
+        : isSet(object.take_home_target)
+        ? globalThis.String(object.take_home_target)
+        : "",
+      takeHomeDelta: isSet(object.takeHomeDelta)
+        ? globalThis.String(object.takeHomeDelta)
+        : isSet(object.take_home_delta)
+        ? globalThis.String(object.take_home_delta)
+        : "",
+      parity: isSet(object.parity) ? globalThis.Boolean(object.parity) : false,
+      excluded: globalThis.Array.isArray(object?.excluded)
+        ? object.excluded.map((e: any) => RunDiffExclusion.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: RunDiffSummary): unknown {
+    const obj: any = {};
+    if (message.categories) {
+      const entries = globalThis.Object.entries(message.categories) as [string, number][];
+      if (entries.length > 0) {
+        obj.categories = {};
+        entries.forEach(([k, v]) => {
+          obj.categories[k] = Math.round(v);
+        });
+      }
+    }
+    if (message.nikLegacy !== 0) {
+      obj.nikLegacy = Math.round(message.nikLegacy);
+    }
+    if (message.nikTarget !== 0) {
+      obj.nikTarget = Math.round(message.nikTarget);
+    }
+    if (message.headMismatch !== 0) {
+      obj.headMismatch = Math.round(message.headMismatch);
+    }
+    if (message.takeHomeLegacy !== "") {
+      obj.takeHomeLegacy = message.takeHomeLegacy;
+    }
+    if (message.takeHomeTarget !== "") {
+      obj.takeHomeTarget = message.takeHomeTarget;
+    }
+    if (message.takeHomeDelta !== "") {
+      obj.takeHomeDelta = message.takeHomeDelta;
+    }
+    if (message.parity !== false) {
+      obj.parity = message.parity;
+    }
+    if (message.excluded?.length) {
+      obj.excluded = message.excluded.map((e) => RunDiffExclusion.toJSON(e));
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<RunDiffSummary>): RunDiffSummary {
+    return RunDiffSummary.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<RunDiffSummary>): RunDiffSummary {
+    const message = createBaseRunDiffSummary();
+    message.categories = (globalThis.Object.entries(object.categories ?? {}) as [string, number][]).reduce(
+      (acc: { [key: string]: number }, [key, value]: [string, number]) => {
+        if (value !== undefined) {
+          acc[key] = globalThis.Number(value);
+        }
+        return acc;
+      },
+      {},
+    );
+    message.nikLegacy = object.nikLegacy ?? 0;
+    message.nikTarget = object.nikTarget ?? 0;
+    message.headMismatch = object.headMismatch ?? 0;
+    message.takeHomeLegacy = object.takeHomeLegacy ?? "";
+    message.takeHomeTarget = object.takeHomeTarget ?? "";
+    message.takeHomeDelta = object.takeHomeDelta ?? "";
+    message.parity = object.parity ?? false;
+    message.excluded = object.excluded?.map((e) => RunDiffExclusion.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseRunDiffSummary_CategoriesEntry(): RunDiffSummary_CategoriesEntry {
+  return { key: "", value: 0 };
+}
+
+export const RunDiffSummary_CategoriesEntry: MessageFns<RunDiffSummary_CategoriesEntry> = {
+  encode(message: RunDiffSummary_CategoriesEntry, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.key !== "") {
+      writer.uint32(10).string(message.key);
+    }
+    if (message.value !== 0) {
+      writer.uint32(16).int32(message.value);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): RunDiffSummary_CategoriesEntry {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRunDiffSummary_CategoriesEntry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.key = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.value = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RunDiffSummary_CategoriesEntry {
+    return {
+      key: isSet(object.key) ? globalThis.String(object.key) : "",
+      value: isSet(object.value) ? globalThis.Number(object.value) : 0,
+    };
+  },
+
+  toJSON(message: RunDiffSummary_CategoriesEntry): unknown {
+    const obj: any = {};
+    if (message.key !== "") {
+      obj.key = message.key;
+    }
+    if (message.value !== 0) {
+      obj.value = Math.round(message.value);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<RunDiffSummary_CategoriesEntry>): RunDiffSummary_CategoriesEntry {
+    return RunDiffSummary_CategoriesEntry.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<RunDiffSummary_CategoriesEntry>): RunDiffSummary_CategoriesEntry {
+    const message = createBaseRunDiffSummary_CategoriesEntry();
+    message.key = object.key ?? "";
+    message.value = object.value ?? 0;
+    return message;
+  },
+};
+
+function createBaseRunDiff(): RunDiff {
+  return {
+    runId: 0,
+    against: "",
+    againstRunId: 0,
+    yymm: 0,
+    division: "",
+    summary: undefined,
+    lines: [],
+    heads: [],
+    warnings: [],
+  };
+}
+
+export const RunDiff: MessageFns<RunDiff> = {
+  encode(message: RunDiff, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.runId !== 0) {
+      writer.uint32(8).int64(message.runId);
+    }
+    if (message.against !== "") {
+      writer.uint32(18).string(message.against);
+    }
+    if (message.againstRunId !== 0) {
+      writer.uint32(24).int64(message.againstRunId);
+    }
+    if (message.yymm !== 0) {
+      writer.uint32(32).int32(message.yymm);
+    }
+    if (message.division !== "") {
+      writer.uint32(42).string(message.division);
+    }
+    if (message.summary !== undefined) {
+      RunDiffSummary.encode(message.summary, writer.uint32(50).fork()).join();
+    }
+    for (const v of message.lines) {
+      RunDiffLine.encode(v!, writer.uint32(58).fork()).join();
+    }
+    for (const v of message.heads) {
+      RunDiffHead.encode(v!, writer.uint32(66).fork()).join();
+    }
+    for (const v of message.warnings) {
+      writer.uint32(74).string(v!);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): RunDiff {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRunDiff();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.runId = longToNumber(reader.int64());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.against = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.againstRunId = longToNumber(reader.int64());
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.yymm = reader.int32();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.division = reader.string();
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.summary = RunDiffSummary.decode(reader, reader.uint32());
+          continue;
+        }
+        case 7: {
+          if (tag !== 58) {
+            break;
+          }
+
+          message.lines.push(RunDiffLine.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 8: {
+          if (tag !== 66) {
+            break;
+          }
+
+          message.heads.push(RunDiffHead.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 9: {
+          if (tag !== 74) {
+            break;
+          }
+
+          message.warnings.push(reader.string());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RunDiff {
+    return {
+      runId: isSet(object.runId)
+        ? globalThis.Number(object.runId)
+        : isSet(object.run_id)
+        ? globalThis.Number(object.run_id)
+        : 0,
+      against: isSet(object.against) ? globalThis.String(object.against) : "",
+      againstRunId: isSet(object.againstRunId)
+        ? globalThis.Number(object.againstRunId)
+        : isSet(object.against_run_id)
+        ? globalThis.Number(object.against_run_id)
+        : 0,
+      yymm: isSet(object.yymm) ? globalThis.Number(object.yymm) : 0,
+      division: isSet(object.division) ? globalThis.String(object.division) : "",
+      summary: isSet(object.summary) ? RunDiffSummary.fromJSON(object.summary) : undefined,
+      lines: globalThis.Array.isArray(object?.lines) ? object.lines.map((e: any) => RunDiffLine.fromJSON(e)) : [],
+      heads: globalThis.Array.isArray(object?.heads) ? object.heads.map((e: any) => RunDiffHead.fromJSON(e)) : [],
+      warnings: globalThis.Array.isArray(object?.warnings) ? object.warnings.map((e: any) => globalThis.String(e)) : [],
+    };
+  },
+
+  toJSON(message: RunDiff): unknown {
+    const obj: any = {};
+    if (message.runId !== 0) {
+      obj.runId = Math.round(message.runId);
+    }
+    if (message.against !== "") {
+      obj.against = message.against;
+    }
+    if (message.againstRunId !== 0) {
+      obj.againstRunId = Math.round(message.againstRunId);
+    }
+    if (message.yymm !== 0) {
+      obj.yymm = Math.round(message.yymm);
+    }
+    if (message.division !== "") {
+      obj.division = message.division;
+    }
+    if (message.summary !== undefined) {
+      obj.summary = RunDiffSummary.toJSON(message.summary);
+    }
+    if (message.lines?.length) {
+      obj.lines = message.lines.map((e) => RunDiffLine.toJSON(e));
+    }
+    if (message.heads?.length) {
+      obj.heads = message.heads.map((e) => RunDiffHead.toJSON(e));
+    }
+    if (message.warnings?.length) {
+      obj.warnings = message.warnings;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<RunDiff>): RunDiff {
+    return RunDiff.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<RunDiff>): RunDiff {
+    const message = createBaseRunDiff();
+    message.runId = object.runId ?? 0;
+    message.against = object.against ?? "";
+    message.againstRunId = object.againstRunId ?? 0;
+    message.yymm = object.yymm ?? 0;
+    message.division = object.division ?? "";
+    message.summary = (object.summary !== undefined && object.summary !== null)
+      ? RunDiffSummary.fromPartial(object.summary)
+      : undefined;
+    message.lines = object.lines?.map((e) => RunDiffLine.fromPartial(e)) || [];
+    message.heads = object.heads?.map((e) => RunDiffHead.fromPartial(e)) || [];
+    message.warnings = object.warnings?.map((e) => e) || [];
+    return message;
+  },
+};
+
+function createBaseGetRunDiffResponse(): GetRunDiffResponse {
+  return { base: undefined, data: undefined, pagination: undefined };
+}
+
+export const GetRunDiffResponse: MessageFns<GetRunDiffResponse> = {
+  encode(message: GetRunDiffResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    if (message.data !== undefined) {
+      RunDiff.encode(message.data, writer.uint32(18).fork()).join();
+    }
+    if (message.pagination !== undefined) {
+      PaginationResponse.encode(message.pagination, writer.uint32(26).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetRunDiffResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetRunDiffResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.data = RunDiff.decode(reader, reader.uint32());
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.pagination = PaginationResponse.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetRunDiffResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      data: isSet(object.data) ? RunDiff.fromJSON(object.data) : undefined,
+      pagination: isSet(object.pagination) ? PaginationResponse.fromJSON(object.pagination) : undefined,
+    };
+  },
+
+  toJSON(message: GetRunDiffResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.data !== undefined) {
+      obj.data = RunDiff.toJSON(message.data);
+    }
+    if (message.pagination !== undefined) {
+      obj.pagination = PaginationResponse.toJSON(message.pagination);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetRunDiffResponse>): GetRunDiffResponse {
+    return GetRunDiffResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GetRunDiffResponse>): GetRunDiffResponse {
+    const message = createBaseGetRunDiffResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.data = (object.data !== undefined && object.data !== null) ? RunDiff.fromPartial(object.data) : undefined;
+    message.pagination = (object.pagination !== undefined && object.pagination !== null)
+      ? PaginationResponse.fromPartial(object.pagination)
+      : undefined;
+    return message;
+  },
+};
+
 function createBaseListPeriodsRequest(): ListPeriodsRequest {
   return { division: "" };
 }
@@ -2621,6 +4112,10 @@ function longToNumber(int64: { toString(): string }): number {
     throw new globalThis.Error("Value is smaller than Number.MIN_SAFE_INTEGER");
   }
   return num;
+}
+
+function isObject(value: any): boolean {
+  return typeof value === "object" && value !== null;
 }
 
 function isSet(value: any): boolean {

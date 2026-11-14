@@ -64,3 +64,22 @@ export const MIN_REOPEN_REASON = 10
 export const PERM_PERIOD_APPROVE = "payroll.period.salary.approve"
 export const PERM_PERIOD_CLOSE = "payroll.period.salary.close"
 export const PERM_PERIOD_REOPEN = "payroll.period.salary.reopen"
+
+/** Diff categories (07§4, T030c) shown in the Diff tab filter. */
+export const DIFF_CATEGORIES = [
+  "ROUNDING",
+  "FORMULA",
+  "INPUT_ATT",
+  "INPUT_MASTER",
+  "ONLY_LEGACY",
+  "ONLY_TARGET",
+  "MASTER_DRIFT",
+  "KNOWN_DEFECT",
+] as const
+
+/** Builds the `against` query value; "run" needs a positive integer id, otherwise undefined (invalid). */
+export function buildAgainst(mode: "active" | "legacy" | "run", runIdInput: string): string | undefined {
+  if (mode !== "run") return mode
+  const id = runIdInput.trim()
+  return /^[1-9][0-9]{0,18}$/.test(id) ? `run:${id}` : undefined
+}

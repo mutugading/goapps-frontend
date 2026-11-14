@@ -61,6 +61,7 @@ import {
   UpdateEmployeeRequest,
   UpdateEmployeeResponse,
 } from "./master";
+import { ExportReportRequest, ExportReportResponse } from "./report";
 import {
   ApprovePeriodRequest,
   ApprovePeriodResponse,
@@ -68,6 +69,8 @@ import {
   ClosePeriodResponse,
   CreateRunRequest,
   CreateRunResponse,
+  GetRunDiffRequest,
+  GetRunDiffResponse,
   GetRunRequest,
   GetRunResponse,
   ListPeriodsRequest,
@@ -337,6 +340,15 @@ export const PayrollServiceDefinition = {
       responseStream: false,
       options: {},
     },
+    /** Diff of a run against the ACTIVE run, another run of the period, or the LEGACY run (07§4, T030c, D-67). */
+    getRunDiff: {
+      name: "GetRunDiff",
+      requestType: GetRunDiffRequest,
+      requestStream: false,
+      responseType: GetRunDiffResponse,
+      responseStream: false,
+      options: {},
+    },
     listPeriods: {
       name: "ListPeriods",
       requestType: ListPeriodsRequest,
@@ -366,6 +378,15 @@ export const PayrollServiceDefinition = {
       requestType: ReopenPeriodRequest,
       requestStream: false,
       responseType: ReopenPeriodResponse,
+      responseStream: false,
+      options: {},
+    },
+    /** ExportReport returns the reco or bank xlsx of a period, audited (07§6, T030d, D-67). */
+    exportReport: {
+      name: "ExportReport",
+      requestType: ExportReportRequest,
+      requestStream: false,
+      responseType: ExportReportResponse,
       responseStream: false,
       options: {},
     },
