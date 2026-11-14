@@ -3,6 +3,7 @@
 // Payroll run & period hooks (T030a). Read-only for runs; approve/close/reopen for periods.
 // Run creation/commit stays CLI-only (D-62 (3)).
 
+import { useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 
@@ -173,3 +174,69 @@ export const useClosePeriod = () =>
   usePeriodMutation("close", (r) => ClosePeriodResponse.fromJSON(r), "Period closed")
 export const useReopenPeriod = () =>
   usePeriodMutation("reopen", (r) => ReopenPeriodResponse.fromJSON(r), "Period reopened")
+
+export type PayrollReportKind = "reco" | "bank"
+
+export interface ExportReportVars {
+  kind: PayrollReportKind
+  yymm: number
+  division: string
+  /** YYYY-MM-DD; required for bank. */
+  transferDate?: string
+}
+
+export function reportExportPath({ kind, yymm, division, transferDate }: ExportReportVars): string {
+  return `/api/v1/payroll/reports/export${buildQueryString({
+    kind,
+    yymm,
+    division,
+    transferDate: kind === "bank" ? transferDate : undefined,
+  })}`
+}
+
+/** Downloads the reco / bank xlsx of a period (T030d2). Own pending state; resolves true on success. */
+export function useExportPayrollReport() {
+  const [isDownloading, setIsDownloading] = useState(false)
+
+  const download = async (vars: ExportReportVars): Promise<boolean> => {
+    setIsDownloading(true)
+    try {
+      const res = await fetch(reportExportPath(vars))
+      if (!res.ok) {
+        let message = "Failed to export report"
+        try {
+          const json = (await res.json()) as { base?: { message?: string } }
+          message = json.base?.message || message
+        } catch {
+          // non-JSON body: keep the default message
+        }
+        throw new Error(message)
+      }
+      const blob = await res.blob()
+      const match = /filename="?([^"]+)"?/.exec(res.headers.get("Content-Disposition") ?? "")
+      const fileName = match?.[1] ?? `${vars.kind}_${vars.division}_${vars.yymm}.xlsx`
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement("a")
+      link.href = url
+      link.download = fileName
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      URL.revokeObjectURL(url)
+      const skipped = Number(res.headers.get("X-Skipped-Count") ?? 0)
+      toast.success(
+        skipped > 0
+          ? `Report downloaded (${skipped} ${vars.kind === "bank" ? "employee(s) skipped" : "component(s) without GL setup"})`
+          : "Report downloaded"
+      )
+      return true
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to export report")
+      return false
+    } finally {
+      setIsDownloading(false)
+    }
+  }
+
+  return { download, isDownloading }
+}

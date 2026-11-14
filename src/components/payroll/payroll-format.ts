@@ -64,6 +64,8 @@ export const MIN_REOPEN_REASON = 10
 export const PERM_PERIOD_APPROVE = "payroll.period.salary.approve"
 export const PERM_PERIOD_CLOSE = "payroll.period.salary.close"
 export const PERM_PERIOD_REOPEN = "payroll.period.salary.reopen"
+export const PERM_REPORT_VIEW = "payroll.report.data.view"
+export const PERM_SALARY_AMOUNT = "payroll.salary.amount.view"
 
 /** Diff categories (07§4, T030c) shown in the Diff tab filter. */
 export const DIFF_CATEGORIES = [

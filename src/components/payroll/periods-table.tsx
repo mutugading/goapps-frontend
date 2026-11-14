@@ -1,6 +1,6 @@
 "use client"
 
-import { CheckCircle2, Lock, Unlock } from "lucide-react"
+import { CheckCircle2, FileSpreadsheet, Landmark, Lock, Unlock } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { DataTable, type ColumnDef, type RowAction } from "@/components/shared"
@@ -11,16 +11,20 @@ import {
   PERM_PERIOD_APPROVE,
   PERM_PERIOD_CLOSE,
   PERM_PERIOD_REOPEN,
+  PERM_REPORT_VIEW,
+  PERM_SALARY_AMOUNT,
   formatYymm,
   periodStatusVariant,
 } from "./payroll-format"
 
 export type PeriodDialogAction = "approve" | "close" | "reopen"
+/** Row actions: the dialog actions plus the report downloads (T030d2). */
+export type PeriodRowAction = PeriodDialogAction | "export-reco" | "export-bank"
 
 interface PeriodsTableProps {
   data: Period[]
   isLoading?: boolean
-  onAction: (action: PeriodDialogAction, period: Period) => void
+  onAction: (action: PeriodRowAction, period: Period) => void
 }
 
 /** Which actions the status allows (mirrors the service: approve from DRAFT, close from APPROVED, reopen from APPROVED/CLOSED). */
@@ -35,6 +39,12 @@ export function allowedPeriodActions(status: string): PeriodDialogAction[] {
     default:
       return []
   }
+}
+
+/** Reco needs an active run; bank only for APPROVED/CLOSED periods (the service refuses otherwise). */
+export function canExportReport(kind: "reco" | "bank", period: Pick<Period, "status" | "activeRunId">): boolean {
+  if (period.activeRunId <= 0) return false
+  return kind === "reco" || period.status === "APPROVED" || period.status === "CLOSED"
 }
 
 export function PeriodsTable({ data, isLoading, onAction }: PeriodsTableProps) {
@@ -112,6 +122,26 @@ export function PeriodsTable({ data, isLoading, onAction }: PeriodsTableProps) {
       onClick: (row) => onAction("reopen", row),
       disabled: (row) => !allowedPeriodActions(row.status).includes("reopen"),
     })
+  }
+
+  // The export has no masked variant: the service requires both permissions.
+  if (hasPermission(PERM_REPORT_VIEW) && hasPermission(PERM_SALARY_AMOUNT)) {
+    actions.push(
+      {
+        id: "export-reco",
+        label: "Unduh reco",
+        icon: <FileSpreadsheet className="h-4 w-4" />,
+        onClick: (row) => onAction("export-reco", row),
+        disabled: (row) => !canExportReport("reco", row),
+      },
+      {
+        id: "export-bank",
+        label: "Unduh bank",
+        icon: <Landmark className="h-4 w-4" />,
+        onClick: (row) => onAction("export-bank", row),
+        disabled: (row) => !canExportReport("bank", row),
+      }
+    )
   }
 
   return (

@@ -5,14 +5,16 @@ import { Suspense, useMemo, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { PageHeader } from "@/components/common/page-header"
 import {
+  BankExportDialog,
   PeriodActionDialog,
   PeriodsTable,
   RunsFilters,
   parseYymm,
   type PeriodDialogAction,
+  type PeriodRowAction,
   type RunsFilterValues,
 } from "@/components/payroll"
-import { usePayrollPeriods } from "@/hooks/payroll"
+import { useExportPayrollReport, usePayrollPeriods } from "@/hooks/payroll"
 import { useUrlState } from "@/lib/hooks"
 import type { Period } from "@/types/generated/payroll/v1/run"
 
@@ -22,6 +24,19 @@ function PeriodsPageContent() {
   const [filters, setFilters] = useUrlState<RunsFilterValues>({ defaultValues: defaultFilters })
   const [action, setAction] = useState<PeriodDialogAction | null>(null)
   const [selected, setSelected] = useState<Period | null>(null)
+  const [bankPeriod, setBankPeriod] = useState<Period | null>(null)
+  const exportReport = useExportPayrollReport()
+
+  const handleAction = (a: PeriodRowAction, p: Period) => {
+    if (a === "export-reco") {
+      void exportReport.download({ kind: "reco", yymm: p.yymm, division: p.division })
+    } else if (a === "export-bank") {
+      setBankPeriod(p)
+    } else {
+      setSelected(p)
+      setAction(a)
+    }
+  }
 
   const { data, isLoading, isError, error } = usePayrollPeriods(filters.division || undefined)
 
@@ -47,14 +62,17 @@ function PeriodsPageContent() {
             <PeriodsTable
               data={rows}
               isLoading={isLoading}
-              onAction={(a, p) => {
-                setSelected(p)
-                setAction(a)
-              }}
+              onAction={handleAction}
             />
           )}
         </CardContent>
       </Card>
+      <BankExportDialog
+        period={bankPeriod}
+        onOpenChange={(open) => {
+          if (!open) setBankPeriod(null)
+        }}
+      />
       <PeriodActionDialog
         action={action}
         period={selected}
