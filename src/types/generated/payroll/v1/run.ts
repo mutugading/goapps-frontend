@@ -131,6 +131,7 @@ export interface Period {
 export interface CreateRunRequest {
   yymm: number;
   division: string;
+  /** 0 = derived from the caller scope (dry only, D-71) */
   companyId: number;
   /** YYYY-MM-DD */
   processDate: string;

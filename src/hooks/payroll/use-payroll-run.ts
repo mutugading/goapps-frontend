@@ -1,7 +1,7 @@
 "use client"
 
 // Payroll run & period hooks (T030a). Read-only for runs; approve/close/reopen for periods.
-// Run creation/commit stays CLI-only (D-62 (3)).
+// Run commit stays CLI-only (D-62 (3)); only the dry run is open from the UI (T031b, D-71).
 
 import { useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
@@ -11,6 +11,7 @@ import { ApiError, apiClient, buildQueryString } from "@/lib/api"
 import {
   ApprovePeriodResponse,
   ClosePeriodResponse,
+  CreateRunResponse,
   GetRunDiffResponse,
   GetRunResponse,
   ListPeriodsResponse,
@@ -38,6 +39,16 @@ export interface RunDiffParams {
   page?: number
   pageSize?: number
 }
+
+export interface DryRunVars {
+  yymm: number
+  division: string
+  /** Optional: limit to these NIKs (max 500). */
+  nik?: string[]
+}
+
+/** BFF dry run can take long (backend CreateRun timeout 120 s), so the client waits a bit more and never retries. */
+export const DRY_RUN_TIMEOUT_MS = 130_000
 
 export type PeriodAction = "approve" | "close" | "reopen"
 
@@ -153,6 +164,25 @@ export function usePayrollPeriods(division?: string) {
     },
     staleTime: 30_000,
     retry: shouldRetryRunQuery,
+  })
+}
+
+/**
+ * Dry run (T031b, D-71): calculates without persisting, so no run/period query is invalidated.
+ * The BFF forces mode=dry; the response has the run summary, warnings (in `data`) and per-employee totals.
+ * Errors are not toasted here: the caller (dialog) shows the backend message (409/422 PERIOD_*, MISSING_ATTENDANCE).
+ */
+export function useDryRunPayroll() {
+  return useMutation({
+    mutationFn: async ({ yymm, division, nik }: DryRunVars) => {
+      const body: DryRunVars = { yymm, division }
+      if (nik && nik.length > 0) body.nik = nik
+      const raw = await apiClient.post<unknown>("/api/v1/payroll/runs", body, {
+        timeout: DRY_RUN_TIMEOUT_MS,
+        retries: 0,
+      })
+      return CreateRunResponse.fromJSON(raw)
+    },
   })
 }
 

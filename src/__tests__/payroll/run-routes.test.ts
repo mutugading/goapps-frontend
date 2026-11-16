@@ -4,6 +4,7 @@ import { NextRequest } from "next/server"
 import * as grpc from "@grpc/grpc-js"
 
 const listRuns = vi.fn()
+const createRun = vi.fn()
 const getRun = vi.fn()
 const listRunLines = vi.fn()
 const listPeriods = vi.fn()
@@ -18,12 +19,12 @@ vi.mock("@/lib/grpc", async (importOriginal) => {
     ...actual,
     createMetadataFromRequest: () => ({ metadata: true }),
     getPayrollClient: () => ({
-      listRuns, getRun, getRunDiff, listRunLines, listPeriods, approvePeriod, closePeriod, reopenPeriod,
+      listRuns, createRun, getRun, getRunDiff, listRunLines, listPeriods, approvePeriod, closePeriod, reopenPeriod,
     }),
   }
 })
 
-import { GET as listRunsRoute } from "@/app/api/v1/payroll/runs/route"
+import { GET as listRunsRoute, POST as createRunRoute } from "@/app/api/v1/payroll/runs/route"
 import { GET as getRunRoute } from "@/app/api/v1/payroll/runs/[id]/route"
 import { GET as diffRoute } from "@/app/api/v1/payroll/runs/[id]/diff/route"
 import { GET as linesRoute } from "@/app/api/v1/payroll/runs/[id]/lines/route"
@@ -149,5 +150,53 @@ describe("payroll period action route", () => {
   it("returns 500 for non-gRPC errors", async () => {
     approvePeriod.mockRejectedValue(new Error("boom"))
     expect((await post("approve")).status).toBe(500)
+  })
+})
+
+// T031b: POST /runs is dry only (D-71): mode and companyId are forced by the BFF.
+describe("POST /runs (dry run)", () => {
+  const dry = (body: unknown) =>
+    createRunRoute(
+      new NextRequest(`${BASE}/runs`, {
+        method: "POST",
+        body: typeof body === "string" ? body : JSON.stringify(body),
+        headers: { "Content-Type": "application/json" },
+      })
+    )
+
+  it("forces mode=DRY and companyId=0 even when the client sends commit", async () => {
+    createRun.mockResolvedValue({ base: OK, data: { runId: 0 }, employees: [{ nik: "1" }] })
+    const res = await dry({ yymm: 202611, division: "SOLO", nik: [" 123 ", ""], mode: "RUN_MODE_COMMIT", companyId: 9, processDate: "2026-11-30" })
+    expect(res.status).toBe(200)
+    expect(createRun.mock.calls[0][0]).toEqual({
+      yymm: 202611, division: "SOLO", companyId: 0, processDate: "", mode: 1, nik: ["123"],
+    })
+    expect((await res.json()).employees).toEqual([{ nik: "1" }])
+  })
+
+  it("sends an empty nik list when omitted", async () => {
+    createRun.mockResolvedValue({ base: OK })
+    await dry({ yymm: 202611, division: "SOLO" })
+    expect(createRun.mock.calls[0][0].nik).toEqual([])
+  })
+
+  it("rejects bad input without calling gRPC", async () => {
+    expect((await dry("{not json")).status).toBe(400)
+    expect((await dry({ yymm: "x", division: "SOLO" })).status).toBe(400)
+    expect((await dry({ yymm: 202611, division: " " })).status).toBe(400)
+    expect((await dry({ yymm: 202611, division: "SOLO", nik: "1" })).status).toBe(400)
+    expect((await dry({ yymm: 202611, division: "SOLO", nik: Array.from({ length: 501 }, (_, i) => String(i + 1)) })).status).toBe(400)
+    expect(createRun).not.toHaveBeenCalled()
+  })
+
+  it("relays business errors (base.statusCode) and gRPC errors", async () => {
+    createRun.mockResolvedValueOnce({ base: { isSuccess: false, statusCode: "422", message: "MISSING_ATTENDANCE", validationErrors: [] } })
+    const biz = await dry({ yymm: 202611, division: "SOLO" })
+    expect(biz.status).toBe(422)
+    expect((await biz.json()).base.message).toBe("MISSING_ATTENDANCE")
+    createRun.mockRejectedValueOnce(grpcError(grpc.status.ALREADY_EXISTS, "PERIOD_CLOSED"))
+    expect((await dry({ yymm: 202611, division: "SOLO" })).status).toBe(409)
+    createRun.mockRejectedValueOnce(grpcError(grpc.status.PERMISSION_DENIED, "denied"))
+    expect((await dry({ yymm: 202611, division: "SOLO" })).status).toBe(403)
   })
 })

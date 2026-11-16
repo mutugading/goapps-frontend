@@ -2,7 +2,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
 import { act, renderHook } from "@testing-library/react"
 import { ApiError } from "@/lib/api"
-import { payrollRunKeys, payrollPeriodKeys, periodActionPath, shouldRetryRunQuery, useExportPayrollReport, exportSuccessMessage } from "@/hooks/payroll/use-payroll-run"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { createElement, type ReactNode } from "react"
+import { payrollRunKeys, payrollPeriodKeys, periodActionPath, shouldRetryRunQuery, useExportPayrollReport, exportSuccessMessage, useDryRunPayroll, DRY_RUN_TIMEOUT_MS } from "@/hooks/payroll/use-payroll-run"
 
 describe("payroll query keys", () => {
   it("are scoped under 'payroll'", () => {
@@ -114,5 +116,51 @@ describe("shouldRetryRunQuery", () => {
     expect(shouldRetryRunQuery(0, new ApiError("boom", 500))).toBe(true)
     expect(shouldRetryRunQuery(1, new Error("network"))).toBe(true)
     expect(shouldRetryRunQuery(2, new ApiError("boom", 503))).toBe(false)
+  })
+})
+
+// T031b: dry-run mutation posts to the BFF, does not invalidate run queries, leaves errors to the caller.
+describe("useDryRunPayroll", () => {
+  const setup = () => {
+    const qc = new QueryClient({ defaultOptions: { mutations: { retry: false } } })
+    const invalidate = vi.spyOn(qc, "invalidateQueries")
+    const wrapper = ({ children }: { children: ReactNode }) => createElement(QueryClientProvider, { client: qc }, children)
+    return { invalidate, ...renderHook(() => useDryRunPayroll(), { wrapper }) }
+  }
+
+  it("posts yymm/division/nik, parses the response and invalidates nothing", async () => {
+    const OK = { isSuccess: true, statusCode: "200", message: "OK", validationErrors: [] }
+    const fetchMock = vi.fn(() =>
+      Promise.resolve(new Response(JSON.stringify({ base: OK, data: { runId: 0, employeeCount: 2 }, employees: [{ nik: "1" }] }), { status: 200, headers: { "Content-Type": "application/json" } }))
+    )
+    vi.stubGlobal("fetch", fetchMock)
+    const { result, invalidate } = setup()
+    let res: Awaited<ReturnType<typeof result.current.mutateAsync>> | undefined
+    await act(async () => {
+      res = await result.current.mutateAsync({ yymm: 202611, division: "SOLO", nik: ["1"] })
+    })
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit]
+    expect(url).toContain("/api/v1/payroll/runs")
+    expect(init.method).toBe("POST")
+    expect(JSON.parse(init.body as string)).toEqual({ yymm: 202611, division: "SOLO", nik: ["1"] })
+    expect(res?.employees).toHaveLength(1)
+    expect(invalidate).not.toHaveBeenCalled()
+    expect(DRY_RUN_TIMEOUT_MS).toBeGreaterThanOrEqual(120_000)
+  })
+
+  it("omits nik when empty and rejects with the backend message without a toast", async () => {
+    const fetchMock = vi.fn(() =>
+      Promise.resolve(new Response(JSON.stringify({ base: { isSuccess: false, statusCode: "409", message: "PERIOD_CLOSED" } }), { status: 409, headers: { "Content-Type": "application/json" } }))
+    )
+    vi.stubGlobal("fetch", fetchMock)
+    toastError.mockClear()
+    const { result } = setup()
+    await act(async () => {
+      await expect(result.current.mutateAsync({ yymm: 202611, division: "SOLO", nik: [] })).rejects.toThrow()
+    })
+    const init = (fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1]
+    expect(JSON.parse(init.body as string)).toEqual({ yymm: 202611, division: "SOLO" })
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(toastError).not.toHaveBeenCalled()
   })
 })
