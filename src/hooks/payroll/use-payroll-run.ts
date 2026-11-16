@@ -208,6 +208,17 @@ export function reportExportPath({ kind, yymm, division, transferDate }: ExportR
   })}`
 }
 
+/**
+ * Success toast of an export. `skipped` means the pre-check count for bank and components without GL for reco;
+ * `noHead` is the NIKs left out for lacking a head row (D-70, T030h3). Both are shown when present.
+ */
+export function exportSuccessMessage(kind: PayrollReportKind, skipped: number, noHead: number): string {
+  const notes: string[] = []
+  if (skipped > 0) notes.push(`${skipped} ${kind === "bank" ? "employee(s) skipped" : "component(s) without GL setup"}`)
+  if (noHead > 0) notes.push(`${noHead} karyawan tanpa head dilewati`)
+  return notes.length > 0 ? `Report downloaded (${notes.join("; ")})` : "Report downloaded"
+}
+
 /** Downloads the reco / bank xlsx of a period (T030d2). Own pending state; resolves true on success. */
 export function useExportPayrollReport() {
   const [isDownloading, setIsDownloading] = useState(false)
@@ -237,11 +248,12 @@ export function useExportPayrollReport() {
       link.click()
       link.remove()
       URL.revokeObjectURL(url)
-      const skipped = Number(res.headers.get("X-Skipped-Count") ?? 0)
       toast.success(
-        skipped > 0
-          ? `Report downloaded (${skipped} ${vars.kind === "bank" ? "employee(s) skipped" : "component(s) without GL setup"})`
-          : "Report downloaded"
+        exportSuccessMessage(
+          vars.kind,
+          Number(res.headers.get("X-Skipped-Count") ?? 0),
+          Number(res.headers.get("X-Skipped-No-Head-Count") ?? 0)
+        )
       )
       return true
     } catch (err) {

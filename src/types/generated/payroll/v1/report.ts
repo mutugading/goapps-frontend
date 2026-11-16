@@ -86,6 +86,11 @@ export interface ExportReportResponse {
    * workbook). RECO: components without a GL setup.
    */
   skippedCount: number;
+  /**
+   * Employees with detail lines but no head row (no attendance recap) left out of the file (D-70). A count only,
+   * kept apart from skipped_count, which means something else per kind.
+   */
+  skippedNoHeadCount: number;
 }
 
 function createBaseExportReportRequest(): ExportReportRequest {
@@ -201,7 +206,14 @@ export const ExportReportRequest: MessageFns<ExportReportRequest> = {
 };
 
 function createBaseExportReportResponse(): ExportReportResponse {
-  return { base: undefined, fileContent: new Uint8Array(0), fileName: "", rowCount: 0, skippedCount: 0 };
+  return {
+    base: undefined,
+    fileContent: new Uint8Array(0),
+    fileName: "",
+    rowCount: 0,
+    skippedCount: 0,
+    skippedNoHeadCount: 0,
+  };
 }
 
 export const ExportReportResponse: MessageFns<ExportReportResponse> = {
@@ -220,6 +232,9 @@ export const ExportReportResponse: MessageFns<ExportReportResponse> = {
     }
     if (message.skippedCount !== 0) {
       writer.uint32(40).int32(message.skippedCount);
+    }
+    if (message.skippedNoHeadCount !== 0) {
+      writer.uint32(48).int32(message.skippedNoHeadCount);
     }
     return writer;
   },
@@ -271,6 +286,14 @@ export const ExportReportResponse: MessageFns<ExportReportResponse> = {
           message.skippedCount = reader.int32();
           continue;
         }
+        case 6: {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.skippedNoHeadCount = reader.int32();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -303,6 +326,11 @@ export const ExportReportResponse: MessageFns<ExportReportResponse> = {
         : isSet(object.skipped_count)
         ? globalThis.Number(object.skipped_count)
         : 0,
+      skippedNoHeadCount: isSet(object.skippedNoHeadCount)
+        ? globalThis.Number(object.skippedNoHeadCount)
+        : isSet(object.skipped_no_head_count)
+        ? globalThis.Number(object.skipped_no_head_count)
+        : 0,
     };
   },
 
@@ -323,6 +351,9 @@ export const ExportReportResponse: MessageFns<ExportReportResponse> = {
     if (message.skippedCount !== 0) {
       obj.skippedCount = Math.round(message.skippedCount);
     }
+    if (message.skippedNoHeadCount !== 0) {
+      obj.skippedNoHeadCount = Math.round(message.skippedNoHeadCount);
+    }
     return obj;
   },
 
@@ -338,6 +369,7 @@ export const ExportReportResponse: MessageFns<ExportReportResponse> = {
     message.fileName = object.fileName ?? "";
     message.rowCount = object.rowCount ?? 0;
     message.skippedCount = object.skippedCount ?? 0;
+    message.skippedNoHeadCount = object.skippedNoHeadCount ?? 0;
     return message;
   },
 };

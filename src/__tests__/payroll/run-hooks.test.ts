@@ -2,7 +2,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
 import { act, renderHook } from "@testing-library/react"
 import { ApiError } from "@/lib/api"
-import { payrollRunKeys, payrollPeriodKeys, periodActionPath, shouldRetryRunQuery, useExportPayrollReport } from "@/hooks/payroll/use-payroll-run"
+import { payrollRunKeys, payrollPeriodKeys, periodActionPath, shouldRetryRunQuery, useExportPayrollReport, exportSuccessMessage } from "@/hooks/payroll/use-payroll-run"
 
 describe("payroll query keys", () => {
   it("are scoped under 'payroll'", () => {
@@ -64,7 +64,46 @@ describe("useExportPayrollReport errors", () => {
   })
 })
 
+describe("useExportPayrollReport success toast", () => {
+  it("reads X-Skipped-No-Head-Count from the BFF headers (T030h3)", async () => {
+    toastSuccess.mockClear()
+    const res = {
+      ok: true,
+      blob: async () => new Blob(["x"]),
+      headers: new Headers({
+        "Content-Disposition": 'attachment; filename="bank_SOLO_2611.xlsx"',
+        "X-Skipped-Count": "1",
+        "X-Skipped-No-Head-Count": "9",
+      }),
+    }
+    vi.stubGlobal("fetch", vi.fn(() => Promise.resolve(res as unknown as Response)))
+    URL.createObjectURL = vi.fn(() => "blob:x")
+    URL.revokeObjectURL = vi.fn()
+    const { result } = renderHook(() => useExportPayrollReport())
+    await act(async () => {
+      await result.current.download({ kind: "bank", yymm: 202611, division: "SOLO", transferDate: "2026-11-26" })
+    })
+    expect(toastSuccess).toHaveBeenCalledWith("Report downloaded (1 employee(s) skipped; 9 karyawan tanpa head dilewati)")
+  })
+})
+
 // T030h: 4xx answers are definitive; only 5xx/network errors get (at most 2) retries.
+describe("exportSuccessMessage", () => {
+  it("stays plain without skips", () => {
+    expect(exportSuccessMessage("bank", 0, 0)).toBe("Report downloaded")
+  })
+
+  it("keeps the existing skipped wording per kind", () => {
+    expect(exportSuccessMessage("bank", 2, 0)).toBe("Report downloaded (2 employee(s) skipped)")
+    expect(exportSuccessMessage("reco", 3, 0)).toBe("Report downloaded (3 component(s) without GL setup)")
+  })
+
+  it("adds the no-head count, alone or merged with skipped (D-70)", () => {
+    expect(exportSuccessMessage("reco", 0, 9)).toBe("Report downloaded (9 karyawan tanpa head dilewati)")
+    expect(exportSuccessMessage("bank", 1, 9)).toBe("Report downloaded (1 employee(s) skipped; 9 karyawan tanpa head dilewati)")
+  })
+})
+
 describe("shouldRetryRunQuery", () => {
   it("never retries a 4xx", () => {
     expect(shouldRetryRunQuery(0, new ApiError("bad", 400))).toBe(false)

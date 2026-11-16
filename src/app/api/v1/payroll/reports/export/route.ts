@@ -38,6 +38,8 @@ export async function GET(request: NextRequest) {
         "Content-Disposition": `attachment; filename="${fileName}"`,
         "X-Row-Count": String(res.rowCount),
         "X-Skipped-Count": String(res.skippedCount),
+        // NIKs with detail lines but no head row, left out of the file (D-70); a count only.
+        "X-Skipped-No-Head-Count": String(res.skippedNoHeadCount),
       },
     })
   } catch (error) {
