@@ -5,7 +5,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getPayrollClient, createMetadataFromRequest, isGrpcError, handleGrpcError } from "@/lib/grpc"
 import { ReportKind } from "@/types/generated/payroll/v1/report"
-import { badRequest, qInt, qStr } from "../../_lib/proxy"
+import { badRequest, baseHttpStatus, qInt, qStr } from "../../_lib/proxy"
 
 const XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
@@ -29,7 +29,8 @@ export async function GET(request: NextRequest) {
       { yymm, division, kind, transferDate: kind === ReportKind.REPORT_KIND_BANK ? transferDate : "" },
       createMetadataFromRequest(request)
     )
-    if (!res.base?.isSuccess) return NextResponse.json({ base: res.base }, { status: 400 })
+    // Relay the backend status (e.g. 404 "tidak ada run ACTIVE" for a LEGACY-only period), not a blanket 400 (T030f).
+    if (!res.base?.isSuccess) return NextResponse.json({ base: res.base }, { status: baseHttpStatus(res) })
     const fileName = (res.fileName || `${kindStr}_${division}_${yymm}.xlsx`).replace(/["\r\n\\]/g, "_")
     return new NextResponse(Buffer.from(res.fileContent), {
       headers: {

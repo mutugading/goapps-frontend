@@ -16,7 +16,7 @@ export async function payrollProxy(
 ): Promise<NextResponse> {
   try {
     const response = await fn(getPayrollClient(), createMetadataFromRequest(request))
-    return NextResponse.json(response as Record<string, unknown>)
+    return NextResponse.json(response as Record<string, unknown>, { status: baseHttpStatus(response) })
   } catch (error) {
     if (isGrpcError(error)) return handleGrpcError(error)
     console.error(errorMessage, error)
@@ -25,6 +25,17 @@ export async function payrollProxy(
       { status: 500 }
     )
   }
+}
+
+/**
+ * The backend answers some business errors as a gRPC OK carrying base.isSuccess=false and base.statusCode
+ * (e.g. against=legacy on a LEGACY run → 400). Relay that status so the client sees an error, not an empty 200 (T030f).
+ */
+export function baseHttpStatus(response: unknown): number {
+  const base = (response as { base?: { isSuccess?: boolean; statusCode?: string } } | null)?.base
+  if (!base || base.isSuccess !== false) return 200
+  const code = Number(base.statusCode)
+  return code >= 400 && code <= 599 ? code : 400
 }
 
 /** Read a string search param (camelCase or snake_case fallback). */

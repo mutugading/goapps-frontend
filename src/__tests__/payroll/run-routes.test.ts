@@ -7,6 +7,7 @@ const listRuns = vi.fn()
 const getRun = vi.fn()
 const listRunLines = vi.fn()
 const listPeriods = vi.fn()
+const getRunDiff = vi.fn()
 const approvePeriod = vi.fn()
 const closePeriod = vi.fn()
 const reopenPeriod = vi.fn()
@@ -17,13 +18,14 @@ vi.mock("@/lib/grpc", async (importOriginal) => {
     ...actual,
     createMetadataFromRequest: () => ({ metadata: true }),
     getPayrollClient: () => ({
-      listRuns, getRun, listRunLines, listPeriods, approvePeriod, closePeriod, reopenPeriod,
+      listRuns, getRun, getRunDiff, listRunLines, listPeriods, approvePeriod, closePeriod, reopenPeriod,
     }),
   }
 })
 
 import { GET as listRunsRoute } from "@/app/api/v1/payroll/runs/route"
 import { GET as getRunRoute } from "@/app/api/v1/payroll/runs/[id]/route"
+import { GET as diffRoute } from "@/app/api/v1/payroll/runs/[id]/diff/route"
 import { GET as linesRoute } from "@/app/api/v1/payroll/runs/[id]/lines/route"
 import { GET as periodsRoute } from "@/app/api/v1/payroll/periods/route"
 import { POST as actionRoute } from "@/app/api/v1/payroll/periods/[yymm]/[division]/[action]/route"
@@ -63,6 +65,16 @@ describe("payroll run routes", () => {
     expect((await getRunRoute(new NextRequest(`${BASE}/runs/7`), ctx({ id: "7" }))).status).toBe(403)
     getRun.mockRejectedValueOnce(grpcError(grpc.status.NOT_FOUND, "missing"))
     expect((await getRunRoute(new NextRequest(`${BASE}/runs/7`), ctx({ id: "7" }))).status).toBe(404)
+  })
+
+  it("relays base.statusCode of a business error answered as gRPC OK (T030f)", async () => {
+    const base = { isSuccess: false, statusCode: "400", message: "against=legacy hanya untuk run ENGINE", validationErrors: [] }
+    getRunDiff.mockResolvedValueOnce({ base })
+    const res = await diffRoute(new NextRequest(`${BASE}/runs/182/diff?against=legacy`), ctx({ id: "182" }))
+    expect(res.status).toBe(400)
+    expect((await res.json()).base.message).toContain("hanya untuk run ENGINE")
+    getRunDiff.mockResolvedValueOnce({ base: OK, data: { runId: 9 } })
+    expect((await diffRoute(new NextRequest(`${BASE}/runs/9/diff`), ctx({ id: "9" }))).status).toBe(200)
   })
 
   it("lists run lines with pagination params and passes pagination through", async () => {

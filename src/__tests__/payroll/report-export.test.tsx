@@ -65,6 +65,21 @@ describe("GET /payroll/reports/export", () => {
     expect(exportReport.mock.calls[0][0]).toMatchObject({ kind: ReportKind.REPORT_KIND_RECO, transferDate: "" })
   })
 
+  it("relays base.statusCode 404 instead of a blanket 400 (T030f)", async () => {
+    const base = { isSuccess: false, statusCode: "404", message: "report: tidak ada run ACTIVE", validationErrors: [] }
+    exportReport.mockResolvedValue({ base, fileContent: new Uint8Array(), fileName: "", rowCount: 0, skippedCount: 0 })
+    const res = await exportRoute(new NextRequest(`${BASE}?kind=reco&yymm=202610&division=SOLO`))
+    expect(res.status).toBe(404)
+    expect((await res.json()).base.message).toContain("tidak ada run ACTIVE")
+  })
+
+  it("falls back to 400 when base.statusCode is not an error status", async () => {
+    const base = { isSuccess: false, statusCode: "", message: "x", validationErrors: [] }
+    exportReport.mockResolvedValue({ base, fileContent: new Uint8Array(), fileName: "", rowCount: 0, skippedCount: 0 })
+    const res = await exportRoute(new NextRequest(`${BASE}?kind=reco&yymm=202610&division=SOLO`))
+    expect(res.status).toBe(400)
+  })
+
   it("rejects bad input without calling gRPC", async () => {
     for (const q of [
       "kind=x&yymm=202701&division=SOLO",
