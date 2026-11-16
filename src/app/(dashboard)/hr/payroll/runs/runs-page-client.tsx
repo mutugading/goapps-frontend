@@ -1,17 +1,24 @@
 "use client"
 
-import { Suspense, useMemo } from "react"
+import { Suspense, useMemo, useState } from "react"
+import { Play } from "lucide-react"
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { PageHeader } from "@/components/common/page-header"
-import { RunsFilters, RunsTable, parseYymm, type RunsFilterValues } from "@/components/payroll"
+import { Button } from "@/components/ui/button"
+import { DryRunDialog, PERM_RUN_DRY, RunsFilters, RunsTable, parseYymm, type RunsFilterValues } from "@/components/payroll"
 import { usePayrollRuns } from "@/hooks/payroll"
 import { useUrlState } from "@/lib/hooks"
+import { usePermission } from "@/lib/hooks/use-permission"
 
 const defaultFilters: RunsFilterValues = { yymm: "", division: "", status: "" }
 
 function RunsPageContent() {
   const [filters, setFilters] = useUrlState<RunsFilterValues>({ defaultValues: defaultFilters })
+
+  const { hasPermission } = usePermission()
+  const [dryOpen, setDryOpen] = useState(false)
+  const canDry = hasPermission(PERM_RUN_DRY)
 
   const yymm = parseYymm(filters.yymm)
   const { data, isLoading, isError, error } = usePayrollRuns({
@@ -29,7 +36,15 @@ function RunsPageContent() {
 
   return (
     <div>
-      <PageHeader title="Payroll Runs" subtitle="Run history per period and division (read-only; runs are started from the CLI)" />
+      <PageHeader title="Payroll Runs" subtitle="Run history per period and division (committed runs are started from the CLI; dry runs are not saved)">
+        {canDry && (
+          <Button onClick={() => setDryOpen(true)}>
+            <Play className="mr-2 h-4 w-4" />
+            Dry Run
+          </Button>
+        )}
+      </PageHeader>
+      {canDry && <DryRunDialog open={dryOpen} onOpenChange={setDryOpen} />}
       <Card>
         <CardHeader>
           <CardTitle>Runs</CardTitle>

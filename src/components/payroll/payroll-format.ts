@@ -30,6 +30,15 @@ export function parseYymm(input: string): number | undefined {
   return Number(digits)
 }
 
+export const MAX_DRY_RUN_NIK = 500
+
+/** Splits a free-text NIK list (comma, space or newline separated) into unique NIKs, keeping order. */
+export function parseNikList(input: string): string[] {
+  const seen = new Set<string>()
+  for (const t of input.split(/[\s,;]+/)) if (t) seen.add(t)
+  return [...seen]
+}
+
 export type StatusVariant = "default" | "secondary" | "destructive" | "outline"
 
 export function runStatusVariant(status: string): StatusVariant {
@@ -64,6 +73,7 @@ export const MIN_REOPEN_REASON = 10
 export const PERM_PERIOD_APPROVE = "payroll.period.salary.approve"
 export const PERM_PERIOD_CLOSE = "payroll.period.salary.close"
 export const PERM_PERIOD_REOPEN = "payroll.period.salary.reopen"
+export const PERM_RUN_DRY = "payroll.run.dryrun.execute"
 export const PERM_REPORT_VIEW = "payroll.report.data.view"
 export const PERM_SALARY_AMOUNT = "payroll.salary.amount.view"
 
