@@ -7,7 +7,7 @@ import { useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 
-import { apiClient, buildQueryString } from "@/lib/api"
+import { ApiError, apiClient, buildQueryString } from "@/lib/api"
 import {
   ApprovePeriodResponse,
   ClosePeriodResponse,
@@ -58,6 +58,15 @@ export const payrollPeriodKeys = {
   list: (division?: string) => [...payrollPeriodKeys.lists(), division ?? ""] as const,
 }
 
+/**
+ * react-query retry policy (T030h): a 4xx is a definitive answer (e.g. diff against=legacy on a LEGACY run),
+ * so show it immediately instead of retrying with backoff (~7 s of skeleton). Only retry 5xx/network, max 2.
+ */
+export function shouldRetryRunQuery(failureCount: number, error: unknown): boolean {
+  if (error instanceof ApiError && error.statusCode >= 400 && error.statusCode < 500) return false
+  return failureCount < 2
+}
+
 export function periodActionPath(action: PeriodAction, yymm: number, division: string): string {
   return `/api/v1/payroll/periods/${yymm}/${encodeURIComponent(division)}/${action}`
 }
@@ -70,6 +79,7 @@ export function usePayrollRuns(params: ListRunsParams = {}) {
       return ListRunsResponse.fromJSON(raw).data ?? []
     },
     staleTime: 30_000,
+    retry: shouldRetryRunQuery,
   })
 }
 
@@ -82,6 +92,7 @@ export function usePayrollRun(runId: number) {
     },
     enabled: runId > 0,
     staleTime: 30_000,
+    retry: shouldRetryRunQuery,
   })
 }
 
@@ -105,6 +116,7 @@ export function usePayrollRunLines(runId: number, params: ListRunLinesParams = {
     },
     enabled: runId > 0,
     staleTime: 30_000,
+    retry: shouldRetryRunQuery,
   })
 }
 
@@ -128,6 +140,7 @@ export function usePayrollRunDiff(runId: number, params: RunDiffParams = {}, ena
     },
     enabled: runId > 0 && enabled,
     staleTime: 30_000,
+    retry: shouldRetryRunQuery,
   })
 }
 
@@ -139,6 +152,7 @@ export function usePayrollPeriods(division?: string) {
       return ListPeriodsResponse.fromJSON(raw).data ?? []
     },
     staleTime: 30_000,
+    retry: shouldRetryRunQuery,
   })
 }
 

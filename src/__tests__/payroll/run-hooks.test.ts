@@ -1,7 +1,8 @@
 // Payroll run/period hook keys and request paths (T030a).
 import { describe, it, expect, vi, beforeEach } from "vitest"
 import { act, renderHook } from "@testing-library/react"
-import { payrollRunKeys, payrollPeriodKeys, periodActionPath, useExportPayrollReport } from "@/hooks/payroll/use-payroll-run"
+import { ApiError } from "@/lib/api"
+import { payrollRunKeys, payrollPeriodKeys, periodActionPath, shouldRetryRunQuery, useExportPayrollReport } from "@/hooks/payroll/use-payroll-run"
 
 describe("payroll query keys", () => {
   it("are scoped under 'payroll'", () => {
@@ -60,5 +61,19 @@ describe("useExportPayrollReport errors", () => {
     expect(toastError).toHaveBeenLastCalledWith("Failed to export report")
     expect(await run(new TypeError("network"))).toBe(false)
     expect(toastError).toHaveBeenLastCalledWith("network")
+  })
+})
+
+// T030h: 4xx answers are definitive; only 5xx/network errors get (at most 2) retries.
+describe("shouldRetryRunQuery", () => {
+  it("never retries a 4xx", () => {
+    expect(shouldRetryRunQuery(0, new ApiError("bad", 400))).toBe(false)
+    expect(shouldRetryRunQuery(0, new ApiError("nf", 404))).toBe(false)
+  })
+
+  it("retries 5xx and unknown errors up to 2 times", () => {
+    expect(shouldRetryRunQuery(0, new ApiError("boom", 500))).toBe(true)
+    expect(shouldRetryRunQuery(1, new Error("network"))).toBe(true)
+    expect(shouldRetryRunQuery(2, new ApiError("boom", 503))).toBe(false)
   })
 })
