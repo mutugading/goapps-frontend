@@ -38,7 +38,7 @@ const period = (over: Partial<Period>): Period => ({
 const run = (over: Partial<Run>): Run => ({
   runId: 7, yymm: 202701, division: "SOLO", processDate: "2027-01-26", status: "ACTIVE", employeeCount: 3,
   lineCount: 30, totalTunjangan: "12345678.50", totalPotongan: "1000", ruleSetId: 1, snapshotId: 2, nikFilter: [],
-  warnings: [], startedBy: "u", startedAt: "2027-01-26T01:02:03Z", finishedAt: "", durationMs: 10, ...over,
+  warnings: [], startedBy: "u", startedAt: "2027-01-26T01:02:03Z", finishedAt: "", durationMs: 10, companyId: 1, ...over,
 })
 
 describe("payroll format helpers", () => {

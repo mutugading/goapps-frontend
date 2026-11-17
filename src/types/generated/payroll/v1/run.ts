@@ -76,6 +76,8 @@ export interface Run {
   /** RFC3339, empty while running. */
   finishedAt: string;
   durationMs: number;
+  /** Company of the run (D-71 (3)); not a nominal, shown without the amount permission. */
+  companyId: number;
 }
 
 /** RunLine is one component line of one employee (≈ pyr_salary_detail). */
@@ -361,6 +363,7 @@ function createBaseRun(): Run {
     startedAt: "",
     finishedAt: "",
     durationMs: 0,
+    companyId: 0,
   };
 }
 
@@ -416,6 +419,9 @@ export const Run: MessageFns<Run> = {
     }
     if (message.durationMs !== 0) {
       writer.uint32(136).int64(message.durationMs);
+    }
+    if (message.companyId !== 0) {
+      writer.uint32(144).int32(message.companyId);
     }
     return writer;
   },
@@ -563,6 +569,14 @@ export const Run: MessageFns<Run> = {
           message.durationMs = longToNumber(reader.int64());
           continue;
         }
+        case 18: {
+          if (tag !== 144) {
+            break;
+          }
+
+          message.companyId = reader.int32();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -645,6 +659,11 @@ export const Run: MessageFns<Run> = {
         : isSet(object.duration_ms)
         ? globalThis.Number(object.duration_ms)
         : 0,
+      companyId: isSet(object.companyId)
+        ? globalThis.Number(object.companyId)
+        : isSet(object.company_id)
+        ? globalThis.Number(object.company_id)
+        : 0,
     };
   },
 
@@ -701,6 +720,9 @@ export const Run: MessageFns<Run> = {
     if (message.durationMs !== 0) {
       obj.durationMs = Math.round(message.durationMs);
     }
+    if (message.companyId !== 0) {
+      obj.companyId = Math.round(message.companyId);
+    }
     return obj;
   },
 
@@ -726,6 +748,7 @@ export const Run: MessageFns<Run> = {
     message.startedAt = object.startedAt ?? "";
     message.finishedAt = object.finishedAt ?? "";
     message.durationMs = object.durationMs ?? 0;
+    message.companyId = object.companyId ?? 0;
     return message;
   },
 };

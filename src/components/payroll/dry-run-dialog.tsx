@@ -138,6 +138,7 @@ function DryRunResult({ run, employees }: { run: Run; employees: RunEmployeeTota
         <Badge variant="outline">Not saved</Badge>
       </div>
       <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm sm:grid-cols-3">
+        {run.companyId > 0 && <SummaryItem label="Company" value={`Company #${run.companyId}`} />}
         <SummaryItem label="Employees" value={String(run.employeeCount)} />
         <SummaryItem label="Total Earnings" value={formatNominal(run.totalTunjangan)} mono />
         <SummaryItem label="Total Deductions" value={formatNominal(run.totalPotongan)} mono />

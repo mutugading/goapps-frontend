@@ -108,5 +108,18 @@ describe("DryRunDialog", () => {
     expect(screen.getByText("Budi")).toBeTruthy()
     expect(screen.getAllByText("***").length).toBeGreaterThanOrEqual(8)
     expect(screen.queryByRole("link")).toBeNull()
+    expect(screen.queryByText("Company")).toBeNull()
+  })
+
+  it("shows the resolved company (D-71 (3)) and hides it when companyId is 0", () => {
+    const base = { runId: 0, yymm: 202701, division: "SOLO", status: "DRY", employeeCount: 0, totalTunjangan: "0", totalPotongan: "0", durationMs: 1, ruleSetId: 0, warnings: [] }
+    mutation = { isPending: false, data: { data: { ...base, companyId: 7 }, employees: [] } }
+    const { unmount } = open()
+    expect(screen.getByText("Company")).toBeTruthy()
+    expect(screen.getByText("Company #7")).toBeTruthy()
+    unmount()
+    mutation = { isPending: false, data: { data: { ...base, companyId: 0 }, employees: [] } }
+    open()
+    expect(screen.queryByText("Company")).toBeNull()
   })
 })
