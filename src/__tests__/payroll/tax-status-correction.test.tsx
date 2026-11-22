@@ -8,13 +8,14 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
 const getEmployee = vi.fn()
 const correctEmployeeTaxStatus = vi.fn()
+const listEmployeeTaxHistory = vi.fn()
 
 vi.mock("@/lib/grpc", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/grpc")>()
   return {
     ...actual,
     createMetadataFromRequest: () => ({ metadata: true }),
-    getPayrollClient: () => ({ getEmployee, correctEmployeeTaxStatus }),
+    getPayrollClient: () => ({ getEmployee, correctEmployeeTaxStatus, listEmployeeTaxHistory }),
   }
 })
 
@@ -29,9 +30,11 @@ vi.mock("@/lib/api", async (importOriginal) => {
 })
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
 
+import { ApiError } from "@/lib/api"
 import { GET as getEmployeeRoute } from "@/app/api/v1/payroll/employees/[nik]/route"
+import { GET as taxHistoryRoute } from "@/app/api/v1/payroll/employees/id/[id]/tax-history/route"
 import { POST as correctRoute } from "@/app/api/v1/payroll/employees/id/[id]/tax-status-correction/route"
-import { TaxStatusCorrectionDialog } from "@/components/payroll"
+import { TaxHistoryTable, TaxStatusCorrectionDialog } from "@/components/payroll"
 import EmployeeDetailClient from "@/app/(dashboard)/hr/payroll/employees/[nik]/employee-detail-client"
 import type { Employee } from "@/types/generated/payroll/v1/master"
 
@@ -45,6 +48,11 @@ const ctx = (id: string) => ({ params: Promise.resolve({ id }) })
 const VALID = { taxId: "K1", validFrom: "2026-01-01", reason: "Wrong input", ifMatch: "etag-1" }
 
 const EMP = { id: 7, nik: "MGT001", nama: "Budi", division: "SOLO", taxId: "TK", etag: "etag-1" } as Employee
+
+const HIST = [
+  { validFrom: "2026-03-01", taxId: "K1", source: "UPDATE", reason: "", createdBy: "hr.solo", createdAt: "2026-03-01T03:00:00Z" },
+  { validFrom: "2026-01-01", taxId: "TK", source: "CORRECT", reason: "Wrong input", createdBy: "admin", createdAt: "2026-11-22T03:00:00Z" },
+]
 
 function wrap(ui: React.ReactElement) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -84,6 +92,20 @@ describe("payroll employee BFF routes", () => {
     expect((await correctRoute(post(VALID), ctx("7"))).status).toBe(403)
     correctEmployeeTaxStatus.mockRejectedValueOnce(grpcError(grpc.status.ALREADY_EXISTS, "PERIOD_CLOSED"))
     expect((await correctRoute(post(VALID), ctx("7"))).status).toBe(409)
+  })
+
+  it("lists the tax-status history by employee id", async () => {
+    listEmployeeTaxHistory.mockResolvedValue({ base: OK, data: [HIST[0]] })
+    const res = await taxHistoryRoute(new NextRequest(`${BASE}/employees/id/7/tax-history`), ctx("7"))
+    expect(res.status).toBe(200)
+    expect(listEmployeeTaxHistory.mock.calls[0][0]).toEqual({ id: 7 })
+  })
+
+  it("rejects an invalid history id with 400 and maps NotFound (out of scope) → 404", async () => {
+    expect((await taxHistoryRoute(new NextRequest(`${BASE}/employees/id/x/tax-history`), ctx("x"))).status).toBe(400)
+    expect(listEmployeeTaxHistory).not.toHaveBeenCalled()
+    listEmployeeTaxHistory.mockRejectedValueOnce(grpcError(grpc.status.NOT_FOUND, "karyawan tidak ditemukan"))
+    expect((await taxHistoryRoute(new NextRequest(`${BASE}/employees/id/7/tax-history`), ctx("7"))).status).toBe(404)
   })
 
   it("gets an employee by NIK forwarding division", async () => {
@@ -146,5 +168,43 @@ describe("employee detail permission gating", () => {
     wrap(<EmployeeDetailClient nik="MGT001" />)
     await user.click(await screen.findByRole("button", { name: /Correct tax status/ }))
     expect(await screen.findByText("Correct Tax Status")).toBeTruthy()
+  })
+})
+
+describe("TaxHistoryTable", () => {
+  it("renders the rows newest first with source label, reason and actor", async () => {
+    apiGet.mockResolvedValue({ base: OK, data: HIST })
+    wrap(<TaxHistoryTable employeeId={7} />)
+    expect(await screen.findByText("2026-03-01")).toBeTruthy()
+    expect(apiGet.mock.calls[0][0]).toBe("/api/v1/payroll/employees/id/7/tax-history")
+    const rows = screen.getAllByRole("row").slice(1)
+    expect(rows).toHaveLength(2)
+    expect(rows[0].textContent).toContain("K1")
+    expect(rows[0].textContent).toContain("Status change")
+    expect(rows[1].textContent).toContain("Correction")
+    expect(rows[1].textContent).toContain("Wrong input")
+    expect(rows[1].textContent).toContain("admin")
+  })
+
+  it("shows an empty state and an error message", async () => {
+    apiGet.mockResolvedValueOnce({ base: OK, data: [] })
+    const first = wrap(<TaxHistoryTable employeeId={7} />)
+    expect(await screen.findByText("No tax-status history recorded.")).toBeTruthy()
+    first.unmount()
+    apiGet.mockRejectedValueOnce(new ApiError("forbidden", 403))
+    wrap(<TaxHistoryTable employeeId={8} />)
+    expect((await screen.findByRole("alert")).textContent).toContain("forbidden")
+  })
+})
+
+describe("employee detail tax history", () => {
+  it("shows the history in the Tax status card", async () => {
+    hasPermission.mockReturnValue(false)
+    apiGet.mockImplementation(async (url: string) =>
+      url.endsWith("/tax-history") ? { base: OK, data: HIST } : { base: OK, data: EMP }
+    )
+    wrap(<EmployeeDetailClient nik="MGT001" />)
+    expect(await screen.findByText("Wrong input")).toBeTruthy()
+    expect(apiGet.mock.calls.some((c) => c[0] === "/api/v1/payroll/employees/id/7/tax-history")).toBe(true)
   })
 })

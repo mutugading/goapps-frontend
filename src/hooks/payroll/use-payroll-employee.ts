@@ -9,6 +9,7 @@ import { ApiError, apiClient, buildQueryString } from "@/lib/api"
 import {
   CorrectEmployeeTaxStatusResponse,
   GetEmployeeResponse,
+  ListEmployeeTaxHistoryResponse,
 } from "@/types/generated/payroll/v1/master"
 
 export const MAX_TAX_REASON = 500
@@ -17,6 +18,25 @@ export const PERMISSION_TAX_STATUS_UPDATE = "payroll.master.taxstatus.update"
 export const payrollEmployeeKeys = {
   all: ["payroll", "employee"] as const,
   detail: (nik: string, division?: string) => [...payrollEmployeeKeys.all, "detail", nik, division ?? ""] as const,
+  taxHistory: (id: number) => [...payrollEmployeeKeys.all, "tax-history", id] as const,
+}
+
+export function taxHistoryPath(id: number): string {
+  return `/api/v1/payroll/employees/id/${id}/tax-history`
+}
+
+/** Tax-status history of one employee, newest first (D-82 (1), T033n4). Pass the employee id (0 = disabled). */
+export function usePayrollTaxHistory(id: number) {
+  return useQuery({
+    queryKey: payrollEmployeeKeys.taxHistory(id),
+    queryFn: async () => {
+      const raw = await apiClient.get<unknown>(taxHistoryPath(id))
+      return ListEmployeeTaxHistoryResponse.fromJSON(raw).data
+    },
+    enabled: id > 0,
+    staleTime: 30_000,
+    retry: (count, error) => !(error instanceof ApiError && error.statusCode >= 400 && error.statusCode < 500) && count < 2,
+  })
 }
 
 export function usePayrollEmployee(nik: string, division?: string) {

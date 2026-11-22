@@ -1,7 +1,7 @@
 "use client"
 
-// Payroll employee detail (T033n3): read-only master data + the backdated tax-status correction for holders of
-// payroll.master.taxstatus.update (D-82 (6)). Full employee UI (list/edit) is B-UI1.
+// Payroll employee detail (T033n3/T033n4): read-only master data, the tax-status history (D-82 (1)) and the backdated
+// tax-status correction for holders of payroll.master.taxstatus.update (D-82 (6)). Full employee UI (list/edit) is B-UI1.
 
 import { useState } from "react"
 import Link from "next/link"
@@ -9,7 +9,7 @@ import { ArrowLeft, Pencil } from "lucide-react"
 
 import { EmptyState } from "@/components/common/empty-state"
 import { PageHeader } from "@/components/common/page-header"
-import { TaxStatusCorrectionDialog } from "@/components/payroll"
+import { TaxHistoryTable, TaxStatusCorrectionDialog } from "@/components/payroll"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { PERMISSION_TAX_STATUS_UPDATE, usePayrollEmployee } from "@/hooks/payroll"
@@ -86,6 +86,8 @@ export default function EmployeeDetailClient({ nik }: { nik: string }) {
                 <Field label="Last updated">{e.audit?.updatedAt}</Field>
                 <Field label="Updated by">{e.audit?.updatedBy}</Field>
               </dl>
+              <h3 className="mb-2 mt-5 text-xs font-semibold text-muted-foreground">History</h3>
+              <TaxHistoryTable employeeId={e.id} />
               <p className="mt-3 text-xs text-muted-foreground">
                 Each correction is recorded in the tax-status history and the audit log
                 (<span className="font-mono">TAX_STATUS_CORRECT</span>).
