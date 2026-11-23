@@ -1,0 +1,298 @@
+"use client"
+
+// Payroll run & period hooks (T030a). Read-only for runs; approve/close/reopen for periods.
+// Run commit stays CLI-only (D-62 (3)); only the dry run is open from the UI (T031b, D-71).
+
+import { useState } from "react"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { toast } from "sonner"
+
+import { ApiError, apiClient, buildQueryString } from "@/lib/api"
+import {
+  ApprovePeriodResponse,
+  ClosePeriodResponse,
+  CreateRunResponse,
+  GetRunDiffResponse,
+  GetRunResponse,
+  ListPeriodsResponse,
+  ListRunLinesResponse,
+  ListRunsResponse,
+  ReopenPeriodResponse,
+} from "@/types/generated/payroll/v1/run"
+
+export interface ListRunsParams {
+  yymm?: number
+  division?: string
+}
+
+export interface ListRunLinesParams {
+  nik?: string
+  page?: number
+  pageSize?: number
+}
+
+export interface RunDiffParams {
+  /** "" / "active" | "legacy" | "run:<id>". */
+  against?: string
+  nik?: string
+  category?: string
+  page?: number
+  pageSize?: number
+}
+
+export interface DryRunVars {
+  yymm: number
+  division: string
+  /** Optional: limit to these NIKs (max 500). */
+  nik?: string[]
+}
+
+/** BFF dry run can take long (backend CreateRun timeout 120 s), so the client waits a bit more and never retries. */
+export const DRY_RUN_TIMEOUT_MS = 130_000
+
+export type PeriodAction = "approve" | "close" | "reopen"
+
+export const payrollRunKeys = {
+  all: ["payroll", "run"] as const,
+  lists: () => [...payrollRunKeys.all, "list"] as const,
+  list: (params: ListRunsParams) => [...payrollRunKeys.lists(), JSON.stringify(params)] as const,
+  detail: (runId: number) => [...payrollRunKeys.all, "detail", runId] as const,
+  lines: (runId: number, params: ListRunLinesParams) =>
+    [...payrollRunKeys.all, "lines", runId, JSON.stringify(params)] as const,
+  diff: (runId: number, params: RunDiffParams) =>
+    [...payrollRunKeys.all, "diff", runId, JSON.stringify(params)] as const,
+}
+
+export const payrollPeriodKeys = {
+  all: ["payroll", "period"] as const,
+  lists: () => [...payrollPeriodKeys.all, "list"] as const,
+  list: (division?: string) => [...payrollPeriodKeys.lists(), division ?? ""] as const,
+}
+
+/**
+ * react-query retry policy (T030h): a 4xx is a definitive answer (e.g. diff against=legacy on a LEGACY run),
+ * so show it immediately instead of retrying with backoff (~7 s of skeleton). Only retry 5xx/network, max 2.
+ */
+export function shouldRetryRunQuery(failureCount: number, error: unknown): boolean {
+  if (error instanceof ApiError && error.statusCode >= 400 && error.statusCode < 500) return false
+  return failureCount < 2
+}
+
+export function periodActionPath(action: PeriodAction, yymm: number, division: string): string {
+  return `/api/v1/payroll/periods/${yymm}/${encodeURIComponent(division)}/${action}`
+}
+
+export function usePayrollRuns(params: ListRunsParams = {}) {
+  return useQuery({
+    queryKey: payrollRunKeys.list(params),
+    queryFn: async () => {
+      const raw = await apiClient.get<unknown>(`/api/v1/payroll/runs${buildQueryString({ ...params })}`)
+      return ListRunsResponse.fromJSON(raw).data ?? []
+    },
+    staleTime: 30_000,
+    retry: shouldRetryRunQuery,
+  })
+}
+
+export function usePayrollRun(runId: number) {
+  return useQuery({
+    queryKey: payrollRunKeys.detail(runId),
+    queryFn: async () => {
+      const raw = await apiClient.get<unknown>(`/api/v1/payroll/runs/${runId}`)
+      return GetRunResponse.fromJSON(raw).data ?? null
+    },
+    enabled: runId > 0,
+    staleTime: 30_000,
+    retry: shouldRetryRunQuery,
+  })
+}
+
+export function usePayrollRunLines(runId: number, params: ListRunLinesParams = {}) {
+  return useQuery({
+    queryKey: payrollRunKeys.lines(runId, params),
+    queryFn: async () => {
+      const raw = await apiClient.get<unknown>(
+        `/api/v1/payroll/runs/${runId}/lines${buildQueryString({ ...params })}`
+      )
+      const res = ListRunLinesResponse.fromJSON(raw)
+      return {
+        data: res.data ?? [],
+        pagination: {
+          currentPage: res.pagination?.currentPage || 1,
+          pageSize: res.pagination?.pageSize || params.pageSize || 100,
+          totalItems: Number(res.pagination?.totalItems ?? 0),
+          totalPages: res.pagination?.totalPages || 0,
+        },
+      }
+    },
+    enabled: runId > 0,
+    staleTime: 30_000,
+    retry: shouldRetryRunQuery,
+  })
+}
+
+export function usePayrollRunDiff(runId: number, params: RunDiffParams = {}, enabled = true) {
+  return useQuery({
+    queryKey: payrollRunKeys.diff(runId, params),
+    queryFn: async () => {
+      const raw = await apiClient.get<unknown>(
+        `/api/v1/payroll/runs/${runId}/diff${buildQueryString({ ...params })}`
+      )
+      const res = GetRunDiffResponse.fromJSON(raw)
+      return {
+        data: res.data ?? null,
+        pagination: {
+          currentPage: res.pagination?.currentPage || 1,
+          pageSize: res.pagination?.pageSize || params.pageSize || 100,
+          totalItems: Number(res.pagination?.totalItems ?? 0),
+          totalPages: res.pagination?.totalPages || 0,
+        },
+      }
+    },
+    enabled: runId > 0 && enabled,
+    staleTime: 30_000,
+    retry: shouldRetryRunQuery,
+  })
+}
+
+export function usePayrollPeriods(division?: string) {
+  return useQuery({
+    queryKey: payrollPeriodKeys.list(division),
+    queryFn: async () => {
+      const raw = await apiClient.get<unknown>(`/api/v1/payroll/periods${buildQueryString({ division })}`)
+      return ListPeriodsResponse.fromJSON(raw).data ?? []
+    },
+    staleTime: 30_000,
+    retry: shouldRetryRunQuery,
+  })
+}
+
+/**
+ * Dry run (T031b, D-71): calculates without persisting, so no run/period query is invalidated.
+ * The BFF forces mode=dry; the response has the run summary, warnings (in `data`) and per-employee totals.
+ * Errors are not toasted here: the caller (dialog) shows the backend message (409/422 PERIOD_*, MISSING_ATTENDANCE).
+ */
+export function useDryRunPayroll() {
+  return useMutation({
+    mutationFn: async ({ yymm, division, nik }: DryRunVars) => {
+      const body: DryRunVars = { yymm, division }
+      if (nik && nik.length > 0) body.nik = nik
+      const raw = await apiClient.post<unknown>("/api/v1/payroll/runs", body, {
+        timeout: DRY_RUN_TIMEOUT_MS,
+        retries: 0,
+      })
+      return CreateRunResponse.fromJSON(raw)
+    },
+  })
+}
+
+interface PeriodActionVars {
+  yymm: number
+  division: string
+  /** Required (>= 10 characters) for reopen only. */
+  reason?: string
+}
+
+function usePeriodMutation(action: PeriodAction, parse: (raw: unknown) => { data?: unknown }, okMessage: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ yymm, division, reason }: PeriodActionVars) => {
+      const body = action === "reopen" ? { reason: reason ?? "" } : {}
+      const raw = await apiClient.post<unknown>(periodActionPath(action, yymm, division), body)
+      return parse(raw)
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: payrollPeriodKeys.all })
+      qc.invalidateQueries({ queryKey: payrollRunKeys.all })
+      toast.success(okMessage)
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Payroll period action failed")
+    },
+  })
+}
+
+export const useApprovePeriod = () =>
+  usePeriodMutation("approve", (r) => ApprovePeriodResponse.fromJSON(r), "Period approved")
+export const useClosePeriod = () =>
+  usePeriodMutation("close", (r) => ClosePeriodResponse.fromJSON(r), "Period closed")
+export const useReopenPeriod = () =>
+  usePeriodMutation("reopen", (r) => ReopenPeriodResponse.fromJSON(r), "Period reopened")
+
+export type PayrollReportKind = "reco" | "bank"
+
+export interface ExportReportVars {
+  kind: PayrollReportKind
+  yymm: number
+  division: string
+  /** YYYY-MM-DD; required for bank. */
+  transferDate?: string
+}
+
+export function reportExportPath({ kind, yymm, division, transferDate }: ExportReportVars): string {
+  return `/api/v1/payroll/reports/export${buildQueryString({
+    kind,
+    yymm,
+    division,
+    transferDate: kind === "bank" ? transferDate : undefined,
+  })}`
+}
+
+/**
+ * Success toast of an export. `skipped` means the pre-check count for bank and components without GL for reco;
+ * `noHead` is the NIKs left out for lacking a head row (D-70, T030h3). Both are shown when present.
+ */
+export function exportSuccessMessage(kind: PayrollReportKind, skipped: number, noHead: number): string {
+  const notes: string[] = []
+  if (skipped > 0) notes.push(`${skipped} ${kind === "bank" ? "employee(s) skipped" : "component(s) without GL setup"}`)
+  if (noHead > 0) notes.push(`${noHead} karyawan tanpa head dilewati`)
+  return notes.length > 0 ? `Report downloaded (${notes.join("; ")})` : "Report downloaded"
+}
+
+/** Downloads the reco / bank xlsx of a period (T030d2). Own pending state; resolves true on success. */
+export function useExportPayrollReport() {
+  const [isDownloading, setIsDownloading] = useState(false)
+
+  const download = async (vars: ExportReportVars): Promise<boolean> => {
+    setIsDownloading(true)
+    try {
+      const res = await fetch(reportExportPath(vars))
+      if (!res.ok) {
+        let message = "Failed to export report"
+        try {
+          const json = (await res.json()) as { base?: { message?: string } }
+          message = json.base?.message || message
+        } catch {
+          // non-JSON body: keep the default message
+        }
+        throw new Error(message)
+      }
+      const blob = await res.blob()
+      const match = /filename="?([^"]+)"?/.exec(res.headers.get("Content-Disposition") ?? "")
+      const fileName = match?.[1] ?? `${vars.kind}_${vars.division}_${vars.yymm}.xlsx`
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement("a")
+      link.href = url
+      link.download = fileName
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      URL.revokeObjectURL(url)
+      toast.success(
+        exportSuccessMessage(
+          vars.kind,
+          Number(res.headers.get("X-Skipped-Count") ?? 0),
+          Number(res.headers.get("X-Skipped-No-Head-Count") ?? 0)
+        )
+      )
+      return true
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to export report")
+      return false
+    } finally {
+      setIsDownloading(false)
+    }
+  }
+
+  return { download, isDownloading }
+}
