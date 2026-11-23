@@ -301,6 +301,53 @@ export interface UpdateEmployeeResponse {
   data: Employee | undefined;
 }
 
+/**
+ * CorrectEmployeeTaxStatus fixes a wrong `tax_id` as if it had been entered on `valid_from` (D-82 (5)): history
+ * rows from that date on are replaced, earlier rows stay. `valid_from` must lie in the current or previous tax
+ * year and not in the future (WIB); a tax year whose December (or a leaver's last) period is APPROVED/CLOSED
+ * is rejected with PERIOD_CLOSED. A genuine status change (marriage, child) goes through UpdateEmployee.
+ */
+export interface CorrectEmployeeTaxStatusRequest {
+  id: number;
+  taxId: string;
+  /** YYYY-MM-DD */
+  validFrom: string;
+  reason: string;
+  ifMatch: string;
+}
+
+export interface CorrectEmployeeTaxStatusResponse {
+  base: BaseResponse | undefined;
+  data: Employee | undefined;
+}
+
+/**
+ * ListEmployeeTaxHistory reads the tax-status history of one employee (D-82 (1)), newest first. The caller must
+ * hold payroll.master.employee.view and the employee must lie in scope (else NOT_FOUND).
+ */
+export interface ListEmployeeTaxHistoryRequest {
+  id: number;
+}
+
+/** EmployeeTaxHistory is one history row: `tax_id` is valid from `valid_from` until the next row. */
+export interface EmployeeTaxHistory {
+  /** YYYY-MM-DD (WIB calendar). */
+  validFrom: string;
+  taxId: string;
+  /** BACKFILL | INSERT | UPDATE | CORRECT. */
+  source: string;
+  /** Only CORRECT rows carry a reason. */
+  reason: string;
+  createdBy: string;
+  /** RFC 3339, UTC. */
+  createdAt: string;
+}
+
+export interface ListEmployeeTaxHistoryResponse {
+  base: BaseResponse | undefined;
+  data: EmployeeTaxHistory[];
+}
+
 function createBaseCurrency(): Currency {
   return { code: "", minorUnit: 0, takehomeRound: 0, etag: "" };
 }
@@ -4719,6 +4766,512 @@ export const UpdateEmployeeResponse: MessageFns<UpdateEmployeeResponse> = {
       ? BaseResponse.fromPartial(object.base)
       : undefined;
     message.data = (object.data !== undefined && object.data !== null) ? Employee.fromPartial(object.data) : undefined;
+    return message;
+  },
+};
+
+function createBaseCorrectEmployeeTaxStatusRequest(): CorrectEmployeeTaxStatusRequest {
+  return { id: 0, taxId: "", validFrom: "", reason: "", ifMatch: "" };
+}
+
+export const CorrectEmployeeTaxStatusRequest: MessageFns<CorrectEmployeeTaxStatusRequest> = {
+  encode(message: CorrectEmployeeTaxStatusRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.id !== 0) {
+      writer.uint32(8).int64(message.id);
+    }
+    if (message.taxId !== "") {
+      writer.uint32(18).string(message.taxId);
+    }
+    if (message.validFrom !== "") {
+      writer.uint32(26).string(message.validFrom);
+    }
+    if (message.reason !== "") {
+      writer.uint32(34).string(message.reason);
+    }
+    if (message.ifMatch !== "") {
+      writer.uint32(42).string(message.ifMatch);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CorrectEmployeeTaxStatusRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCorrectEmployeeTaxStatusRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.id = longToNumber(reader.int64());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.taxId = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.validFrom = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.reason = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.ifMatch = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CorrectEmployeeTaxStatusRequest {
+    return {
+      id: isSet(object.id) ? globalThis.Number(object.id) : 0,
+      taxId: isSet(object.taxId)
+        ? globalThis.String(object.taxId)
+        : isSet(object.tax_id)
+        ? globalThis.String(object.tax_id)
+        : "",
+      validFrom: isSet(object.validFrom)
+        ? globalThis.String(object.validFrom)
+        : isSet(object.valid_from)
+        ? globalThis.String(object.valid_from)
+        : "",
+      reason: isSet(object.reason) ? globalThis.String(object.reason) : "",
+      ifMatch: isSet(object.ifMatch)
+        ? globalThis.String(object.ifMatch)
+        : isSet(object.if_match)
+        ? globalThis.String(object.if_match)
+        : "",
+    };
+  },
+
+  toJSON(message: CorrectEmployeeTaxStatusRequest): unknown {
+    const obj: any = {};
+    if (message.id !== 0) {
+      obj.id = Math.round(message.id);
+    }
+    if (message.taxId !== "") {
+      obj.taxId = message.taxId;
+    }
+    if (message.validFrom !== "") {
+      obj.validFrom = message.validFrom;
+    }
+    if (message.reason !== "") {
+      obj.reason = message.reason;
+    }
+    if (message.ifMatch !== "") {
+      obj.ifMatch = message.ifMatch;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<CorrectEmployeeTaxStatusRequest>): CorrectEmployeeTaxStatusRequest {
+    return CorrectEmployeeTaxStatusRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<CorrectEmployeeTaxStatusRequest>): CorrectEmployeeTaxStatusRequest {
+    const message = createBaseCorrectEmployeeTaxStatusRequest();
+    message.id = object.id ?? 0;
+    message.taxId = object.taxId ?? "";
+    message.validFrom = object.validFrom ?? "";
+    message.reason = object.reason ?? "";
+    message.ifMatch = object.ifMatch ?? "";
+    return message;
+  },
+};
+
+function createBaseCorrectEmployeeTaxStatusResponse(): CorrectEmployeeTaxStatusResponse {
+  return { base: undefined, data: undefined };
+}
+
+export const CorrectEmployeeTaxStatusResponse: MessageFns<CorrectEmployeeTaxStatusResponse> = {
+  encode(message: CorrectEmployeeTaxStatusResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    if (message.data !== undefined) {
+      Employee.encode(message.data, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CorrectEmployeeTaxStatusResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCorrectEmployeeTaxStatusResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.data = Employee.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CorrectEmployeeTaxStatusResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      data: isSet(object.data) ? Employee.fromJSON(object.data) : undefined,
+    };
+  },
+
+  toJSON(message: CorrectEmployeeTaxStatusResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.data !== undefined) {
+      obj.data = Employee.toJSON(message.data);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<CorrectEmployeeTaxStatusResponse>): CorrectEmployeeTaxStatusResponse {
+    return CorrectEmployeeTaxStatusResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<CorrectEmployeeTaxStatusResponse>): CorrectEmployeeTaxStatusResponse {
+    const message = createBaseCorrectEmployeeTaxStatusResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.data = (object.data !== undefined && object.data !== null) ? Employee.fromPartial(object.data) : undefined;
+    return message;
+  },
+};
+
+function createBaseListEmployeeTaxHistoryRequest(): ListEmployeeTaxHistoryRequest {
+  return { id: 0 };
+}
+
+export const ListEmployeeTaxHistoryRequest: MessageFns<ListEmployeeTaxHistoryRequest> = {
+  encode(message: ListEmployeeTaxHistoryRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.id !== 0) {
+      writer.uint32(8).int64(message.id);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ListEmployeeTaxHistoryRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListEmployeeTaxHistoryRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.id = longToNumber(reader.int64());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListEmployeeTaxHistoryRequest {
+    return { id: isSet(object.id) ? globalThis.Number(object.id) : 0 };
+  },
+
+  toJSON(message: ListEmployeeTaxHistoryRequest): unknown {
+    const obj: any = {};
+    if (message.id !== 0) {
+      obj.id = Math.round(message.id);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListEmployeeTaxHistoryRequest>): ListEmployeeTaxHistoryRequest {
+    return ListEmployeeTaxHistoryRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ListEmployeeTaxHistoryRequest>): ListEmployeeTaxHistoryRequest {
+    const message = createBaseListEmployeeTaxHistoryRequest();
+    message.id = object.id ?? 0;
+    return message;
+  },
+};
+
+function createBaseEmployeeTaxHistory(): EmployeeTaxHistory {
+  return { validFrom: "", taxId: "", source: "", reason: "", createdBy: "", createdAt: "" };
+}
+
+export const EmployeeTaxHistory: MessageFns<EmployeeTaxHistory> = {
+  encode(message: EmployeeTaxHistory, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.validFrom !== "") {
+      writer.uint32(10).string(message.validFrom);
+    }
+    if (message.taxId !== "") {
+      writer.uint32(18).string(message.taxId);
+    }
+    if (message.source !== "") {
+      writer.uint32(26).string(message.source);
+    }
+    if (message.reason !== "") {
+      writer.uint32(34).string(message.reason);
+    }
+    if (message.createdBy !== "") {
+      writer.uint32(42).string(message.createdBy);
+    }
+    if (message.createdAt !== "") {
+      writer.uint32(50).string(message.createdAt);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): EmployeeTaxHistory {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseEmployeeTaxHistory();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.validFrom = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.taxId = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.source = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.reason = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.createdBy = reader.string();
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.createdAt = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): EmployeeTaxHistory {
+    return {
+      validFrom: isSet(object.validFrom)
+        ? globalThis.String(object.validFrom)
+        : isSet(object.valid_from)
+        ? globalThis.String(object.valid_from)
+        : "",
+      taxId: isSet(object.taxId)
+        ? globalThis.String(object.taxId)
+        : isSet(object.tax_id)
+        ? globalThis.String(object.tax_id)
+        : "",
+      source: isSet(object.source) ? globalThis.String(object.source) : "",
+      reason: isSet(object.reason) ? globalThis.String(object.reason) : "",
+      createdBy: isSet(object.createdBy)
+        ? globalThis.String(object.createdBy)
+        : isSet(object.created_by)
+        ? globalThis.String(object.created_by)
+        : "",
+      createdAt: isSet(object.createdAt)
+        ? globalThis.String(object.createdAt)
+        : isSet(object.created_at)
+        ? globalThis.String(object.created_at)
+        : "",
+    };
+  },
+
+  toJSON(message: EmployeeTaxHistory): unknown {
+    const obj: any = {};
+    if (message.validFrom !== "") {
+      obj.validFrom = message.validFrom;
+    }
+    if (message.taxId !== "") {
+      obj.taxId = message.taxId;
+    }
+    if (message.source !== "") {
+      obj.source = message.source;
+    }
+    if (message.reason !== "") {
+      obj.reason = message.reason;
+    }
+    if (message.createdBy !== "") {
+      obj.createdBy = message.createdBy;
+    }
+    if (message.createdAt !== "") {
+      obj.createdAt = message.createdAt;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<EmployeeTaxHistory>): EmployeeTaxHistory {
+    return EmployeeTaxHistory.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<EmployeeTaxHistory>): EmployeeTaxHistory {
+    const message = createBaseEmployeeTaxHistory();
+    message.validFrom = object.validFrom ?? "";
+    message.taxId = object.taxId ?? "";
+    message.source = object.source ?? "";
+    message.reason = object.reason ?? "";
+    message.createdBy = object.createdBy ?? "";
+    message.createdAt = object.createdAt ?? "";
+    return message;
+  },
+};
+
+function createBaseListEmployeeTaxHistoryResponse(): ListEmployeeTaxHistoryResponse {
+  return { base: undefined, data: [] };
+}
+
+export const ListEmployeeTaxHistoryResponse: MessageFns<ListEmployeeTaxHistoryResponse> = {
+  encode(message: ListEmployeeTaxHistoryResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.base !== undefined) {
+      BaseResponse.encode(message.base, writer.uint32(10).fork()).join();
+    }
+    for (const v of message.data) {
+      EmployeeTaxHistory.encode(v!, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ListEmployeeTaxHistoryResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListEmployeeTaxHistoryResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.base = BaseResponse.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.data.push(EmployeeTaxHistory.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListEmployeeTaxHistoryResponse {
+    return {
+      base: isSet(object.base) ? BaseResponse.fromJSON(object.base) : undefined,
+      data: globalThis.Array.isArray(object?.data) ? object.data.map((e: any) => EmployeeTaxHistory.fromJSON(e)) : [],
+    };
+  },
+
+  toJSON(message: ListEmployeeTaxHistoryResponse): unknown {
+    const obj: any = {};
+    if (message.base !== undefined) {
+      obj.base = BaseResponse.toJSON(message.base);
+    }
+    if (message.data?.length) {
+      obj.data = message.data.map((e) => EmployeeTaxHistory.toJSON(e));
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListEmployeeTaxHistoryResponse>): ListEmployeeTaxHistoryResponse {
+    return ListEmployeeTaxHistoryResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ListEmployeeTaxHistoryResponse>): ListEmployeeTaxHistoryResponse {
+    const message = createBaseListEmployeeTaxHistoryResponse();
+    message.base = (object.base !== undefined && object.base !== null)
+      ? BaseResponse.fromPartial(object.base)
+      : undefined;
+    message.data = object.data?.map((e) => EmployeeTaxHistory.fromPartial(e)) || [];
     return message;
   },
 };

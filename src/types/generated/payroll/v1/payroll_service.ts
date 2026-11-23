@@ -32,6 +32,8 @@ import {
   PutEmployeeComponentsResponse,
 } from "./employee_component";
 import {
+  CorrectEmployeeTaxStatusRequest,
+  CorrectEmployeeTaxStatusResponse,
   CreateCompanyRequest,
   CreateCompanyResponse,
   CreateCurrencyRequest,
@@ -52,6 +54,8 @@ import {
   ListDivisionsResponse,
   ListEmployeesRequest,
   ListEmployeesResponse,
+  ListEmployeeTaxHistoryRequest,
+  ListEmployeeTaxHistoryResponse,
   UpdateCompanyRequest,
   UpdateCompanyResponse,
   UpdateCurrencyRequest,
@@ -213,6 +217,27 @@ export const PayrollServiceDefinition = {
       requestType: UpdateEmployeeRequest,
       requestStream: false,
       responseType: UpdateEmployeeResponse,
+      responseStream: false,
+      options: {},
+    },
+    /**
+     * Backdated correction of a wrongly entered tax status (D-82 (5), T033n2): the status is recorded as valid
+     * from `valid_from` in the tax-status history, so the annual PTKP uses it. Needs payroll.master.taxstatus.update.
+     */
+    correctEmployeeTaxStatus: {
+      name: "CorrectEmployeeTaxStatus",
+      requestType: CorrectEmployeeTaxStatusRequest,
+      requestStream: false,
+      responseType: CorrectEmployeeTaxStatusResponse,
+      responseStream: false,
+      options: {},
+    },
+    /** Tax-status history of one employee (D-82 (1), T033n4), newest first; read-only. */
+    listEmployeeTaxHistory: {
+      name: "ListEmployeeTaxHistory",
+      requestType: ListEmployeeTaxHistoryRequest,
+      requestStream: false,
+      responseType: ListEmployeeTaxHistoryResponse,
       responseStream: false,
       options: {},
     },
