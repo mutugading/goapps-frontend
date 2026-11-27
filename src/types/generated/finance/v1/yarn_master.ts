@@ -2473,6 +2473,11 @@ export interface MBSpin {
    * (link source RECIPE, or root spin of a recipe that has an FG). Read-only.
    */
   fgFollowsRecipe: boolean;
+  /**
+   * UUID of the spin this one was duplicated from (empty = root spin). Child
+   * spins (non-empty) cannot be duplicated again.
+   */
+  parentSpinId: string;
 }
 
 /** CreateMBSpinRequest is the request for creating an MB Spin record. */
@@ -2844,6 +2849,13 @@ export interface DuplicateMBSpinRequest {
     | undefined;
   /** FG product link for the clone (cost_product_master id). 0 = no FG link (the source FG is never copied; it would collide on shade+FG). */
   fgProductId: number;
+  /**
+   * Optional LDR for the clone, strictly greater than zero. When set the clone
+   * gets run_ldr = ldr_calculated = this value, adjustment NULL and the LDR is
+   * locked as actual (immune to the parent's LDR cascade). Absent means the
+   * source LDR values are copied as before.
+   */
+  mbsRunLdrPct?: number | undefined;
 }
 
 /**
@@ -21544,6 +21556,7 @@ function createBaseMBSpin(): MBSpin {
     supersededAt: "",
     supersededBySpinCode: "",
     fgFollowsRecipe: false,
+    parentSpinId: "",
   };
 }
 
@@ -21656,6 +21669,9 @@ export const MBSpin: MessageFns<MBSpin> = {
     }
     if (message.fgFollowsRecipe !== false) {
       writer.uint32(288).bool(message.fgFollowsRecipe);
+    }
+    if (message.parentSpinId !== "") {
+      writer.uint32(298).string(message.parentSpinId);
     }
     return writer;
   },
@@ -21955,6 +21971,14 @@ export const MBSpin: MessageFns<MBSpin> = {
           message.fgFollowsRecipe = reader.bool();
           continue;
         }
+        case 37: {
+          if (tag !== 298) {
+            break;
+          }
+
+          message.parentSpinId = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -22142,6 +22166,11 @@ export const MBSpin: MessageFns<MBSpin> = {
         : isSet(object.fg_follows_recipe)
         ? globalThis.Boolean(object.fg_follows_recipe)
         : false,
+      parentSpinId: isSet(object.parentSpinId)
+        ? globalThis.String(object.parentSpinId)
+        : isSet(object.parent_spin_id)
+        ? globalThis.String(object.parent_spin_id)
+        : "",
     };
   },
 
@@ -22255,6 +22284,9 @@ export const MBSpin: MessageFns<MBSpin> = {
     if (message.fgFollowsRecipe !== false) {
       obj.fgFollowsRecipe = message.fgFollowsRecipe;
     }
+    if (message.parentSpinId !== "") {
+      obj.parentSpinId = message.parentSpinId;
+    }
     return obj;
   },
 
@@ -22301,6 +22333,7 @@ export const MBSpin: MessageFns<MBSpin> = {
     message.supersededAt = object.supersededAt ?? "";
     message.supersededBySpinCode = object.supersededBySpinCode ?? "";
     message.fgFollowsRecipe = object.fgFollowsRecipe ?? false;
+    message.parentSpinId = object.parentSpinId ?? "";
     return message;
   },
 };
@@ -24678,7 +24711,15 @@ export const DownloadMBSpinTemplateResponse: MessageFns<DownloadMBSpinTemplateRe
 };
 
 function createBaseDuplicateMBSpinRequest(): DuplicateMBSpinRequest {
-  return { mbhId: "", mbsId: "", mbsMgtName: undefined, mbsDenier: undefined, mbsFilament: undefined, fgProductId: 0 };
+  return {
+    mbhId: "",
+    mbsId: "",
+    mbsMgtName: undefined,
+    mbsDenier: undefined,
+    mbsFilament: undefined,
+    fgProductId: 0,
+    mbsRunLdrPct: undefined,
+  };
 }
 
 export const DuplicateMBSpinRequest: MessageFns<DuplicateMBSpinRequest> = {
@@ -24700,6 +24741,9 @@ export const DuplicateMBSpinRequest: MessageFns<DuplicateMBSpinRequest> = {
     }
     if (message.fgProductId !== 0) {
       writer.uint32(48).int64(message.fgProductId);
+    }
+    if (message.mbsRunLdrPct !== undefined) {
+      writer.uint32(57).double(message.mbsRunLdrPct);
     }
     return writer;
   },
@@ -24759,6 +24803,14 @@ export const DuplicateMBSpinRequest: MessageFns<DuplicateMBSpinRequest> = {
           message.fgProductId = longToNumber(reader.int64());
           continue;
         }
+        case 7: {
+          if (tag !== 57) {
+            break;
+          }
+
+          message.mbsRunLdrPct = reader.double();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -24800,6 +24852,11 @@ export const DuplicateMBSpinRequest: MessageFns<DuplicateMBSpinRequest> = {
         : isSet(object.fg_product_id)
         ? globalThis.Number(object.fg_product_id)
         : 0,
+      mbsRunLdrPct: isSet(object.mbsRunLdrPct)
+        ? globalThis.Number(object.mbsRunLdrPct)
+        : isSet(object.mbs_run_ldr_pct)
+        ? globalThis.Number(object.mbs_run_ldr_pct)
+        : undefined,
     };
   },
 
@@ -24823,6 +24880,9 @@ export const DuplicateMBSpinRequest: MessageFns<DuplicateMBSpinRequest> = {
     if (message.fgProductId !== 0) {
       obj.fgProductId = Math.round(message.fgProductId);
     }
+    if (message.mbsRunLdrPct !== undefined) {
+      obj.mbsRunLdrPct = message.mbsRunLdrPct;
+    }
     return obj;
   },
 
@@ -24837,6 +24897,7 @@ export const DuplicateMBSpinRequest: MessageFns<DuplicateMBSpinRequest> = {
     message.mbsDenier = object.mbsDenier ?? undefined;
     message.mbsFilament = object.mbsFilament ?? undefined;
     message.fgProductId = object.fgProductId ?? 0;
+    message.mbsRunLdrPct = object.mbsRunLdrPct ?? undefined;
     return message;
   },
 };
