@@ -76,7 +76,7 @@
     "@vitejs/plugin-react": "^6.2.1",
     "@vitest/coverage-v8": "^5.1.0",
     "@vitest/ui": "^5.1.0",
-    "eslint": "^9",
+    "eslint": "^10",
     "eslint-config-next": "16.4.3",
     "jsdom": "^26.1.0",
     "msw": "^2.9.2",
